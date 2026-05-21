@@ -1,9 +1,3 @@
-import { format, formatDistanceToNow } from 'date-fns';
-// date-fns 2.x — CJS-compatible (works in both Node API + Next.js webpack).
-// v3 was ESM-only and caused interop pain in our monorepo; staying on v2.
-import ar from 'date-fns/locale/ar';
-import enUS from 'date-fns/locale/en-US';
-
 export function formatCurrency(
   amount: number | null | undefined,
   currency: string = 'SAR',
@@ -33,14 +27,26 @@ export function formatDate(
   locale: 'ar' | 'en' = 'ar',
 ): string {
   if (!date) return '—';
-  return format(new Date(date), pattern, { locale: locale === 'ar' ? ar : enUS });
+  const d = new Date(date);
+  const intlLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
+  const opts: Intl.DateTimeFormatOptions = {
+    day: 'numeric',
+    month: pattern.includes('MMMM') ? 'long' : 'short',
+    year: 'numeric',
+  };
+  if (pattern.includes('HH:mm')) {
+    opts.hour = '2-digit';
+    opts.minute = '2-digit';
+    opts.hour12 = false;
+  }
+  return new Intl.DateTimeFormat(intlLocale, opts).format(d);
 }
 
 export function formatDateTime(
   date: string | Date | null | undefined,
   locale: 'ar' | 'en' = 'ar',
 ): string {
-  return formatDate(date, 'd MMM yyyy، HH:mm', locale);
+  return formatDate(date, 'd MMM yyyy HH:mm', locale);
 }
 
 export function formatRelative(
@@ -48,10 +54,15 @@ export function formatRelative(
   locale: 'ar' | 'en' = 'ar',
 ): string {
   if (!date) return '—';
-  return formatDistanceToNow(new Date(date), {
-    addSuffix: true,
-    locale: locale === 'ar' ? ar : enUS,
-  });
+  const diffMs = new Date(date).getTime() - Date.now();
+  const absMs = Math.abs(diffMs);
+  const rtf = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', { numeric: 'auto' });
+  if (absMs < 60_000) return rtf.format(Math.round(diffMs / 1000), 'second');
+  if (absMs < 3_600_000) return rtf.format(Math.round(diffMs / 60_000), 'minute');
+  if (absMs < 86_400_000) return rtf.format(Math.round(diffMs / 3_600_000), 'hour');
+  if (absMs < 2_592_000_000) return rtf.format(Math.round(diffMs / 86_400_000), 'day');
+  if (absMs < 31_536_000_000) return rtf.format(Math.round(diffMs / 2_592_000_000), 'month');
+  return rtf.format(Math.round(diffMs / 31_536_000_000), 'year');
 }
 
 export function formatWeight(kg: number | null | undefined): string {
