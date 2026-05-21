@@ -1,7 +1,4 @@
-// Load .env BEFORE PrismaClient instantiates — Prisma reads DATABASE_URL at
-// constructor time, and tsx (unlike `prisma migrate`) does not auto-load .env.
-import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../src/generated/prisma';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();

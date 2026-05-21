@@ -12,7 +12,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "node dist/prisma/seed.js",
     "db:studio": "prisma studio",
     "clean": "rm -rf dist node_modules/.prisma"
   },
