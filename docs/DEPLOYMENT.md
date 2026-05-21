@@ -9,31 +9,47 @@
 | البيئة | الغرض | الـ Host | NODE_ENV | الحالة |
 |---|---|---|---|---|
 | **Development** | تطوير محلي على جهاز المطوّر | `localhost` | `development` | ✅ جاهز |
-| **Staging** | اختبار قبل الإنتاج | TBD | `staging` | 🚧 لم يُنشأ |
-| **Production** | الخدمة الحيّة للمستخدمين | `187.124.218.110` | `production` | 🚧 لم يُنشأ |
+| **Staging** | اختبار قبل الإنتاج على Coolify | `nqlah.nx.sa` (VPS: `187.124.218.110`) | `staging` | ✅ إعداد `.env.staging` مكتمل |
+| **Production** | الخدمة الحيّة للمستخدمين | `nqlah.nx.sa` (نفس VPS، فروع منفصلة) | `production` | 🚧 قيد الإعداد |
 
-### 1.1 ملفات الـ Env
+### 1.1 فصل قواعد البيانات (مهم جداً)
+
+**كل بيئة لها قاعدة بيانات مستقلة تماماً — لا يوجد مشاركة أبداً:**
+
+| البيئة | الـ Host | الـ DB Name | المستخدم | الملاحظات |
+|---|---|---|---|---|
+| **Development** | `localhost:5432` | `naqla_dev` | `naqla` | Docker container محلي |
+| **Staging** | `sj3y576uqy2ulecbzwydm37l:5432` | `postgres` | `nqlah_db` | Coolify managed PostgreSQL |
+| **Production** | TBD (Coolify managed) | `naqla_prod` | TBD | يُنشأ عند الإطلاق |
+
+> ⚠️ **قاعدة صارمة:** لا تشغّل `prisma migrate dev` على staging أو production. استخدم `prisma migrate deploy` فقط.
+
+### 1.2 ملفات الـ Env
 
 اعتباراً من v0.5.0، كل بيئة لها ملف env منفصل، ومتعقَّب في الـ repo فقط بصيغة `.example`:
 
 ```
-.env.development.example   ← قالب للتطوير المحلي
-.env.staging.example       ← قالب staging
-.env.production.example    ← قالب production
+.env.development.example   ← قالب للتطوير المحلي (يُنسخ إلى .env.development)
+.env.staging.example       ← قالب staging (يُنسخ إلى .env.staging — gitignored)
+.env.production.example    ← قالب production (يُنسخ إلى .env.production — gitignored)
 ```
 
 الـ runtime يحمّل `.env.${NODE_ENV}` تلقائياً عبر `ConfigModule.forRoot({ envFilePath: [...] })`. إذا غاب الملف، يفشل الـ validation عند الـ bootstrap بدلاً من السماح بتشغيل بقيم خاطئة.
 
-### 1.2 الفروقات بين البيئات
+### 1.3 الفروقات بين البيئات
 
 | المتغيّر | Development | Staging | Production |
 |---|---|---|---|
+| `DATABASE_URL` | `localhost:5432/naqla_dev` | Coolify PostgreSQL / `postgres` | Coolify PostgreSQL / `naqla_prod` |
+| `REDIS_URL` | `localhost:6379` (Docker) | Coolify Redis | Coolify Redis (منفصل) |
+| `APP_DOMAIN` | `localhost` | `nqlah.nx.sa` | `nqlah.nx.sa` |
 | `PAYMENT_PROVIDER` | `mock` | `mock` | `moyasar` (إلزامي) |
 | `SMS_PROVIDER` | `console` | `console` | `unifonic` (إلزامي) |
-| `JWT_SECRET` length | ≥ 32 chars | ≥ 64 chars | ≥ 64 chars + يختلف عن REFRESH |
+| `JWT_SECRET` | ≥ 32 chars | ≥ 64 chars (مولَّد بـ openssl) | ≥ 64 chars + يختلف عن staging |
 | `MINIO_USE_SSL` | `false` | `false` | `true` (إلزامي) |
-| `CORS_ORIGINS` | `http://localhost:*` | `https://*.staging.naqla.sa` | `https://*.naqla.sa` (HTTPS only) |
-| `SENTRY_DSN` | (اختياري) | (warn فقط) | (إلزامي) |
+| `MINIO_BUCKET` | `naqla-dev` | `naqla-staging` | `naqla-prod` |
+| `CORS_ORIGINS` | `http://localhost:*` | `https://*.nqlah.nx.sa` | `https://*.nqlah.nx.sa` (HTTPS only) |
+| `SENTRY_DSN` | اختياري | اختياري | إلزامي |
 | `JWT_EXPIRES_IN` | `15m` | `15m` | `15m` |
 
 ### 1.3 Env Validation
@@ -60,12 +76,14 @@
 ### 1.4 إعداد بيئة جديدة (deploy checklist)
 
 1. انسخ القالب المناسب: `cp .env.{env}.example .env.{env}`
-2. استبدل كل قيم `PLACEHOLDER` بقيم حقيقية (من Doppler/Vault/1Password)
-3. ولّد JWT secrets جدد: `openssl rand -hex 32` (×2، لـ SECRET و REFRESH_SECRET)
-4. تأكد من إعداد MinIO bucket مناسب للبيئة (`naqla-staging` أو `naqla-prod`)
-5. اضبط CORS بدقّة (subdomains الفعلية فقط، لا wildcards)
-6. شغّل: `NODE_ENV={env} pnpm --filter @naqla/api start` — الـ validation يجب أن يمرّ
-7. شغّل seed لو أوّل deploy: `NODE_ENV={env} pnpm db:seed`
+2. استبدل كل قيم `PLACEHOLDER` بقيم حقيقية
+3. ولّد JWT secrets: `openssl rand -hex 64` (×2 — مختلفان تماماً)
+4. تأكد أن `DATABASE_URL` يشير لـ DB منفصلة (لا `naqla_dev` في staging أبداً)
+5. تأكد من `MINIO_BUCKET` المناسب (`naqla-staging` / `naqla-prod`)
+6. اضبط `CORS_ORIGINS` بدقّة (subdomains الفعلية فقط، لا wildcards)
+7. شغّل: `NODE_ENV={env} pnpm --filter @naqla/api start` — الـ validation يجب أن يمرّ
+8. طبّق migrations: `npx prisma migrate deploy` (لا `migrate dev` في staging/prod)
+9. شغّل seed لو أوّل deploy: `NODE_ENV={env} pnpm db:seed`
 
 ---
 
@@ -96,48 +114,74 @@
 
 ### 2.3 النطاقات (Domains)
 
-| Subdomain | الواجهة | TLS |
-|---|---|---|
-| `naqla.sa` | Landing | Let's Encrypt |
-| `admin.naqla.sa` | Admin dashboard | Let's Encrypt |
-| `app.naqla.sa` | Client app | Let's Encrypt |
-| `carrier.naqla.sa` | Carrier app | Let's Encrypt |
-| `api.naqla.sa` | REST API | Let's Encrypt |
-| `cdn.naqla.sa` | MinIO public objects | Let's Encrypt |
+**الدومين الحالي (Staging + Production):** `nqlah.nx.sa`
 
-> ⚠️ النطاقات أعلاه مقترحة. التأكيد النهائي مع إعداد DNS.
+| Subdomain | الواجهة | البيئة | TLS |
+|---|---|---|---|
+| `nqlah.nx.sa` | Landing | Staging/Prod | Let's Encrypt (Coolify) |
+| `admin.nqlah.nx.sa` | Admin dashboard | Staging/Prod | Let's Encrypt |
+| `app.nqlah.nx.sa` | Client app | Staging/Prod | Let's Encrypt |
+| `carrier.nqlah.nx.sa` | Carrier app | Staging/Prod | Let's Encrypt |
+| `api.nqlah.nx.sa` | REST API | Staging/Prod | Let's Encrypt |
+| `storage.nqlah.nx.sa` | MinIO public objects | Staging/Prod | Let's Encrypt |
+
+> 📌 جميع النطاقات تُدار عبر Coolify مع auto-renewal لـ Let's Encrypt.
+> عند الانتقال لدومين رسمي، يكفي تغيير `APP_DOMAIN` في `.env.production` فقط.
 
 ---
 
-## 3. Environment Variables
+## 3. Environment Variables — المرجع الكامل
 
-> 🚧 **يُكمل لاحقاً.**
->
-> ### المتغيّرات المتوقّعة (مرجع أوّلي):
->
-> #### Backend API
-> - [ ] `DATABASE_URL` — postgres connection string
-> - [ ] `DIRECT_URL` — direct connection لـ Prisma migrations
-> - [ ] `REDIS_URL` — redis connection
-> - [ ] `JWT_SECRET` — مفتاح توقيع access tokens
-> - [ ] `JWT_REFRESH_SECRET` — مفتاح توقيع refresh tokens
-> - [ ] `JWT_ACCESS_TTL` — `15m`
-> - [ ] `JWT_REFRESH_TTL` — `7d`
-> - [ ] `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_BUCKET`
-> - [ ] `RESEND_API_KEY` — للبريد
-> - [ ] `SMS_PROVIDER` / `SMS_API_KEY` / `SMS_SENDER_ID`
-> - [ ] `CORS_ORIGINS` — comma-separated whitelist
-> - [ ] `THROTTLE_TTL` / `THROTTLE_LIMIT`
-> - [ ] `SENTRY_DSN`
-> - [ ] `NODE_ENV` — `production`
->
-> #### Frontend (per app)
-> - [ ] `NEXT_PUBLIC_API_URL` — `https://api.naqla.sa`
-> - [ ] `NEXT_PUBLIC_WS_URL` — `wss://api.naqla.sa`
-> - [ ] `NEXT_PUBLIC_SENTRY_DSN`
-> - [ ] `NEXT_PUBLIC_GA_ID`
->
-> ✏️ سيتم توليد ملف `.env.example` كامل في المرحلة التالية.
+القوالب الجاهزة في الـ repo. الجدول التالي يوضح القيمة المطلوبة لكل بيئة:
+
+### 3.1 Backend API (apps/api)
+
+| المتغيّر | Development | Staging | Production |
+|---|---|---|---|
+| `DATABASE_URL` | `postgresql://naqla:naqla_dev_pass@localhost:5432/naqla_dev` | Coolify PostgreSQL URL | Coolify PostgreSQL URL (مختلف) |
+| `REDIS_URL` | `redis://localhost:6379` | Coolify Redis URL | Coolify Redis URL (مختلف) |
+| `REDIS_PASSWORD` | _(فارغ)_ | من Coolify | من Coolify (مختلف) |
+| `JWT_SECRET` | ≥ 32 chars (dev only) | `openssl rand -hex 64` | `openssl rand -hex 64` (مختلف) |
+| `JWT_REFRESH_SECRET` | ≥ 32 chars | `openssl rand -hex 64` | `openssl rand -hex 64` (مختلف) |
+| `JWT_EXPIRES_IN` | `15m` | `15m` | `15m` |
+| `JWT_REFRESH_EXPIRES_IN` | `7d` | `7d` | `7d` |
+| `NODE_ENV` | `development` | `staging` | `production` |
+| `PORT` | `4000` | `4000` | `4000` |
+| `APP_DOMAIN` | `localhost` | `nqlah.nx.sa` | `nqlah.nx.sa` |
+| `APP_URL` | `http://localhost:4000` | `https://api.nqlah.nx.sa` | `https://api.nqlah.nx.sa` |
+| `FRONTEND_URL` | `http://localhost:3000` | `https://nqlah.nx.sa` | `https://nqlah.nx.sa` |
+| `FRONTEND_CLIENT_URL` | `http://localhost:3002` | `https://app.nqlah.nx.sa` | `https://app.nqlah.nx.sa` |
+| `FRONTEND_CARRIER_URL` | `http://localhost:3003` | `https://carrier.nqlah.nx.sa` | `https://carrier.nqlah.nx.sa` |
+| `FRONTEND_ADMIN_URL` | `http://localhost:3001` | `https://admin.nqlah.nx.sa` | `https://admin.nqlah.nx.sa` |
+| `CORS_ORIGINS` | `http://localhost:300{0-3}` | `https://*.nqlah.nx.sa` (4 subdomains) | `https://*.nqlah.nx.sa` |
+| `MINIO_ENDPOINT` | `localhost` | `minio` (Docker service) | `minio` |
+| `MINIO_PORT` | `9000` | `9000` | `9000` |
+| `MINIO_USE_SSL` | `false` | `false` | `true` (**إلزامي**) |
+| `MINIO_ROOT_USER` | `minioadmin` | من Coolify | من Coolify (مختلف) |
+| `MINIO_ROOT_PASSWORD` | `minioadmin` | من Coolify | من Coolify (مختلف) |
+| `MINIO_BUCKET` | `naqla-dev` | `naqla-staging` | `naqla-prod` |
+| `MINIO_PUBLIC_URL` | `http://localhost:9000` | `https://storage.nqlah.nx.sa` | `https://storage.nqlah.nx.sa` |
+| `PAYMENT_PROVIDER` | `mock` | `mock` | `moyasar` |
+| `SMS_PROVIDER` | `console` | `console` | `unifonic` |
+| `BCRYPT_ROUNDS` | `12` | `12` | `12` |
+| `THROTTLE_TTL` | `60000` | `60000` | `60000` |
+| `THROTTLE_LIMIT` | `100` | `100` | `100` |
+| `SENTRY_DSN` | _(فارغ)_ | _(فارغ/اختياري)_ | **إلزامي** |
+
+### 3.2 Frontend Apps (Next.js — build-time)
+
+هذه المتغيرات تُحقن في وقت البناء (`next build`) — يجب ضبطها في Coolify قبل الـ deploy:
+
+| المتغيّر | Development | Staging | Production |
+|---|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:4000` | `https://api.nqlah.nx.sa` | `https://api.nqlah.nx.sa` |
+| `NEXT_PUBLIC_WS_URL` | `ws://localhost:4000` | `wss://api.nqlah.nx.sa` | `wss://api.nqlah.nx.sa` |
+| `NEXT_PUBLIC_MINIO_URL` | `http://localhost:9000` | `https://storage.nqlah.nx.sa` | `https://storage.nqlah.nx.sa` |
+| `NEXT_PUBLIC_LANDING_URL` | `http://localhost:3000` | `https://nqlah.nx.sa` | `https://nqlah.nx.sa` |
+| `NEXT_PUBLIC_CLIENT_URL` | `http://localhost:3002` | `https://app.nqlah.nx.sa` | `https://app.nqlah.nx.sa` |
+| `NEXT_PUBLIC_CARRIER_URL` | `http://localhost:3003` | `https://carrier.nqlah.nx.sa` | `https://carrier.nqlah.nx.sa` |
+
+> ⚠️ **تحذير:** `NEXT_PUBLIC_*` تُضمَّن في الـ JavaScript bundle — لا تضع فيها أسراراً أبداً.
 
 ---
 
@@ -172,41 +216,52 @@
 
 ## 5. Coolify Setup
 
-> 🚧 **يُكمل لاحقاً.**
->
-> الخطوات المخطّطة:
-> - [ ] تثبيت Coolify على الـ Server (`187.124.218.110`)
-> - [ ] ربط GitHub repo
-> - [ ] إعداد webhooks للنشر التلقائي على push إلى `main`
-> - [ ] تكوين 5 services في Coolify:
->   - `naqla-api`
->   - `naqla-admin`
->   - `naqla-client`
->   - `naqla-carrier`
->   - `naqla-landing`
-> - [ ] Environment variables لكل service (encrypted)
-> - [ ] Auto SSL via Let's Encrypt
-> - [ ] Domain routing لكل subdomain
-> - [ ] Persistent volumes للـ Postgres + MinIO
-> - [ ] Backup strategy (daily database dumps)
-> - [ ] Monitoring webhooks (Slack/Discord on deploy)
+**VPS:** `187.124.218.110` — Coolify مثبَّت.
+**GitHub Repo:** `https://github.com/wa1eeed/nqlah-logistic`
 
-### خطوات التشغيل المخطّطة (high-level)
+### 5.1 البنية التحتية المُدارة (Coolify)
+
+| الخدمة | النوع | Staging | Production |
+|---|---|---|---|
+| **PostgreSQL** | Coolify managed DB | `sj3y576uqy2ulecbzwydm37l:5432` | DB منفصل (يُنشأ لاحقاً) |
+| **Redis** | Coolify managed Redis | `q13sf1ivsl14rsphz4155tnh:6379` | Redis منفصل |
+| **MinIO** | Docker service | `minio:9000` (داخلي) | `minio:9000` (داخلي) |
+
+### 5.2 Services في Coolify (5 تطبيقات)
+
+| الـ Service | الـ Dockerfile | الدومين | منافذ داخلية |
+|---|---|---|---|
+| `naqla-api` | `apps/api/Dockerfile` | `api.nqlah.nx.sa` | `4000` |
+| `naqla-landing` | `apps/web/landing/Dockerfile` | `nqlah.nx.sa` | `3000` |
+| `naqla-admin` | `apps/web/admin/Dockerfile` | `admin.nqlah.nx.sa` | `3001` |
+| `naqla-client` | `apps/web/client/Dockerfile` | `app.nqlah.nx.sa` | `3002` |
+| `naqla-carrier` | `apps/web/carrier/Dockerfile` | `carrier.nqlah.nx.sa` | `3003` |
+
+> 📋 Dockerfiles لـ web apps (landing/admin/client/carrier) لم تُنشأ بعد — مطلوبة قبل أول deploy كامل.
+
+### 5.3 خطوات التشغيل (أوّل deploy)
 
 ```bash
-# 1. SSH للسيرفر
-ssh root@187.124.218.110
+# 1. في Coolify UI — أنشئ كل service واربطه بالـ repo
 
-# 2. تثبيت Coolify (مرّة واحدة)
-curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
+# 2. أضف env vars من .env.staging لكل service (encrypted)
+#    NEXT_PUBLIC_* تذهب لكل web apps
+#    باقي المتغيرات للـ API فقط
 
-# 3. فتح Coolify UI: https://187.124.218.110:8000
-# 4. إنشاء project: naqla-platform
-# 5. إضافة 5 resources (api + 4 web)
-# 6. ربط GitHub repo
-# 7. إعداد env vars
-# 8. أوّل deploy
+# 3. أوّل deploy — يبني الـ Docker images ويشغّلها
+
+# 4. طبّق migrations (مرّة واحدة بعد أوّل deploy):
+#    في Coolify terminal للـ API container:
+npx prisma migrate deploy
+
+# 5. شغّل seed (اختياري للـ staging):
+npx ts-node prisma/seed.ts
 ```
+
+### 5.4 Auto-Deploy
+
+- كل push لـ `main` → Coolify يعيد البناء والنشر تلقائياً
+- الـ migrations تحتاج تشغيل يدوي بعد كل deploy يحتوي تغييرات DB
 
 ---
 

@@ -6,6 +6,23 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 📖 v0.9.6 — Deployment Docs: Three Environments + DB Separation (2026-05-21)
+
+**`docs/DEPLOYMENT.md`:**
+- Section 1: جدول البيئات محدَّث — Staging يشير لـ Coolify VPS الفعلي (`nqlah.nx.sa`)
+- Section 1.1: أُضيف جدول فصل قواعد البيانات (Development/Staging/Production — لكل بيئة host ومستخدم وDB منفصل)
+- Section 1.2 → 1.3: جدول الفروقات موسَّع ليشمل `DATABASE_URL`, `REDIS_URL`, `APP_DOMAIN`, `MINIO_BUCKET`, روابط `FRONTEND_*`
+- Section 1.4: checklist الـ deploy شامل الآن migrations (`prisma migrate deploy` لا `migrate dev`)
+- Section 2.3: النطاقات محدَّثة من `naqla.sa` → `nqlah.nx.sa` مع ملاحظة تغيير الدومين عبر env فقط
+- Section 3: مكتملة بالكامل — جداول بـ 27 متغيّر Backend + 6 متغيّر Frontend مقارَنة بين البيئات الثلاث
+- Section 5: Coolify محدَّث بجداول البنية التحتية الفعلية (DB host، Redis host)، services، خطوات أوّل deploy
+
+**`CLAUDE_CODE_INSTRUCTIONS.md`:**
+- تصحيح الدومين: `naqla.nx.sa` → `nqlah.nx.sa`
+- تحديث قسم متغيرات البيئة ليشمل `APP_DOMAIN`, `FRONTEND_*_URL`, `NEXT_PUBLIC_*` الجديدة مع توضيح فصل البيئات
+
+---
+
 ### 🚀 v0.9.5 — Staging Environment File for Coolify (2026-05-21)
 
 - أُنشئ `.env.staging` بقيم Coolify الحقيقية (DB + Redis + MinIO + JWT عشوائي).
