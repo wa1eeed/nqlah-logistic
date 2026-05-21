@@ -60,8 +60,8 @@ export default function LandingPage() {
           </nav>
           <div className="ms-auto flex items-center gap-2">
             <LocaleSwitcher />
-            <Link href="http://localhost:3002/login"><Button variant="ghost" size="sm">دخول العميل</Button></Link>
-            <Link href="http://localhost:3003/login"><Button size="sm">دخول الناقل</Button></Link>
+            <Link href={`${process.env.NEXT_PUBLIC_CLIENT_URL ?? 'http://localhost:3002'}/login`}><Button variant="ghost" size="sm">دخول العميل</Button></Link>
+            <Link href={`${process.env.NEXT_PUBLIC_CARRIER_URL ?? 'http://localhost:3003'}/login`}><Button size="sm">دخول الناقل</Button></Link>
           </div>
         </div>
       </header>
@@ -85,13 +85,13 @@ export default function LandingPage() {
             أسعار شفافة، تتبّع لحظي، ومدفوعات Escrow آمنة.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="http://localhost:3002/login">
+            <Link href={`${process.env.NEXT_PUBLIC_CLIENT_URL ?? 'http://localhost:3002'}/login`}>
               <Button size="lg" className="w-full sm:w-auto">
                 <Package className="h-4 w-4" />
                 ابدأ كعميل
               </Button>
             </Link>
-            <Link href="http://localhost:3003/login">
+            <Link href={`${process.env.NEXT_PUBLIC_CARRIER_URL ?? 'http://localhost:3003'}/login`}>
               <Button size="lg" variant="outline" className="w-full sm:w-auto">
                 <Truck className="h-4 w-4" />
                 انضم كناقل
@@ -190,7 +190,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Link href="http://localhost:3002/login" className="inline-flex items-center gap-1.5 mt-8 text-sm font-semibold text-primary hover:underline">
+              <Link href={`${process.env.NEXT_PUBLIC_CLIENT_URL ?? 'http://localhost:3002'}/login`} className="inline-flex items-center gap-1.5 mt-8 text-sm font-semibold text-primary hover:underline">
                 ابدأ كعميل
                 <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
               </Link>
@@ -216,7 +216,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Link href="http://localhost:3003/login" className="inline-flex items-center gap-1.5 mt-8 text-sm font-semibold hover:underline">
+              <Link href={`${process.env.NEXT_PUBLIC_CARRIER_URL ?? 'http://localhost:3003'}/login`} className="inline-flex items-center gap-1.5 mt-8 text-sm font-semibold hover:underline">
                 انضم كناقل
                 <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
               </Link>
@@ -300,10 +300,10 @@ export default function LandingPage() {
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">جاهز لشحن أول طلب لك؟</h2>
               <p className="mt-3 text-base text-white/80 max-w-xl mx-auto">سجّل خلال دقيقتين وتلقَّ عروض ناقلين معتمدين قبل ما تكمّل قهوتك.</p>
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link href="http://localhost:3002/login">
+                <Link href={`${process.env.NEXT_PUBLIC_CLIENT_URL ?? 'http://localhost:3002'}/login`}>
                   <Button size="lg" variant="secondary">ابدأ كعميل</Button>
                 </Link>
-                <Link href="http://localhost:3003/login">
+                <Link href={`${process.env.NEXT_PUBLIC_CARRIER_URL ?? 'http://localhost:3003'}/login`}>
                   <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">انضم كناقل</Button>
                 </Link>
               </div>

@@ -60,7 +60,7 @@ export class AuthService {
         // Company.contactEmail is required by the schema. If user didn't provide
         // either an account email or a contact email, synthesize one from the
         // phone — purely structural, no email will ever be sent here.
-        contactEmail: dto.contactEmail ?? email ?? `noreply+${phone}@phone.naqla.sa`,
+        contactEmail: dto.contactEmail ?? email ?? `noreply+${phone}@phone.${process.env.APP_DOMAIN ?? 'nqlah.nx.sa'}`,
       },
     });
 

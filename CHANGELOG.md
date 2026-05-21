@@ -6,6 +6,26 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🔧 v0.9.4 — Domain-Agnostic: Replace All Hardcoded URLs with Env Vars (2026-05-21)
+
+**المشكلة:** عدة مواضع في الكود تحتوي على `naqla.sa` أو `localhost:300x` hardcoded — تمنع التشغيل على أي دومين آخر.
+
+**الإصلاحات:**
+
+- `apps/api/src/main.ts`: `PROD_HOSTS` يقرأ من `APP_DOMAIN` بدل `['naqla.sa']` الثابت. CSP `connect-src` يستخدم نفس المتغير.
+- `apps/api/src/modules/companies/team-members.service.ts`: رابط تفعيل الدعوة يستخدم `FRONTEND_CLIENT_URL` بدل `https://app.naqla.sa`.
+- `apps/api/src/modules/auth/auth.service.ts`: fallback email يستخدم `APP_DOMAIN` بدل `phone.naqla.sa`.
+- `apps/web/landing/[locale]/page.tsx`: 6 روابط `localhost:3002` → `NEXT_PUBLIC_CLIENT_URL`، 4 روابط `localhost:3003` → `NEXT_PUBLIC_CARRIER_URL`.
+- `apps/web/landing/[locale]/about/page.tsx`: رابطا CTA يستخدمان `NEXT_PUBLIC_CLIENT_URL` / `NEXT_PUBLIC_CARRIER_URL`.
+- `apps/web/client/register/page.tsx` + `apps/web/carrier/register/page.tsx`: 3 روابط الشروط/الخصوصية/النقل تستخدم `NEXT_PUBLIC_LANDING_URL`.
+- `.env.staging.example` + `.env.development.example`: أُضيفت متغيرات `APP_DOMAIN`, `FRONTEND_CLIENT_URL`, `FRONTEND_CARRIER_URL`, `FRONTEND_ADMIN_URL`, `NEXT_PUBLIC_LANDING_URL`, `NEXT_PUBLIC_CLIENT_URL`, `NEXT_PUBLIC_CARRIER_URL` مع قيم افتراضية لكل بيئة.
+
+**الدومين الحالي للـ Staging:** `nqlah.nx.sa`
+
+**All 4 packages type-check clean.**
+
+---
+
 ### ✨ v0.9.3 — Full Wiring Session: Catalogs + Uploads + Contact Info (2026-05-21)
 
 **Dynamic Catalogs:**

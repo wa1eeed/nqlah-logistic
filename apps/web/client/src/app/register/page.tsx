@@ -569,19 +569,19 @@ function StepPreferences({
             checked={form.acceptTerms}
             onChange={(v) => set('acceptTerms', v)}
             label="أوافق على شروط الاستخدام"
-            href="http://localhost:3000/terms"
+            href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/terms`}
           />
           <ConsentRow
             checked={form.acceptPrivacy}
             onChange={(v) => set('acceptPrivacy', v)}
             label="أوافق على سياسة الخصوصية"
-            href="http://localhost:3000/privacy"
+            href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/privacy`}
           />
           <ConsentRow
             checked={form.acceptTransport}
             onChange={(v) => set('acceptTransport', v)}
             label="أوافق على شروط وأحكام النقل"
-            href="http://localhost:3000/transport"
+            href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/transport`}
           />
 
           <p className="text-xs text-muted-foreground mt-3">

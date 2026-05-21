@@ -124,10 +124,10 @@ export default function AboutPage() {
           <p className="opacity-90 mb-6">انضم لآلاف الشركات التي تستخدم نقلة يومياً</p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <Button asChild variant="secondary" size="lg">
-              <a href="http://localhost:3002/register">سجّل كعميل</a>
+              <a href={`${process.env.NEXT_PUBLIC_CLIENT_URL ?? 'http://localhost:3002'}/register`}>سجّل كعميل</a>
             </Button>
             <Button asChild size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-              <a href="http://localhost:3003/register">سجّل كناقل</a>
+              <a href={`${process.env.NEXT_PUBLIC_CARRIER_URL ?? 'http://localhost:3003'}/register`}>سجّل كناقل</a>
             </Button>
           </div>
         </div>

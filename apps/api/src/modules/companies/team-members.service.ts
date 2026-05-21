@@ -122,7 +122,7 @@ export class TeamMembersService {
 
     return {
       ...user,
-      activationLink: `https://app.naqla.sa/activate?token=${tempActivationToken}`,
+      activationLink: `${process.env.FRONTEND_CLIENT_URL ?? 'http://localhost:3002'}/activate?token=${tempActivationToken}`,
       smsSent: true,
     };
   }

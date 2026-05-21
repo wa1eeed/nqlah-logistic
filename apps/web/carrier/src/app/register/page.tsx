@@ -913,9 +913,9 @@ function StepVerify({
             </p>
           </div>
 
-          <ConsentRow checked={form.acceptTerms}     onChange={(v) => set('acceptTerms', v)}     label="أوافق على شروط الاستخدام"        href="http://localhost:3000/terms" />
-          <ConsentRow checked={form.acceptPrivacy}   onChange={(v) => set('acceptPrivacy', v)}   label="أوافق على سياسة الخصوصية"        href="http://localhost:3000/privacy" />
-          <ConsentRow checked={form.acceptTransport} onChange={(v) => set('acceptTransport', v)} label="أوافق على شروط وأحكام النقل"      href="http://localhost:3000/transport" />
+          <ConsentRow checked={form.acceptTerms}     onChange={(v) => set('acceptTerms', v)}     label="أوافق على شروط الاستخدام"        href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/terms`} />
+          <ConsentRow checked={form.acceptPrivacy}   onChange={(v) => set('acceptPrivacy', v)}   label="أوافق على سياسة الخصوصية"        href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/privacy`} />
+          <ConsentRow checked={form.acceptTransport} onChange={(v) => set('acceptTransport', v)} label="أوافق على شروط وأحكام النقل"      href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/transport`} />
 
           <label className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30 cursor-pointer">
             <input type="checkbox" checked={form.acceptCommission} onChange={(e) => set('acceptCommission', e.target.checked)} className="mt-0.5 h-4 w-4" />
