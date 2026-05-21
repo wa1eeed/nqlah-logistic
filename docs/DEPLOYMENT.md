@@ -205,16 +205,18 @@
 
 ```
 Stage 1: deps (node:20-alpine)
-  └─ Copy package.json manifests → pnpm install
+  └─ Copy ALL workspace package.json manifests (كل الـ 7 manifests)
+  └─ pnpm install --frozen-lockfile=false
      (layer يُعاد استخدامه ما لم تتغير الـ dependencies)
 
 Stage 2: builder (node:20-alpine)
-  └─ Copy node_modules من deps
+  └─ COPY node_modules من deps (root + app-level + shared-utils)
   └─ COPY . . (source — node_modules محذوفة عبر .dockerignore)
   └─ pnpm --filter @naqla/shared-utils run build  (CJS dist)
   └─ pnpm --filter @naqla/<app> run build
 
 Stage 3: runner (node:20-alpine) ← الصورة النهائية الصغيرة
+  └─ apk add --no-cache wget (مطلوب للـ healthcheck)
   └─ Non-root user (nextjs:nodejs uid/gid 1001)
   └─ للـ API: dist/ + node_modules + prisma + tini
   └─ للـ Next.js: .next/standalone + .next/static + public
@@ -225,6 +227,78 @@ Stage 3: runner (node:20-alpine) ← الصورة النهائية الصغير�
 - لا يحتاج `node_modules` كاملة في الـ runner
 - الصورة النهائية أصغر بـ 60–80%
 - يُشغَّل بـ `node server.js` فقط
+
+### 4.3 pnpm Monorepo — مشاكل Docker وحلولها
+
+هذه القرارات غير قابلة للتفاوض — نتجت عن أعطال حقيقية في staging:
+
+#### أ. symlinks تنكسر عند COPY
+
+`node_modules` داخل التطبيقات تحتوي symlinks تشير إلى `../../../../node_modules/.pnpm/...`. هذا المسار يتغيّر عند النسخ لـ `/app/` بعمق مختلف — فتنكسر.
+
+**الحل للـ API:** `pnpm deploy --prod /prod` يولّد `node_modules` flat بدون symlinks.
+**الحل للـ Next.js:** نسخ `node_modules` مباشرة من مرحلة `deps` (نفس المسار) إلى `builder` — لا symlink breaking.
+
+#### ب. يجب نسخ كل workspace manifests قبل pnpm install
+
+```dockerfile
+# ✅ يجب نسخ الـ 7 manifests قبل RUN pnpm install
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY packages/shared-types/package.json packages/shared-types/
+COPY packages/shared-utils/package.json packages/shared-utils/
+COPY apps/api/package.json apps/api/
+COPY apps/web/admin/package.json apps/web/admin/
+COPY apps/web/client/package.json apps/web/client/
+COPY apps/web/carrier/package.json apps/web/carrier/
+COPY apps/web/landing/package.json apps/web/landing/
+```
+
+بدون هذا، `pnpm deploy` يفشل لأن `COPY . .` اللاحق يُضيف packages لم يرَها `pnpm install` أبداً.
+
+#### ج. next binary غير موجود في builder
+
+`next` binary يعيش في `apps/web/<app>/node_modules/.bin/`. `.dockerignore` يستثني `node_modules`، لكن `COPY . .` لا ينسخها. الحل: نسخ app-level node_modules من مرحلة deps صراحةً:
+
+```dockerfile
+COPY --from=deps /repo/apps/web/landing/node_modules ./apps/web/landing/node_modules
+```
+
+#### د. date-fns لا يُرفَع لـ root node_modules
+
+`date-fns` اعتماد لـ `shared-utils` ولا يُرفعه pnpm للـ root. عند `transpilePackages: ['@naqla/shared-utils']`، webpack يحاول resolve المكتبة من سياق التطبيق — فيفشل.
+
+**الحل النهائي في landing:** حذف `@naqla/shared-utils` من `transpilePackages` — webpack يستخدم `dist/index.js` المبني مسبقاً بدلاً من إعادة compile المصدر.
+
+**الحل العميق:** استبدال `date-fns` بالكامل في `shared-utils/src/format.ts` بـ `Intl.DateTimeFormat` و`Intl.RelativeTimeFormat` — لا dependencies خارجية.
+
+#### هـ. Prisma custom output path
+
+بدلاً من `output` الافتراضي (في pnpm store — مسار يتغيّر بين أجهزة)، يُولَّد الـ client في مسار ثابت:
+
+```prisma
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+```
+
+- `output` ثابت بالنسبة للـ repo — لا مشاكل pnpm store
+- `binaryTargets` يشمل Alpine Linux (musl) الذي يستخدمه Docker
+- الـ client المولَّد `.js+.d.ts` لا يُجمعه tsc تلقائياً → يُنسخ يدوياً: `RUN cp -r src/generated dist/src/`
+- كل imports في الكود تغيّرت من `@prisma/client` إلى `../../generated/prisma`
+
+#### و. تجميع seed.ts في builder
+
+`tsx` devDependency — غير موجود في production container. يُجمَّع `seed.ts` في builder:
+
+```dockerfile
+RUN cd /repo/apps/api && node_modules/.bin/tsc \
+  --target ES2020 --module commonjs --esModuleInterop --skipLibCheck \
+  --resolveJsonModule --outDir dist/prisma prisma/seed.ts
+```
+
+`dist/prisma/seed.js` يصل للـ runtime عبر `COPY dist ./dist` الموجود. يُشغَّل بـ `node dist/prisma/seed.js`.
 
 ### 4.3 بناء صورة واحدة (محلياً)
 
@@ -263,6 +337,7 @@ Coolify يعرض الحالة مباشرة. فشل 3 محاولات متتالي
 
 **VPS:** `187.124.218.110` — Coolify مثبَّت.
 **GitHub Repo:** `https://github.com/wa1eeed/nqlah-logistic`
+**Coolify Project:** `nqlah-logistic`
 
 ### 5.1 البنية التحتية المُدارة (Coolify)
 
@@ -272,41 +347,61 @@ Coolify يعرض الحالة مباشرة. فشل 3 محاولات متتالي
 | **Redis** | Coolify managed Redis | `q13sf1ivsl14rsphz4155tnh:6379` | Redis منفصل |
 | **MinIO** | Docker service | `minio:9000` (داخلي) | `minio:9000` (داخلي) |
 
-### 5.2 Services في Coolify (5 تطبيقات)
+### 5.2 Staging Resources (5 تطبيقات)
 
-| الـ Service | الـ Dockerfile | الدومين | منافذ داخلية |
+| الـ Resource Name | الـ Dockerfile | الدومين | الـ Port |
 |---|---|---|---|
-| `naqla-api` | `apps/api/Dockerfile` | `api.nqlah.nx.sa` | `4000` |
-| `naqla-landing` | `apps/web/landing/Dockerfile` | `nqlah.nx.sa` | `3000` |
-| `naqla-admin` | `apps/web/admin/Dockerfile` | `admin.nqlah.nx.sa` | `3001` |
-| `naqla-client` | `apps/web/client/Dockerfile` | `app.nqlah.nx.sa` | `3002` |
-| `naqla-carrier` | `apps/web/carrier/Dockerfile` | `carrier.nqlah.nx.sa` | `3003` |
+| `naqla-api-staging` | `apps/api/Dockerfile` | `api.nqlah.nx.sa` | `4000` |
+| `naqla-landing-staging` | `apps/web/landing/Dockerfile` | `nqlah.nx.sa` | `3000` |
+| `naqla-admin-staging` | `apps/web/admin/Dockerfile` | `admin.nqlah.nx.sa` | `3001` |
+| `naqla-client-staging` | `apps/web/client/Dockerfile` | `app.nqlah.nx.sa` | `3002` |
+| `naqla-carrier-staging` | `apps/web/carrier/Dockerfile` | `carrier.nqlah.nx.sa` | `3003` |
 
-> ✅ جميع Dockerfiles جاهزة — راجع Section 4 للتفاصيل.
+### 5.3 Build Variables للـ Next.js Apps
 
-### 5.3 خطوات التشغيل (أوّل deploy)
+هذه المتغيرات تُضاف في **Build Variables** (ليس Environment Variables) لكل Next.js app لأنها تُضمَّن في وقت البناء:
 
-```bash
-# 1. في Coolify UI — أنشئ كل service واربطه بالـ repo
-
-# 2. أضف env vars من .env.staging لكل service (encrypted)
-#    NEXT_PUBLIC_* تذهب لكل web apps
-#    باقي المتغيرات للـ API فقط
-
-# 3. أوّل deploy — يبني الـ Docker images ويشغّلها
-
-# 4. طبّق migrations (مرّة واحدة بعد أوّل deploy):
-#    في Coolify terminal للـ API container:
-npx prisma migrate deploy
-
-# 5. شغّل seed (اختياري للـ staging):
-npx ts-node prisma/seed.ts
+```env
+NEXT_PUBLIC_API_URL=https://api.nqlah.nx.sa
+NEXT_PUBLIC_WS_URL=wss://api.nqlah.nx.sa
+NEXT_PUBLIC_LANDING_URL=https://nqlah.nx.sa
+NEXT_PUBLIC_CLIENT_URL=https://app.nqlah.nx.sa
+NEXT_PUBLIC_CARRIER_URL=https://carrier.nqlah.nx.sa
+NEXT_PUBLIC_MINIO_URL=https://storage.nqlah.nx.sa
 ```
 
-### 5.4 Auto-Deploy
+### 5.4 خطوات التشغيل (أوّل deploy)
+
+```bash
+# 1. في Coolify UI — أنشئ Resource لكل تطبيق، اربطه بالـ repo والـ Dockerfile المناسب
+
+# 2. أضف env vars من .env.staging للـ API resource (encrypted)
+#    NEXT_PUBLIC_* تذهب كـ Build Variables لكل Next.js app
+
+# 3. أوّل deploy — Coolify يبني الـ Docker image ويشغّله
+
+# 4. طبّق migrations في Coolify terminal للـ API container:
+node -e "const{execSync}=require('child_process');execSync('npx prisma@5.22.0 migrate deploy --schema=/app/prisma/schema.prisma',{stdio:'inherit'})"
+
+# 5. شغّل seed (للـ staging — demo accounts):
+node dist/prisma/seed.js
+```
+
+### 5.5 Auto-Deploy
 
 - كل push لـ `main` → Coolify يعيد البناء والنشر تلقائياً
 - الـ migrations تحتاج تشغيل يدوي بعد كل deploy يحتوي تغييرات DB
+
+### 5.6 الروابط الحية (Staging)
+
+| الواجهة | الرابط |
+|---|---|
+| **API Health** | https://api.nqlah.nx.sa/health |
+| **Landing** | https://nqlah.nx.sa |
+| **Admin** | https://admin.nqlah.nx.sa |
+| **Client** | https://app.nqlah.nx.sa |
+| **Carrier** | https://carrier.nqlah.nx.sa |
+| **Storage** | https://storage.nqlah.nx.sa |
 
 ---
 

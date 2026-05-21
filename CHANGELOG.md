@@ -6,6 +6,46 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🚀 v0.9.8 — Docker Staging Fixes: All 5 Apps Deploy-Ready (2026-05-21)
+
+سلسلة إصلاحات Docker بُنيت على staging الحقيقي (Coolify / nqlah.nx.sa). كل إصلاح نتج عن خطأ حقيقي في الـ build أو الـ runtime.
+
+**API — Prisma Custom Output:**
+- `apps/api/prisma/schema.prisma`: `output = "../src/generated/prisma"` بدلاً من المسار الافتراضي في pnpm store — يحل مشكلة symlinks بين الأجهزة
+- `binaryTargets = ["native", "linux-musl-openssl-3.0.x"]` — Alpine Docker يحتاج musl binary
+- 11 ملف: كل `@prisma/client` imports صارت `../../generated/prisma` (المسار المُولَّد الجديد)
+- `apps/api/Dockerfile`: `RUN cp -r src/generated dist/src/` — الـ client المولَّد `.js+.d.ts` لا يُجمعه tsc تلقائياً
+
+**API — Seed في Production:**
+- `apps/api/prisma/seed.ts`: حذف `import 'dotenv/config'` (DATABASE_URL تأتي من Docker env)، وغيّر import من `@prisma/client` إلى `../src/generated/prisma`
+- `apps/api/Dockerfile`: يجمّع `seed.ts` → `dist/prisma/seed.js` في builder (tsx devDependency — غير متاح في production)
+- `apps/api/package.json` `db:seed`: صار `node dist/prisma/seed.js`
+
+**Next.js — node_modules في builder:**
+- كل Dockerfiles (admin/client/carrier/landing): أُضيف `COPY --from=deps /repo/apps/web/<app>/node_modules ./apps/web/<app>/node_modules` — بدونه `next` binary غير موجود في builder
+
+**Next.js — date-fns resolution:**
+- `apps/web/landing/next.config.mjs`: حُذف `@naqla/shared-utils` من `transpilePackages` — كان يجعل webpack يعيد compile المصدر فيحاول resolve `date-fns` من root وليس من `shared-utils/node_modules`
+- `packages/shared-utils/src/format.ts`: استُبدلت كل `date-fns` imports (`format`, `formatDistanceToNow`, locales) بـ `Intl.DateTimeFormat` و`Intl.RelativeTimeFormat` — لا dependencies خارجية بعد الآن
+- `apps/web/landing/package.json`: أُضيف `date-fns: "^2.30.0"` كـ dependency مباشر (حل مؤقت قبل الإصلاح العميق)
+- `apps/web/*/next.config.mjs` ×4: `webpack.resolve.modules` يُضيف `shared-utils/node_modules` للبحث
+
+**All Next.js runners — wget للـ healthcheck:**
+- `apps/web/*/Dockerfile` ×4: أُضيف `RUN apk add --no-cache wget` في runner stage — Alpine الافتراضي لا يحتوي wget وكان الـ healthcheck يفشل
+
+**All Dockerfiles — workspace manifests:**
+- كل Dockerfiles: يُنسخ جميع الـ 7 workspace manifests قبل `pnpm install` — بدونه `pnpm deploy` يفشل عند مواجهة packages لم يرَها install
+
+**Infrastructure:**
+- `.dockerignore`: أُضيف `apps/api/src/generated` — يمنع binary Darwin من إرسالها للـ build context (يُعاد توليدها بـ Linux binary داخل Alpine)
+- `.gitignore`: أُضيف `apps/api/src/generated/` — الـ client مولَّد تلقائياً
+
+**النتيجة:**
+- ✅ `api.nqlah.nx.sa/health` → `{"status":"ok","database":"up"}`
+- 🟡 landing/admin/client/carrier — قيد التحقق
+
+---
+
 ### 🐳 v0.9.7 — Dockerfiles for All 5 Apps (2026-05-21)
 
 **Dockerfiles جديدة/محدَّثة:**

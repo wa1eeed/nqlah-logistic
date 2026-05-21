@@ -1204,6 +1204,53 @@ Storage:      MinIO on VPS
 
 ---
 
+## Coolify Staging — البنية الحالية
+
+**Project:** `nqlah-logistic`
+
+| Resource | Domain | Port |
+|---|---|---|
+| `naqla-api-staging` | `api.nqlah.nx.sa` | 4000 |
+| `naqla-landing-staging` | `nqlah.nx.sa` | 3000 |
+| `naqla-admin-staging` | `admin.nqlah.nx.sa` | 3001 |
+| `naqla-client-staging` | `app.nqlah.nx.sa` | 3002 |
+| `naqla-carrier-staging` | `carrier.nqlah.nx.sa` | 3003 |
+
+**Build Variables (مشتركة لكل Next.js apps):**
+```
+NEXT_PUBLIC_API_URL=https://api.nqlah.nx.sa
+NEXT_PUBLIC_WS_URL=wss://api.nqlah.nx.sa
+NEXT_PUBLIC_LANDING_URL=https://nqlah.nx.sa
+NEXT_PUBLIC_CLIENT_URL=https://app.nqlah.nx.sa
+NEXT_PUBLIC_CARRIER_URL=https://carrier.nqlah.nx.sa
+NEXT_PUBLIC_MINIO_URL=https://storage.nqlah.nx.sa
+```
+
+**Migration (في API container terminal):**
+```
+node -e "const{execSync}=require('child_process');execSync('npx prisma@5.22.0 migrate deploy --schema=/app/prisma/schema.prisma',{stdio:'inherit'})"
+```
+
+**Seed:**
+```
+node dist/prisma/seed.js
+```
+
+**API Health:** https://api.nqlah.nx.sa/health ✅ (يعمل منذ v0.9.8)
+
+---
+
+## قائمة النواقص المطلوب إصلاحها (Post-Deploy)
+
+هذه العناصر مؤجَّلة لما بعد نجاح deploy كل الـ 5 تطبيقات:
+
+1. **حذف عبارة "وضع تجريبي"** من كل الواجهات (admin/client/carrier)
+2. **الشعار الديناميكي** — يُدار من لوحة الأدمن (`/admin/settings`) ويتغيّر في كل مكان تلقائياً
+3. **Resend للإيميلات** — تفعيل provider حقيقي لإرسال إشعارات / فواتير / دعوات الفريق
+4. **Tap للمدفوعات** — استبدال `PAYMENT_PROVIDER=mock` بـ Tap Payment Gateway الحقيقي
+
+---
+
 ## ملخص الأولوية القصوى
 
 ابنِ منصة لوجستية احترافية تماماً للسوق السعودي تجمع:

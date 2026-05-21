@@ -162,6 +162,20 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 
 ---
 
+## ☁️ الروابط (Staging — nqlah.nx.sa)
+
+| الواجهة | الرابط | الحالة |
+|---|---|---|
+| **API** | https://api.nqlah.nx.sa | ✅ يعمل |
+| **API Health** | https://api.nqlah.nx.sa/health | ✅ `{"status":"ok","database":"up"}` |
+| **Landing** | https://nqlah.nx.sa | 🟡 قيد التحقق |
+| **Admin** | https://admin.nqlah.nx.sa | 🟡 قيد التحقق |
+| **Client** | https://app.nqlah.nx.sa | 🟡 قيد التحقق |
+| **Carrier** | https://carrier.nqlah.nx.sa | 🟡 قيد التحقق |
+| **Storage** | https://storage.nqlah.nx.sa | ✅ MinIO |
+
+---
+
 ## ✨ الميزات الرئيسية (v0.9.3)
 
 - ✅ **3 لوحات تحكم متخصّصة**: Admin / Client / Carrier — مع sidebars وlayouts مستقلّة
