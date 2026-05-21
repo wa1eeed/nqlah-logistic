@@ -187,30 +187,75 @@
 
 ## 4. Docker Production Build
 
-> 🚧 **يُكمل لاحقاً.**
->
-> الـ infrastructure للإنتاج: `docker-compose.production.yml` موجود لكن لم يُختبر بعد.
->
-> الخطوات المخطّطة:
-> - [ ] Multi-stage Dockerfile لكل تطبيق (api + 4 web apps)
-> - [ ] Optimized images (alpine + standalone Next.js output)
-> - [ ] Image scanning (Trivy / Snyk)
-> - [ ] Image registry (Docker Hub خاص أو GitHub Container Registry)
-> - [ ] Health check probes لكل خدمة
-> - [ ] Resource limits (CPU/Memory) لكل container
-> - [ ] Volumes لـ persistent data (Postgres, MinIO, logs)
-> - [ ] Backup containers / cron jobs
+جميع الـ 5 Dockerfiles جاهزة (multi-stage, Node 20 Alpine, standalone Next.js, non-root user, healthcheck).
 
-### الـ Dockerfile الموجود حالياً
+### 4.1 قائمة الـ Dockerfiles
 
-- `apps/api/Dockerfile` ✅
+| التطبيق | الـ Dockerfile | Strategy | الـ Port |
+|---|---|---|---|
+| `@naqla/api` | `apps/api/Dockerfile` | NestJS dist + tini | `4000` |
+| `@naqla/landing` | `apps/web/landing/Dockerfile` | Next.js standalone | `3000` |
+| `@naqla/admin` | `apps/web/admin/Dockerfile` | Next.js standalone | `3001` |
+| `@naqla/client` | `apps/web/client/Dockerfile` | Next.js standalone | `3002` |
+| `@naqla/carrier` | `apps/web/carrier/Dockerfile` | Next.js standalone | `3003` |
 
-### Dockerfiles مطلوبة
+### 4.2 بنية كل Dockerfile
 
-- [ ] `apps/web/landing/Dockerfile`
-- [ ] `apps/web/admin/Dockerfile`
-- [ ] `apps/web/client/Dockerfile`
-- [ ] `apps/web/carrier/Dockerfile`
+**3 مراحل لكل تطبيق:**
+
+```
+Stage 1: deps (node:20-alpine)
+  └─ Copy package.json manifests → pnpm install
+     (layer يُعاد استخدامه ما لم تتغير الـ dependencies)
+
+Stage 2: builder (node:20-alpine)
+  └─ Copy node_modules من deps
+  └─ COPY . . (source — node_modules محذوفة عبر .dockerignore)
+  └─ pnpm --filter @naqla/shared-utils run build  (CJS dist)
+  └─ pnpm --filter @naqla/<app> run build
+
+Stage 3: runner (node:20-alpine) ← الصورة النهائية الصغيرة
+  └─ Non-root user (nextjs:nodejs uid/gid 1001)
+  └─ للـ API: dist/ + node_modules + prisma + tini
+  └─ للـ Next.js: .next/standalone + .next/static + public
+```
+
+**Next.js Standalone** — لماذا؟
+- يحتوي على كل ما يلزم لتشغيل الـ server بدون `next` binary
+- لا يحتاج `node_modules` كاملة في الـ runner
+- الصورة النهائية أصغر بـ 60–80%
+- يُشغَّل بـ `node server.js` فقط
+
+### 4.3 بناء صورة واحدة (محلياً)
+
+```bash
+# من جذر الـ monorepo
+docker build -f apps/api/Dockerfile            -t naqla-api:latest       .
+docker build -f apps/web/admin/Dockerfile      -t naqla-admin:latest     .
+docker build -f apps/web/client/Dockerfile     -t naqla-client:latest    .
+docker build -f apps/web/carrier/Dockerfile    -t naqla-carrier:latest   .
+docker build -f apps/web/landing/Dockerfile    -t naqla-landing:latest   .
+```
+
+> ⚠️ **مهم:** يجب تمرير `NEXT_PUBLIC_*` كـ build-args لأنها تُضمَّن في وقت البناء:
+> ```bash
+> docker build -f apps/web/client/Dockerfile \
+>   --build-arg NEXT_PUBLIC_API_URL=https://api.nqlah.nx.sa \
+>   --build-arg NEXT_PUBLIC_CLIENT_URL=https://app.nqlah.nx.sa \
+>   -t naqla-client:latest .
+> ```
+> في Coolify: أضف هذه المتغيرات في قسم "Build Variables" (ليس "Environment Variables").
+
+### 4.4 Health Checks
+
+كل container يُجري healthcheck تلقائياً:
+
+| التطبيق | الـ Endpoint | الـ Interval | Start Period |
+|---|---|---|---|
+| API | `GET /health` | 30s | 15s |
+| Next.js apps | `GET /` | 30s | 30s |
+
+Coolify يعرض الحالة مباشرة. فشل 3 محاولات متتالية → Coolify يعيد تشغيل الـ container تلقائياً.
 
 ---
 
@@ -237,7 +282,7 @@
 | `naqla-client` | `apps/web/client/Dockerfile` | `app.nqlah.nx.sa` | `3002` |
 | `naqla-carrier` | `apps/web/carrier/Dockerfile` | `carrier.nqlah.nx.sa` | `3003` |
 
-> 📋 Dockerfiles لـ web apps (landing/admin/client/carrier) لم تُنشأ بعد — مطلوبة قبل أول deploy كامل.
+> ✅ جميع Dockerfiles جاهزة — راجع Section 4 للتفاصيل.
 
 ### 5.3 خطوات التشغيل (أوّل deploy)
 

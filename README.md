@@ -108,6 +108,32 @@ pnpm dev
 
 ---
 
+## 🐳 Docker — بناء صور الإنتاج
+
+كل تطبيق له `Dockerfile` مستقل (multi-stage, Node 20 Alpine, standalone Next.js).
+
+```bash
+# بناء من جذر الـ monorepo
+docker build -f apps/api/Dockerfile         -t naqla-api:latest    .
+docker build -f apps/web/landing/Dockerfile -t naqla-landing:latest .
+docker build -f apps/web/admin/Dockerfile   -t naqla-admin:latest   .
+docker build -f apps/web/client/Dockerfile  -t naqla-client:latest  .
+docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
+```
+
+> لتطبيقات Next.js، يجب تمرير `NEXT_PUBLIC_*` كـ `--build-arg` لأنها تُضمَّن وقت البناء:
+> ```bash
+> docker build -f apps/web/client/Dockerfile \
+>   --build-arg NEXT_PUBLIC_API_URL=https://api.nqlah.nx.sa \
+>   -t naqla-client:latest .
+> ```
+>
+> في Coolify: أضف هذه المتغيرات في **Build Variables** (ليس Environment Variables).
+
+📄 **التفاصيل الكاملة**: [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) — Section 4
+
+---
+
 ## 🔐 حسابات الاختبار (Seed Accounts)
 
 بعد تشغيل `pnpm db:seed` تتوفر هذه الحسابات الجاهزة:

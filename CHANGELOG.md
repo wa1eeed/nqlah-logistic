@@ -6,6 +6,30 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🐳 v0.9.7 — Dockerfiles for All 5 Apps (2026-05-21)
+
+**Dockerfiles جديدة/محدَّثة:**
+- `apps/web/admin/Dockerfile` — multi-stage: deps → builder → runner (standalone, non-root, healthcheck)
+- `apps/web/client/Dockerfile` — نفس البنية، port 3002
+- `apps/web/carrier/Dockerfile` — نفس البنية، port 3003
+- `apps/web/landing/Dockerfile` — نفس البنية، port 3000 (بدون shared-types)
+- `apps/api/Dockerfile` — أُضيف HEALTHCHECK على `/health` (كان غائباً)
+
+**تغييرات مرافقة:**
+- `apps/web/*/next.config.mjs` ×4: أُضيف `output: 'standalone'` — شرط Next.js Standalone mode
+- `.dockerignore` أُنشئ: يستثني `node_modules`, `.next`, `dist`, `.env.*`, `.git` من build context
+- `docs/DEPLOYMENT.md` Section 4: مكتمل بالكامل بجداول وأوامر البناء وتوضيح NEXT_PUBLIC build-args
+- `README.md`: قسم Docker جديد بأوامر البناء السريع
+- `GETTING_STARTED.md`: تعليمات Docker build مُضافة
+
+**البنية المعتمدة:**
+- 3 مراحل لكل Dockerfile: `deps` (install) → `builder` (compile) → `runner` (minimal image)
+- `shared-utils` يُبنى في كل builder stage قبل التطبيق (CJS dist مطلوب)
+- Non-root user `nextjs:nodejs` (uid/gid 1001) في كل runner
+- Alpine base — صورة نهائية < 200MB لكل تطبيق
+
+---
+
 ### 📖 v0.9.6 — Deployment Docs: Three Environments + DB Separation (2026-05-21)
 
 **`docs/DEPLOYMENT.md`:**

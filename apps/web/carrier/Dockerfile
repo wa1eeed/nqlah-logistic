@@ -1,26 +1,48 @@
+# ─── Stage 1: install dependencies ────────────────────────────
 FROM node:20-alpine AS deps
 WORKDIR /repo
+
 RUN corepack enable && corepack prepare pnpm@9 --activate
-COPY pnpm-workspace.yaml package.json ./
-COPY apps/web/carrier/package.json apps/web/carrier/
-COPY packages/shared-ui/package.json packages/shared-ui/
+
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY packages/shared-types/package.json packages/shared-types/
 COPY packages/shared-utils/package.json packages/shared-utils/
+COPY apps/web/carrier/package.json apps/web/carrier/
+
 RUN pnpm install --frozen-lockfile=false
 
+# ─── Stage 2: build ────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /repo
+
+RUN corepack enable && corepack prepare pnpm@9 --activate
+
 COPY --from=deps /repo/node_modules ./node_modules
 COPY . .
-RUN corepack enable && corepack prepare pnpm@9 --activate
+
+RUN pnpm --filter @naqla/shared-utils run build
 RUN pnpm --filter @naqla/carrier run build
 
-FROM node:20-alpine AS runtime
+# ─── Stage 3: production runner ────────────────────────────────
+FROM node:20-alpine AS runner
 WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser  --system --uid 1001 nextjs
+
 ENV NODE_ENV=production
-COPY --from=builder /repo/apps/web/carrier/.next ./.next
-COPY --from=builder /repo/apps/web/carrier/public ./public
-COPY --from=builder /repo/apps/web/carrier/package.json ./
-COPY --from=builder /repo/node_modules ./node_modules
+ENV PORT=3003
+ENV HOSTNAME=0.0.0.0
+
+COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/carrier/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/carrier/.next/static      ./apps/web/carrier/.next/static
+COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/carrier/public             ./apps/web/carrier/public
+
+USER nextjs
+WORKDIR /app/apps/web/carrier
 EXPOSE 3003
-CMD ["node_modules/.bin/next", "start", "-p", "3003"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget -qO /dev/null http://localhost:3003/ || exit 1
+
+CMD ["node", "server.js"]

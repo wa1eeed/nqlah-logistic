@@ -405,6 +405,66 @@ if (!data) return <NotFound />;  // ← early return AFTER all hooks
 
 ---
 
+---
+
+## 🐳 بناء صور Docker للإنتاج
+
+إذا كنت تريد اختبار الـ Docker images محلياً قبل الـ deploy على Coolify:
+
+### المتطلبات
+
+- Docker Desktop (يعمل)
+- البناء يتم من **جذر الـ monorepo** (المجلد الذي يحتوي `pnpm-workspace.yaml`)
+
+### بناء صورة واحدة
+
+```bash
+# من /naqla-platform (جذر المشروع)
+docker build -f apps/api/Dockerfile -t naqla-api:latest .
+
+# مع متغيرات build للـ Next.js apps
+docker build -f apps/web/client/Dockerfile \
+  --build-arg NEXT_PUBLIC_API_URL=http://localhost:4000 \
+  -t naqla-client:latest .
+```
+
+### تشغيل container بعد البناء
+
+```bash
+# API
+docker run -p 4000:4000 \
+  -e DATABASE_URL="postgresql://naqla:naqla_dev_pass@host.docker.internal:5432/naqla_dev" \
+  -e REDIS_URL="redis://host.docker.internal:6379" \
+  -e JWT_SECRET="dev-secret-key-min-32-chars-ok" \
+  -e JWT_REFRESH_SECRET="dev-refresh-secret-min-32-ch" \
+  -e NODE_ENV=production \
+  naqla-api:latest
+
+# Client (Next.js standalone)
+docker run -p 3002:3002 naqla-client:latest
+```
+
+> على macOS، استخدم `host.docker.internal` للوصول لـ localhost من داخل الـ container.
+
+### الـ Health Checks
+
+كل container يُشغّل healthcheck تلقائياً:
+
+```bash
+# تحقق من حالة container
+docker inspect --format='{{json .State.Health}}' <container_id> | python3 -m json.tool
+```
+
+### ملاحظات مهمة
+
+- `NEXT_PUBLIC_*` تُضمَّن في وقت البناء — غيّرها يعني إعادة البناء
+- الصور تستخدم user غير root (`nextjs` uid 1001) لأمان أفضل
+- كل صورة تحتوي healthcheck — Coolify يُعيد تشغيلها تلقائياً عند الفشل
+
+📄 **التفاصيل الكاملة**: [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) — Section 4
+
+---
+
 ## 📖 الخطوة التالية
 
 - اطّلع على **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)** لفهم البنية الكاملة

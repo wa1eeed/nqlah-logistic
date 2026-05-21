@@ -4,6 +4,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   transpilePackages: ['@naqla/shared-ui', '@naqla/shared-types', '@naqla/shared-utils'],
   images: {
