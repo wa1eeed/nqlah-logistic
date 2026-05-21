@@ -15,9 +15,6 @@ RUN pnpm --filter @naqla/shared-utils run build
 RUN pnpm --filter @naqla/api run db:generate \
  && pnpm --filter @naqla/api run build
 
-# pnpm deploy creates a flat node_modules dir (no symlinks into pnpm store)
-RUN pnpm --filter @naqla/api deploy --prod /prod
-
 # ─── Stage 2: runtime ──────────────────────────────────────────
 FROM node:20-alpine AS runtime
 WORKDIR /app
@@ -25,9 +22,17 @@ ENV NODE_ENV=production
 
 RUN apk add --no-cache openssl tini
 
-COPY --from=builder /prod/node_modules ./node_modules
-# .prisma/client is NOT included by pnpm deploy — copy directly from pnpm store
-COPY --from=builder /repo/node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/.prisma ./node_modules/.prisma
+# Root node_modules is the pnpm store; its internal symlinks use relative
+# paths (.pnpm/…) so they resolve correctly after COPY to a new location.
+# This includes .prisma/client generated inside the pnpm store.
+COPY --from=builder /repo/node_modules ./node_modules
+
+# Workspace packages live outside the pnpm store (only linked per-app).
+# Copy the built package and expose it under node_modules/@naqla.
+COPY --from=builder /repo/packages/shared-utils ./packages/shared-utils
+RUN mkdir -p node_modules/@naqla \
+ && ln -sf /app/packages/shared-utils node_modules/@naqla/shared-utils
+
 COPY --from=builder /repo/apps/api/dist ./dist
 COPY --from=builder /repo/apps/api/package.json ./
 COPY --from=builder /repo/apps/api/prisma ./prisma
