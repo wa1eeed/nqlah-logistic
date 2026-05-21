@@ -10,7 +10,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
-  transpilePackages: ['@naqla/shared-ui', '@naqla/shared-utils'],
+  transpilePackages: ['@naqla/shared-ui'],
   webpack: (config) => {
     // date-fns is a dep of shared-utils but pnpm does not hoist it to root
     // node_modules; webpack must also look in shared-utils' own node_modules
