@@ -23,6 +23,8 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 
 COPY --from=deps /repo/node_modules ./node_modules
 COPY --from=deps /repo/packages/shared-utils/node_modules ./packages/shared-utils/node_modules
+COPY --from=deps /repo/packages/shared-types/node_modules ./packages/shared-types/node_modules
+COPY --from=deps /repo/apps/web/carrier/node_modules ./apps/web/carrier/node_modules
 COPY . .
 
 RUN pnpm --filter @naqla/shared-utils run build
