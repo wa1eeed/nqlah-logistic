@@ -4,11 +4,14 @@ WORKDIR /repo
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
-# Copy manifests only — maximises layer-cache reuse
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY packages/shared-types/package.json packages/shared-types/
 COPY packages/shared-utils/package.json packages/shared-utils/
+COPY apps/api/package.json apps/api/
 COPY apps/web/admin/package.json apps/web/admin/
+COPY apps/web/client/package.json apps/web/client/
+COPY apps/web/carrier/package.json apps/web/carrier/
+COPY apps/web/landing/package.json apps/web/landing/
 
 RUN pnpm install --frozen-lockfile=false
 
