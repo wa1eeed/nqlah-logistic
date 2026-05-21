@@ -1248,6 +1248,7 @@ node dist/prisma/seed.js
 2. **الشعار الديناميكي** — يُدار من لوحة الأدمن (`/admin/settings`) ويتغيّر في كل مكان تلقائياً
 3. **Resend للإيميلات** — تفعيل provider حقيقي لإرسال إشعارات / فواتير / دعوات الفريق
 4. **Tap للمدفوعات** — استبدال `PAYMENT_PROVIDER=mock` بـ Tap Payment Gateway الحقيقي
+5. **Auto Token Refresh** — الـ frontend يجدّد الـ access token تلقائياً باستخدام refresh token قبل انتهاء الجلسة، بدلاً من logout مفاجئ عند انتهاء الـ 15 دقيقة
 
 ---
 
