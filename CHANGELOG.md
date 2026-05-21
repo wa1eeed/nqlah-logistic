@@ -6,6 +6,15 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🚀 v0.9.5 — Staging Environment File for Coolify (2026-05-21)
+
+- أُنشئ `.env.staging` بقيم Coolify الحقيقية (DB + Redis + MinIO + JWT عشوائي).
+- `JWT_SECRET` + `JWT_REFRESH_SECRET` مولَّدان بـ `openssl rand -hex 64` — غير مكررَّين بين البيئات.
+- الملف محمي بـ `.gitignore` ولا يُرفع على GitHub مطلقاً.
+- أُضيف `MINIO_PUBLIC_URL` + `BCRYPT_ROUNDS` + `THROTTLE_*` + `APP_NAME` (متغيرات ضرورية غاب ذكرها).
+
+---
+
 ### 🔧 v0.9.4 — Domain-Agnostic: Replace All Hardcoded URLs with Env Vars (2026-05-21)
 
 **المشكلة:** عدة مواضع في الكود تحتوي على `naqla.sa` أو `localhost:300x` hardcoded — تمنع التشغيل على أي دومين آخر.
