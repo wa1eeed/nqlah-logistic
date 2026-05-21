@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
-import type { SupportTicketCategory, SupportTicketStatus } from '@prisma/client';
+import type { SupportTicketCategory, SupportTicketStatus } from '../../generated/prisma';
 
 interface CreateInput {
   subject: string;

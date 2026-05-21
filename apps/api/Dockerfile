@@ -20,11 +20,9 @@ RUN pnpm --filter @naqla/shared-utils run build
 RUN pnpm --filter @naqla/api run db:generate && pnpm --filter @naqla/api run build
 
 # pnpm deploy produces flat node_modules (no pnpm store symlinks)
+# No .prisma copy needed: client is generated into src/generated/prisma
+# and compiled into dist/ by tsc along with the rest of the source
 RUN pnpm --filter @naqla/api deploy --prod /prod
-# .prisma/client lives next to @prisma/client in the pnpm store,
-# not inside the package itself — pnpm deploy does not copy it
-RUN cp -r /repo/node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/.prisma \
-         /prod/node_modules/.prisma
 
 FROM node:20-alpine AS runtime
 WORKDIR /app

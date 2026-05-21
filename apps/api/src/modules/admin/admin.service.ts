@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
-import type { CompanyStatus, DisputeStatus, Prisma } from '@prisma/client';
+import type { CompanyStatus, DisputeStatus, Prisma } from '../../generated/prisma';
 
 @Injectable()
 export class AdminService {

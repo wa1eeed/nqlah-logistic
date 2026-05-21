@@ -15,7 +15,7 @@ import {
 } from './dto/create-order.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import { customAlphabet } from 'nanoid';
-import type { OrderStatus, Prisma } from '@prisma/client';
+import type { OrderStatus, Prisma } from '../../generated/prisma';
 
 const orderNumberGen = customAlphabet('0123456789', 6);
 
