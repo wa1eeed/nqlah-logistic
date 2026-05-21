@@ -41,6 +41,7 @@ coverage/
 
 # Prisma
 apps/api/prisma/migrations/dev.db*
+apps/api/src/generated/
 
 # Docker
 docker-data/

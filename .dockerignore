@@ -7,6 +7,9 @@ node_modules
 **/dist
 **/.turbo
 
+# Prisma generated client — regenerated inside Docker with Linux engine
+apps/api/src/generated
+
 # Git
 .git
 .gitignore

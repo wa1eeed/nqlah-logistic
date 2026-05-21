@@ -18,6 +18,8 @@ RUN pnpm install --frozen-lockfile=false
 COPY . .
 RUN pnpm --filter @naqla/shared-utils run build
 RUN pnpm --filter @naqla/api run db:generate && pnpm --filter @naqla/api run build
+# tsc compiles .ts files only; Prisma generates .js+.d.ts, so copy manually
+RUN cp -r /repo/apps/api/src/generated /repo/apps/api/dist/src/
 
 # pnpm deploy produces flat node_modules (no pnpm store symlinks)
 # No .prisma copy needed: client is generated into src/generated/prisma
