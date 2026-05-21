@@ -11,6 +11,7 @@ COPY packages/shared-utils/package.json packages/shared-utils/
 RUN pnpm install --frozen-lockfile=false
 
 COPY . .
+RUN pnpm --filter @naqla/shared-utils run build
 RUN pnpm --filter @naqla/api run db:generate \
  && pnpm --filter @naqla/api run build
 
