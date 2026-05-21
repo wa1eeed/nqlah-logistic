@@ -23,6 +23,7 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # Reuse installed deps from stage 1 (node_modules excluded from COPY . . via .dockerignore)
 COPY --from=deps /repo/node_modules ./node_modules
+COPY --from=deps /repo/packages/shared-utils/node_modules ./packages/shared-utils/node_modules
 COPY . .
 
 # Build shared-utils CJS dist (required as module entry point)
