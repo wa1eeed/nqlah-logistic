@@ -11,6 +11,19 @@ export type AuthUser = {
   companyId: string | null;
 };
 
+// ─── DEV BYPASS ─────────────────────────────────────────────────────────────
+// Set to 'carrier' | 'driver' | null to skip login during UI development.
+// Change back to null before production.
+const DEV_USER: AuthUser | null = {
+  id: 'dev-001',
+  firstName: 'سلطان',
+  lastName: 'القحطاني',
+  phone: '+966500000003',
+  role: 'CARRIER_ADMIN',
+  companyId: 'dev-company-001',
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 type AuthState = {
   user: AuthUser | null;
   isLoading: boolean;
@@ -24,6 +37,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   boot: async () => {
+    if (__DEV__ && DEV_USER) {
+      set({ user: DEV_USER, isLoading: false });
+      return;
+    }
     try {
       const token = await SecureStore.getItemAsync('naqla_driver_token');
       if (!token) { set({ isLoading: false }); return; }
