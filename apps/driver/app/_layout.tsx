@@ -5,6 +5,7 @@ import { useFonts, Cairo_400Regular, Cairo_500Medium, Cairo_600SemiBold, Cairo_7
 import * as SplashScreen from 'expo-splash-screen';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '@/lib/auth';
 
 // Force RTL for Arabic
@@ -58,9 +59,11 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <StatusBar style="dark" />
-      <AuthGate />
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0F172A' }}>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style="light" />
+        <AuthGate />
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -6,6 +6,36 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🚀 v0.9.13 — Premium UI/UX Overhaul · Driver App (2026-05-24)
+
+**Design System:**
+- `constants/theme.ts`: إعادة كتابة كاملة — dark mode (#0F172A base), GRADIENTS, FONT_SIZE scale, SPACING scale, SHADOW variants (sm/md/lg/primary), STATUS_COLOR map
+
+**New UI Components (`components/ui/`):**
+- `ActionButton.tsx`: زر متعدد المتغيرات (primary/success/danger/outline/ghost) مع LinearGradient + Haptics + Ionicons icon
+- `GradientCard.tsx`: بطاقة مع دخول MotiView + LinearGradient قابل للتخصيص
+- `OrderProgressBar.tsx`: شريط تقدم 4 خطوات (ASSIGNED→CONFIRMED→IN_TRANSIT→DELIVERED) مع حلقة نبض على الخطوة النشطة
+- `AnimatedStatusBadge.tsx`: شارة حالة مع حلقة نبض للحالات النشطة
+- `SkeletonLoader.tsx`: SkeletonLine / SkeletonCard / SkeletonOrderList مع تحريك opacity
+- `Toast.tsx` + `useToast()`: إشعارات داخل الشاشة مع دخول spring
+
+**New Sheet Components (`components/sheets/`):**
+- `BidBottomSheet.tsx`: ورقة تقديم العرض مع Slider (50% → 150% من السعر)، عمولة المنصة 5%، صافي متوقع
+- `ConfirmSheet.tsx`: ورقة تأكيد عامة مع أيقونة + عنوان + وصف + زرا تأكيد/إلغاء
+
+**Screen Rewrites:**
+- `app/(auth)/login.tsx`: شاشة دخول مُحسّنة — logo bubble، حقل جوال مع شارة 🇸🇦+966، shake animation عند الخطأ، stagger entrance
+- `app/(driver)/index.tsx`: خريطة MapView كاملة الشاشة (40%) مع markers مخصصة، بطاقة طلب نشط مع OrderProgressBar، empty state متحرك
+- `app/(driver)/order/[id].tsx`: خريطة مع Polyline مسار، بطاقة تفاصيل متحركة، سجل تتبع، أزرار تنقل/تسليم
+- `app/(carrier)/index.tsx`: dashboard نشط مع ActiveOrderCard، stats row، pull-to-refresh، skeleton loading
+- `app/(carrier)/opportunities.tsx`: FlashList مع OpportunityCard gradient، filter chips، BidBottomSheet
+- `app/(carrier)/wallet.tsx`: FlashList للمعاملات، LinearGradient balance card، TransactionRow ملوّن
+- `app/(carrier)/profile.tsx` + `app/(driver)/profile.tsx`: avatar ring gradient، stats row، settings list مع SettingsRow
+- `app/_layout.tsx`: إضافة GestureHandlerRootView (مطلوب لـ BottomSheet)، StatusBar light
+- `app/(driver)/_layout.tsx` + `app/(carrier)/_layout.tsx`: tab bar داكن مع Ionicons icons، ألوان نشط/غير نشط
+
+---
+
 ### 🚀 v0.9.12 — Driver Visibility in Admin (2026-05-24)
 
 **1. تفاصيل الطلب في الأدمن — Card "السائق المُكلَّف":**

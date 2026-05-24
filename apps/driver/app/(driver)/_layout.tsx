@@ -1,15 +1,24 @@
+import { StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS } from '@/constants/theme';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-function tabIcon(focused: boolean, activeIcon: IoniconName, inactiveIcon: IoniconName) {
+function TabIcon({
+  focused,
+  activeIcon,
+  inactiveIcon,
+}: {
+  focused: boolean;
+  activeIcon: IoniconName;
+  inactiveIcon: IoniconName;
+}) {
   return (
     <Ionicons
       name={focused ? activeIcon : inactiveIcon}
       size={24}
-      color={focused ? COLORS.primary : '#94A3B8'}
+      color={focused ? COLORS.primary : '#64748B'}
     />
   );
 }
@@ -21,31 +30,18 @@ export default function DriverLayout() {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: '#94A3B8',
-        tabBarLabelStyle: {
-          fontFamily: FONTS.medium,
-          fontSize: 10,
-        },
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#E2E8F0',
-          borderTopWidth: 1,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 6,
-          elevation: 8,
-          shadowColor: '#0F172A',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
-        },
+        tabBarInactiveTintColor: '#64748B',
+        tabBarLabelStyle: styles.label,
+        tabBarStyle: styles.tabBar,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'طلباتي',
-          tabBarIcon: ({ focused }) => tabIcon(focused, 'cube', 'cube-outline'),
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} activeIcon="cube" inactiveIcon="cube-outline" />
+          ),
         }}
       />
       <Tabs.Screen
@@ -56,9 +52,31 @@ export default function DriverLayout() {
         name="profile"
         options={{
           title: 'حسابي',
-          tabBarIcon: ({ focused }) => tabIcon(focused, 'person-circle', 'person-circle-outline'),
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} activeIcon="person-circle" inactiveIcon="person-circle-outline" />
+          ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: '#1E293B',
+    borderTopColor: '#334155',
+    borderTopWidth: 1,
+    height: 68,
+    paddingBottom: 10,
+    paddingTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  label: {
+    fontFamily: FONTS.medium,
+    fontSize: 10,
+  },
+});

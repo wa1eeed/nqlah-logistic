@@ -1,9 +1,70 @@
-import { Alert, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { MotiView } from 'moti';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { useAuthStore } from '@/lib/auth';
-import { Button } from '@/components/ui/Button';
-import { COLORS, FONTS, RADIUS, SHADOW } from '@/constants/theme';
-import { useState } from 'react';
+import { MOCK_ORDERS } from '@/lib/mockData';
+import {
+  COLORS,
+  FONTS,
+  FONT_SIZE,
+  GRADIENTS,
+  RADIUS,
+  SHADOW,
+  SPACING,
+} from '@/constants/theme';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type SettingsRowProps = {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  value?: string;
+  onPress?: () => void;
+};
+
+// ─── InfoRow ─────────────────────────────────────────────────────────────────
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue} numberOfLines={1}>{value}</Text>
+    </View>
+  );
+}
+
+// ─── SettingsRow ──────────────────────────────────────────────────────────────
+
+function SettingsRow({ icon, label, value, onPress }: SettingsRowProps) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.settingsRow, pressed && styles.settingsRowPressed]}
+      onPress={onPress}
+    >
+      <View style={styles.settingsIconCircle}>
+        <Ionicons name={icon} size={18} color={COLORS.textSecondary} />
+      </View>
+      <View style={styles.settingsContent}>
+        <Text style={styles.settingsLabel}>{label}</Text>
+        {value ? <Text style={styles.settingsValue}>{value}</Text> : null}
+      </View>
+      <Ionicons name="chevron-back" size={18} color={COLORS.textMuted} />
+    </Pressable>
+  );
+}
+
+// ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function DriverProfileScreen() {
   const { user, logout } = useAuthStore();
@@ -13,7 +74,8 @@ export default function DriverProfileScreen() {
     Alert.alert('تسجيل الخروج', 'هل تريد تسجيل الخروج؟', [
       { text: 'إلغاء', style: 'cancel' },
       {
-        text: 'خروج', style: 'destructive',
+        text: 'خروج',
+        style: 'destructive',
         onPress: async () => {
           setLoggingOut(true);
           await logout();
@@ -23,88 +85,296 @@ export default function DriverProfileScreen() {
     ]);
   };
 
+  const completedTrips = __DEV__
+    ? MOCK_ORDERS.filter((o) => ['COMPLETED', 'DELIVERED'].includes(o.status)).length
+    : 0;
+
+  const initials =
+    ((user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')).toUpperCase() || 'س';
+
+  const companyLabel = user?.companyId ? 'مرتبط بشركة ناقل' : 'غير مرتبط بشركة';
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Avatar */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.firstName?.[0] ?? ''}{ user?.lastName?.[0] ?? ''}
-            </Text>
-          </View>
-          <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
-          <Text style={styles.phone}>{user?.phone}</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Avatar Section ── */}
+        <MotiView
+          from={{ opacity: 0, translateY: -10 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'timing', duration: 400 }}
+          style={styles.avatarSection}
+        >
+          {/* Gradient border ring */}
+          <LinearGradient
+            colors={GRADIENTS.success as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatarRing}
+          >
+            <View style={styles.avatarInner}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          </LinearGradient>
+
+          <Text style={styles.userName}>
+            {user?.firstName} {user?.lastName}
+          </Text>
+          <Text style={styles.userPhone}>{user?.phone ?? '—'}</Text>
+
+          {/* Role badge — success color for driver */}
           <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>سائق معتمد</Text>
+            <Text style={styles.roleBadgeText}>سائق معتمد</Text>
           </View>
-        </View>
+        </MotiView>
 
-        {/* Info */}
-        <View style={styles.card}>
+        {/* ── Stats Row ── */}
+        <MotiView
+          from={{ opacity: 0, translateY: 8 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'timing', duration: 400, delay: 80 }}
+          style={styles.statsRow}
+        >
+          <View style={styles.statItem}>
+            <Text style={styles.statNum}>{completedTrips}</Text>
+            <Text style={styles.statLabel}>الرحلات</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNum}>4.8 ★</Text>
+            <Text style={styles.statLabel}>التقييم</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNum}>2,341</Text>
+            <Text style={styles.statLabel}>المسافة (كم)</Text>
+          </View>
+        </MotiView>
+
+        {/* ── Info Card ── */}
+        <MotiView
+          from={{ opacity: 0, translateY: 8 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'timing', duration: 400, delay: 120 }}
+          style={styles.card}
+        >
           <InfoRow label="رقم الجوال" value={user?.phone ?? '—'} />
-          <InfoRow label="الدور"      value="سائق تابع" />
-          <InfoRow label="الشركة"     value={user?.companyId ? 'مرتبط بشركة ناقل' : '—'} />
-        </View>
+          <InfoRow label="البريد الإلكتروني" value={(user as any)?.email ?? '—'} />
+          <InfoRow label="الدور" value="سائق معتمد" />
+        </MotiView>
 
-        {/* Actions */}
-        <View style={styles.card}>
-          <Pressable style={styles.actionRow}>
-            <Text style={styles.actionIcon}>🔔</Text>
-            <Text style={styles.actionLabel}>الإشعارات</Text>
-            <Text style={styles.chevron}>‹</Text>
-          </Pressable>
-          <Pressable style={styles.actionRow}>
-            <Text style={styles.actionIcon}>🔒</Text>
-            <Text style={styles.actionLabel}>تغيير كلمة المرور</Text>
-            <Text style={styles.chevron}>‹</Text>
-          </Pressable>
-          <Pressable style={styles.actionRow}>
-            <Text style={styles.actionIcon}>📞</Text>
-            <Text style={styles.actionLabel}>الدعم الفني</Text>
-            <Text style={styles.chevron}>‹</Text>
-          </Pressable>
-        </View>
+        {/* ── Settings Card ── */}
+        <MotiView
+          from={{ opacity: 0, translateY: 8 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'timing', duration: 400, delay: 180 }}
+          style={styles.card}
+        >
+          <SettingsRow
+            icon="business-outline"
+            label="شركة النقل"
+            value={companyLabel}
+          />
+          <SettingsRow icon="notifications-outline" label="الإشعارات" />
+          <SettingsRow icon="lock-closed-outline"   label="تغيير كلمة المرور" />
+          <SettingsRow icon="headset-outline"        label="الدعم الفني" />
+        </MotiView>
 
-        <Button label="تسجيل الخروج" onPress={handleLogout} variant="danger" loading={loggingOut} />
+        {/* ── Logout ── */}
+        <ActionButton
+          label="تسجيل الخروج"
+          onPress={handleLogout}
+          variant="danger"
+          loading={loggingOut}
+          icon="log-out-outline"
+        />
 
-        <Text style={styles.version}>نقلة للسائقين · v1.0.0</Text>
+        <Text style={styles.version}>نقلة · v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={iStyles.row}>
-      <Text style={iStyles.label}>{label}</Text>
-      <Text style={iStyles.value}>{value}</Text>
-    </View>
-  );
-}
-const iStyles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
-  label: { fontFamily: FONTS.regular, fontSize: 14, color: COLORS.textMuted },
-  value: { fontFamily: FONTS.medium, fontSize: 14, color: COLORS.text },
-});
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  content: { padding: 20, gap: 16, paddingBottom: 40 },
-  avatarSection: { alignItems: 'center', gap: 8, paddingVertical: 20 },
-  avatar: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center',
+  safe: {
+    flex: 1,
+    backgroundColor: COLORS.bg,
   },
-  avatarText: { fontFamily: FONTS.bold, fontSize: 28, color: COLORS.white },
-  name: { fontFamily: FONTS.bold, fontSize: 20, color: COLORS.text },
-  phone: { fontFamily: FONTS.regular, fontSize: 14, color: COLORS.textMuted },
-  roleBadge: { backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 4 },
-  roleText: { fontFamily: FONTS.semiBold, fontSize: 12, color: COLORS.primary },
-  card: { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, gap: 0, ...SHADOW.sm },
-  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
-  actionIcon: { fontSize: 20 },
-  actionLabel: { fontFamily: FONTS.medium, fontSize: 14, color: COLORS.text, flex: 1 },
-  chevron: { fontFamily: FONTS.regular, fontSize: 20, color: COLORS.textMuted, transform: [{ rotate: '180deg' }] },
-  version: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.textMuted, textAlign: 'center', marginTop: 8 },
+  content: {
+    padding: SPACING.xl,
+    gap: SPACING.lg,
+    paddingBottom: SPACING['4xl'],
+  },
+
+  // Avatar
+  avatarSection: {
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingTop: SPACING.xl,
+    paddingBottom: SPACING.sm,
+  },
+  avatarRing: {
+    width: 98,
+    height: 98,
+    borderRadius: 49,
+    padding: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...(SHADOW.md as object),
+  },
+  avatarInner: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: COLORS.bgElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.bgCard,
+  },
+  avatarText: {
+    fontFamily: FONTS.bold,
+    fontSize: 32,
+    color: COLORS.white,
+  },
+  userName: {
+    fontFamily: FONTS.bold,
+    fontSize: FONT_SIZE.title,
+    color: COLORS.text,
+    marginTop: SPACING.xs,
+  },
+  userPhone: {
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZE.label,
+    color: COLORS.textMuted,
+  },
+  // Role badge — success (green) for driver
+  roleBadge: {
+    backgroundColor: COLORS.successLight,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 5,
+    marginTop: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(22,163,74,0.3)',
+  },
+  roleBadgeText: {
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZE.caption,
+    color: COLORS.success,
+  },
+
+  // Stats row
+  statsRow: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.bgCard,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...(SHADOW.sm as object),
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statNum: {
+    fontFamily: FONTS.bold,
+    fontSize: FONT_SIZE.heading,
+    color: COLORS.text,
+  },
+  statLabel: {
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZE.micro,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 4,
+  },
+
+  // Card
+  card: {
+    backgroundColor: COLORS.bgCard,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...(SHADOW.sm as object),
+  },
+
+  // InfoRow
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  infoLabel: {
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZE.label,
+    color: COLORS.textMuted,
+    flexShrink: 0,
+  },
+  infoValue: {
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZE.label,
+    color: COLORS.text,
+    textAlign: 'right',
+    flex: 1,
+    marginStart: SPACING.sm,
+  },
+
+  // SettingsRow
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  settingsRowPressed: {
+    opacity: 0.7,
+  },
+  settingsIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.bgSurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsContent: {
+    flex: 1,
+    gap: 2,
+  },
+  settingsLabel: {
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZE.label,
+    color: COLORS.text,
+  },
+  settingsValue: {
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZE.caption,
+    color: COLORS.textMuted,
+  },
+
+  // Version
+  version: {
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZE.caption,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    marginTop: SPACING.xs,
+  },
 });
