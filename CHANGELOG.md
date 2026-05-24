@@ -6,6 +6,16 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🚀 v0.9.10 — Real Carrier List in New Order Wizard (2026-05-24)
+
+- `apps/web/client/src/app/(app)/orders/new/page.tsx`: استبدل `COMPANIES` mock بـ `GET /companies?type=CARRIER&status=ACTIVE&limit=100` عبر SWR — الناقلون من قاعدة البيانات الحقيقية
+- أُزيلت حقول `rating` / `fleetSize` / `responseTimeMins` من بطاقة الناقل (غير موجودة في API)
+- أُضيف loading state ("جارٍ التحميل...") وempty state ("لا يوجد ناقلون مطابقون")
+- سطر review step يجلب اسم الناقل من `carriersRaw` بدلاً من mock
+- Saved Addresses: migration `20260521043732_add_saved_addresses_and_national_id` تأكّد أنها طُبّقت منذ v0.9.3 (كانت PENDING_WORK.md قديمة)
+
+---
+
 ### 🚀 v0.9.9 — Demo Mode Removal + Auto Token Refresh + Dynamic Logo + Direct Price (2026-05-24)
 
 **1. حذف "وضع تجريبي" من كل الواجهات:**

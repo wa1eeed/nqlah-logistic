@@ -38,21 +38,14 @@
 - Carrier order detail متطابق بصرياً مع العميل (ShipmentStatusCard inline timeline)
 - Dynamic Logo ✅ v0.9.9 — admin يحفظ في DB، client/carrier يجلبان من `GET /settings/platform`
 - Direct Assignment بسعر ثابت ✅ v0.9.9 — `agreedPriceUpfront` يتجاوز التفاوض ويُسند مباشرة
+- Saved Addresses ✅ migration طُبّقت في v0.9.3 (20260521043732_add_saved_addresses_and_national_id)
+- قائمة الناقلين في New Order ✅ v0.9.10 — `GET /companies?type=CARRIER&status=ACTIVE` بدل COMPANIES mock
 
 ---
 
 ## 🟡 ناقص أو يحتاج عمل
 
-### 1. Saved Addresses (Client) — backend جاهز، يحتاج prisma migrate
-- **حالياً**: Module وُجد (`apps/api/src/modules/addresses/`) + Prisma model `SavedAddress` أُضيف في v0.9.3. لكن **لم تُشغَّل migration** بعد.
-- **المطلوب**:
-  - `npx prisma migrate dev --name add_saved_addresses` من `apps/api/`
-  - الـ wizard يقرأ من `/companies/:companyId/addresses` كقائمة منسدلة "اختر من العناوين المحفوظة".
-
-### 2. قائمة الناقلين في New Order Wizard — mock بدل API
-- **حالياً**: Step 3 (DIRECT mode) يعرض ناقلين من `COMPANIES` mock في `shared-utils`.
-- **المطلوب**: استبدل بـ `GET /companies?type=CARRIER&status=ACTIVE&kycStatus=APPROVED`.
-- **الملف**: `apps/web/client/src/app/(app)/orders/new/page.tsx` سطر 127-133.
+لا يوجد بنود مفتوحة بعد v0.9.9 — جميع الوظائف الجوهرية مربوطة.
 
 ---
 

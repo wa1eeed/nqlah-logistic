@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { Currency } from '@/components/currency';
 import { playSoundIfEnabled } from '@/lib/sound';
-import { COMPANIES, DEFAULT_CITIES, type Company } from '@naqla/shared-utils';
+import { DEFAULT_CITIES } from '@naqla/shared-utils';
 import { MapAddressPicker, type MapPoint } from '@/components/map-address-picker';
 import { api, fetcher } from '@/lib/api';
 
@@ -96,10 +96,13 @@ const TRUCK_TYPES = [
 type CatalogCity = { id: string; nameAr: string; nameEn: string; region: string; lat: number; lng: number; active?: boolean };
 type CatalogTruckType = { id: string; nameAr: string; active?: boolean };
 type CatalogData = { cities: CatalogCity[] | null; cargoTypes: unknown; truckTypes: CatalogTruckType[] | null };
+type ApiCarrier = { id: string; nameAr: string; nameEn: string | null; city: string; status: string; kycStatus: string };
 
 export default function NewOrderWizard() {
   const router = useRouter();
   const { data: catalog } = useSWR<CatalogData>('/settings/catalogs', fetcher);
+  const { data: carriersRaw, isLoading: carriersLoading } =
+    useSWR<ApiCarrier[]>('/companies?type=CARRIER&status=ACTIVE&limit=100', fetcher);
   const [step, setStep] = useState(1);
   const [carrierSearch, setCarrierSearch] = useState('');
   const [form, setForm] = useState<FormState>({
@@ -128,12 +131,11 @@ export default function NewOrderWizard() {
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
 
-  const carriers: Company[] = useMemo(
-    () =>
-      COMPANIES.filter((c) => c.kind === 'CARRIER' && c.kycStatus === 'APPROVED')
-        .filter((c) => !carrierSearch || c.nameAr.includes(carrierSearch) || c.city.includes(carrierSearch))
-        .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)),
-    [carrierSearch],
+  const carriers: ApiCarrier[] = useMemo(
+    () => (carriersRaw ?? []).filter(
+      (c) => !carrierSearch || c.nameAr.includes(carrierSearch) || c.city.includes(carrierSearch),
+    ),
+    [carriersRaw, carrierSearch],
   );
 
   // Resolve catalogs: DB data takes priority, fall back to static constants
@@ -453,7 +455,9 @@ export default function NewOrderWizard() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label>اختر ناقلاً معتمداً</Label>
-                    <span className="text-xs text-muted-foreground">{carriers.length} ناقل متاح</span>
+                    <span className="text-xs text-muted-foreground">
+                      {carriersLoading ? 'جارٍ التحميل...' : `${carriers.length} ناقل متاح`}
+                    </span>
                   </div>
                   <div className="relative">
                     <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
@@ -465,6 +469,17 @@ export default function NewOrderWizard() {
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+                    {carriersLoading && (
+                      <div className="col-span-2 text-center py-8 text-sm text-muted-foreground">
+                        <Truck className="h-6 w-6 mx-auto mb-2 animate-pulse" />
+                        جارٍ تحميل الناقلين...
+                      </div>
+                    )}
+                    {!carriersLoading && carriers.length === 0 && (
+                      <div className="col-span-2 text-center py-8 text-sm text-muted-foreground">
+                        لا يوجد ناقلون مطابقون للبحث
+                      </div>
+                    )}
                     {carriers.map((c) => (
                       <button
                         key={c.id}
@@ -481,15 +496,9 @@ export default function NewOrderWizard() {
                           <AvatarFallback>{c.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="text-sm font-semibold truncate">{c.nameAr}</div>
-                            <span className="text-xs num">⭐ {c.rating?.toFixed(1)}</span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">{c.city}</div>
-                          <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-                            <span><span className="num">{c.fleetSize}</span> شاحنة</span>
-                            <span><span className="num">{c.responseTimeMins}</span> د استجابة</span>
-                          </div>
+                          <div className="text-sm font-semibold truncate">{c.nameAr}</div>
+                          {c.nameEn && <div className="text-xs text-muted-foreground truncate" dir="ltr">{c.nameEn}</div>}
+                          <div className="text-xs text-muted-foreground mt-1">{c.city}</div>
                         </div>
                         {form.targetCarrierId === c.id && (
                           <Check className="h-5 w-5 text-primary shrink-0" />
@@ -612,7 +621,7 @@ export default function NewOrderWizard() {
               <Section title="طريقة الإرسال">
                 <Row label="النوع" value={form.mode === 'OPEN' ? 'نشر للجميع' : 'إرسال مباشر'} />
                 {form.mode === 'DIRECT' && form.targetCarrierId && (
-                  <Row label="الناقل" value={COMPANIES.find((c) => c.id === form.targetCarrierId)?.nameAr ?? '—'} />
+                  <Row label="الناقل" value={carriersRaw?.find((c) => c.id === form.targetCarrierId)?.nameAr ?? '—'} />
                 )}
               </Section>
               <Separator />
