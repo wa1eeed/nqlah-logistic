@@ -1,17 +1,16 @@
 import { Tabs } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS } from '@/constants/theme';
 
-function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+function tabIcon(focused: boolean, activeIcon: IoniconName, inactiveIcon: IoniconName) {
   return (
-    <View style={{ alignItems: 'center', gap: 2 }}>
-      <Text style={{ fontSize: 22 }}>{emoji}</Text>
-      <Text style={{
-        fontFamily: focused ? FONTS.semiBold : FONTS.regular,
-        fontSize: 10,
-        color: focused ? COLORS.primary : COLORS.textMuted,
-      }}>{label}</Text>
-    </View>
+    <Ionicons
+      name={focused ? activeIcon : inactiveIcon}
+      size={24}
+      color={focused ? COLORS.primary : '#94A3B8'}
+    />
   );
 }
 
@@ -20,22 +19,41 @@ export default function CarrierLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: '#94A3B8',
+        tabBarLabelStyle: {
+          fontFamily: FONTS.medium,
+          fontSize: 10,
+        },
         tabBarStyle: {
-          backgroundColor: COLORS.bgCard,
-          borderTopColor: COLORS.border,
-          height: 70,
+          backgroundColor: '#FFFFFF',
+          borderTopColor: '#E2E8F0',
+          borderTopWidth: 1,
+          height: 64,
           paddingBottom: 8,
+          paddingTop: 6,
+          elevation: 8,
+          shadowColor: '#0F172A',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
         },
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" label="الرئيسية" focused={focused} /> }}
+        options={{
+          title: 'الرئيسية',
+          tabBarIcon: ({ focused }) => tabIcon(focused, 'home', 'home-outline'),
+        }}
       />
       <Tabs.Screen
         name="opportunities"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="🔍" label="الفرص" focused={focused} /> }}
+        options={{
+          title: 'الفرص',
+          tabBarIcon: ({ focused }) => tabIcon(focused, 'search', 'search-outline'),
+        }}
       />
       <Tabs.Screen
         name="order/[id]"
@@ -43,11 +61,17 @@ export default function CarrierLayout() {
       />
       <Tabs.Screen
         name="wallet"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="💰" label="المحفظة" focused={focused} /> }}
+        options={{
+          title: 'المحفظة',
+          tabBarIcon: ({ focused }) => tabIcon(focused, 'wallet', 'wallet-outline'),
+        }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="👤" label="حسابي" focused={focused} /> }}
+        options={{
+          title: 'حسابي',
+          tabBarIcon: ({ focused }) => tabIcon(focused, 'person-circle', 'person-circle-outline'),
+        }}
       />
     </Tabs>
   );
