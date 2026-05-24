@@ -71,6 +71,7 @@ export class FleetService {
         licenseExpiry: new Date(dto.licenseExpiry),
         licenseType: dto.licenseType,
         photo: dto.photo,
+        status: 'AVAILABLE',
       },
     });
   }
@@ -102,6 +103,7 @@ export class FleetService {
           licenseExpiry: new Date(dto.licenseExpiry),
           licenseType: dto.licenseType,
           photo: dto.photo,
+          status: 'AVAILABLE',
         },
         include: { user: { select: { id: true, firstName: true, lastName: true, phone: true } } },
       });
