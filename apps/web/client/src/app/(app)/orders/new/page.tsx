@@ -55,6 +55,8 @@ interface FormState {
   pickupWindow: PickupWindow;
   mode: 'OPEN' | 'DIRECT' | null;
   targetCarrierId: string | null;
+  hasPreAgreedPrice: boolean;
+  agreedPriceUpfront: number | null;
   truckType: string;
   requiresInsurance: boolean;
   requiresRefrigeration: boolean;
@@ -115,6 +117,8 @@ export default function NewOrderWizard() {
     pickupWindow: 'ALL_DAY',
     mode: null,
     targetCarrierId: null,
+    hasPreAgreedPrice: false,
+    agreedPriceUpfront: null,
     truckType: 'LARGE_FLATBED',
     requiresInsurance: false,
     requiresRefrigeration: false,
@@ -144,7 +148,10 @@ export default function NewOrderWizard() {
     switch (step) {
       case 1: return !!form.cargoType && form.cargoDescription.length > 3 && form.weightKg > 0;
       case 2: return !!form.originCity && !!form.destinationCity && !!form.pickupDate;
-      case 3: return form.mode === 'OPEN' || (form.mode === 'DIRECT' && !!form.targetCarrierId);
+      case 3: return form.mode === 'OPEN' || (
+        form.mode === 'DIRECT' && !!form.targetCarrierId &&
+        (!form.hasPreAgreedPrice || (form.agreedPriceUpfront != null && form.agreedPriceUpfront > 0))
+      );
       case 4: return !!form.truckType;
       default: return true;
     }
@@ -172,6 +179,9 @@ export default function NewOrderWizard() {
       const body = {
         mode: form.mode ?? 'OPEN',
         targetCarrierId: form.mode === 'DIRECT' ? form.targetCarrierId : undefined,
+        agreedPriceUpfront: form.mode === 'DIRECT' && form.hasPreAgreedPrice && form.agreedPriceUpfront
+          ? form.agreedPriceUpfront
+          : undefined,
         tripType: form.tripType,
         pickupWindow: form.pickupWindow,
         cargoType: form.cargoType,
@@ -434,7 +444,7 @@ export default function NewOrderWizard() {
               </div>
 
               {form.mode === 'DIRECT' && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label>اختر ناقلاً معتمداً</Label>
                     <span className="text-xs text-muted-foreground">{carriers.length} ناقل متاح</span>
@@ -481,6 +491,59 @@ export default function NewOrderWizard() {
                       </button>
                     ))}
                   </div>
+
+                  {/* Pre-agreed price toggle */}
+                  {form.targetCarrierId && (
+                    <div className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-medium">هل لديك سعر متفق مسبقاً مع هذا الناقل؟</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">يتجاوز مرحلة التفاوض ويُسند الطلب مباشرة</div>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => { set('hasPreAgreedPrice', true); }}
+                            className={cn(
+                              'px-3 py-1.5 rounded-md text-sm font-medium border transition-colors',
+                              form.hasPreAgreedPrice
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'border-border text-muted-foreground hover:bg-muted',
+                            )}
+                          >
+                            نعم
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { set('hasPreAgreedPrice', false); set('agreedPriceUpfront', null); }}
+                            className={cn(
+                              'px-3 py-1.5 rounded-md text-sm font-medium border transition-colors',
+                              !form.hasPreAgreedPrice
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'border-border text-muted-foreground hover:bg-muted',
+                            )}
+                          >
+                            لا — تفاوض عادي
+                          </button>
+                        </div>
+                      </div>
+                      {form.hasPreAgreedPrice && (
+                        <div className="space-y-1.5">
+                          <Label htmlFor="agreed-price">السعر المتفق عليه (ريال)</Label>
+                          <Input
+                            id="agreed-price"
+                            type="number"
+                            dir="ltr"
+                            min={1}
+                            placeholder="0.00"
+                            className="text-end"
+                            value={form.agreedPriceUpfront ?? ''}
+                            onChange={(e) => set('agreedPriceUpfront', e.target.value ? Number(e.target.value) : null)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </Step>

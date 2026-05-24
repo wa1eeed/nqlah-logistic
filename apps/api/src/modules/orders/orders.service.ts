@@ -107,6 +107,12 @@ export class OrdersService {
         // v0.6.0 workflow fields — defaults preserve old behavior.
         mode: dto.mode ?? 'OPEN',
         targetCarrierId: dto.mode === 'DIRECT' ? dto.targetCarrierId : null,
+        // Pre-seed agreed price for DIRECT orders with upfront price.
+        ...(dto.mode === 'DIRECT' && dto.agreedPriceUpfront ? {
+          agreedPrice:      dto.agreedPriceUpfront,
+          commissionAmount: +(dto.agreedPriceUpfront * 0.08).toFixed(2),
+          carrierAmount:    +(dto.agreedPriceUpfront * 0.92).toFixed(2),
+        } : {}),
         tripType: dto.tripType ?? (dto.originCity === dto.destinationCity ? 'SAME_CITY' : 'INTER_CITY'),
         pickupWindow: dto.pickupWindow ?? 'ALL_DAY',
         cargoType: dto.cargoType,
@@ -163,6 +169,13 @@ export class OrdersService {
     }
     if (order.status !== 'DRAFT') {
       throw new BadRequestException({ code: 'INVALID_TRANSITION', message: 'الطلب منشور بالفعل' });
+    }
+    // DIRECT + pre-agreed price: skip negotiation, assign immediately.
+    if (order.mode === 'DIRECT' && order.agreedPrice && order.targetCarrierId) {
+      return this.prisma.order.update({
+        where: { id },
+        data: { status: 'ASSIGNED', carrierId: order.targetCarrierId },
+      });
     }
     return this.prisma.order.update({
       where: { id },

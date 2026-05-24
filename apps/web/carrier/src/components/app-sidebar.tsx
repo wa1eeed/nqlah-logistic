@@ -7,8 +7,11 @@ import {
   LifeBuoy, Package, Settings, Shield, Truck, Users, Wallet,
   type LucideIcon,
 } from 'lucide-react';
+import Image from 'next/image';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
+
+type PlatformBranding = { logoUrl: string; nameAr: string; nameEn: string };
 import { useAuthStore } from '@/lib/auth-store';
 import { CURRENT_CARRIER_ID, openOpportunitiesForCarrier, normalizeOrderList, type Order } from '@naqla/shared-utils';
 import { PulsingBadge } from '@/components/pulsing-badge';
@@ -62,6 +65,9 @@ const NAV: NavGroup[] = [
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname() ?? '/';
   const t = useTranslations('carrier');
+  const { data: branding } = useSWR<PlatformBranding>('/settings/platform', fetcher);
+  const logoUrl = branding?.logoUrl ?? '';
+  const nameAr  = branding?.nameAr  ?? t('appName');
   const authedCompanyId = useAuthStore((s) => s.user?.companyId);
   const myCompanyId = authedCompanyId ?? CURRENT_CARRIER_ID;
   // Live count of fresh opportunities — orders the carrier HASN'T bid on yet.
@@ -91,11 +97,14 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       <div className="flex items-center gap-3 px-5 h-16 border-b">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Truck className="h-5 w-5" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground overflow-hidden">
+          {logoUrl
+            ? <Image src={logoUrl} alt={nameAr} width={36} height={36} className="object-contain" unoptimized />
+            : <Truck className="h-5 w-5" />
+          }
         </div>
         <div className="flex flex-col leading-tight">
-          <span className="text-base font-bold tracking-tight">{t('appName')}</span>
+          <span className="text-base font-bold tracking-tight">{nameAr}</span>
           <span className="text-xs text-muted-foreground">{t('appSubtitle')}</span>
         </div>
       </div>

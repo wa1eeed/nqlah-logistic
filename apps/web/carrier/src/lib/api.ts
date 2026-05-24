@@ -41,8 +41,24 @@ api.interceptors.response.use(
     const isMutation = method !== 'get';
     const isAuthEndpoint = url.includes('/auth/');
 
-    // 401 on a non-auth endpoint = stale/invalid token → reset + redirect
+    // 401 on a non-auth endpoint — try refresh before giving up.
     if (err.response?.status === 401 && !isAuthEndpoint) {
+      const refreshToken = typeof window !== 'undefined'
+        ? localStorage.getItem('naqla_carrier_refresh')
+        : null;
+      if (refreshToken && refreshToken !== DEV_BYPASS_TOKEN && !config._retry) {
+        config._retry = true;
+        try {
+          const r = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken });
+          const data = r.data?.data;
+          if (data?.accessToken) {
+            localStorage.setItem('naqla_carrier_token', data.accessToken);
+            localStorage.setItem('naqla_carrier_refresh', data.refreshToken);
+            config.headers.Authorization = `Bearer ${data.accessToken}`;
+            return api(config);
+          }
+        } catch { /* fall through to clearAuthAndRedirect */ }
+      }
       clearAuthAndRedirect();
       return Promise.reject(new Error('الجلسة منتهية — يُعاد توجيهك لصفحة الدخول'));
     }

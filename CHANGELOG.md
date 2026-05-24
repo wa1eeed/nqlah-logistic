@@ -6,6 +6,32 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🚀 v0.9.9 — Demo Mode Removal + Auto Token Refresh + Dynamic Logo + Direct Price (2026-05-24)
+
+**1. حذف "وضع تجريبي" من كل الواجهات:**
+- `apps/web/admin/src/app/login/page.tsx`: حُذف الـ Badge + imports (Badge, ShieldCheck)
+- `apps/web/client/src/app/login/page.tsx`: نفس الإزالة
+- `apps/web/carrier/src/app/login/page.tsx`: نفس الإزالة
+- `apps/web/admin/src/components/app-sidebar.tsx`: حُذف block "Demo Mode" من footer
+
+**2. Auto Token Refresh في client و carrier:**
+- `apps/web/client/src/lib/api.ts`: على 401 — يحاول refresh أولاً (`naqla_client_refresh`) قبل redirect للـ login؛ يُعيد الـ request الأصلي بالتوكن الجديد تلقائياً
+- `apps/web/carrier/src/lib/api.ts`: نفس المنطق (`naqla_carrier_refresh`) — يطابق الـ admin الذي كان الوحيد يملك هذا السلوك
+
+**3. الشعار الديناميكي — يتحكّم فيه الأدمن ويظهر في كل المنصات:**
+- `apps/api/src/modules/settings/settings.controller.ts`: endpoint جديد عام `GET /settings/platform` يُعيد `logoUrl`, `nameAr`, `nameEn` من Settings table
+- `apps/web/admin/src/components/settings/branding-panel.tsx`: عند حفظ URL الشعار أو اسم المنصة، يُرسل أيضاً `PUT /admin/settings` لحفظهما في DB (`platform.logoUrl`, `platform.nameAr`, `platform.nameEn`)
+- `apps/web/client/src/components/app-sidebar.tsx`: يجلب `GET /settings/platform` عبر SWR، يعرض الشعار بـ `next/image` أو fallback Truck icon
+- `apps/web/carrier/src/components/app-sidebar.tsx`: نفس المنطق
+
+**4. Direct Assignment بسعر ثابت:**
+- `apps/api/src/modules/orders/dto/create-order.dto.ts`: أُضيف `agreedPriceUpfront?: number`
+- `apps/api/src/modules/orders/orders.service.ts` — `create()`: إذا DIRECT + `agreedPriceUpfront` → يُخزَّن `agreedPrice`, `commissionAmount` (8%), `carrierAmount` في الـ order عند الإنشاء
+- `apps/api/src/modules/orders/orders.service.ts` — `publish()`: إذا DIRECT + `agreedPrice` موجود + `targetCarrierId` → يتجاوز PUBLISHED ويُسند مباشرة (`status: ASSIGNED`)
+- `apps/web/client/src/app/(app)/orders/new/page.tsx`: Step 3 يعرض (بعد اختيار الناقل) toggle "هل لديك سعر متفق مسبقاً؟" [نعم / لا — تفاوض عادي] مع حقل إدخال السعر عند نعم
+
+---
+
 ### 🚀 v0.9.8 — Docker Staging Fixes: All 5 Apps Deploy-Ready (2026-05-21)
 
 سلسلة إصلاحات Docker بُنيت على staging الحقيقي (Coolify / nqlah.nx.sa). كل إصلاح نتج عن خطأ حقيقي في الـ build أو الـ runtime.

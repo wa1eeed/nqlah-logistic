@@ -2,12 +2,11 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AlertCircle, Eye, EyeOff, ShieldCheck, Truck } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { DEV_USERS, DEV_BYPASS_TOKEN } from '@naqla/shared-utils';
 import { useAuthStore } from '@/lib/auth-store';
 
@@ -58,10 +57,6 @@ export default function ClientLoginPage() {
 
         <Card>
           <CardHeader>
-            <Badge variant="secondary" className="w-fit gap-1">
-              <ShieldCheck className="h-3 w-3" />
-              وضع تجريبي
-            </Badge>
             <CardTitle className="text-xl">أهلاً بعودتك</CardTitle>
             <CardDescription>سجّل دخولك للمتابعة إلى منصة العميل</CardDescription>
           </CardHeader>

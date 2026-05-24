@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { usePlatformStore } from '@/stores/platform-store';
+import { api } from '@/lib/api';
+import { notify } from '@/lib/notify';
 
 const MAX_BYTES = 2 * 1024 * 1024; // 2MB
 const ACCEPTED = ['image/png', 'image/svg+xml', 'image/jpeg', 'image/webp'];
@@ -145,7 +147,16 @@ export function BrandingPanel() {
                 placeholder="https://example.com/logo.png"
               />
               <Button
-                onClick={() => { setLogoUrl(urlDraft.trim()); setError(null); }}
+                onClick={async () => {
+                  const url = urlDraft.trim();
+                  setLogoUrl(url);
+                  setError(null);
+                  try {
+                    await api.put('/admin/settings', {
+                      settings: [{ key: 'platform.logoUrl', value: url }],
+                    });
+                  } catch (err) { notify.error(err, 'فشل حفظ الشعار في قاعدة البيانات'); }
+                }}
                 disabled={!urlDraft.trim() || urlDraft === logoUrl}
               >
                 {tc('buttons.save')}
@@ -179,7 +190,19 @@ export function BrandingPanel() {
           </div>
           <div className="flex items-center gap-2 pt-2">
             <Button
-              onClick={() => setName({ nameAr: arDraft.trim() || nameAr, nameEn: enDraft.trim() || nameEn })}
+              onClick={async () => {
+                const ar = arDraft.trim() || nameAr;
+                const en = enDraft.trim() || nameEn;
+                setName({ nameAr: ar, nameEn: en });
+                try {
+                  await api.put('/admin/settings', {
+                    settings: [
+                      { key: 'platform.nameAr', value: ar },
+                      { key: 'platform.nameEn', value: en },
+                    ],
+                  });
+                } catch (err) { notify.error(err, 'فشل حفظ الاسم في قاعدة البيانات'); }
+              }}
               disabled={arDraft === nameAr && enDraft === nameEn}
             >
               {t('branding.saveNames')}

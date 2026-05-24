@@ -21,4 +21,19 @@ export class SettingsController {
       truckTypes: map['catalog.truck_types'] ? JSON.parse(map['catalog.truck_types']) : null,
     };
   }
+
+  /** Public endpoint — returns platform branding for all portals to display. */
+  @Public()
+  @Get('platform')
+  async platform() {
+    const rows = await this.prisma.setting.findMany({
+      where: { key: { in: ['platform.logoUrl', 'platform.nameAr', 'platform.nameEn'] } },
+    });
+    const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    return {
+      logoUrl: map['platform.logoUrl'] ?? '',
+      nameAr:  map['platform.nameAr']  ?? 'نقلة لوجيستك',
+      nameEn:  map['platform.nameEn']  ?? 'Naqla Logistics',
+    };
+  }
 }

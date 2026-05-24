@@ -31,6 +31,8 @@ export class CreateOrderDto {
   /// OPEN (default) → marketplace; DIRECT → only `targetCarrierId` sees it.
   @IsOptional() @IsEnum(MODES) mode?: (typeof MODES)[number];
   @IsOptional() @IsString() targetCarrierId?: string;
+  /// DIRECT only — pre-agreed price skips the negotiation phase and auto-assigns on publish.
+  @IsOptional() @IsNumber() @Min(0) agreedPriceUpfront?: number;
 
   /// SAME_CITY vs INTER_CITY (drives Wizard UI; backend uses for route assumptions).
   @IsOptional() @IsEnum(TRIP_TYPES) tripType?: (typeof TRIP_TYPES)[number];

@@ -139,16 +139,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         ))}
       </nav>
 
-      {/* Demo Mode footer */}
-      <div className="border-t p-3">
-        <div className="flex items-center gap-3 rounded-lg bg-muted/40 p-3">
-          <AlertCircle className="h-5 w-5 text-warning shrink-0" />
-          <div className="flex flex-col text-xs leading-snug">
-            <span className="font-medium">Demo Mode</span>
-            <span className="text-muted-foreground">UI-First prototype — mock data only</span>
-          </div>
-        </div>
-      </div>
+
     </>
   );
 }
