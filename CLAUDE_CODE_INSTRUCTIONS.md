@@ -1250,14 +1250,27 @@ node dist/prisma/seed.js
 4. **Tap للمدفوعات** — استبدال `PAYMENT_PROVIDER=mock` بـ Tap Payment Gateway الحقيقي
 5. **Auto Token Refresh** — الـ frontend يجدّد الـ access token تلقائياً باستخدام refresh token قبل انتهاء الجلسة، بدلاً من logout مفاجئ عند انتهاء الـ 15 دقيقة
 
-6. **نوع الحساب (INDIVIDUAL / COMPANY):**
+6. **Direct Assignment بسعر ثابت:**
+   في DIRECT mode أضف خيار "سعر متفق مسبقاً"
+
+   - في `create-order.dto.ts`: أضف `agreedPriceUpfront?: number`
+   - في واجهة إنشاء الطلب (`orders/new`):
+     عند اختيار DIRECT يظهر:
+     "هل عندك سعر متفق مسبقاً مع هذا الناقل؟"
+     [نعم - أدخل السعر] [لا - تفاوض عادي]
+   - في `orders.service.ts`:
+     إذا DIRECT + `agreedPriceUpfront` موجود
+     → تجاوز مرحلة التفاوض
+     → أسند مباشرة بالسعر المدخل
+
+7. **نوع الحساب (INDIVIDUAL / COMPANY):**
    - نفس لوحة العميل الحالية (لا نظامين منفصلين)
    - INDIVIDUAL: واجهة مبسطة، دفع فوري
    - COMPANY: فريق، فواتير، تقارير، عقود
    - نفس الـ API — الواجهة تتكيّف حسب نوع الحساب
    - العميل الفرد = تطبيق موبايل فقط (يُطوَّر لاحقاً)
 
-7. **Smart Availability Engine:**
+8. **Smart Availability Engine:**
 
    **أ) Availability Card:**
    - تظهر للناقل/السائق بعد تأكيد التسليم (بخيار، ليس تلقائي)
@@ -1281,19 +1294,19 @@ node dist/prisma/seed.js
    - بدون login للمشاهدة، تحتاج login للحجز
    - فلتر: مدينة + نوع شاحنة + وقت
 
-8. **PWA للناقل/السائق:**
+9. **PWA للناقل/السائق:**
    - استلام مهام
    - تتبع GPS
    - إثبات التسليم (صورة + توقيع)
    - Availability Card بضغطة واحدة بعد التسليم
 
-9. **PWA للعميل الفرد:**
+10. **PWA للعميل الفرد:**
    - طلب سريع
    - تتبع الشحنة
    - Load Board مدمج
    - دفع فوري
 
-10. **الترجمة الكاملة AR/EN** ← آخر شيء
+11. **الترجمة الكاملة AR/EN** ← آخر شيء
 
 ---
 
