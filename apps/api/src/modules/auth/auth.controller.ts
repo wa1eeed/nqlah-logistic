@@ -29,8 +29,9 @@ export class AuthController {
 
   // 5 attempts / 15 min / IP at the throttler layer (a hard ceiling on top of
   // the per-identifier lockout in LoginAttemptService).
+  // In dev/staging the env var LOGIN_THROTTLE_LIMIT can raise this for testing.
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000 } })
+  @Throttle({ default: { limit: Number(process.env.LOGIN_THROTTLE_LIMIT ?? 5), ttl: 15 * 60 * 1000 } })
   @Post('login')
   login(@Body() dto: LoginDto, @Req() req: any) {
     return this.auth.login(dto, reqMeta(req));
