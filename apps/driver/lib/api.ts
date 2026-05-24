@@ -46,9 +46,17 @@ export const fetcher = async <T>(url: string): Promise<T> => {
 
 export const apiError = (err: unknown): string => {
   if (axios.isAxiosError(err)) {
-    const msg = err.response?.data?.message;
+    const d = err.response?.data;
+    // { success: false, error: { message } }  ← API shape
+    const errObj = d?.error;
+    if (errObj?.message && typeof errObj.message === 'string') return errObj.message;
+    // fallback: flat { message } or validation array
+    const msg = d?.message;
     if (typeof msg === 'string') return msg;
     if (Array.isArray(msg)) return msg[0];
+    // network / timeout
+    if (!err.response) return 'تعذّر الاتصال بالخادم، تحقق من الإنترنت';
   }
+  if (err instanceof Error) return err.message;
   return 'حدث خطأ غير متوقع';
 };
