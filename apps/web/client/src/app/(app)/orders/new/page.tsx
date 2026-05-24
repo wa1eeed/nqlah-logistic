@@ -178,10 +178,6 @@ export default function NewOrderWizard() {
 
       const body = {
         mode: form.mode ?? 'OPEN',
-        targetCarrierId: form.mode === 'DIRECT' ? form.targetCarrierId : undefined,
-        agreedPriceUpfront: form.mode === 'DIRECT' && form.hasPreAgreedPrice && form.agreedPriceUpfront
-          ? form.agreedPriceUpfront
-          : undefined,
         tripType: form.tripType,
         pickupWindow: form.pickupWindow,
         cargoType: form.cargoType,
@@ -190,18 +186,28 @@ export default function NewOrderWizard() {
         originCity: form.originCity,
         originRegion: origin?.region ?? form.originCity,
         originAddress: form.originAddress || form.originPin?.address || form.originCity,
-        originLat: form.originPin?.lat,
-        originLng: form.originPin?.lng,
         destinationCity: form.destinationCity,
         destinationRegion: dest?.region ?? form.destinationCity,
         destinationAddress: form.destinationAddress || form.destinationPin?.address || form.destinationCity,
-        destinationLat: form.destinationPin?.lat,
-        destinationLng: form.destinationPin?.lng,
         requiredTruckType: form.truckType,
         requiresRefrigeration: form.requiresRefrigeration,
         requiresInsurance: form.requiresInsurance,
-        specialInstructions: form.specialInstructions || undefined,
         pickupDate: form.pickupDate,
+        // Optional fields: use spread so the key is absent (not undefined) when unset.
+        // forbidNonWhitelisted on the backend rejects any key not decorated in the DTO,
+        // and some JSON serializers may include undefined keys — explicit spread avoids this.
+        ...(form.originPin?.lat   != null ? { originLat: form.originPin.lat }     : {}),
+        ...(form.originPin?.lng   != null ? { originLng: form.originPin.lng }     : {}),
+        ...(form.destinationPin?.lat != null ? { destinationLat: form.destinationPin.lat } : {}),
+        ...(form.destinationPin?.lng != null ? { destinationLng: form.destinationPin.lng } : {}),
+        ...(form.specialInstructions ? { specialInstructions: form.specialInstructions } : {}),
+        // DIRECT-mode only fields — never present in OPEN requests
+        ...(form.mode === 'DIRECT' && form.targetCarrierId
+          ? { targetCarrierId: form.targetCarrierId }
+          : {}),
+        ...(form.mode === 'DIRECT' && form.hasPreAgreedPrice && form.agreedPriceUpfront
+          ? { agreedPriceUpfront: form.agreedPriceUpfront }
+          : {}),
       };
       const res = await api.post('/orders', body);
       const created = res.data?.data ?? res.data;
