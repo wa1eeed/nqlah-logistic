@@ -98,3 +98,7 @@ export class AssignOrderDto {
 export class CancelOrderDto {
   @IsString() reason!: string;
 }
+
+export class AssignDriverDto {
+  @IsString() driverId!: string;
+}

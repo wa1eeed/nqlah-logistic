@@ -108,6 +108,26 @@ export class FleetService {
     });
   }
 
+  async getAvailableDrivers(actor: AuthUser) {
+    if (!actor.companyId) throw new BadRequestException({ code: 'NO_COMPANY', message: 'لا توجد شركة' });
+    // Drivers currently assigned to an active order.
+    const busy = await this.prisma.orderDriver.findMany({
+      where: { order: { status: { in: ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'] } } },
+      select: { driverId: true },
+    });
+    const busyIds = busy.map((d) => d.driverId);
+    return this.prisma.driverProfile.findMany({
+      where: {
+        companyId: actor.companyId,
+        status: 'AVAILABLE',
+        isActive: true,
+        ...(busyIds.length > 0 ? { id: { notIn: busyIds } } : {}),
+      },
+      include: { user: { select: { firstName: true, lastName: true, phone: true, avatar: true } } },
+      orderBy: { rating: 'desc' },
+    });
+  }
+
   async getDriver(id: string, actor: AuthUser) {
     const driver = await this.prisma.driverProfile.findUnique({
       where: { id }, include: { user: true },

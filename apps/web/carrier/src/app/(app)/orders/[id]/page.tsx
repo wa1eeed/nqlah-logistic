@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowRight, Building2, Calendar, CheckCircle2, Mail, MapPin, Navigation, Package,
-  Phone, Shield, ShieldCheck, Snowflake, Truck, Weight, X,
+  Phone, Shield, ShieldCheck, Snowflake, Truck, Users, Weight, X,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -45,10 +45,22 @@ export default function CarrierOrderDetail() {
   // Normalize API → mock shape so `order.weightKg` / `order.truckType` don't crash.
   const order = normalizeOrder(orderData) ?? ORDERS.find((o) => o.id === params.id);
   const [confirmPickupOpen, setConfirmPickupOpen] = useState(false);
+  const [startTripOpen, setStartTripOpen] = useState(false);
   const [markDeliveredOpen, setMarkDeliveredOpen] = useState(false);
   const [updateLocOpen, setUpdateLocOpen] = useState(false);
   const [location, setLocation] = useState('');
   const [disputeOpen, setDisputeOpen] = useState(false);
+  const [assignDriverOpen, setAssignDriverOpen] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+
+  type AvailableDriver = {
+    id: string; rating: number; totalTrips: number;
+    user: { firstName: string; lastName: string; phone: string; avatar: string | null };
+  };
+  const { data: availableDrivers, isLoading: driversLoading } = useSWR<AvailableDriver[]>(
+    assignDriverOpen ? '/fleet/drivers/available' : null,
+    fetcher,
+  );
 
   if (!order) {
     return (
@@ -64,7 +76,7 @@ export default function CarrierOrderDetail() {
 
   const client = companyById(order.clientId);
   const timeline = timelineFor(order.id);
-  const showActions = ['CONFIRMED', 'IN_TRANSIT'].includes(order.status);
+  const showActions = ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED'].includes(order.status);
   // The carrier's own bid (accepted = the assignment). Surfaces the dates
   // they proposed back in the bid form so the carrier sees a single source
   // of truth for "expected pickup / delivery" on this order.
@@ -121,14 +133,32 @@ export default function CarrierOrderDetail() {
                 </div>
               </CardHeader>
               <CardContent>
-                {order.status === 'CONFIRMED' && (
+                {order.status === 'ASSIGNED' && (
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                      الطلب جاهز للتحميل. أكّد عند الوصول لنقطة الاستلام.
+                      الطلب أُسند إليك. أكّد الاستلام عند الوصول لنقطة التحميل.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Button onClick={() => setConfirmPickupOpen(true)} className="flex-1 sm:flex-none">
-                        <CheckCircle2 className="h-4 w-4" /> تأكيد بدء التحميل
+                        <CheckCircle2 className="h-4 w-4" /> تأكيد الاستلام
+                      </Button>
+                      <Button variant="outline" onClick={() => setAssignDriverOpen(true)} className="flex-1 sm:flex-none">
+                        <Users className="h-4 w-4" /> إسناد لسائق
+                      </Button>
+                      <Button variant="outline" onClick={() => setDisputeOpen(true)} className="text-destructive border-destructive/30">
+                        <Shield className="h-4 w-4" /> فتح نزاع
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {order.status === 'CONFIRMED' && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      التحميل مؤكَّد. ابدأ الرحلة عند مغادرة نقطة الاستلام.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button onClick={() => setStartTripOpen(true)} className="flex-1 sm:flex-none">
+                        <Truck className="h-4 w-4" /> بدأت الرحلة
                       </Button>
                       <Button variant="outline" onClick={() => setDisputeOpen(true)} className="text-destructive border-destructive/30">
                         <Shield className="h-4 w-4" /> فتح نزاع
@@ -304,20 +334,18 @@ export default function CarrierOrderDetail() {
         </div>
       </div>
 
-      {/* Confirm pickup */}
+      {/* Confirm pickup (ASSIGNED → CONFIRMED) */}
       <Dialog open={confirmPickupOpen} onOpenChange={setConfirmPickupOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد بدء التحميل</DialogTitle>
-            <DialogDescription>سيتم تحديث حالة الطلب إلى "في الطريق" ويصل إشعار للعميل.</DialogDescription>
+            <DialogTitle>تأكيد الاستلام</DialogTitle>
+            <DialogDescription>سيتحوّل الطلب إلى "مؤكَّد" ويصل إشعار للعميل.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <p className="text-sm">
-              هل أنت متأكد أن السائق وصل لنقطة الاستلام وتم تحميل الشحنة؟
-            </p>
+            <p className="text-sm">هل أنت متأكد أنك وصلت لنقطة التحميل وجاهز للاستلام؟</p>
             <div className="rounded-md bg-info/10 border border-info/30 p-3 text-xs flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-info shrink-0 mt-0.5" />
-              <span className="text-muted-foreground">سيُفعّل التتبع المباشر للعميل تلقائياً.</span>
+              <span className="text-muted-foreground">بعد التأكيد انقر "بدأت الرحلة" عند مغادرة نقطة الاستلام.</span>
             </div>
           </div>
           <DialogFooter>
@@ -326,17 +354,50 @@ export default function CarrierOrderDetail() {
               onClick={async () => {
                 if (!order) return;
                 try {
-                  // ASSIGNED → CONFIRMED, then a tracking event will flip to IN_TRANSIT.
                   await api.post(`/orders/${order.id}/confirm`, {});
-                  notify.success('تم تأكيد البدء', 'سيُفعَّل التتبع المباشر للعميل');
+                  notify.success('تم تأكيد الاستلام', 'الطلب أصبح مؤكَّداً');
                   await refetchOrder();
                   setConfirmPickupOpen(false);
                 } catch (err: unknown) {
-                  notify.error(err, 'فشل تأكيد البدء');
+                  notify.error(err, 'فشل تأكيد الاستلام');
                 }
               }}
             >
-              <Truck className="h-4 w-4" /> تأكيد البدء
+              <CheckCircle2 className="h-4 w-4" /> تأكيد
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Start trip (CONFIRMED → IN_TRANSIT via PICKED_UP tracking event) */}
+      <Dialog open={startTripOpen} onOpenChange={setStartTripOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>بدء الرحلة</DialogTitle>
+            <DialogDescription>سيتحوّل الطلب إلى "في الطريق" وتُفعَّل خريطة التتبع للعميل.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <p className="text-sm">هل غادرت نقطة الاستلام وتوجّهت للوجهة؟</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStartTripOpen(false)}>إلغاء</Button>
+            <Button
+              onClick={async () => {
+                if (!order) return;
+                try {
+                  await api.post(`/orders/${order.id}/tracking`, {
+                    status: 'PICKED_UP',
+                    description: 'بدأت الرحلة — الشحنة في الطريق',
+                  });
+                  notify.success('بدأت الرحلة', 'العميل يتابع الشحنة الآن');
+                  await refetchOrder();
+                  setStartTripOpen(false);
+                } catch (err: unknown) {
+                  notify.error(err, 'فشل تحديث الحالة');
+                }
+              }}
+            >
+              <Truck className="h-4 w-4" /> بدأت الرحلة
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -425,6 +486,62 @@ export default function CarrierOrderDetail() {
               disabled={!location}
             >
               <MapPin className="h-4 w-4" /> تحديث
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign driver */}
+      <Dialog open={assignDriverOpen} onOpenChange={setAssignDriverOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إسناد سائق للطلب</DialogTitle>
+            <DialogDescription>اختر أحد السائقين المتاحين في شركتك.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-2 max-h-64 overflow-y-auto">
+            {driversLoading && (
+              <p className="text-sm text-muted-foreground text-center py-4">جارٍ التحميل…</p>
+            )}
+            {!driversLoading && (!availableDrivers || availableDrivers.length === 0) && (
+              <p className="text-sm text-muted-foreground text-center py-4">لا يوجد سائقون متاحون حالياً.</p>
+            )}
+            {availableDrivers?.map((driver) => (
+              <button
+                key={driver.id}
+                type="button"
+                onClick={() => setSelectedDriverId(driver.id)}
+                className={`w-full flex items-center gap-3 rounded-lg border p-3 text-start transition-colors
+                  ${selectedDriverId === driver.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+              >
+                <div className="h-9 w-9 rounded-full bg-muted grid place-items-center shrink-0">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-sm truncate">{driver.user.firstName} {driver.user.lastName}</div>
+                  <div className="text-xs text-muted-foreground">{driver.user.phone} · {driver.totalTrips} رحلة</div>
+                </div>
+                {selectedDriverId === driver.id && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAssignDriverOpen(false); setSelectedDriverId(null); }}>إلغاء</Button>
+            <Button
+              disabled={!selectedDriverId}
+              onClick={async () => {
+                if (!order || !selectedDriverId) return;
+                try {
+                  await api.post(`/orders/${order.id}/assign-driver`, { driverId: selectedDriverId });
+                  notify.success('تم إسناد السائق', 'السائق المختار مُكلَّف بهذا الطلب');
+                  await refetchOrder();
+                  setAssignDriverOpen(false);
+                  setSelectedDriverId(null);
+                } catch (err: unknown) {
+                  notify.error(err, 'فشل إسناد السائق');
+                }
+              }}
+            >
+              <Users className="h-4 w-4" /> إسناد
             </Button>
           </DialogFooter>
         </DialogContent>

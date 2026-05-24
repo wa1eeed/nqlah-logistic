@@ -9,7 +9,7 @@ import { Audit } from '../../common/audit/audit.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { OrdersService } from './orders.service';
 import {
-  AssignOrderDto, CancelOrderDto, CreateOrderDto,
+  AssignDriverDto, AssignOrderDto, CancelOrderDto, CreateOrderDto,
   CreateTrackingEventDto, UpdateOrderDto,
 } from './dto/create-order.dto';
 import type { OrderStatus } from '../../generated/prisma';
@@ -96,6 +96,12 @@ export class OrdersController {
   @Audit({ action: 'order.declineDirect', resourceType: 'Order', idFrom: 'param', idKey: 'id' })
   declineDirect(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
     return this.orders.declineDirect(id, actor);
+  }
+
+  @Post(':id/assign-driver')
+  @Audit({ action: 'order.assignDriver', resourceType: 'Order', idFrom: 'param', idKey: 'id' })
+  assignDriver(@Param('id') id: string, @Body() dto: AssignDriverDto, @CurrentUser() actor: AuthUser) {
+    return this.orders.assignDriver(id, dto, actor);
   }
 
   @Get(':id/tracking')

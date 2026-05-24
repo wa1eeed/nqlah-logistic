@@ -4,9 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { DriverStatus } from '../../generated/prisma';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import {
+  AssignDriverDto,
   AssignOrderDto,
   CancelOrderDto,
   CreateOrderDto,
@@ -269,13 +271,46 @@ export class OrdersService {
         where: { id },
         data: { status: 'COMPLETED' },
       });
-      // Release escrow if a Payment exists. Best-effort — missing payment is
-      // not fatal (e.g. seeded orders without Payment row should still close).
       await tx.payment.updateMany({
         where: { orderId: id, status: 'HELD' },
         data: { status: 'RELEASED', releasedAt: new Date() },
       });
+      // Set assigned drivers back to AVAILABLE once order completes.
+      const assigned = await tx.orderDriver.findMany({ where: { orderId: id }, select: { driverId: true } });
+      if (assigned.length > 0) {
+        await tx.driverProfile.updateMany({
+          where: { id: { in: assigned.map((d) => d.driverId) } },
+          data: { status: 'AVAILABLE' as DriverStatus },
+        });
+      }
       return updatedOrder;
+    });
+  }
+
+  async assignDriver(orderId: string, dto: AssignDriverDto, actor: AuthUser) {
+    const order = await this.requireOrder(orderId);
+    if (order.carrierId !== actor.companyId && !this.isAdmin(actor)) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
+    }
+    if (!['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'].includes(order.status)) {
+      throw new BadRequestException({ code: 'INVALID_TRANSITION', message: 'لا يمكن إسناد سائق في هذه المرحلة' });
+    }
+    const driver = await this.prisma.driverProfile.findUnique({ where: { id: dto.driverId } });
+    if (!driver) throw new NotFoundException({ code: 'DRIVER_NOT_FOUND', message: 'السائق غير موجود' });
+    if (driver.companyId !== actor.companyId && !this.isAdmin(actor)) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'السائق لا ينتمي لشركتك' });
+    }
+    return this.prisma.$transaction(async (tx) => {
+      await tx.orderDriver.upsert({
+        where: { orderId_driverId: { orderId, driverId: dto.driverId } },
+        create: { orderId, driverId: dto.driverId },
+        update: { assignedAt: new Date() },
+      });
+      await tx.driverProfile.update({
+        where: { id: dto.driverId },
+        data: { status: 'ON_TRIP' as DriverStatus },
+      });
+      return { ok: true, driverId: dto.driverId };
     });
   }
 

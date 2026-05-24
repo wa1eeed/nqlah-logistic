@@ -40,6 +40,11 @@ export class FleetController {
   inviteDriver(@Body() dto: InviteDriverDto, @CurrentUser() actor: AuthUser) {
     return this.fleet.inviteDriver(dto, actor);
   }
+  @Get('drivers/available')
+  getAvailableDrivers(@CurrentUser() actor: AuthUser) {
+    return this.fleet.getAvailableDrivers(actor);
+  }
+
   @Get('drivers/:id')
   getDriver(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
     return this.fleet.getDriver(id, actor);

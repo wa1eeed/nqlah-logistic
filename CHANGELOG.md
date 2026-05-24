@@ -6,6 +6,25 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🚀 v0.9.11 — Carrier Order Controls + Driver Assignment (2026-05-24)
+
+**1. أزرار التحكم في الطلب (carrier portal):**
+- `apps/web/carrier/src/app/(app)/orders/[id]/page.tsx`: أُضيف status=`ASSIGNED` لـ `showActions` (كان مفقوداً)
+- ASSIGNED: زر "تأكيد الاستلام" → `POST /orders/:id/confirm` (ASSIGNED→CONFIRMED) + زر "إسناد لسائق"
+- CONFIRMED: زر "بدأت الرحلة" → `POST /orders/:id/tracking` (PICKED_UP) → يُحوّل الحالة إلى IN_TRANSIT عبر `addTrackingEvent`
+- الديالوجز مُحدَّثة: `confirmPickupOpen` للـ ASSIGNED، `startTripOpen` جديد للـ CONFIRMED
+
+**2. Driver Assignment:**
+- `apps/api/src/modules/fleet/fleet.service.ts`: `getAvailableDrivers()` — يُعيد سائقي الشركة بحالة AVAILABLE غير مُسنَدين لطلب نشط
+- `apps/api/src/modules/fleet/fleet.controller.ts`: `GET /fleet/drivers/available` (قبل `:id` route)
+- `apps/api/src/modules/orders/dto/create-order.dto.ts`: أُضيف `AssignDriverDto { driverId }`
+- `apps/api/src/modules/orders/orders.service.ts`: `assignDriver()` — يتحقق من الصلاحيات + ينشئ `OrderDriver` + يُحوّل السائق إلى `ON_TRIP`
+- `apps/api/src/modules/orders/orders.controller.ts`: `POST /orders/:id/assign-driver`
+- **Auto status reset**: `complete()` يُعيد السائقين المُسنَدين إلى `AVAILABLE` تلقائياً عند اكتمال الطلب
+- **Driver assignment modal** في carrier portal: يجلب السائقين المتاحين عبر SWR، اختيار سائق محدد + تأكيد
+
+---
+
 ### 🚀 v0.9.10 — Real Carrier List in New Order Wizard (2026-05-24)
 
 - `apps/web/client/src/app/(app)/orders/new/page.tsx`: استبدل `COMPANIES` mock بـ `GET /companies?type=CARRIER&status=ACTIVE&limit=100` عبر SWR — الناقلون من قاعدة البيانات الحقيقية

@@ -1,6 +1,6 @@
 # Pending Work — حالة الربط الحالية
 
-> آخر تحديث: 2026-05-24 (بعد v0.9.9)
+> آخر تحديث: 2026-05-24 (بعد v0.9.11)
 >
 > الهدف من هذا الملف: نقطة استئناف واضحة. يلخّص ما تبقّى من الربط/الإصلاحات قبل
 > أن نعتبر النظام جاهزاً لـ release v1.0.
@@ -40,6 +40,8 @@
 - Direct Assignment بسعر ثابت ✅ v0.9.9 — `agreedPriceUpfront` يتجاوز التفاوض ويُسند مباشرة
 - Saved Addresses ✅ migration طُبّقت في v0.9.3 (20260521043732_add_saved_addresses_and_national_id)
 - قائمة الناقلين في New Order ✅ v0.9.10 — `GET /companies?type=CARRIER&status=ACTIVE` بدل COMPANIES mock
+- Carrier order controls ✅ v0.9.11 — أزرار ASSIGNED/CONFIRMED/IN_TRANSIT مع dialog صحيح لكل مرحلة
+- Driver Assignment ✅ v0.9.11 — `POST /orders/:id/assign-driver` + `GET /fleet/drivers/available` + auto ON_TRIP/AVAILABLE
 
 ---
 
@@ -105,7 +107,7 @@
 |---|---|---|---|---|
 | auth | ✅ | ✅ | ✗ | Admin login منفصل عند `/admin/auth/login` |
 | companies | ✅ | ✅ | ✗ | KYC + members CRUD |
-| orders | ✅ | ✅ | ✗ | List include `bids` selected fields (v0.9.0) + agreedPriceUpfront (v0.9.9) |
+| orders | ✅ | ✅ | ✗ | List include `bids` selected fields (v0.9.0) + agreedPriceUpfront (v0.9.9) + assignDriver (v0.9.11) |
 | bids | ✅ | ✅ | ✗ | `proposedDeliveryDate` (v0.9.0) |
 | fleet | ✅ | ✅ | ✗ | TruckType enum extended (v0.9.2) |
 | payments | ✅ | ✅ | ✗ | List includes `order.client/carrier.nameAr` (v0.9.1) |
