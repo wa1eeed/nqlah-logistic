@@ -61,6 +61,11 @@ export class AdminController {
     return this.admin.updateCompanyStatus(id, dto.status);
   }
 
+  @Get('drivers')
+  drivers(@Query() q: PaginationDto) {
+    return this.admin.listDrivers(q);
+  }
+
   @Get('orders')
   orders(@Query() q: PaginationDto, @Query('status') status?: string) {
     return this.admin.listOrders(q, status);

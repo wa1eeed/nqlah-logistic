@@ -1,8 +1,10 @@
 'use client';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import { Filter, Phone, Search, Users } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,27 +16,51 @@ import {
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
 import { StatsCard } from '@/components/stats-card';
-import { DRIVERS, carrierById, formatDate, truckById } from '@naqla/shared-utils';
+import { fetcher } from '@/lib/api';
+import { formatDate } from '@naqla/shared-utils';
+
+type ApiDriver = {
+  id: string;
+  status: 'AVAILABLE' | 'ON_TRIP' | 'OFF_DUTY';
+  licenseNumber: string;
+  licenseExpiry: string;
+  licenseType: string;
+  rating: number;
+  totalTrips: number;
+  isActive: boolean;
+  createdAt: string;
+  user: { firstName: string; lastName: string; phone: string; nationalId: string | null };
+  company: { id: string; nameAr: string };
+  orderDrivers: Array<{
+    order: { id: string; orderNumber: string; status: string; originCity: string; destinationCity: string };
+  }>;
+};
 
 export default function AdminDriversPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string>('ALL');
 
+  const { data: raw } = useSWR<ApiDriver[] | { items?: ApiDriver[] }>('/admin/drivers?limit=200', fetcher);
+  const apiDrivers: ApiDriver[] = useMemo(() => {
+    if (!raw) return [];
+    return Array.isArray(raw) ? raw : (raw as { items?: ApiDriver[] }).items ?? [];
+  }, [raw]);
+
   const filtered = useMemo(() => {
-    return DRIVERS.filter((d) => {
+    return apiDrivers.filter((d) => {
       if (status !== 'ALL' && d.status !== status) return false;
       if (q) {
-        const hay = `${d.fullName} ${d.nationalId} ${d.phone} ${carrierById(d.carrierId)?.nameAr ?? ''}`;
-        if (!hay.toLowerCase().includes(q.toLowerCase())) return false;
+        const hay = `${d.user.firstName} ${d.user.lastName} ${d.user.phone ?? ''} ${d.user.nationalId ?? ''} ${d.company.nameAr}`.toLowerCase();
+        if (!hay.includes(q.toLowerCase())) return false;
       }
       return true;
     });
-  }, [q, status]);
+  }, [apiDrivers, q, status]);
 
-  const total = DRIVERS.length;
-  const onTrip = DRIVERS.filter((d) => d.status === 'ON_TRIP').length;
-  const available = DRIVERS.filter((d) => d.status === 'AVAILABLE').length;
-  const offDuty = DRIVERS.filter((d) => d.status === 'OFF_DUTY').length;
+  const total    = apiDrivers.length;
+  const onTrip   = apiDrivers.filter((d) => d.status === 'ON_TRIP').length;
+  const available = apiDrivers.filter((d) => d.status === 'AVAILABLE').length;
+  const offDuty  = apiDrivers.filter((d) => d.status === 'OFF_DUTY').length;
 
   return (
     <>
@@ -44,10 +70,10 @@ export default function AdminDriversPage() {
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatsCard label="إجمالي السائقين" value={total.toLocaleString('en-US')} icon={Users} />
-        <StatsCard label="في رحلة"        value={onTrip.toLocaleString('en-US')} icon={Users} />
-        <StatsCard label="متاحون"          value={available.toLocaleString('en-US')} icon={Users} tone="success" />
-        <StatsCard label="خارج الخدمة"     value={offDuty.toLocaleString('en-US')} icon={Users} tone="warning" />
+        <StatsCard label="إجمالي السائقين" value={total.toLocaleString('en-US')}   icon={Users} />
+        <StatsCard label="في رحلة"          value={onTrip.toLocaleString('en-US')}  icon={Users} tone="warning" />
+        <StatsCard label="متاحون"            value={available.toLocaleString('en-US')} icon={Users} tone="success" />
+        <StatsCard label="خارج الخدمة"       value={offDuty.toLocaleString('en-US')} icon={Users} />
       </div>
 
       <Card>
@@ -78,12 +104,12 @@ export default function AdminDriversPage() {
               <TableRow>
                 <TableHead>السائق</TableHead>
                 <TableHead>الناقل</TableHead>
-                <TableHead>الهوية</TableHead>
+                <TableHead>هوية</TableHead>
                 <TableHead>فئة الرخصة</TableHead>
                 <TableHead>صلاحية الرخصة</TableHead>
-                <TableHead>الشاحنة</TableHead>
                 <TableHead>الرحلات</TableHead>
                 <TableHead>الجوال</TableHead>
+                <TableHead>الطلب الحالي</TableHead>
                 <TableHead>الحالة</TableHead>
               </TableRow>
             </TableHeader>
@@ -97,9 +123,9 @@ export default function AdminDriversPage() {
                 </TableRow>
               ) : (
                 filtered.map((d) => {
-                  const carrier = carrierById(d.carrierId);
-                  const truck = truckById(d.assignedTruckId);
-                  const initials = d.fullName.split(' ').slice(0, 2).map((w) => w[0]).join('');
+                  const fullName = `${d.user.firstName} ${d.user.lastName}`;
+                  const initials = fullName.trim().split(' ').slice(0, 2).map((w) => w[0] ?? '').join('');
+                  const activeOrder = d.orderDrivers[0]?.order ?? null;
                   return (
                     <TableRow key={d.id}>
                       <TableCell>
@@ -108,25 +134,37 @@ export default function AdminDriversPage() {
                             <AvatarFallback>{initials}</AvatarFallback>
                           </Avatar>
                           <div className="min-w-0">
-                            <div className="font-medium truncate">{d.fullName}</div>
-                            <div className="text-xs text-muted-foreground font-mono">{d.id}</div>
+                            <div className="font-medium truncate">{fullName}</div>
+                            <div className="text-xs text-muted-foreground font-mono">{d.id.slice(0, 8)}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Link href={`/companies/${d.carrierId}`} className="hover:text-primary text-sm">
-                          {carrier?.nameAr ?? '—'}
+                        <Link href={`/companies/${d.company.id}`} className="hover:text-primary text-sm">
+                          {d.company.nameAr}
                         </Link>
                       </TableCell>
-                      <TableCell className="num text-xs">{d.nationalId}</TableCell>
-                      <TableCell className="text-xs">{d.licenseClass}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{formatDate(d.licenseExpiry)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{truck?.plateNumber ?? '—'}</TableCell>
+                      <TableCell className="num text-xs">{d.user.nationalId ?? '—'}</TableCell>
+                      <TableCell className="text-xs">{d.licenseType}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{formatDate(d.licenseExpiry, 'd MMM yyyy')}</TableCell>
                       <TableCell className="num text-sm">{d.totalTrips.toLocaleString('en-US')}</TableCell>
                       <TableCell>
-                        <a href={`tel:${d.phone}`} className="text-xs num inline-flex items-center gap-1 hover:text-primary" dir="ltr">
-                          <Phone className="h-3 w-3" /> {d.phone}
+                        <a href={`tel:${d.user.phone}`} className="text-xs num inline-flex items-center gap-1 hover:text-primary" dir="ltr">
+                          <Phone className="h-3 w-3" /> {d.user.phone}
                         </a>
+                      </TableCell>
+                      <TableCell>
+                        {activeOrder ? (
+                          <Link href={`/orders/${activeOrder.id}`} className="group">
+                            <div className="text-xs font-mono text-primary hover:underline">{activeOrder.orderNumber}</div>
+                            <div className="text-xs text-muted-foreground">{activeOrder.originCity} ← {activeOrder.destinationCity}</div>
+                            <Badge variant="secondary" className="mt-0.5 h-4 text-[10px]">
+                              <StatusBadge status={activeOrder.status} />
+                            </Badge>
+                          </Link>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell><StatusBadge status={d.status} /></TableCell>
                     </TableRow>

@@ -15,6 +15,7 @@ export class AdminService {
     const [
       ordersToday, ordersWeek, ordersMonth,
       revenueAgg, activeCompanies, processingOrders, openDisputes,
+      activeDrivers,
       recentOrders,
     ] = await Promise.all([
       this.prisma.order.count({ where: { createdAt: { gte: startOfDay } } }),
@@ -27,6 +28,7 @@ export class AdminService {
       this.prisma.company.count({ where: { status: 'ACTIVE' } }),
       this.prisma.order.count({ where: { status: { in: ['PUBLISHED', 'BIDDING', 'ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'] } } }),
       this.prisma.dispute.count({ where: { status: { in: ['OPEN', 'UNDER_REVIEW'] } } }),
+      this.prisma.driverProfile.count({ where: { status: 'ON_TRIP' } }),
       this.prisma.order.findMany({
         take: 10,
         orderBy: { createdAt: 'desc' },
@@ -46,8 +48,45 @@ export class AdminService {
       activeCompanies,
       processingOrders,
       openDisputes,
+      activeDrivers,
       recentOrders,
     };
+  }
+
+  async listDrivers(query: PaginationDto) {
+    const { page = 1, limit = 20, search } = query;
+    const where = search
+      ? {
+          OR: [
+            { user: { firstName: { contains: search, mode: 'insensitive' as const } } },
+            { user: { lastName:  { contains: search, mode: 'insensitive' as const } } },
+            { user: { phone:     { contains: search } } },
+            { company: { nameAr: { contains: search, mode: 'insensitive' as const } } },
+          ],
+        }
+      : {};
+    const [items, total] = await Promise.all([
+      this.prisma.driverProfile.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { firstName: true, lastName: true, phone: true, nationalId: true } },
+          company: { select: { id: true, nameAr: true } },
+          orderDrivers: {
+            where: { order: { status: { in: ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'] } } },
+            orderBy: { assignedAt: 'desc' },
+            take: 1,
+            include: {
+              order: { select: { id: true, orderNumber: true, status: true, originCity: true, destinationCity: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.driverProfile.count({ where }),
+    ]);
+    return paginate(items, total, page, limit);
   }
 
   async listCompanies(query: PaginationDto, type?: string, status?: string) {

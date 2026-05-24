@@ -4,7 +4,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import {
   Building2, FileText, Wallet, AlertTriangle, ArrowLeft, ArrowUpRight,
-  Coins, Loader2, RefreshCw, Inbox,
+  Coins, Loader2, RefreshCw, Inbox, Users,
 } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -27,6 +27,9 @@ interface DashboardStats {
   activeCompanies?: number;
   pendingKyc?: number;
   openDisputes?: number;
+  activeDrivers?: number;
+  orders?: { today?: number; week?: number; month?: number };
+  revenue?: { gmv?: number; commission?: number };
 }
 
 export default function AdminDashboard() {
@@ -48,17 +51,23 @@ export default function AdminDashboard() {
   const stats = useMemo(() => {
     const fallbackGmv        = PAYMENTS.reduce((s, p) => s + p.amount, 0);
     const fallbackCommission = PAYMENTS.reduce((s, p) => s + p.commission, 0);
+    // API returns { orders: { today, week, month }, revenue: { gmv, commission }, ... }
+    // but also accept flat shape for backward compat.
+    const apiGmv         = statsData?.revenue?.gmv         ?? statsData?.gmv;
+    const apiCommission  = statsData?.revenue?.commission   ?? statsData?.commission;
+    const apiOrders      = statsData?.orders?.month         ?? statsData?.totalOrders;
     return {
-      totalOrders:      statsData?.totalOrders     ?? ORDERS.length,
-      gmv:              statsData?.gmv             ?? fallbackGmv,
-      commission:       statsData?.commission      ?? fallbackCommission,
+      totalOrders:      apiOrders           ?? ORDERS.length,
+      gmv:              apiGmv              ?? fallbackGmv,
+      commission:       apiCommission       ?? fallbackCommission,
       activeCompanies:  statsData?.activeCompanies ?? COMPANIES.filter((c) => c.kycStatus === 'APPROVED').length,
       pendingKyc:       statsData?.pendingKyc      ?? COMPANIES.filter((c) => c.kycStatus === 'PENDING_VERIFICATION').length,
       openDisputes:     statsData?.openDisputes    ?? DISPUTES.filter((d) => d.status === 'OPEN' || d.status === 'UNDER_REVIEW').length,
+      activeDrivers:    statsData?.activeDrivers   ?? 0,
     };
   }, [statsData]);
 
-  const { totalOrders, gmv, commission, activeCompanies, pendingKyc, openDisputes } = stats;
+  const { totalOrders, gmv, commission, activeCompanies, pendingKyc, openDisputes, activeDrivers } = stats;
   void isLoading; // future: skeleton state on first load
 
   return (
@@ -74,11 +83,11 @@ export default function AdminDashboard() {
       />
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <StatsCard
-          label="طلبات اليوم"
+          label="طلبات هذا الشهر"
           value={totalOrders}
-          hint={`الإجمالي هذا الشهر`}
+          hint="الإجمالي المسجَّل"
           icon={FileText}
           tone="default"
         />
@@ -102,6 +111,13 @@ export default function AdminDashboard() {
           hint="تحتاج مراجعة"
           icon={AlertTriangle}
           tone="danger"
+        />
+        <StatsCard
+          label="سائقون نشطون الآن"
+          value={activeDrivers}
+          hint="بحالة في رحلة"
+          icon={Users}
+          tone="warning"
         />
       </div>
 

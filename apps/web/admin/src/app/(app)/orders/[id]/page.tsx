@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowRight, Building2, Calendar, CheckCircle2, Clock, MapPin, Package, ShieldCheck,
-  Snowflake, Truck, Wallet, Weight,
+  ArrowRight, Building2, Calendar, CheckCircle2, Clock, MapPin, Package, Phone,
+  ShieldCheck, Snowflake, Truck, User, Wallet, Weight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -63,6 +63,11 @@ export default function AdminOrderDetail() {
 
   const client = companyById(order.clientId);
   const carrier = companyById(order.carrierId);
+  type ApiOrderDriver = {
+    id: string; assignedAt: string;
+    driver: { id: string; status: string; user: { firstName: string; lastName: string; phone: string } };
+  };
+  const orderDrivers: ApiOrderDriver[] = (order as unknown as { orderDrivers?: ApiOrderDriver[] }).orderDrivers ?? [];
   // Prefer API bids (live data) — fall back to mock for offline demo.
   type ApiBid = { id: string; carrierId: string; status: string; amount?: number; price?: number; estimatedDays?: number; truckType?: string; proposedPickupDate?: string; proposedDeliveryDate?: string };
   const apiBids = (order as unknown as { bids?: ApiBid[] }).bids;
@@ -182,6 +187,57 @@ export default function AdminOrderDetail() {
         <div className="space-y-6">
           {client && <PartyCard kind="العميل" company={client} onClick={() => router.push(`/companies/${client.id}`)} />}
           {carrier && <PartyCard kind="الناقل" company={carrier} onClick={() => router.push(`/companies/${carrier.id}`)} />}
+
+          {/* Assigned driver */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">السائق المُكلَّف</CardTitle></CardHeader>
+            <CardContent>
+              {orderDrivers.length === 0 ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <User className="h-4 w-4 shrink-0" />
+                  لم يُسند سائق بعد
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {orderDrivers.map((od) => {
+                    const fullName = `${od.driver.user.firstName} ${od.driver.user.lastName}`;
+                    const isOnTrip = od.driver.status === 'ON_TRIP';
+                    return (
+                      <div key={od.id} className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full bg-muted grid place-items-center shrink-0">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium truncate">{fullName}</div>
+                            <a href={`tel:${od.driver.user.phone}`} className="text-xs text-muted-foreground inline-flex items-center gap-1 hover:text-primary num" dir="ltr">
+                              <Phone className="h-3 w-3" /> {od.driver.user.phone}
+                            </a>
+                          </div>
+                        </div>
+                        <dl className="divide-y text-xs">
+                          <div className="flex justify-between py-1.5">
+                            <dt className="text-muted-foreground">تاريخ الإسناد</dt>
+                            <dd>{formatDate(od.assignedAt, 'd MMM · HH:mm')}</dd>
+                          </div>
+                          <div className="flex justify-between py-1.5 items-center">
+                            <dt className="text-muted-foreground">الحالة</dt>
+                            <dd>
+                              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium
+                                ${isOnTrip ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success'}`}>
+                                <span className={`h-1.5 w-1.5 rounded-full ${isOnTrip ? 'bg-warning' : 'bg-success'}`} />
+                                {isOnTrip ? 'في رحلة' : 'متاح'}
+                              </span>
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader><CardTitle>تفاصيل الشحنة</CardTitle></CardHeader>

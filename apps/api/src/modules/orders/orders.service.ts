@@ -90,6 +90,16 @@ export class OrdersService {
         trackingEvents: { orderBy: { createdAt: 'desc' } },
         payment: true,
         invoice: true,
+        orderDrivers: {
+          orderBy: { assignedAt: 'desc' },
+          include: {
+            driver: {
+              include: {
+                user: { select: { firstName: true, lastName: true, phone: true } },
+              },
+            },
+          },
+        },
       },
     });
     if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });

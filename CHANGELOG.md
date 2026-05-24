@@ -6,6 +6,25 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🚀 v0.9.12 — Driver Visibility in Admin (2026-05-24)
+
+**1. تفاصيل الطلب في الأدمن — Card "السائق المُكلَّف":**
+- `apps/web/admin/src/app/(app)/orders/[id]/page.tsx`: أُضيفت Card جديدة في sidebar تعرض اسم السائق + جواله + تاريخ الإسناد + حالته الحالية (في رحلة / متاح)؛ إذا لا يوجد سائق: "لم يُسند سائق بعد"
+- `apps/api/src/modules/orders/orders.service.ts` — `findById()`: أُضيف `orderDrivers` include مع بيانات السائق والمستخدم
+
+**2. صفحة السائقين في الأدمن — ربط API حقيقي + عمود الطلب الحالي:**
+- `apps/web/admin/src/app/(app)/drivers/page.tsx`: مُعاد كتابتها لتجلب `GET /admin/drivers` بدل `DRIVERS` mock
+- أُضيف عمود "الطلب الحالي" لكل سائق (orderNumber + مسار + حالة) — link ينقل للطلب
+- `apps/api/src/modules/admin/admin.service.ts`: `listDrivers()` — يُعيد كل السائقين مع `user`, `company`, وآخر `orderDrivers` نشط
+- `apps/api/src/modules/admin/admin.controller.ts`: `GET /admin/drivers`
+
+**3. Dashboard — إحصائية "سائقون نشطون الآن":**
+- `apps/web/admin/src/app/(app)/page.tsx`: StatsCard خامسة + grid تحوّل لـ `xl:grid-cols-5`
+- `apps/api/src/modules/admin/admin.service.ts` — `dashboardStats()`: أُضيف `activeDrivers` (count بحالة ON_TRIP)
+- Dashboard يدعم الآن الشكل الجديد `{ orders: { today, week, month }, revenue: { gmv, commission }, ... }` مع backward compat
+
+---
+
 ### 🚀 v0.9.11 — Carrier Order Controls + Driver Assignment (2026-05-24)
 
 **1. أزرار التحكم في الطلب (carrier portal):**
