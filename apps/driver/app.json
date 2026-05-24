@@ -24,15 +24,21 @@
       "expo-secure-store",
       [
         "expo-location",
-        { "locationAlwaysAndWhenInUsePermission": "يحتاج التطبيق للموقع لتتبع رحلتك." }
+        {
+          "locationAlwaysAndWhenInUsePermission": "يحتاج التطبيق للموقع لتتبع رحلتك."
+        }
       ],
       [
         "expo-camera",
-        { "cameraPermission": "يحتاج التطبيق للكاميرا لتصوير إثبات التسليم." }
+        {
+          "cameraPermission": "يحتاج التطبيق للكاميرا لتصوير إثبات التسليم."
+        }
       ],
       [
         "expo-image-picker",
-        { "photosPermission": "يحتاج التطبيق للصور لرفع إثبات التسليم." }
+        {
+          "photosPermission": "يحتاج التطبيق للصور لرفع إثبات التسليم."
+        }
       ],
       [
         "expo-notifications",
@@ -40,7 +46,9 @@
           "icon": "./assets/icon.png",
           "color": "#0A7EA4"
         }
-      ]
+      ],
+      "expo-asset",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
