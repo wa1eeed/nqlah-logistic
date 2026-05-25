@@ -6,6 +6,33 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🚀 v0.9.14 — Executive KPI Dashboard + Analytics API (2026-05-25)
+
+**Backend — Admin Analytics API (6 endpoints جديدة):**
+- `GET /admin/analytics/marketplace`: GMV، عدد الطلبات، متوسط قيمة الطلب، معدل إتمام الطلبات، حصة أعلى 5 شركات، trend يومي
+- `GET /admin/analytics/financial`: إجمالي الإيرادات، صافي الإيرادات، هامش الربح، Take Rate، GMV مقارنةً بالفترة السابقة، توزيع المحافظ
+- `GET /admin/analytics/operational`: معدل التسليم في الوقت المحدد (OTD)، متوسط وقت الرد على العروض، معدل قبول العروض، معدل النزاعات، نشاط KYC
+- `GET /admin/analytics/growth`: GMV MoM، نمو الشركات الجديدة، معدل Retention للعملاء (Cohort)، معدل التكرار، معدل المشاركة
+- `GET /admin/analytics/investor`: Network Effect Score، Supply Liquidity، نشاط المنصة، نسب مقارنة بين الفترات
+- `GET /admin/analytics/summary`: ملخص تنفيذي يجمع جميع KPIs في استجابة واحدة
+
+**Frontend — Admin Reports Page (`apps/web/admin`):**
+- إعادة كتابة كاملة لـ `reports/page.tsx` بثيم Bloomberg Terminal (dark: #0F172A base, #1E293B cards)
+- 5 تبويبات متحركة: السوق / المالية / التشغيل / النمو / المستثمرون
+- `KpiCard` مع sparkline chart مصغر (mini LineChart) ومؤشر تغيير (↑↓)
+- مخططات recharts: LineChart اتجاه يومي، BarChart توزيع إيرادات، PieChart حصص المحافظ
+- `AnimatePresence mode="wait"` لانتقالات التبويبات + `layoutId="tab-indicator"` للمؤشر المتحرك
+- Auto-refresh كل 5 دقائق (`refreshInterval: 300_000`)
+- `Skel` — skeleton loaders بنمط dark مع نبض opacity
+
+**PDF Export (Client-side):**
+- `exportPDF(summary, period)` — تصدير 4 صفحات بدون خادم (jspdf + jspdf-autotable dynamic import)
+- صفحة غلاف مع اسم المنصة + التاريخ + الفترة الزمنية
+- جدول ملخص تنفيذي، جدول KPIs السوقية، جدول النمو والمستثمرين
+- اسم الملف: `naqla-report-{period}-{YYYY-MM-DD}.pdf`
+
+---
+
 ### 🚀 v0.9.13 — Premium UI/UX Overhaul · Web Portals + Driver App (2026-05-25)
 
 **Web Portals — Client & Carrier (framer-motion v12):**

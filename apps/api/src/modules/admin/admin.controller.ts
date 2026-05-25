@@ -87,6 +87,36 @@ export class AdminController {
     return this.admin.transactions(q);
   }
 
+  @Get('analytics/marketplace')
+  analyticsMarketplace(@Query('period') period = '30d') {
+    return this.admin.getMarketplaceKPIs(period);
+  }
+
+  @Get('analytics/financial')
+  analyticsFinancial(@Query('period') period = '30d') {
+    return this.admin.getFinancialKPIs(period);
+  }
+
+  @Get('analytics/operational')
+  analyticsOperational(@Query('period') period = '30d') {
+    return this.admin.getOperationalKPIs(period);
+  }
+
+  @Get('analytics/growth')
+  analyticsGrowth(@Query('period') period = '30d') {
+    return this.admin.getGrowthKPIs(period);
+  }
+
+  @Get('analytics/investor')
+  analyticsInvestor(@Query('period') period = '30d') {
+    return this.admin.getInvestorKPIs(period);
+  }
+
+  @Get('analytics/summary')
+  analyticsSummary(@Query('period') period = '30d') {
+    return this.admin.getExecutiveSummary(period);
+  }
+
   @Get('settings')
   getSettings() {
     return this.admin.getSettings();
