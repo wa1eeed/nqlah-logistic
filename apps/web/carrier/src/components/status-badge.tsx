@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 type Variant = 'default' | 'secondary' | 'destructive' | 'success' | 'warning' | 'outline';
 
@@ -42,7 +43,40 @@ const MAP: Record<string, { variant: Variant; label: string }> = {
   EXPIRED:   { variant: 'destructive', label: 'منتهي' },
 };
 
+const PULSE_STATUSES = new Set(['PUBLISHED', 'IN_TRANSIT', 'BIDDING', 'ASSIGNED']);
+
+const PULSE_COLOR: Record<string, string> = {
+  default: 'bg-primary',
+  success: 'bg-success',
+  warning: 'bg-warning',
+  destructive: 'bg-destructive',
+  secondary: 'bg-muted-foreground',
+  outline: 'bg-foreground',
+};
+
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
   const m = MAP[status] ?? { variant: 'secondary' as Variant, label: status };
-  return <Badge variant={m.variant}>{label ?? m.label}</Badge>;
+  const showPulse = PULSE_STATUSES.has(status);
+
+  return (
+    <Badge variant={m.variant} className="gap-1.5">
+      {showPulse && (
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span
+            className={cn(
+              'animate-ping absolute inline-flex h-full w-full rounded-full opacity-75',
+              PULSE_COLOR[m.variant] ?? 'bg-primary',
+            )}
+          />
+          <span
+            className={cn(
+              'relative inline-flex rounded-full h-2 w-2',
+              PULSE_COLOR[m.variant] ?? 'bg-primary',
+            )}
+          />
+        </span>
+      )}
+      {label ?? m.label}
+    </Badge>
+  );
 }

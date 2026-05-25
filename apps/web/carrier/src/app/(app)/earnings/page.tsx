@@ -5,6 +5,7 @@ import { ArrowDownRight, Calendar, ShieldCheck, TrendingUp, Wallet } from 'lucid
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
+import { PageTransition, FadeItem } from '@/components/page-transition';
 import { StatsCard } from '@/components/stats-card';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
@@ -50,73 +51,79 @@ export default function CarrierEarningsPage() {
   const totalCommission = released.reduce((s, p) => s + (p.commission ?? 0), 0);
 
   return (
-    <>
-      <PageHeader title="الأرباح" subtitle="تتبّع مدفوعاتك + الإفراج بعد التسليم" />
+    <PageTransition>
+      <FadeItem>
+        <PageHeader title="الأرباح" subtitle="تتبّع مدفوعاتك + الإفراج بعد التسليم" />
+      </FadeItem>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatsCard label="صافي مستلم" value={<Currency amount={totalNet} />} hint={`${released.length} عملية`} icon={ArrowDownRight} tone="success" />
-        <StatsCard label="بانتظار التسليم" value={<Currency amount={totalPending} />} hint={`${held.length} في Escrow`} icon={ShieldCheck} tone="warning" />
-        <StatsCard label="عمولات المنصة" value={<Currency amount={totalCommission} />} hint="على المكتملة" icon={TrendingUp} tone="default" />
-        <StatsCard label="إجمالي الرحلات" value={released.length + held.length} hint="مدفوعة + Escrow" icon={Wallet} tone="default" />
-      </div>
+      <FadeItem>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <StatsCard label="صافي مستلم" value={<Currency amount={totalNet} />} hint={`${released.length} عملية`} icon={ArrowDownRight} tone="success" />
+          <StatsCard label="بانتظار التسليم" value={<Currency amount={totalPending} />} hint={`${held.length} في Escrow`} icon={ShieldCheck} tone="warning" />
+          <StatsCard label="عمولات المنصة" value={<Currency amount={totalCommission} />} hint="على المكتملة" icon={TrendingUp} tone="default" />
+          <StatsCard label="إجمالي الرحلات" value={released.length + held.length} hint="مدفوعة + Escrow" icon={Wallet} tone="default" />
+        </div>
+      </FadeItem>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>كشف الحركة</CardTitle>
-              <CardDescription className="mt-1">جميع المعاملات المالية على حسابك</CardDescription>
+      <FadeItem>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>كشف الحركة</CardTitle>
+                <CardDescription className="mt-1">جميع المعاملات المالية على حسابك</CardDescription>
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Calendar className="h-3.5 w-3.5" />
+                آخر 30 يوماً
+              </span>
             </div>
-            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Calendar className="h-3.5 w-3.5" />
-              آخر 30 يوماً
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>العملية</TableHead>
-                <TableHead>الطلب</TableHead>
-                <TableHead>العميل</TableHead>
-                <TableHead className="text-end">السعر</TableHead>
-                <TableHead className="text-end">العمولة</TableHead>
-                <TableHead className="text-end">صافي</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>التاريخ</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {all.map((p) => {
-                // Prefer embedded `order.client.nameAr` (API response) over
-                // looking up by mock id — DB cuids don't match the mock array.
-                // Fall back to companyById only when the embedded relation is
-                // missing (offline mock path).
-                const clientName =
-                  p.order?.client?.nameAr
-                  ?? (p.clientId ? companyById(p.clientId)?.nameAr : null)
-                  ?? '—';
-                // Same idea for the order: show the human-readable order
-                // number rather than the cuid.
-                const orderRef = p.order?.orderNumber ?? p.orderId;
-                return (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-mono text-xs font-medium">{p.id}</TableCell>
-                    <TableCell className="font-mono text-xs text-primary">{orderRef}</TableCell>
-                    <TableCell>{clientName}</TableCell>
-                    <TableCell className="text-end"><Currency amount={p.amount ?? 0} /></TableCell>
-                    <TableCell className="text-end text-destructive"><Currency amount={-(p.commission ?? 0)} /></TableCell>
-                    <TableCell className="text-end font-medium"><Currency amount={carrierNetOf(p)} /></TableCell>
-                    <TableCell><StatusBadge status={p.state} /></TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{formatDate(p.releasedAt ?? p.paidAt ?? p.createdAt)}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>العملية</TableHead>
+                  <TableHead>الطلب</TableHead>
+                  <TableHead>العميل</TableHead>
+                  <TableHead className="text-end">السعر</TableHead>
+                  <TableHead className="text-end">العمولة</TableHead>
+                  <TableHead className="text-end">صافي</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead>التاريخ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {all.map((p) => {
+                  // Prefer embedded `order.client.nameAr` (API response) over
+                  // looking up by mock id — DB cuids don't match the mock array.
+                  // Fall back to companyById only when the embedded relation is
+                  // missing (offline mock path).
+                  const clientName =
+                    p.order?.client?.nameAr
+                    ?? (p.clientId ? companyById(p.clientId)?.nameAr : null)
+                    ?? '—';
+                  // Same idea for the order: show the human-readable order
+                  // number rather than the cuid.
+                  const orderRef = p.order?.orderNumber ?? p.orderId;
+                  return (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-mono text-xs font-medium">{p.id}</TableCell>
+                      <TableCell className="font-mono text-xs text-primary">{orderRef}</TableCell>
+                      <TableCell>{clientName}</TableCell>
+                      <TableCell className="text-end"><Currency amount={p.amount ?? 0} /></TableCell>
+                      <TableCell className="text-end text-destructive"><Currency amount={-(p.commission ?? 0)} /></TableCell>
+                      <TableCell className="text-end font-medium"><Currency amount={carrierNetOf(p)} /></TableCell>
+                      <TableCell><StatusBadge status={p.state} /></TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDate(p.releasedAt ?? p.paidAt ?? p.createdAt)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </FadeItem>
+    </PageTransition>
   );
 }

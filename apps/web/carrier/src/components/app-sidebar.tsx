@@ -2,6 +2,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { motion } from 'framer-motion';
 import {
   AlertCircle, BarChart3, Bell, Compass, FileCheck2, Gavel, LayoutDashboard,
   LifeBuoy, Package, Settings, Shield, Truck, Users, Wallet,
@@ -125,13 +126,20 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                    isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    isActive ? 'text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="flex-1">{t(`nav.${item.labelKey}`)}</span>
-                  {showOppsBadge && <PulsingBadge count={openOppsCount} compact />}
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active"
+                      className="absolute inset-0 rounded-lg bg-primary/10"
+                      transition={{ type: 'spring', bounce: 0.15, duration: 0.35 }}
+                    />
+                  )}
+                  <Icon className="h-4 w-4 shrink-0 relative z-10" />
+                  <span className="flex-1 relative z-10">{t(`nav.${item.labelKey}`)}</span>
+                  {showOppsBadge && <span className="relative z-10"><PulsingBadge count={openOppsCount} compact /></span>}
                 </Link>
               );
             })}

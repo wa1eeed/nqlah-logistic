@@ -2,15 +2,18 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { Loader2, Plus } from 'lucide-react';
+import { Package, Plus } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
+import { EmptyState } from '@/components/empty-state';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
+import { PageTransition, FadeItem } from '@/components/page-transition';
 import {
   CURRENT_CLIENT_ID, formatDate, ordersForClient,
   normalizeOrderList, type Order,
@@ -50,88 +53,106 @@ export default function ClientOrdersPage() {
   ];
 
   return (
-    <>
-      <PageHeader
-        title="طلباتي"
-        subtitle="جميع طلبات النقل التي أنشأتها"
-        actions={
-          <Link href="/orders/new">
-            <Button>
-              <Plus className="h-4 w-4" />
-              طلب جديد
-            </Button>
-          </Link>
-        }
-      />
+    <PageTransition>
+      <FadeItem>
+        <PageHeader
+          title="طلباتي"
+          subtitle="جميع طلبات النقل التي أنشأتها"
+          actions={
+            <Link href="/orders/new">
+              <Button>
+                <Plus className="h-4 w-4" />
+                طلب جديد
+              </Button>
+            </Link>
+          }
+        />
+      </FadeItem>
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="overflow-x-auto">
-          {TABS.map((t) => (
-            <TabsTrigger key={t.key} value={t.key}>
-              {t.label}
-              <Badge variant="secondary" className="ms-1 num">{t.count}</Badge>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <FadeItem>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="overflow-x-auto">
+            {TABS.map((t) => (
+              <TabsTrigger key={t.key} value={t.key}>
+                {t.label}
+                <Badge variant="secondary" className="ms-1 num">{t.count}</Badge>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </FadeItem>
 
-      {isLoading && !data && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          جاري التحميل...
-        </div>
-      )}
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>رقم</TableHead>
-                <TableHead>المسار</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>الاستلام</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="text-center">عروض</TableHead>
-                <TableHead className="text-end">السعر</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-10">لا توجد طلبات</TableCell>
-                </TableRow>
-              ) : (
-                rows.map((o) => (
-                  <TableRow key={o.id} className="cursor-pointer" onClick={() => (window.location.href = `/orders/${o.id}`)}>
-                    <TableCell>
-                      <Link href={`/orders/${o.id}`} className="font-mono text-xs text-primary hover:underline">{o.orderNumber}</Link>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm">{o.originCity} ← {o.destinationCity}</span>
-                        <span className="text-xs text-muted-foreground truncate max-w-[280px]">{o.cargoDescription}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'}>
-                        {o.mode === 'OPEN' ? 'مفتوح' : 'مباشر'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{formatDate(o.pickupDate)}</TableCell>
-                    <TableCell><StatusBadge status={o.status} /></TableCell>
-                    <TableCell className="text-center num">
-                      {/* Mock orders use `bidCount`; API responses use `_count.bids`. Handle both. */}
-                      {(o as Order & { _count?: { bids: number } })._count?.bids ?? o.bidCount ?? '—'}
-                    </TableCell>
-                    <TableCell className="text-end"><Currency amount={o.agreedPrice ?? o.clientBudget} /></TableCell>
+      <FadeItem>
+        <Card>
+          <CardContent className="p-0">
+            {rows.length === 0 && !isLoading ? (
+              <EmptyState
+                icon={Package}
+                title="لا توجد طلبات"
+                description="لم تنشئ أي طلبات نقل بعد في هذه الفئة"
+                action={{ label: 'إنشاء طلب جديد', href: '/orders/new' }}
+              />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>رقم</TableHead>
+                    <TableHead>المسار</TableHead>
+                    <TableHead>النوع</TableHead>
+                    <TableHead>الاستلام</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead className="text-center">عروض</TableHead>
+                    <TableHead className="text-end">السعر</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </>
+                </TableHeader>
+                <TableBody>
+                  {isLoading && !data ? (
+                    Array.from({ length: 5 }).map((_, r) => (
+                      <TableRow key={r}>
+                        {Array.from({ length: 7 }).map((_, c) => (
+                          <TableCell key={c}>
+                            <motion.div
+                              animate={{ opacity: [0.4, 0.9, 0.4] }}
+                              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut', delay: r * 0.1 }}
+                              className={`h-3 rounded-md bg-muted ${c === 0 ? 'w-20' : c === 6 ? 'w-16' : 'w-full'}`}
+                            />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    rows.map((o) => (
+                      <TableRow key={o.id} className="cursor-pointer" onClick={() => (window.location.href = `/orders/${o.id}`)}>
+                        <TableCell>
+                          <Link href={`/orders/${o.id}`} className="font-mono text-xs text-primary hover:underline">{o.orderNumber}</Link>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="text-sm">{o.originCity} ← {o.destinationCity}</span>
+                            <span className="text-xs text-muted-foreground truncate max-w-[280px]">{o.cargoDescription}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'}>
+                            {o.mode === 'OPEN' ? 'مفتوح' : 'مباشر'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{formatDate(o.pickupDate)}</TableCell>
+                        <TableCell><StatusBadge status={o.status} /></TableCell>
+                        <TableCell className="text-center num">
+                          {/* Mock orders use `bidCount`; API responses use `_count.bids`. Handle both. */}
+                          {(o as Order & { _count?: { bids: number } })._count?.bids ?? o.bidCount ?? '—'}
+                        </TableCell>
+                        <TableCell className="text-end"><Currency amount={o.agreedPrice ?? o.clientBudget} /></TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </FadeItem>
+    </PageTransition>
   );
 }

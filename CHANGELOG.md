@@ -6,7 +6,34 @@
 
 ## [Unreleased] — قيد التطوير
 
-### 🚀 v0.9.13 — Premium UI/UX Overhaul · Driver App (2026-05-24)
+### 🚀 v0.9.13 — Premium UI/UX Overhaul · Web Portals + Driver App (2026-05-25)
+
+**Web Portals — Client & Carrier (framer-motion v12):**
+
+Design System:
+- `globals.css`: متغيرات CSS جديدة — `--gradient-primary/mint/gold`، `--shadow-card/hover/primary`، `--radius: 1rem`، typography utilities (`.text-h1/h2/h3/body/caption`)
+- `card.tsx`: variant `elevated` + ظلال محسّنة
+- `button.tsx`: تدرجات لونية، `active:scale-[0.98]`، variant جديد `success`
+- `badge.tsx`: `pulse` prop — نقطة متحركة للحالات النشطة
+
+Components:
+- `stats-card.tsx`: `AnimatedCounter` (0→value)، `motion.div` مع `whileInView` + `whileHover`، شريط تدرج ملوّن علوي
+- `status-badge.tsx`: الحالات النشطة تحصل على `pulse={true}` تلقائياً
+- `page-header.tsx`: حركة دخول + خط تدرج تحت العنوان
+- `page-transition.tsx` (جديد): `PageTransition` + `FadeItem` — stagger container مشترك
+- `skeleton-table.tsx` (جديد): صفوف جدول متحركة لحالة التحميل
+- `empty-state.tsx` (جديد): EmptyState موحّد مع أيقونة + رسالة + CTA اختياري
+
+Pages:
+- `app/(app)/page.tsx` (dashboard): Hero gradient + SVG wave، Quick Actions 4-tile grid، Activity Feed timeline بخط زمني رأسي
+- `app/login/page.tsx`: split-layout — لوحة branding يسارية مع framer-motion bullets + نموذج الدخول يميناً (mobile-responsive)
+- `app/(app)/orders/page.tsx`: skeleton loading rows بدل spinner، `EmptyState` عند قائمة فارغة، `PageTransition`
+- `app/(app)/invoices/page.tsx` + `finance/page.tsx` + `earnings/page.tsx` + `bids/page.tsx`: `PageTransition`
+
+Sidebar:
+- `app-sidebar.tsx`: `motion.div layoutId="sidebar-active"` — مؤشر نشط متحرك spring بين عناصر الـ nav
+
+---
 
 **Design System:**
 - `constants/theme.ts`: إعادة كتابة كاملة — dark mode (#0F172A base), GRADIENTS, FONT_SIZE scale, SPACING scale, SHADOW variants (sm/md/lg/primary), STATUS_COLOR map

@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft, Calendar, MapPin, Radio, Search, ShieldCheck, Snowflake, Truck, UserSearch, Weight,
+  ArrowLeft, Calendar, Compass, MapPin, Radio, Search, ShieldCheck, Snowflake, Truck, UserSearch, Weight,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { PulsingBadge } from '@/components/pulsing-badge';
 import { StatusBadge } from '@/components/status-badge';
@@ -142,15 +143,11 @@ export default function CarrierOpportunitiesPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <Truck className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">لا توجد فرص تطابق الفلاتر</p>
-            <Button variant="outline" className="mt-4" onClick={() => { setSearch(''); setCity('ALL'); setTab('OPEN'); }}>
-              مسح الفلاتر
-            </Button>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Compass}
+          title="لا توجد فرص متاحة"
+          description="لم تُنشر أي فرص نقل حالياً — تحقق لاحقاً"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((o) => {

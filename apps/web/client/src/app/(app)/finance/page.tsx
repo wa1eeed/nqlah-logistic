@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
 import { Currency } from '@/components/currency';
+import { PageTransition, FadeItem } from '@/components/page-transition';
 import { StatusBadge } from '@/components/status-badge';
 import { exportPDF, exportXLSX } from '@/lib/export';
 import {
@@ -63,9 +64,12 @@ export default function ClientFinancePage() {
   const handleXLSX = () => exportXLSX({ filename: `statement-${Date.now()}.xlsx`, columns: exportColumns as any, rows: filteredTxs });
 
   return (
-    <>
-      <PageHeader title="الشؤون المالية" subtitle="محفظتك، كشف الحساب، والفواتير" />
+    <PageTransition>
+      <FadeItem>
+        <PageHeader title="الشؤون المالية" subtitle="محفظتك، كشف الحساب، والفواتير" />
+      </FadeItem>
 
+      <FadeItem>
       <Tabs defaultValue="wallet">
         <TabsList>
           <TabsTrigger value="wallet">المحفظة</TabsTrigger>
@@ -246,7 +250,8 @@ export default function ClientFinancePage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </>
+      </FadeItem>
+    </PageTransition>
   );
 }
 

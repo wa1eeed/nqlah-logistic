@@ -2,6 +2,8 @@ import { Badge } from '@/components/ui/badge';
 
 type Variant = 'default' | 'secondary' | 'destructive' | 'success' | 'warning' | 'outline';
 
+const ACTIVE_STATUSES = new Set(['PUBLISHED', 'IN_TRANSIT', 'BIDDING', 'ASSIGNED']);
+
 const MAP: Record<string, { variant: Variant; label: string }> = {
   DRAFT:        { variant: 'secondary',   label: 'مسودة' },
   PUBLISHED:    { variant: 'default',     label: 'منشور' },
@@ -41,5 +43,9 @@ const MAP: Record<string, { variant: Variant; label: string }> = {
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
   const m = MAP[status] ?? { variant: 'secondary' as Variant, label: status };
-  return <Badge variant={m.variant}>{label ?? m.label}</Badge>;
+  return (
+    <Badge variant={m.variant} pulse={ACTIVE_STATUSES.has(status)}>
+      {label ?? m.label}
+    </Badge>
+  );
 }

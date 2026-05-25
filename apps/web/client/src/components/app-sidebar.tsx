@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import useSWR from 'swr';
+import { motion, AnimatePresence } from 'framer-motion';
 import { fetcher } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -71,35 +72,44 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto scrollbar-thin py-4 px-3 space-y-6">
-        {NAV.map((group) => (
-          <div key={group.titleKey} className="flex flex-col gap-1">
-            <div className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t(`groups.${group.titleKey}`)}
+      <AnimatePresence>
+        <nav className="flex-1 overflow-y-auto scrollbar-thin py-4 px-3 space-y-6">
+          {NAV.map((group) => (
+            <div key={group.titleKey} className="flex flex-col gap-1">
+              <div className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t(`groups.${group.titleKey}`)}
+              </div>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = item.href === '/' ? pathname === '/' : pathname === item.href || pathname.startsWith(item.href + '/');
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    className={cn(
+                      'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'text-primary'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    )}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebar-active"
+                        className="absolute inset-0 rounded-lg bg-primary/10"
+                        transition={{ type: 'spring', bounce: 0.15, duration: 0.35 }}
+                      />
+                    )}
+                    <Icon className="h-4 w-4 shrink-0 relative z-10" />
+                    <span className="flex-1 relative z-10">{t(`nav.${item.labelKey}`)}</span>
+                  </Link>
+                );
+              })}
             </div>
-            {group.items.map((item) => {
-              const Icon = item.icon;
-              const isActive = item.href === '/' ? pathname === '/' : pathname === item.href || pathname.startsWith(item.href + '/');
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="flex-1">{t(`nav.${item.labelKey}`)}</span>
-                </Link>
-              );
-            })}
-          </div>
-        ))}
-      </nav>
+          ))}
+        </nav>
+      </AnimatePresence>
 
       <div className="border-t p-3">
         <div className="flex items-center gap-3 rounded-lg bg-muted/40 p-3">
