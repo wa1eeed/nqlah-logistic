@@ -6,6 +6,26 @@
 
 ## [Unreleased] — قيد التطوير
 
+### 🚀 v0.9.15 — Landing Page Premium Redesign + Reports Tab Rename (2026-05-25)
+
+**Landing Page (`apps/web/landing`) — إعادة كتابة كاملة:**
+- تحويل من Server Component ثابت إلى `'use client'` تفاعلي كامل مع framer-motion
+- **Hero**: خلفية gradient ديناميكية + بلوبات خضراء متحركة (motion.div animate) + dot grid + heading بتدرج لوني + خط تأكيد متحرك + CTA بـ glow on hover + floating dashboard mockup مع progress bars متحركة + شارتان طافيتان (AnimatePresence)
+- **Navbar**: glassmorphism sticky (`backdrop-blur-xl`) + hamburger menu مع `AnimatePresence` slide-down على الجوال
+- **Stats**: `StatCard` مكوّن منفصل — عداد رقمي `useCounter` يبدأ عند دخول العنصر الشاشة (`useInView once`)
+- **Features**: `FeatureCard` مكوّن — `whileInView` stagger entrance + `whileHover` lift + icon `whileHover` rotate
+- **كيف نعمل**: `StepCard` مع خط رابط متحرك بين الخطوات (`scaleX` animation)
+- **Audiences**: بطاقتان بانتقال من الجانبين + carrier card بـ gradient تيل
+- **Testimonials**: `TestimonialsSection` — auto-slider كل 4.5 ثانية + dot indicators قابلة للنقر
+- **Pricing**: 3 بطاقات، الوسطى بـ gradient + `whileHover` glow + scale
+- **CTA**: shimmer overlay متحرك مستمر (`animate: x ['-100%', '200%']`)
+- جميع العناصر responsive كاملاً (mobile-first، `sm:` breakpoints)
+
+**Admin Reports — إعادة تسمية التبويب:**
+- تبويب "المستثمرون" ← **"الملخص الاستراتيجي"** (محتواه: LTV + Cohort Retention + Network Effect + ملخص تنفيذي تلقائي)
+
+---
+
 ### 🚀 v0.9.14 — Executive KPI Dashboard + Analytics API (2026-05-25)
 
 **Backend — Admin Analytics API (6 endpoints جديدة):**
@@ -18,7 +38,7 @@
 
 **Frontend — Admin Reports Page (`apps/web/admin`):**
 - إعادة كتابة كاملة لـ `reports/page.tsx` بثيم Bloomberg Terminal (dark: #0F172A base, #1E293B cards)
-- 5 تبويبات متحركة: السوق / المالية / التشغيل / النمو / المستثمرون
+- 5 تبويبات متحركة: السوق / المالية / التشغيل / النمو / الملخص الاستراتيجي
 - `KpiCard` مع sparkline chart مصغر (mini LineChart) ومؤشر تغيير (↑↓)
 - مخططات recharts: LineChart اتجاه يومي، BarChart توزيع إيرادات، PieChart حصص المحافظ
 - `AnimatePresence mode="wait"` لانتقالات التبويبات + `layoutId="tab-indicator"` للمؤشر المتحرك

@@ -1,6 +1,6 @@
 # Pending Work — حالة الربط الحالية
 
-> آخر تحديث: 2026-05-24 (بعد v0.9.11)
+> آخر تحديث: 2026-05-25 (بعد v0.9.15)
 >
 > الهدف من هذا الملف: نقطة استئناف واضحة. يلخّص ما تبقّى من الربط/الإصلاحات قبل
 > أن نعتبر النظام جاهزاً لـ release v1.0.
@@ -57,7 +57,7 @@
 
 | الصفحة | البورتال | الحالة |
 |---|---|---|
-| `/reports` | admin | Static charts — لا endpoint بعد |
+| `/reports` | admin | ✅ مربوط بـ 6 analytics endpoints (v0.9.14) — Bloomberg Terminal dark theme + PDF export |
 | `/legal` | admin | نصوص قانونية ثابتة — لا يحتاج API |
 | `/promotions` | admin | Static UI — ميزة مستقبلية |
 | `/audit` | admin | Stub — يحتاج `GET /admin/audit-logs` |
@@ -115,7 +115,7 @@
 | notifications | ✅ | ✅ | ✗ | |
 | tracking | ✅ | ✅ | ✗ | events lifecycle |
 | uploads | ✅ | ✅ | ✗ | presigned URLs (UI wiring pending) |
-| admin | ✅ | ✅ | ✗ | dashboard/companies/orders/disputes/settings |
+| admin | ✅ | ✅ | ✗ | dashboard/companies/orders/disputes/settings + 6 analytics endpoints (v0.9.14) |
 | **disputes** | ✅ | ✅ | ✗ | جديد في v0.9.0 — POST/GET للأطراف |
 | **support** | ✅ | ✅ | ✗ | جديد في v0.9.0 — Tickets CRUD |
 | addresses | ✅ | ✅ | ✗ | تحتاج `prisma migrate dev` لتفعيل SavedAddress في DB |
@@ -130,3 +130,9 @@
 - المستخدم يفضّل: tasks منظّمة، type-check بعد كل تعديل جوهري، toasts بدل alerts، mutate بعد كل mutation.
 - لا تكسر الـ stability constraints أعلاه.
 - في حال شك حول backend endpoint: `grep -E "@(Get|Post|Put|Delete|Patch)\(" apps/api/src/modules/*/`.
+
+### آخر ما أُنجز (v0.9.13 → v0.9.15):
+
+- **v0.9.13**: Premium UI/UX — framer-motion على client/carrier portals + driver app (dashboard hero، animated sidebar، EmptyState، PageTransition، split login)
+- **v0.9.14**: Executive KPI Dashboard — 6 analytics endpoints في admin + Bloomberg Terminal dark theme + PDF export (jspdf)
+- **v0.9.15**: Landing page إعادة كتابة كاملة (animated hero, stats counters, testimonials slider, mobile hamburger) + تغيير اسم تبويب التقارير إلى "الملخص الاستراتيجي"
