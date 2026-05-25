@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { MotiView } from 'moti';
-import { Easing } from 'react-native-reanimated';
 import { COLORS, RADIUS, SPACING } from '@/constants/theme';
 
 // ─── Single shimmer line ──────────────────────────────────────────────────────
@@ -21,7 +20,7 @@ export function SkeletonLine({ width = '100%', height = 14, style }: LineProps) 
         loop: true,
         type: 'timing',
         duration: 800,
-        easing: Easing.inOut(Easing.ease),
+        easing: (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
       }}
       style={[
         styles.line,
@@ -50,7 +49,7 @@ export function SkeletonCard({ style }: CardProps) {
             loop: true,
             type: 'timing',
             duration: 800,
-            easing: Easing.inOut(Easing.ease),
+            easing: (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
           }}
           style={styles.iconPlaceholder}
         />
