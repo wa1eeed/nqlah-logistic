@@ -21,7 +21,7 @@ import BottomSheet, {
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
-import { MotiView } from 'moti';
+import { MotiView } from '@/components/ui/MotiView';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { api, apiError } from '@/lib/api';
 import {

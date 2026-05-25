@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MotiView } from 'moti';
+import { MotiView } from '@/components/ui/MotiView';
 import { COLORS, RADIUS, SHADOW, GRADIENTS } from '@/constants/theme';
 
 type Props = {

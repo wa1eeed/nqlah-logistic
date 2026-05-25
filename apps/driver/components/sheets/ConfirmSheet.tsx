@@ -6,7 +6,7 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
-import { MotiView } from 'moti';
+import { MotiView } from '@/components/ui/MotiView';
 import { ActionButton } from '@/components/ui/ActionButton';
 import {
   COLORS,

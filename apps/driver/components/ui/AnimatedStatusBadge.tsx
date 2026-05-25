@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { MotiView } from 'moti';
+import { MotiView } from '@/components/ui/MotiView';
 import { COLORS, FONTS, RADIUS, FONT_SIZE, STATUS_LABEL, STATUS_COLOR } from '@/constants/theme';
 
 type Props = {

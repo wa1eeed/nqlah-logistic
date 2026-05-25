@@ -14,7 +14,7 @@ import BottomSheet from '@gorhom/bottom-sheet';
 import * as Haptics from 'expo-haptics';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { MotiView } from 'moti';
+import { MotiView } from '@/components/ui/MotiView';
 import BidBottomSheet from '@/components/sheets/BidBottomSheet';
 import { AnimatedStatusBadge } from '@/components/ui/AnimatedStatusBadge';
 import { SkeletonOrderList } from '@/components/ui/SkeletonLoader';

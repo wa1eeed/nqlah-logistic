@@ -13,7 +13,7 @@ import { Link } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MotiView } from 'moti';
+import { MotiView } from '@/components/ui/MotiView';
 import { useAuthStore } from '@/lib/auth';
 import { apiError } from '@/lib/api';
 import { ActionButton } from '@/components/ui/ActionButton';

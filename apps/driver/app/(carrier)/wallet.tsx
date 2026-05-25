@@ -10,7 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { FlashList } from '@shopify/flash-list';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { MotiView } from 'moti';
+import { MotiView } from '@/components/ui/MotiView';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { fetcher } from '@/lib/api';
 import {

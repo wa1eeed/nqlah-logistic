@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { MotiView } from 'moti';
+import { MotiView } from '@/components/ui/MotiView';
 import { COLORS, RADIUS, SPACING } from '@/constants/theme';
 
 // ─── Single shimmer line ──────────────────────────────────────────────────────
