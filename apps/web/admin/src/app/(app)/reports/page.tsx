@@ -40,7 +40,7 @@ const TABS = [
   { key: 'financial', label: 'المالية',     icon: Wallet },
   { key: 'ops',       label: 'التشغيل',     icon: Activity },
   { key: 'growth',    label: 'النمو',       icon: BarChart2 },
-  { key: 'investor',  label: 'المستثمرون',  icon: Star },
+  { key: 'investor',  label: 'الملخص الاستراتيجي',  icon: Star },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
