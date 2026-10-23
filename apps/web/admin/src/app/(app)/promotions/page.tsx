@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
 import { StatsCard } from '@/components/stats-card';
+import { FadeIn } from '@/components/ui/fade-in';
 import {
   PROMOTIONS, formatDate, type Promotion, type PromoStatus,
 } from '@naqla/shared-utils';
@@ -17,7 +18,7 @@ const STATUS_BADGE: Record<PromoStatus, 'default' | 'success' | 'warning' | 'des
   ACTIVE: 'success', PAUSED: 'warning', EXPIRED: 'outline', DRAFT: 'default',
 };
 const STATUS_LABEL: Record<PromoStatus, string> = {
-  ACTIVE: 'فعّال', PAUSED: 'متوقّف', EXPIRED: 'منتهٍ', DRAFT: 'مسودّة',
+  ACTIVE: 'فعّال', PAUSED: 'متوقّف', EXPIRED: 'منته', DRAFT: 'مسودّة',
 };
 const KIND_LABEL: Record<Promotion['kind'], string> = {
   PERCENTAGE_OFF: 'نسبة خصم',
@@ -42,6 +43,7 @@ export default function PromotionsPage() {
   return (
     <>
       <PageHeader
+        eyebrow="النظام"
         title="الترويج والعروض"
         subtitle="إدارة أكواد الخصم والحملات الترويجية للعملاء والناقلين"
         actions={
@@ -51,13 +53,14 @@ export default function PromotionsPage() {
         }
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatsCard label="إجمالي الحملات" value={items.length} icon={Megaphone} />
-        <StatsCard label="فعّالة" value={active} icon={Play} tone="success" />
-        <StatsCard label="إجمالي الاستخدامات" value={totalUse.toLocaleString('en-US')} icon={Tag} />
-        <StatsCard label="مسودّات" value={drafts} icon={Pause} tone="warning" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard label="إجمالي الحملات" value={items.length} icon={Megaphone} index={0} />
+        <StatsCard label="فعّالة" value={active} icon={Play} tone="success" index={1} />
+        <StatsCard label="إجمالي الاستخدامات" value={totalUse} icon={Tag} index={2} />
+        <StatsCard label="مسودّات" value={drafts} icon={Pause} tone="warning" index={3} />
       </div>
 
+      <FadeIn delay={0.1}>
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -136,6 +139,7 @@ export default function PromotionsPage() {
           </Table>
         </CardContent>
       </Card>
+      </FadeIn>
     </>
   );
 }

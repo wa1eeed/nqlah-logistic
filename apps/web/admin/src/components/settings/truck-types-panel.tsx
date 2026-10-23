@@ -89,7 +89,7 @@ export function TruckTypesPanel({ onPersist }: { onPersist?: (types: TruckTypeOp
           {types.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               <Truck className="h-10 w-10 mx-auto mb-2 opacity-40" />
-              لا توجد أنواع — أضف أولاً
+              لا توجد أنواع، أضف أولا
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -117,7 +117,7 @@ export function TruckTypesPanel({ onPersist }: { onPersist?: (types: TruckTypeOp
           <DialogHeader className="px-6 pt-6 pb-3 border-b shrink-0">
             <DialogTitle>{editingId ? 'تعديل نوع الشاحنة' : 'إضافة نوع جديد'}</DialogTitle>
             <DialogDescription>
-              املأ معلومات النوع — ستظهر للناقلين عند إضافة شاحنة أو في تسجيل ناقل جديد.
+              املأ معلومات النوع، ستظهر للناقلين عند إضافة شاحنة أو في تسجيل ناقل جديد.
             </DialogDescription>
           </DialogHeader>
 
@@ -186,7 +186,7 @@ export function TruckTypesPanel({ onPersist }: { onPersist?: (types: TruckTypeOp
             <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted/30 border">
               <div>
                 <Label>نشط</Label>
-                <p className="mt-0.5 text-xs text-muted-foreground">يظهر للناقلين فقط إذا كان نشطاً</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">يظهر للناقلين فقط إذا كان نشطا</p>
               </div>
               <Switch checked={draft.active} onCheckedChange={(v) => setDraft({ ...draft, active: v })} />
             </div>
@@ -216,7 +216,7 @@ function TruckTypeCard({
   return (
     <Card className={!type.active ? 'opacity-60' : ''}>
       {/* Image — gradient bg shows clean studio render PNGs nicely */}
-      <div className="aspect-[16/10] bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 border-b flex items-center justify-center p-4 relative">
+      <div className="aspect-[16/10] bg-muted/40 border-b flex items-center justify-center p-4 relative">
         {type.imageUrl ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -349,9 +349,9 @@ function ImageField({ value, onChange }: { value: string; onChange: (v: string) 
           onClick={() => inputRef.current?.click()}
         >
           <Upload className="h-7 w-7 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm font-medium">اضغط لاختيار صورة، أو اسحب ملفاً هنا</p>
+          <p className="text-sm font-medium">اضغط لاختيار صورة، أو اسحب ملفا هنا</p>
           <p className="text-xs text-muted-foreground mt-1 num">
-            PNG, JPG, WEBP — حد أقصى {MAX_IMAGE_MB} MB
+            PNG, JPG, WEBP · حد أقصى {MAX_IMAGE_MB} MB
           </p>
           <input
             ref={inputRef}
@@ -388,7 +388,7 @@ function ImageField({ value, onChange }: { value: string; onChange: (v: string) 
       {/* Live preview */}
       {value && (
         <div className="rounded-lg border bg-card overflow-hidden">
-          <div className="aspect-[16/10] bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4 relative">
+          <div className="aspect-[16/10] bg-muted/40 flex items-center justify-center p-4 relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={value}

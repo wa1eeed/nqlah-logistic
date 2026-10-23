@@ -312,7 +312,7 @@ export const PAYMENTS: Payment[] = [
 
 export const DISPUTES: Dispute[] = [
   { id: 'DSP-2025-0042', orderId: 'ORD-2025-0148', raisedBy: 'CLIENT',  raisedById: 'CL-1005', status: 'UNDER_REVIEW', reason: 'تلف جزئي في البضاعة',     description: 'وصلت بعض الصناديق بأضرار سطحية. مرفق صور.',  createdAt: '2026-05-10T16:00:00Z' },
-  { id: 'DSP-2025-0041', orderId: 'ORD-2025-0145', raisedBy: 'CARRIER', raisedById: 'CR-2003', status: 'RESOLVED',     reason: 'تأخر العميل في الاستلام',  description: 'الموقع كان مغلقاً ساعتين بعد موعد التسليم.', createdAt: '2026-05-10T12:00:00Z', resolvedAt: '2026-05-12T15:00:00Z' },
+  { id: 'DSP-2025-0041', orderId: 'ORD-2025-0145', raisedBy: 'CARRIER', raisedById: 'CR-2003', status: 'RESOLVED',     reason: 'تأخر العميل في الاستلام',  description: 'الموقع كان مغلقا ساعتين بعد موعد التسليم.', createdAt: '2026-05-10T12:00:00Z', resolvedAt: '2026-05-12T15:00:00Z' },
   { id: 'DSP-2025-0040', orderId: 'ORD-2025-0142', raisedBy: 'CLIENT',  raisedById: 'CL-1001', status: 'OPEN',         reason: 'خلاف على رسوم إضافية',     description: 'الناقل يطالب برسوم انتظار غير متفق عليها.', createdAt: '2026-05-13T08:30:00Z' },
 ];
 
@@ -597,7 +597,7 @@ export interface AppNotification {
 
 export const NOTIFICATIONS: AppNotification[] = [
   // Admin
-  { id: 'N-A-01', audience: 'admin',   kind: 'DISPUTE_NEW',      title: 'نزاع جديد',           body: 'شركة الجزيرة للطاقة رفعت نزاعاً على ORD-2025-0142', href: '/disputes', at: '2026-05-13T08:30:00Z' },
+  { id: 'N-A-01', audience: 'admin',   kind: 'DISPUTE_NEW',      title: 'نزاع جديد',           body: 'شركة الجزيرة للطاقة رفعت نزاعا على ORD-2025-0142', href: '/disputes', at: '2026-05-13T08:30:00Z' },
   { id: 'N-A-02', audience: 'admin',   kind: 'KYC_PENDING',      title: 'KYC بانتظار المراجعة', body: 'شركة المنارة للتقنية رفعت مستندات KYC',                href: '/companies', at: '2026-05-12T16:00:00Z' },
   { id: 'N-A-03', audience: 'admin',   kind: 'PAYMENT_RELEASED', title: 'إفراج Escrow جاهز',    body: 'PAY-9002 جاهز للإفراج للناقل',                          href: '/payments',  at: '2026-05-12T10:00:00Z' },
 
@@ -765,7 +765,7 @@ export interface SupportTicket {
 }
 
 export const SUPPORT_TICKETS: SupportTicket[] = [
-  { id: 'TKT-5012', subject: 'استفسار عن رسوم إضافية على ORD-2025-0142',  raisedBy: 'CLIENT',  raisedById: 'CL-1001', category: 'ORDER',     priority: 'HIGH',    status: 'IN_PROGRESS',  description: 'الناقل أضاف رسوم انتظار غير متفق عليها مسبقاً.', createdAt: '2026-05-13T08:45:00Z', updatedAt: '2026-05-13T14:20:00Z', assignedTo: 'فهد العتيبي', orderId: 'ORD-2025-0142', messageCount: 4 },
+  { id: 'TKT-5012', subject: 'استفسار عن رسوم إضافية على ORD-2025-0142',  raisedBy: 'CLIENT',  raisedById: 'CL-1001', category: 'ORDER',     priority: 'HIGH',    status: 'IN_PROGRESS',  description: 'الناقل أضاف رسوم انتظار غير متفق عليها مسبقا.', createdAt: '2026-05-13T08:45:00Z', updatedAt: '2026-05-13T14:20:00Z', assignedTo: 'فهد العتيبي', orderId: 'ORD-2025-0142', messageCount: 4 },
   { id: 'TKT-5011', subject: 'رفض مستند KYC شهادة الزكاة',                 raisedBy: 'CARRIER', raisedById: 'CR-2005', category: 'KYC',       priority: 'MEDIUM',  status: 'WAITING_USER', description: 'نحتاج إعادة تحميل شهادة الزكاة بصيغة PDF واضحة.',createdAt: '2026-05-12T11:30:00Z', updatedAt: '2026-05-12T18:00:00Z', assignedTo: 'سعد القحطاني', messageCount: 3 },
   { id: 'TKT-5010', subject: 'مشكلة في تسجيل الدخول من جوال السائق',       raisedBy: 'CARRIER', raisedById: 'CR-2001', category: 'TECHNICAL', priority: 'URGENT',  status: 'OPEN',         description: 'تطبيق السائق لا يفتح بعد آخر تحديث للأندرويد.',  createdAt: '2026-05-13T07:10:00Z', updatedAt: '2026-05-13T07:10:00Z', messageCount: 1 },
   { id: 'TKT-5009', subject: 'تأخر صرف المبلغ من Escrow',                  raisedBy: 'CARRIER', raisedById: 'CR-2002', category: 'BILLING',   priority: 'HIGH',    status: 'RESOLVED',     description: 'مرّ يومان بعد التسليم ولم يُفرَج عن المبلغ.',   createdAt: '2026-05-10T15:00:00Z', updatedAt: '2026-05-11T10:30:00Z', assignedTo: 'فهد العتيبي', orderId: 'ORD-2025-0148', messageCount: 6 },
@@ -794,7 +794,7 @@ export interface AuditEvent {
 
 export const AUDIT_EVENTS: AuditEvent[] = [
   { id: 'AUD-12005', at: '2026-05-13T16:30:00Z', actor: 'ADMIN',  actorName: 'فهد العتيبي',     category: 'PAYMENT',  action: 'إفراج يدوي عن مبلغ Escrow', target: 'PAY-9002', detail: 'بناء على إقفال نزاع DSP-2025-0040' },
-  { id: 'AUD-12004', at: '2026-05-13T15:10:00Z', actor: 'SYSTEM', actorName: 'النظام',           category: 'ORDER',    action: 'تحويل الحالة تلقائياً إلى IN_TRANSIT', target: 'ORD-2025-0150' },
+  { id: 'AUD-12004', at: '2026-05-13T15:10:00Z', actor: 'SYSTEM', actorName: 'النظام',           category: 'ORDER',    action: 'تحويل الحالة تلقائيا إلى IN_TRANSIT', target: 'ORD-2025-0150' },
   { id: 'AUD-12003', at: '2026-05-13T11:00:00Z', actor: 'ADMIN',  actorName: 'سعد القحطاني',     category: 'KYC',      action: 'اعتماد شركة جديدة',                 target: 'CR-2004',          detail: 'مستندات سارية حتى 2027-03' },
   { id: 'AUD-12002', at: '2026-05-13T09:45:00Z', actor: 'CARRIER', actorName: 'الجزيرة للنقل',    category: 'COMPANY',  action: 'تحديث بيانات الاتصال',              target: 'CR-2003' },
   { id: 'AUD-12001', at: '2026-05-12T18:20:00Z', actor: 'ADMIN',  actorName: 'منيرة الشمراني',  category: 'SETTINGS', action: 'تعديل نسبة العمولة من 7% إلى 8%' },
@@ -1044,7 +1044,7 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     enabled: true,
     variables: ['{{name}}', '{{otp}}', '{{expiry}}'],
     channels: {
-      email: { enabled: true,  subject: 'رمز تأكيد البريد - نقلة لوجيستك', body: 'مرحباً {{name}}،\n\nرمز التحقق الخاص بك هو: {{otp}}\nصالح لمدة {{expiry}} دقيقة.\n\nإن لم تطلب التسجيل، تجاهل هذه الرسالة.' },
+      email: { enabled: true,  subject: 'رمز تأكيد البريد - نقلة لوجيستك', body: 'مرحبا {{name}}،\n\nرمز التحقق الخاص بك هو: {{otp}}\nصالح لمدة {{expiry}} دقيقة.\n\nإن لم تطلب التسجيل، تجاهل هذه الرسالة.' },
       sms:   { enabled: false, body: 'رمز نقلة: {{otp}}. صالح {{expiry}} دقيقة.' },
       inApp: { enabled: false, body: '' },
     },
@@ -1068,7 +1068,7 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     enabled: true,
     variables: ['{{name}}', '{{otp}}', '{{link}}', '{{expiry}}'],
     channels: {
-      email: { enabled: true,  subject: 'إعادة تعيين كلمة المرور', body: 'مرحباً {{name}}،\n\nاضغط على الرابط لإعادة تعيين كلمة المرور:\n{{link}}\n\nأو استخدم الرمز: {{otp}}\nصالح لمدة {{expiry}} دقيقة.' },
+      email: { enabled: true,  subject: 'إعادة تعيين كلمة المرور', body: 'مرحبا {{name}}،\n\nاضغط على الرابط لإعادة تعيين كلمة المرور:\n{{link}}\n\nأو استخدم الرمز: {{otp}}\nصالح لمدة {{expiry}} دقيقة.' },
       sms:   { enabled: true,  body: 'رمز إعادة تعيين كلمة المرور: {{otp}}' },
       inApp: { enabled: false, body: '' },
     },
@@ -1094,7 +1094,7 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     enabled: true,
     variables: ['{{name}}', '{{orderNumber}}', '{{origin}}', '{{destination}}', '{{budget}}'],
     channels: {
-      email: { enabled: true,  subject: 'تم نشر طلبك {{orderNumber}}', body: 'مرحباً {{name}}،\n\nتم نشر طلبك {{orderNumber}} من {{origin}} إلى {{destination}}.\nبانتظار عروض الناقلين...\n\nالميزانية: {{budget}} ر.س' },
+      email: { enabled: true,  subject: 'تم نشر طلبك {{orderNumber}}', body: 'مرحبا {{name}}،\n\nتم نشر طلبك {{orderNumber}} من {{origin}} إلى {{destination}}.\nبانتظار عروض الناقلين...\n\nالميزانية: {{budget}} ر.س' },
       sms:   { enabled: false, body: 'نقلة: تم نشر طلبك {{orderNumber}}' },
       inApp: { enabled: true,  body: 'طلبك {{orderNumber}} منشور الآن — بانتظار العروض' },
     },
@@ -1102,11 +1102,11 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   {
     id: 'client.bid.received', category: 'NOTIFICATION', audience: 'CLIENT',
     name: 'استلام عرض جديد',
-    description: 'يُرسل عند تقديم ناقل عرضاً على طلبك',
+    description: 'يُرسل عند تقديم ناقل عرضا على طلبك',
     enabled: true,
     variables: ['{{name}}', '{{orderNumber}}', '{{carrierName}}', '{{price}}', '{{days}}'],
     channels: {
-      email: { enabled: true,  subject: 'عرض جديد على {{orderNumber}}', body: 'مرحباً {{name}}،\n\nقدّم {{carrierName}} عرضاً على طلبك:\nالسعر: {{price}} ر.س\nالمدة: {{days}} أيام\n\nراجع العرض وقارنه بالعروض الأخرى.' },
+      email: { enabled: true,  subject: 'عرض جديد على {{orderNumber}}', body: 'مرحبا {{name}}،\n\nقدّم {{carrierName}} عرضا على طلبك:\nالسعر: {{price}} ر.س\nالمدة: {{days}} أيام\n\nراجع العرض وقارنه بالعروض الأخرى.' },
       sms:   { enabled: false, body: 'عرض جديد من {{carrierName}} بسعر {{price}} ر.س' },
       inApp: { enabled: true,  body: 'عرض جديد من {{carrierName}} على {{orderNumber}}' },
     },
@@ -1118,7 +1118,7 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     enabled: true,
     variables: ['{{name}}', '{{orderNumber}}', '{{carrierName}}', '{{pickupDate}}', '{{price}}'],
     channels: {
-      email: { enabled: true,  subject: 'تأكيد قبول العرض - {{orderNumber}}', body: 'مرحباً {{name}}،\n\nتم قبول عرض {{carrierName}} على طلبك {{orderNumber}}.\nموعد الاستلام: {{pickupDate}}\nالمبلغ: {{price}} ر.س محجوز في Escrow.' },
+      email: { enabled: true,  subject: 'تأكيد قبول العرض - {{orderNumber}}', body: 'مرحبا {{name}}،\n\nتم قبول عرض {{carrierName}} على طلبك {{orderNumber}}.\nموعد الاستلام: {{pickupDate}}\nالمبلغ: {{price}} ر.س محجوز في Escrow.' },
       sms:   { enabled: true,  body: 'تم تأكيد طلبك {{orderNumber}} مع {{carrierName}}. موعد الاستلام {{pickupDate}}' },
       inApp: { enabled: true,  body: 'تأكدت رحلة {{orderNumber}} مع {{carrierName}}' },
     },
@@ -1130,7 +1130,7 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     enabled: true,
     variables: ['{{orderNumber}}', '{{driver}}', '{{plate}}', '{{trackingUrl}}'],
     channels: {
-      email: { enabled: true,  subject: 'تم استلام شحنتك {{orderNumber}}', body: 'تم استلام شحنتك {{orderNumber}} بواسطة السائق {{driver}} (لوحة {{plate}}).\nتابع موقع الشاحنة لحظياً: {{trackingUrl}}' },
+      email: { enabled: true,  subject: 'تم استلام شحنتك {{orderNumber}}', body: 'تم استلام شحنتك {{orderNumber}} بواسطة السائق {{driver}} (لوحة {{plate}}).\nتابع موقع الشاحنة لحظيا: {{trackingUrl}}' },
       sms:   { enabled: true,  body: 'تم استلام شحنتك {{orderNumber}} - السائق {{driver}}' },
       inApp: { enabled: true,  body: 'الشحنة {{orderNumber}} في الطريق' },
     },
@@ -1142,8 +1142,8 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     enabled: true,
     variables: ['{{name}}', '{{orderNumber}}', '{{destination}}'],
     channels: {
-      email: { enabled: true,  subject: '✓ تم تسليم {{orderNumber}}', body: 'مرحباً {{name}}،\n\nتم تسليم شحنتك {{orderNumber}} بنجاح في {{destination}}.\n\nنرجو تقييم تجربتك مع الناقل.' },
-      sms:   { enabled: true,  body: 'تم تسليم شحنتك {{orderNumber}} بنجاح. شكراً لاستخدامك نقلة.' },
+      email: { enabled: true,  subject: '✓ تم تسليم {{orderNumber}}', body: 'مرحبا {{name}}،\n\nتم تسليم شحنتك {{orderNumber}} بنجاح في {{destination}}.\n\nنرجو تقييم تجربتك مع الناقل.' },
+      sms:   { enabled: true,  body: 'تم تسليم شحنتك {{orderNumber}} بنجاح. شكرا لاستخدامك نقلة.' },
       inApp: { enabled: true,  body: 'تم تسليم {{orderNumber}} - يرجى التقييم' },
     },
   },
@@ -1154,7 +1154,7 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     enabled: true,
     variables: ['{{name}}', '{{invoiceNumber}}', '{{total}}', '{{dueDate}}', '{{invoiceUrl}}'],
     channels: {
-      email: { enabled: true,  subject: 'فاتورة جديدة {{invoiceNumber}}', body: 'مرحباً {{name}}،\n\nصدرت فاتورة جديدة بقيمة {{total}} ر.س.\nرقم الفاتورة: {{invoiceNumber}}\nموعد الاستحقاق: {{dueDate}}\n\nالاطلاع: {{invoiceUrl}}' },
+      email: { enabled: true,  subject: 'فاتورة جديدة {{invoiceNumber}}', body: 'مرحبا {{name}}،\n\nصدرت فاتورة جديدة بقيمة {{total}} ر.س.\nرقم الفاتورة: {{invoiceNumber}}\nموعد الاستحقاق: {{dueDate}}\n\nالاطلاع: {{invoiceUrl}}' },
       sms:   { enabled: false, body: 'فاتورة جديدة {{invoiceNumber}} - {{total}} ر.س' },
       inApp: { enabled: true,  body: 'فاتورة جديدة {{invoiceNumber}} - {{total}} ر.س' },
     },
@@ -1166,7 +1166,7 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     enabled: true,
     variables: ['{{name}}', '{{invoiceNumber}}', '{{total}}', '{{daysLate}}'],
     channels: {
-      email: { enabled: true,  subject: '⚠️ فاتورة متأخرة - {{invoiceNumber}}', body: 'تنبيه: الفاتورة {{invoiceNumber}} متأخرة {{daysLate}} يوماً.\nالمبلغ: {{total}} ر.س.\nيرجى السداد لتجنّب توقف الخدمة.' },
+      email: { enabled: true,  subject: '⚠️ فاتورة متأخرة - {{invoiceNumber}}', body: 'تنبيه: الفاتورة {{invoiceNumber}} متأخرة {{daysLate}} يوما.\nالمبلغ: {{total}} ر.س.\nيرجى السداد لتجنّب توقف الخدمة.' },
       sms:   { enabled: true,  body: 'فاتورتك {{invoiceNumber}} متأخرة. يرجى السداد لتجنب توقف الخدمة.' },
       inApp: { enabled: true,  body: 'فاتورة متأخرة {{invoiceNumber}} - {{total}} ر.س' },
     },
@@ -1174,11 +1174,11 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   {
     id: 'client.dispute.resolved', category: 'NOTIFICATION', audience: 'CLIENT',
     name: 'حلّ نزاع',
-    description: 'يُرسل عند إغلاق نزاع كان مفتوحاً',
+    description: 'يُرسل عند إغلاق نزاع كان مفتوحا',
     enabled: true,
     variables: ['{{name}}', '{{disputeId}}', '{{resolution}}'],
     channels: {
-      email: { enabled: true,  subject: 'تم حل النزاع {{disputeId}}', body: 'مرحباً {{name}}،\n\nتم حل النزاع {{disputeId}}.\nالنتيجة: {{resolution}}' },
+      email: { enabled: true,  subject: 'تم حل النزاع {{disputeId}}', body: 'مرحبا {{name}}،\n\nتم حل النزاع {{disputeId}}.\nالنتيجة: {{resolution}}' },
       sms:   { enabled: false, body: 'تم حل النزاع {{disputeId}}' },
       inApp: { enabled: true,  body: 'حل النزاع {{disputeId}}' },
     },
@@ -1240,7 +1240,7 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     enabled: true,
     variables: ['{{carrierName}}', '{{amount}}', '{{orderNumber}}', '{{iban}}'],
     channels: {
-      email: { enabled: true,  subject: 'تم تحويل مستحقاتك - {{orderNumber}}', body: 'مرحباً {{carrierName}}،\n\nتم تحويل {{amount}} ر.س إلى حسابك ({{iban}}) عن الطلب {{orderNumber}}.' },
+      email: { enabled: true,  subject: 'تم تحويل مستحقاتك - {{orderNumber}}', body: 'مرحبا {{carrierName}}،\n\nتم تحويل {{amount}} ر.س إلى حسابك ({{iban}}) عن الطلب {{orderNumber}}.' },
       sms:   { enabled: true,  body: 'تم تحويل {{amount}} ر.س عن {{orderNumber}}' },
       inApp: { enabled: true,  body: 'دفعة جديدة {{amount}} ر.س' },
     },
@@ -1264,7 +1264,7 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     enabled: true,
     variables: ['{{carrierName}}', '{{reason}}'],
     channels: {
-      email: { enabled: true,  subject: 'يلزمك تصحيح بعض المستندات', body: 'مرحباً {{carrierName}}،\n\nيلزم تصحيح ما يلي: {{reason}}\n\nأعد رفع المستندات لمراجعتها.' },
+      email: { enabled: true,  subject: 'يلزمك تصحيح بعض المستندات', body: 'مرحبا {{carrierName}}،\n\nيلزم تصحيح ما يلي: {{reason}}\n\nأعد رفع المستندات لمراجعتها.' },
       sms:   { enabled: false, body: '' },
       inApp: { enabled: true,  body: 'يلزمك مراجعة المستندات: {{reason}}' },
     },
@@ -1272,13 +1272,13 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   {
     id: 'carrier.document.expiring', category: 'ALERT', audience: 'CARRIER',
     name: 'وثيقة على وشك الانتهاء',
-    description: 'تنبيه قبل انتهاء صلاحية وثيقة بـ 30 يوماً',
+    description: 'تنبيه قبل انتهاء صلاحية وثيقة بـ 30 يوما',
     enabled: true,
     variables: ['{{docName}}', '{{daysLeft}}'],
     channels: {
       email: { enabled: true,  subject: 'تنبيه: {{docName}} تنتهي خلال {{daysLeft}} يوم', body: 'وثيقتك {{docName}} ستنتهي خلال {{daysLeft}} يوم. يرجى تجديدها لاستمرار النشاط على المنصة.' },
       sms:   { enabled: true,  body: '{{docName}} تنتهي خلال {{daysLeft}} يوم' },
-      inApp: { enabled: true,  body: '{{docName}} تنتهي قريباً' },
+      inApp: { enabled: true,  body: '{{docName}} تنتهي قريبا' },
     },
   },
 
@@ -1373,7 +1373,7 @@ export const DEFAULT_LEGAL_DOCS: Record<LegalDocId, LegalDocument> = {
 
 ## 1. تعريف المنصة
 
-"نقلة لوجيستك" (وتُشار إليها فيما يلي بـ "المنصة") هي منصة تقنية وسيطة تربط الشركات والأفراد الراغبين في خدمات نقل البضائع بشركات النقل المرخّصة، ولا تُعد المنصة طرفاً مباشراً في عقد النقل بين الأطراف.
+"نقلة لوجيستك" (وتُشار إليها فيما يلي بـ "المنصة") هي منصة تقنية وسيطة تربط الشركات والأفراد الراغبين في خدمات نقل البضائع بشركات النقل المرخّصة، ولا تُعد المنصة طرفا مباشرا في عقد النقل بين الأطراف.
 
 ## 2. تعريف الأطراف
 
@@ -1412,8 +1412,8 @@ export const DEFAULT_LEGAL_DOCS: Record<LegalDocId, LegalDocument> = {
 
 ### الإلغاء من العميل:
 
-- **قبل نشر الطلب**: مجاناً، استرداد كامل.
-- **بعد النشر وقبل قبول عرض**: مجاناً.
+- **قبل نشر الطلب**: مجانا، استرداد كامل.
+- **بعد النشر وقبل قبول عرض**: مجانا.
 - **بعد قبول العرض وقبل بدء النقل**: تُخصم رسوم إلغاء بنسبة 10% من قيمة الطلب.
 - **بعد بدء النقل**: لا يمكن الإلغاء، يُرجى فتح نزاع.
 
@@ -1427,12 +1427,12 @@ export const DEFAULT_LEGAL_DOCS: Record<LegalDocId, LegalDocument> = {
 1. **التواصل المباشر**: ينبغي للأطراف محاولة حل أي خلاف بشكل ودي مباشر.
 2. **التوسّط عبر المنصة**: يمكن فتح نزاع رسمي عبر صفحة النزاعات.
 3. **مراجعة فريق الامتثال**: يراجع الفريق النزاع خلال 24-48 ساعة.
-4. **القرار النهائي**: يصدر قرار المنصة ملزماً ضمن حدود مسؤوليتها.
+4. **القرار النهائي**: يصدر قرار المنصة ملزما ضمن حدود مسؤوليتها.
 5. **التحكيم النظامي**: لأي نزاع لا يمكن حلّه، يُلجأ إلى نظام التحكيم السعودي.
 
 ## 8. الاختصاص القضائي
 
-تخضع هذه الاتفاقية وتُفسَّر وفقاً لأنظمة المملكة العربية السعودية، وتختص المحاكم السعودية بالنظر في أي نزاع ينشأ بشأنها.
+تخضع هذه الاتفاقية وتُفسَّر وفقا لأنظمة المملكة العربية السعودية، وتختص المحاكم السعودية بالنظر في أي نزاع ينشأ بشأنها.
 
 ## 9. التعديلات
 
@@ -1454,7 +1454,7 @@ export const DEFAULT_LEGAL_DOCS: Record<LegalDocId, LegalDocument> = {
 
 ## 1. مقدمة
 
-تحرص "نقلة لوجيستك" على حماية خصوصية مستخدميها وفقاً لنظام حماية البيانات الشخصية في المملكة العربية السعودية الصادر بالمرسوم الملكي رقم (م/19).
+تحرص "نقلة لوجيستك" على حماية خصوصية مستخدميها وفقا لنظام حماية البيانات الشخصية في المملكة العربية السعودية الصادر بالمرسوم الملكي رقم (م/19).
 
 ## 2. البيانات التي نجمعها
 
@@ -1490,7 +1490,7 @@ export const DEFAULT_LEGAL_DOCS: Record<LegalDocId, LegalDocument> = {
 3. **مع الجهات الحكومية**: عند الطلب وفق الأنظمة المعمول بها.
 4. **في حالات النزاع**: للجهات المختصة بالنظر في النزاع.
 
-**لا نبيع بياناتك أبداً لأي طرف ثالث.**
+**لا نبيع بياناتك أبدا لأي طرف ثالث.**
 
 ## 5. أمن البيانات
 
@@ -1503,7 +1503,7 @@ export const DEFAULT_LEGAL_DOCS: Record<LegalDocId, LegalDocument> = {
 
 ## 6. حقوقك
 
-وفقاً لنظام حماية البيانات السعودي، لك الحق في:
+وفقا لنظام حماية البيانات السعودي، لك الحق في:
 
 - الاطلاع على بياناتك.
 - تصحيح بياناتك غير الدقيقة.
@@ -1604,19 +1604,19 @@ export const DEFAULT_LEGAL_DOCS: Record<LegalDocId, LegalDocument> = {
 عند التسليم يجب:
 - توقيع العميل أو من ينوب عنه على بوليصة التسليم.
 - التقاط صورة للبضاعة بعد التفريغ.
-- تحديث حالة الطلب في المنصة فوراً.
+- تحديث حالة الطلب في المنصة فورا.
 
 ## 8. النزاعات أثناء النقل
 
 إذا وقع أي حادث أو نزاع أثناء النقل:
-1. يجب على الناقل إخطار المنصة فوراً.
+1. يجب على الناقل إخطار المنصة فورا.
 2. توثيق الحادث بالصور والتقارير.
 3. التواصل مع جهات الإنقاذ عند الحاجة.
 4. عدم التصرف بالبضاعة دون موافقة العميل/المنصة.
 
 ## 9. القوة القاهرة
 
-لا يُعد طرفاً مخلاً بالتزاماته إذا تعذّر التنفيذ بسبب قوة قاهرة:
+لا يُعد طرفا مخلا بالتزاماته إذا تعذّر التنفيذ بسبب قوة قاهرة:
 - الكوارث الطبيعية.
 - الحوادث الخارجة عن الإرادة.
 - إغلاق الطرق الرسمي.
@@ -1751,7 +1751,7 @@ export const DEFAULT_TRUCK_TYPES: TruckTypeOption[] = [
     nameAr: 'صهريج',
     nameEn: 'Tanker',
     capacityKg: 30000,
-    description: 'صهريج لنقل السوائل (وقود، مياه، مواد كيميائية). يتطلّب ترخيصاً خاصاً للسائق.',
+    description: 'صهريج لنقل السوائل (وقود، مياه، مواد كيميائية). يتطلّب ترخيصا خاصا للسائق.',
     imageUrl: 'https://cdn.pixabay.com/photo/2013/07/13/12/47/tank-160583_1280.png',
     icon: '🛢️',
     active: true,
@@ -1989,7 +1989,7 @@ export const CARRIER_ROLE_PERMISSIONS: Record<Extract<CompanyRole, 'OWNER' | 'AD
       'عرض وقبول الطلبات',
       'إدارة الأسطول والسائقين',
       'تحديث حالة الشحنات',
-      'تتبع الرحلات لحظياً',
+      'تتبع الرحلات لحظيا',
     ],
     cannot: [
       'إدارة الفريق',
@@ -2166,7 +2166,7 @@ export const DEFAULT_SMS_TEMPLATES: SmsTemplate[] = [
     name: 'team_member_invitation',
     channel: 'SMS',
     bodyAr:
-      'مرحباً {memberName}،\n' +
+      'مرحبا {memberName}،\n' +
       'تمت إضافتك لفريق {companyName} على منصة نقلة لوجيستك\n' +
       'بصلاحية: {roleName}\n\n' +
       'انضم الآن: {inviteLink}\n\n' +

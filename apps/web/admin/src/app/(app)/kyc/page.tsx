@@ -76,7 +76,7 @@ export default function KycQueuePage() {
       notify.success(
         'تم الرفض',
         rejectReason
-          ? `${reviewing.nameAr} — السبب: ${rejectReason}`
+          ? `${reviewing.nameAr}، السبب: ${rejectReason}`
           : `${reviewing.nameAr} تم رفضها`,
       );
       setRejectOpen(false);
@@ -92,15 +92,16 @@ export default function KycQueuePage() {
   return (
     <>
       <PageHeader
+        eyebrow="إدارة المنصة"
         title="اعتماد الشركات (KYC)"
         subtitle="طابور الشركات المنتظرة لاعتماد المستندات والمصادقة"
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatsCard label="إجمالي الشركات" value={total.toLocaleString('en-US')} icon={Building2} />
-        <StatsCard label="بانتظار الاعتماد" value={pending.length.toLocaleString('en-US')} icon={Clock} tone="warning" />
-        <StatsCard label="معتمدة" value={approved.toLocaleString('en-US')} icon={ShieldCheck} tone="success" />
-        <StatsCard label="مرفوضة" value={rejected.toLocaleString('en-US')} icon={X} tone="danger" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard label="إجمالي الشركات" value={total} icon={Building2} index={0} />
+        <StatsCard label="بانتظار الاعتماد" value={pending.length} icon={Clock} tone="warning" index={1} />
+        <StatsCard label="معتمدة" value={approved} icon={ShieldCheck} tone="success" index={2} />
+        <StatsCard label="مرفوضة" value={rejected} icon={X} tone="danger" index={3} />
       </div>
 
       <Card>
@@ -117,7 +118,7 @@ export default function KycQueuePage() {
             pending.map((c) => {
               const initials = c.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('');
               return (
-                <div key={c.id} className="flex items-start gap-4 p-4 rounded-lg border hover:border-primary/40 transition-colors">
+                <div key={c.id} className="flex items-start gap-4 p-4 rounded-xl border border-border/70 bg-card hover:border-[hsl(var(--mint))]/40 hover:shadow-[var(--shadow-card)] transition-all">
                   <Avatar className="h-12 w-12">
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
@@ -193,7 +194,7 @@ export default function KycQueuePage() {
               <div className="rounded-md bg-warning/10 border border-warning/30 p-3 flex items-start gap-2 text-sm">
                 <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                 <p className="text-warning-foreground">
-                  مستند واحد مفقود — يمكن طلبه من الشركة عبر تذكرة دعم تلقائية.
+                  مستند واحد مفقود، يمكن طلبه من الشركة عبر تذكرة دعم تلقائية.
                 </p>
               </div>
             </div>

@@ -79,29 +79,56 @@ export default function ClientFinancePage() {
 
         {/* Wallet */}
         <TabsContent value="wallet" className="space-y-6">
-          <Card>
-            <CardContent className="pt-6 flex flex-col sm:flex-row items-start gap-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shrink-0">
-                <Wallet className="h-8 w-8" />
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+            {/* Balance hero */}
+            <div className="relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground shadow-tile lg:col-span-2">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 text-sm font-medium text-white/70">
+                    <Wallet className="h-4 w-4" /> الرصيد المتاح
+                  </p>
+                  <p className="num mt-3 text-5xl font-extrabold tracking-tight">
+                    {(wallet?.balance ?? 0).toLocaleString('en-US')}
+                    <span className="ms-2 text-xl font-semibold text-[hsl(var(--mint))]">ر.س.</span>
+                  </p>
+                </div>
+                <Button className="shrink-0 bg-[hsl(var(--mint))] text-primary hover:bg-[hsl(var(--mint))]/90">
+                  شحن المحفظة
+                </Button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-muted-foreground">الرصيد المتاح</p>
-                <p className="text-4xl font-bold tracking-tight mt-1 num">
-                  {(wallet?.balance ?? 0).toLocaleString('en-US')}
-                  <span className="text-xl text-muted-foreground ms-2">ر.س.</span>
-                </p>
-                {(wallet?.escrowHeld ?? 0) > 0 && (
-                  <div className="mt-2 inline-flex items-center gap-1.5 text-sm">
-                    <ShieldCheck className="h-4 w-4 text-warning" />
-                    <span className="text-muted-foreground">محجوز في Escrow:</span>
-                    <span className="num font-medium">{(wallet?.escrowHeld ?? 0).toLocaleString('en-US')}</span>
-                    <span className="text-muted-foreground">ر.س.</span>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-white/10 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-white/60">
+                    <ShieldCheck className="h-3.5 w-3.5 text-[hsl(var(--mint))]" /> محجوز في Escrow
                   </div>
-                )}
+                  <div className="num mt-1 text-lg font-bold">{(wallet?.escrowHeld ?? 0).toLocaleString('en-US')} <span className="text-xs font-normal text-white/60">ر.س.</span></div>
+                </div>
+                <div className="rounded-xl bg-white/10 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-white/60">
+                    <Wallet className="h-3.5 w-3.5 text-[hsl(var(--mint))]" /> صاف متاح للسحب
+                  </div>
+                  <div className="num mt-1 text-lg font-bold">{Math.max(0, (wallet?.balance ?? 0) - (wallet?.escrowHeld ?? 0)).toLocaleString('en-US')} <span className="text-xs font-normal text-white/60">ر.س.</span></div>
+                </div>
               </div>
-              <Button>شحن المحفظة</Button>
-            </CardContent>
-          </Card>
+            </div>
+            {/* In / Out this period */}
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-success/12 text-success"><ArrowDownLeft className="h-5 w-5" /></span>
+                <div>
+                  <div className="text-xs text-muted-foreground">إجمالي الإيداعات</div>
+                  <div className="num text-lg font-extrabold text-success">{totalCredit.toLocaleString('en-US')} <span className="text-xs font-normal text-muted-foreground">ر.س.</span></div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-destructive/12 text-destructive"><ArrowUpRight className="h-5 w-5" /></span>
+                <div>
+                  <div className="text-xs text-muted-foreground">إجمالي الخصومات</div>
+                  <div className="num text-lg font-extrabold text-destructive">{totalDebit.toLocaleString('en-US')} <span className="text-xs font-normal text-muted-foreground">ر.س.</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <Card>
             <CardHeader><CardTitle>آخر 5 معاملات</CardTitle></CardHeader>

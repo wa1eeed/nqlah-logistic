@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface StatsCardProps {
@@ -12,79 +12,62 @@ export interface StatsCardProps {
   hint?: string;
   icon: LucideIcon;
   tone?: 'default' | 'success' | 'warning' | 'danger';
+  /** optional trend chip, e.g. +12% */
+  delta?: { value: string; up?: boolean };
 }
 
-const TONES = {
-  default: {
-    icon: 'bg-primary/10 text-primary',
-    bar:  'from-[#0A3D3A] to-[#0D5C57]',
-  },
-  success: {
-    icon: 'bg-success/15 text-success',
-    bar:  'from-[#00C9A7] to-[#00A88A]',
-  },
-  warning: {
-    icon: 'bg-warning/15 text-warning',
-    bar:  'from-[#F0C040] to-[#E6A817]',
-  },
-  danger: {
-    icon: 'bg-destructive/15 text-destructive',
-    bar:  'from-red-500 to-red-700',
-  },
-} as const;
+const TONE: Record<NonNullable<StatsCardProps['tone']>, string> = {
+  default: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]',
+  success: 'bg-success/12 text-success',
+  warning: 'bg-warning/12 text-warning',
+  danger:  'bg-destructive/12 text-destructive',
+};
 
 function AnimatedCounter({ value }: { value: number }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     let start = 0;
-    const end = value;
-    if (start === end) { setCount(end); return; }
-    const duration = 1200;
-    const step = end / (duration / 16);
+    if (value === 0) { setCount(0); return; }
+    const step = value / (900 / 16);
     const timer = setInterval(() => {
       start += step;
-      if (start >= end) { setCount(end); clearInterval(timer); }
+      if (start >= value) { setCount(value); clearInterval(timer); }
       else setCount(Math.floor(start));
     }, 16);
     return () => clearInterval(timer);
   }, [value]);
-  return <>{count.toLocaleString('ar-SA')}</>;
+  return <>{count.toLocaleString('en-US')}</>;
 }
 
-export function StatsCard({ label, value, hint, icon: Icon, tone = 'default' }: StatsCardProps) {
-  const t = TONES[tone];
-  const numericValue = typeof value === 'number' ? value : null;
-
+export function StatsCard({ label, value, hint, icon: Icon, tone = 'default', delta }: StatsCardProps) {
+  const isNumeric = typeof value === 'number';
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
       viewport={{ once: true }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
+      className="group rounded-2xl border border-border/70 bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-20px_hsl(174_45%_16%/0.22)]"
     >
-      <Card className="overflow-hidden">
-        {/* Colored top bar */}
-        <div className={cn('h-1 w-full bg-gradient-to-r', t.bar)} />
-        <CardContent className="pt-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-col gap-1.5 min-w-0">
-              <p className="text-sm font-medium text-muted-foreground">{label}</p>
-              <div className="text-2xl font-bold tracking-tight">
-                {numericValue !== null ? (
-                  <AnimatedCounter value={numericValue} />
-                ) : (
-                  value
-                )}
-              </div>
-              {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-            </div>
-            <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl shrink-0', t.icon)}>
-              <Icon className="h-5 w-5" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between">
+        <div className={cn('grid h-11 w-11 place-items-center rounded-xl', TONE[tone])}>
+          <Icon className="h-5 w-5" />
+        </div>
+        {delta && (
+          <span className={cn(
+            'num inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-bold',
+            delta.up ? 'bg-success/12 text-success' : 'bg-destructive/12 text-destructive',
+          )}>
+            {delta.up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            {delta.value}
+          </span>
+        )}
+      </div>
+      <div className="mt-4 num text-3xl font-extrabold tracking-tight text-foreground">
+        {isNumeric ? <AnimatedCounter value={value as number} /> : value}
+      </div>
+      <p className="mt-1 text-sm font-medium text-muted-foreground">{label}</p>
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground/70">{hint}</p>}
     </motion.div>
   );
 }

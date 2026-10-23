@@ -163,7 +163,7 @@ export default function CarrierDisputesPage() {
                 <SelectContent>
                   {myOrders.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
-                      {o.orderNumber} — {o.originCity} ← {o.destinationCity}
+                      {o.orderNumber} · {o.originCity} ← {o.destinationCity}
                     </SelectItem>
                   ))}
                 </SelectContent>

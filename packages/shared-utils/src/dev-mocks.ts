@@ -349,11 +349,11 @@ const INVOICES = [
 
 // ─── Notifications ───────────────────────────────────────────
 const NOTIFICATIONS = [
-  { id: 'n-1', userId: 'dev-user', type: 'BID_RECEIVED', titleAr: 'عرض جديد على طلبك', titleEn: null, bodyAr: 'تلقى الطلب ORD-2025-0155 عرضاً جديداً بقيمة 6,200 ر.س', bodyEn: null, isRead: false, readAt: null, data: { orderId: 'ord-3' }, createdAt: iso(0, 1) },
+  { id: 'n-1', userId: 'dev-user', type: 'BID_RECEIVED', titleAr: 'عرض جديد على طلبك', titleEn: null, bodyAr: 'تلقى الطلب ORD-2025-0155 عرضا جديدا بقيمة 6,200 ر.س', bodyEn: null, isRead: false, readAt: null, data: { orderId: 'ord-3' }, createdAt: iso(0, 1) },
   { id: 'n-2', userId: 'dev-user', type: 'PAYMENT_RELEASED', titleAr: 'تم الإفراج عن المبلغ', titleEn: null, bodyAr: 'تم إفراج 10,580 ر.س لحساب شركة المسار السريع', bodyEn: null, isRead: false, readAt: null, data: { paymentId: 'pay-1' }, createdAt: iso(0, 4) },
   { id: 'n-3', userId: 'dev-user', type: 'ORDER_ASSIGNED', titleAr: 'تم إسناد الطلب', titleEn: null, bodyAr: 'تم إسناد الطلب ORD-2025-0150 لشركة المسار السريع', bodyEn: null, isRead: true, readAt: iso(2), data: { orderId: 'ord-2' }, createdAt: iso(3) },
   { id: 'n-4', userId: 'dev-user', type: 'KYC_APPROVED', titleAr: 'KYC معتمد', titleEn: null, bodyAr: 'تمت الموافقة على وثائق التحقق من شركتك', bodyEn: null, isRead: true, readAt: iso(40), data: null, createdAt: iso(45) },
-  { id: 'n-5', userId: 'dev-user', type: 'SYSTEM', titleAr: 'مرحباً بك في نقلة 👋', titleEn: null, bodyAr: 'حسابك جاهز للعمل، أنشئ أول طلب أو تصفّح الفرص المتاحة', bodyEn: null, isRead: true, readAt: iso(58), data: null, createdAt: iso(60) },
+  { id: 'n-5', userId: 'dev-user', type: 'SYSTEM', titleAr: 'مرحبا بك في نقلة 👋', titleEn: null, bodyAr: 'حسابك جاهز للعمل، أنشئ أول طلب أو تصفّح الفرص المتاحة', bodyEn: null, isRead: true, readAt: iso(58), data: null, createdAt: iso(60) },
 ];
 
 // ─── Admin dashboard stats ───────────────────────────────────
@@ -381,7 +381,7 @@ const SETTINGS = [
 
 // ─── Disputes ────────────────────────────────────────────────
 const DISPUTES = [
-  { id: 'dsp-1', orderId: 'ord-6', status: 'OPEN', reason: 'بضاعة تالفة عند التسليم', description: 'يدّعي العميل أن جزءاً من البضاعة وصل مكسوراً', openedBy: 'u-client-1', assignedTo: null, resolution: null, resolvedAt: null, attachments: [], createdAt: iso(0, 6), updatedAt: iso(0, 6), order: { orderNumber: 'ORD-2025-0148', clientId: 'co-client-1', carrierId: 'co-carrier-1' } },
+  { id: 'dsp-1', orderId: 'ord-6', status: 'OPEN', reason: 'بضاعة تالفة عند التسليم', description: 'يدّعي العميل أن جزءا من البضاعة وصل مكسورا', openedBy: 'u-client-1', assignedTo: null, resolution: null, resolvedAt: null, attachments: [], createdAt: iso(0, 6), updatedAt: iso(0, 6), order: { orderNumber: 'ORD-2025-0148', clientId: 'co-client-1', carrierId: 'co-carrier-1' } },
   { id: 'dsp-2', orderId: 'ord-1', status: 'RESOLVED', reason: 'تأخر في التسليم', description: 'تأخر تسليم الشحنة 8 ساعات عن الموعد المتفق عليه', openedBy: 'u-client-1', assignedTo: 'u-admin', resolution: 'تم خصم 5% من قيمة الطلب', resolvedAt: iso(3), attachments: [], createdAt: iso(5), updatedAt: iso(3), order: { orderNumber: 'ORD-2025-0142', clientId: 'co-client-1', carrierId: 'co-carrier-1' } },
 ];
 

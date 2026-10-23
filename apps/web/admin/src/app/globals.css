@@ -12,7 +12,7 @@
  */
 @layer base {
   :root {
-    --background:         174 30% 97%;
+    --background:         178 30% 97.5%;
     --foreground:         174 65%  9%;
 
     --card:                 0  0% 100%;
@@ -22,14 +22,14 @@
     --popover-foreground: 174 65%  9%;
 
     /* Brand primary = #0A3D3A */
-    --primary:            174 71% 14%;
+    --primary:            174 74% 12.5%;
     --primary-foreground:   0  0% 100%;
 
-    --secondary:          174 14% 94%;
+    --secondary:          176 24% 93%;
     --secondary-foreground: 174 65% 14%;
 
-    --muted:              174 14% 94%;
-    --muted-foreground:   174 12% 42%;
+    --muted:              176 22% 94%;
+    --muted-foreground:   174 10% 40%;
 
     /* shadcn `accent` = hover/highlight surface (light teal-tinted) */
     --accent:             174 72% 95%;
@@ -41,18 +41,24 @@
     --success:            160 84% 39%;
     --success-foreground:   0  0% 100%;
 
-    --warning:             32 95% 44%;
+    /* "pending / in-progress" — retinted off orange to a cool teal (mint family) */
+    --warning:            188 72% 36%;
     --warning-foreground:   0  0% 100%;
 
-    --border:             174 16% 88%;
-    --input:              174 16% 88%;
-    --ring:               174 71% 22%;
+    --border:             176 20% 89%;
+    --input:              176 20% 89%;
+    --ring:               170 85% 36%;
 
     /* Naqla brand accents (Naqla-specific) */
-    --mint:               170 100% 39%;
-    --gold:                43  84% 60%;
+    --mint:               170 88% 36%;
+    --gold:               170 88% 36%;
 
-    --radius:             0.625rem;
+    /* Soft, premium depth tokens (shared design direction) */
+    --shadow-card:    0 1px 3px rgba(9, 46, 44, 0.05), 0 6px 20px -8px rgba(9, 46, 44, 0.08);
+    --shadow-hover:   0 4px 12px rgba(9, 46, 44, 0.10), 0 14px 34px -18px rgba(9, 46, 44, 0.16);
+    --shadow-primary: 0 8px 24px -10px rgba(10, 61, 58, 0.45);
+
+    --radius:             0.875rem;
   }
 
   .dark {
@@ -81,6 +87,10 @@
     --border:             174 20% 14%;
     --input:              174 20% 14%;
     --ring:               170 100% 45%;
+
+    --shadow-card:    0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px -10px rgba(0, 0, 0, 0.5);
+    --shadow-hover:   0 6px 18px rgba(0, 0, 0, 0.5), 0 18px 40px -16px rgba(0, 0, 0, 0.6);
+    --shadow-primary: 0 8px 24px -10px rgba(0, 0, 0, 0.6);
   }
 }
 

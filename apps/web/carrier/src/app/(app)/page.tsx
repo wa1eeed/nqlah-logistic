@@ -94,32 +94,22 @@ export default function CarrierDashboard() {
   return (
     <motion.div className="space-y-6" variants={container} initial="hidden" animate="show">
 
-      {/* ── Hero ── */}
-      <motion.div variants={item}>
-        <div className="relative overflow-hidden rounded-2xl" style={{ background: 'linear-gradient(135deg, #0A3D3A 0%, #0D5C57 60%, #00C9A7 100%)' }}>
-          <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/5" />
-          <div className="pointer-events-none absolute -bottom-6 left-20 h-28 w-28 rounded-full bg-white/5" />
-
-          <div className="relative z-10 flex flex-col gap-1 p-8 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">مرحباً بعودتك 👋</h1>
-              <p className="mt-1 text-sm text-white/70">
-                {opps.length} فرصة متاحة &middot; {activeOrders.length} طلب نشط
-              </p>
-            </div>
-            <Link href="/opportunities">
-              <Button className="mt-4 sm:mt-0 bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm shadow-none">
-                <Compass className="h-4 w-4" />
-                استكشف الفرص
-              </Button>
-            </Link>
-          </div>
-
-          <svg viewBox="0 0 1200 56" className="absolute bottom-0 left-0 right-0 w-full" preserveAspectRatio="none">
-            <path d="M0,35 C300,5 900,65 1200,25 L1200,56 L0,56 Z" fill="rgba(255,255,255,0.06)" />
-            <path d="M0,45 C400,18 800,60 1200,38 L1200,56 L0,56 Z" fill="rgba(255,255,255,0.04)" />
-          </svg>
+      {/* ── Header ── */}
+      <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">مرحبا بعودتك 👋</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            <span className="num font-semibold text-foreground">{opps.length}</span> فرصة متاحة
+            <span className="mx-1.5 text-border">•</span>
+            <span className="num font-semibold text-foreground">{activeOrders.length}</span> طلب نشط
+          </p>
         </div>
+        <Link href="/opportunities">
+          <Button size="lg" className="rounded-full">
+            <Compass className="h-4 w-4" />
+            استكشف الفرص
+          </Button>
+        </Link>
       </motion.div>
 
       {/* ── Stats ── */}
@@ -134,7 +124,7 @@ export default function CarrierDashboard() {
       <motion.div variants={item}>
         <Card>
           <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-3 gap-5 divide-y sm:divide-y-0 sm:divide-x rtl:divide-x-reverse">
-            <Kpi icon={Star}       label="تقييم الشركة"       value={`${me.rating?.toFixed(1)} ⭐`}                          hint={`${(me.completedTrips ?? 0).toLocaleString('en-US')} رحلة`} />
+            <Kpi icon={Star}       label="تقييم الشركة"       value={(me.rating ?? 0).toFixed(1)}                           hint={`${(me.completedTrips ?? 0).toLocaleString('en-US')} رحلة`} />
             <Kpi icon={TrendingUp} label="رحلات منجزة"        value={(me.completedTrips ?? 0).toLocaleString('en-US')}       hint="على المنصة" />
             <Kpi icon={Clock}      label="متوسّط الاستجابة"   value={`${me.responseTimeMins} دقيقة`}                         hint="من نشر الطلب" />
           </CardContent>

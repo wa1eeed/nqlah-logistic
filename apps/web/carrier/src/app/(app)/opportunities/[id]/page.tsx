@@ -149,9 +149,9 @@ export default function CarrierOpportunityDetail() {
                     <CardTitle>عرضك على هذا الطلب</CardTitle>
                   </div>
                   <CardDescription>
-                    {myBid.status === 'PENDING' && 'بانتظار قرار العميل — لا حاجة لإعادة التقديم'}
-                    {myBid.status === 'ACCEPTED' && '✅ تم قبول عرضك — الطلب الآن قيد التنفيذ'}
-                    {myBid.status === 'REJECTED' && '❌ لم يُختر عرضك على هذا الطلب'}
+                    {myBid.status === 'PENDING' && 'بانتظار قرار العميل، لا حاجة لإعادة التقديم'}
+                    {myBid.status === 'ACCEPTED' && 'تم قبول عرضك، الطلب الآن قيد التنفيذ'}
+                    {myBid.status === 'REJECTED' && 'لم يُختر عرضك على هذا الطلب'}
                     {myBid.status === 'WITHDRAWN' && 'تم سحب عرضك'}
                     {myBid.status === 'EXPIRED' && 'انتهت صلاحية العرض'}
                   </CardDescription>
@@ -165,7 +165,7 @@ export default function CarrierOpportunityDetail() {
                   }
                 >
                   {myBid.status === 'PENDING'   && 'بانتظار الرد'}
-                  {myBid.status === 'ACCEPTED'  && 'مقبول ✓'}
+                  {myBid.status === 'ACCEPTED'  && 'مقبول'}
                   {myBid.status === 'REJECTED'  && 'مرفوض'}
                   {myBid.status === 'WITHDRAWN' && 'مسحوب'}
                   {myBid.status === 'EXPIRED'   && 'منتهي'}
@@ -222,9 +222,9 @@ export default function CarrierOpportunityDetail() {
                   <div className="flex items-start gap-2">
                     <Send className="h-4 w-4 text-destructive shrink-0 mt-1" />
                     <div className="text-sm">
-                      <div className="font-semibold">باب العروض ما زال مفتوحاً</div>
+                      <div className="font-semibold">باب العروض ما زال مفتوحا</div>
                       <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                        يمكنك تقديم عرض جديد بسعر أو شروط أفضل — قد يعيد العميل النظر.
+                        يمكنك تقديم عرض جديد بسعر أو شروط أفضل، وقد يعيد العميل النظر.
                       </p>
                     </div>
                   </div>
@@ -256,8 +256,8 @@ export default function CarrierOpportunityDetail() {
             <CardTitle>{retrying ? 'إعادة تقديم' : 'قدّم عرضك'}</CardTitle>
             <CardDescription>
               {retrying
-                ? 'حاول بسعر أو شروط أفضل — تم تعبئة الحقول من عرضك السابق المرفوض'
-                : 'اقترح سعرك التنافسي — العميل سيقارن العروض ويختار الأنسب'}
+                ? 'حاول بسعر أو شروط أفضل، عبّأنا الحقول من عرضك السابق المرفوض'
+                : 'اقترح سعرك التنافسي، العميل سيقارن العروض ويختار الأنسب'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -340,7 +340,7 @@ export default function CarrierOpportunityDetail() {
                 >
                   <div className="flex items-center gap-2 font-medium">
                     <Calendar className="h-4 w-4 text-warning" />
-                    أقترح موعداً آخر
+                    أقترح موعدا آخر
                   </div>
                 </button>
               </div>
@@ -375,7 +375,7 @@ export default function CarrierOpportunityDetail() {
               />
               {proposedDeliveryDate && (
                 <div className="text-xs text-muted-foreground">
-                  سيظهر للعميل: 📦 التسليم{' '}
+                  سيظهر للعميل: موعد التسليم{' '}
                   <span className="font-medium num" dir="ltr">
                     {formatDate(proposedDeliveryDate, 'EEEE d MMM')}
                   </span>
@@ -590,7 +590,7 @@ function DirectNegotiationView({
           notes: notes || undefined,
         });
         notify.success(
-          action === 'ACCEPT' ? 'تم قبول السعر — بانتظار توقيع العميل' : 'تم إرسال سعرك المقابل',
+          action === 'ACCEPT' ? 'تم قبول السعر، بانتظار توقيع العميل' : 'تم إرسال سعرك المقابل',
           `${price.toLocaleString('en-US')} ر.س`,
         );
       } else if (action === 'DECLINE') {
@@ -614,7 +614,7 @@ function DirectNegotiationView({
         actions={
           <>
             <Badge variant="warning" className="gap-1">
-              <UserSearch className="h-3 w-3" /> موجّه لشركتك حصرياً
+              <UserSearch className="h-3 w-3" /> موجّه لشركتك حصريا
             </Badge>
             <Button variant="outline" onClick={onBack}>
               <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
@@ -664,7 +664,7 @@ function DirectNegotiationView({
                   <div>
                     <h3 className="font-semibold">طلب مباشر جديد من {client?.nameAr ?? 'العميل'}</h3>
                     <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                      لم يحدّد العميل سعراً. كناقل مرسَل إليه الطلب مباشرة، يمكنك:
+                      لم يحدّد العميل سعرا. كناقل مرسَل إليه الطلب مباشرة، يمكنك:
                       اقتراح سعر، أو الاعتذار. لن تظهر هذه الفرصة لأي ناقل آخر.
                     </p>
                   </div>
@@ -678,7 +678,7 @@ function DirectNegotiationView({
             <Card>
               <CardHeader>
                 <CardTitle>الإجراءات المتاحة</CardTitle>
-                <CardDescription>اختر ما يناسبك — يصل ردّك للعميل فوراً</CardDescription>
+                <CardDescription>اختر ما يناسبك، يصل ردّك للعميل فورا</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <ActionTile
@@ -728,8 +728,8 @@ function DirectNegotiationView({
               <CardContent className="pt-6 flex items-start gap-3">
                 <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-success">تم الاتفاق ✓</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">انتقل الطلب لـ ASSIGNED — يمكنك متابعته من قسم "طلباتي".</p>
+                  <h3 className="font-semibold text-success">تم الاتفاق</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">تم إسناد الطلب إليك، تابعه من قسم "طلباتي".</p>
                 </div>
               </CardContent>
             </Card>
@@ -740,7 +740,7 @@ function DirectNegotiationView({
                 <X className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-destructive">انتهى التفاوض</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">العميل قد يختار ناقلاً آخر أو يحوّل الطلب للسوق المفتوح.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">العميل قد يختار ناقلا آخر أو يحوّل الطلب للسوق المفتوح.</p>
                 </div>
               </CardContent>
             </Card>
@@ -759,14 +759,14 @@ function DirectNegotiationView({
                   {proposal.rounds.map((r, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <div className={`h-8 w-8 rounded-full grid place-items-center shrink-0 text-xs font-bold ${
-                        r.by === 'CARRIER' ? 'bg-primary/10 text-primary' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                        r.by === 'CARRIER' ? 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' : 'bg-secondary text-secondary-foreground'
                       }`}>
                         {r.by === 'CARRIER' ? 'ن' : 'ع'}
                       </div>
                       <div className="flex-1 min-w-0 rounded-md border bg-card p-3">
                         <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                           <span className="text-sm font-semibold">
-                            {r.by === 'CARRIER' ? 'أنت (الناقل)' : 'العميل'} —{' '}
+                            {r.by === 'CARRIER' ? 'أنت (الناقل)' : 'العميل'} ·{' '}
                             {r.kind === 'COUNTER' ? 'اقترح' : r.kind === 'ACCEPT' ? 'قبل' : 'رفض'}
                           </span>
                           <span className="text-xs text-muted-foreground">{formatDateTime(r.at)}</span>
@@ -818,8 +818,8 @@ function DirectNegotiationView({
                 <Row label="الوزن" icon={Weight} value={<span className="num">{(order.weightKg ?? 0).toLocaleString('en-US')} كجم</span>} />
                 <Row label="نوع الشاحنة" icon={Truck} value={order.truckType} />
                 <Row label="الاستلام" icon={Calendar} value={formatDate(order.pickupDate, 'EEEE d MMM · HH:mm')} />
-                <Row label="من" icon={MapPin} value={`${order.originCity} — ${order.originAddress}`} />
-                <Row label="إلى" icon={MapPin} value={`${order.destinationCity} — ${order.destinationAddress}`} />
+                <Row label="من" icon={MapPin} value={`${order.originCity}، ${order.originAddress}`} />
+                <Row label="إلى" icon={MapPin} value={`${order.destinationCity}، ${order.destinationAddress}`} />
                 {order.requiresInsurance && <Row label="تأمين" icon={ShieldCheck} value="مطلوب" />}
                 {order.requiresRefrigeration && <Row label="تبريد" icon={Snowflake} value="مطلوب" />}
               </dl>
@@ -836,7 +836,7 @@ function DirectNegotiationView({
             <DialogDescription>
               {onTable
                 ? `سيتم قبول السعر المقترَح من العميل (${onTable.price.toLocaleString('en-US')} ر.س)`
-                : 'اقترح السعر النهائي — في حال موافقة العميل ينتقل الطلب لـ ASSIGNED مباشرة'}
+                : 'اقترح السعر النهائي، وفي حال موافقة العميل يُسند الطلب إليك مباشرة'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -904,10 +904,10 @@ function DirectNegotiationView({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>الاعتذار عن الطلب</DialogTitle>
-            <DialogDescription>سيتم إعلام العميل ليختار ناقلاً آخر أو يحوّل الطلب للسوق المفتوح</DialogDescription>
+            <DialogDescription>سيتم إعلام العميل ليختار ناقلا آخر أو يحوّل الطلب للسوق المفتوح</DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-2">
-            <Label>السبب (اختياري — يساعد العميل في فهم القرار)</Label>
+            <Label>السبب (اختياري، يساعد العميل في فهم القرار)</Label>
             <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} placeholder="مثال: الأسطول مشغول في الموعد المطلوب" />
           </div>
           <DialogFooter>
@@ -938,7 +938,7 @@ function WithdrawBidButton({ orderId, bidId, onSuccess }: { orderId: string; bid
   return (
     <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10 shrink-0" onClick={withdraw} disabled={loading}>
       <X className="h-3 w-3" />
-      {loading ? 'جارٍ السحب…' : 'سحب العرض'}
+      {loading ? 'جار السحب…' : 'سحب العرض'}
     </Button>
   );
 }

@@ -112,8 +112,7 @@ export default function ClientDisputesPage() {
           {myDisputes.length === 0 ? (
             <div className="py-16 text-center text-muted-foreground">
               <Shield className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              لا توجد نزاعات — كل طلباتك تسير بسلاسة 🎉
-            </div>
+              لا توجد نزاعات — كل طلباتك تسير بسلاسة             </div>
           ) : (
             <Table>
               <TableHeader>

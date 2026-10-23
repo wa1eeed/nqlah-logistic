@@ -34,7 +34,7 @@ export function OnboardingLanguagePicker() {
           {locale === 'ar' ? 'اختر لغتك / Choose your language' : 'Choose your language / اختر لغتك'}
         </div>
         <div className="text-xs text-muted-foreground">
-          {locale === 'ar' ? 'يمكنك تغييرها لاحقاً من الإعدادات' : 'You can change this later in settings'}
+          {locale === 'ar' ? 'يمكنك تغييرها لاحقا من الإعدادات' : 'You can change this later in settings'}
         </div>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">

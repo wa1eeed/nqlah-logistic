@@ -136,6 +136,7 @@ export default function AdminSettingsPage() {
   return (
     <>
       <PageHeader
+        eyebrow="النظام"
         title={t('settings.title')}
         subtitle={t('settings.subtitle')}
       />
@@ -188,7 +189,7 @@ export default function AdminSettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>العمولات والضرائب</CardTitle>
-              <CardDescription>تطبّق على كل طلب جديد بدءاً من تاريخ الحفظ</CardDescription>
+              <CardDescription>تطبّق على كل طلب جديد بدءا من تاريخ الحفظ</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 max-w-2xl">
               <div className="space-y-2">
@@ -206,7 +207,7 @@ export default function AdminSettingsPage() {
               </div>
               <div className="flex items-center gap-2 pt-2">
                 <Button onClick={saveFinancial} disabled={savingFinancial}>
-                  {savingFinancial ? 'جارٍ الحفظ…' : 'حفظ التغييرات'}
+                  {savingFinancial ? 'جار الحفظ…' : 'حفظ التغييرات'}
                 </Button>
               </div>
             </CardContent>
@@ -274,7 +275,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <div className="pt-2">
                   <Button onClick={saveGeneral} disabled={savingGeneral}>
-                    {savingGeneral ? 'جارٍ الحفظ…' : 'حفظ'}
+                    {savingGeneral ? 'جار الحفظ…' : 'حفظ'}
                   </Button>
                 </div>
               </CardContent>
@@ -321,7 +322,7 @@ function BrandsPanel() {
           <div>
             <CardTitle>براندات الشاحنات</CardTitle>
             <CardDescription className="mt-1">
-              تُستخدم في نموذج إضافة الشاحنة لدى الناقل — كل براند يحتوي على موديلاته الخاصة
+              تُستخدم في نموذج إضافة الشاحنة لدى الناقل، وكل براند يحتوي على موديلاته الخاصة
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -356,7 +357,7 @@ function BrandsPanel() {
                       autoFocus
                       value={newBrandAr}
                       onChange={(e) => setNewBrandAr(e.target.value)}
-                      placeholder="مثلاً: تاتا"
+                      placeholder="مثلا: تاتا"
                     />
                   </div>
                   <div className="space-y-2">
@@ -384,7 +385,7 @@ function BrandsPanel() {
         {brands.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground">
             <Truck className="h-10 w-10 mx-auto mb-2 opacity-40" />
-            لا توجد براندات — أضف واحداً للبدء
+            لا توجد براندات، أضف واحدا للبدء
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4">
@@ -523,7 +524,7 @@ function BrandDetailPanel({
         <div className="space-y-2">
           {brand.models.length === 0 ? (
             <div className="text-sm text-muted-foreground py-4 text-center">
-              لا توجد موديلات بعد — أضف موديلاً أدناه
+              لا توجد موديلات بعد، أضف موديلا أدناه
             </div>
           ) : (
             brand.models.map((m) => (

@@ -51,3 +51,7 @@ docker-data/
 .cache/
 tmp/
 temp/
+
+# Design-skill scratch / reference assets (not app source)
+.taste-skill/
+/assets/

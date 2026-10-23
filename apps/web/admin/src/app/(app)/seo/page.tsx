@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import {
-  CheckCircle2, Code2, Facebook, FileText, Globe, Image as ImageIcon,
+  AlertTriangle, CheckCircle2, Code2, Facebook, FileText, Globe, Image as ImageIcon,
   Save, Search, Tag, Twitter,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,7 @@ export default function AdminSeoPage() {
   return (
     <>
       <PageHeader
+        eyebrow="قانوني و SEO"
         title="إعدادات SEO وميتا"
         subtitle="تحكم في كيفية ظهور الموقع في محركات البحث ووسائل التواصل"
         actions={
@@ -68,7 +69,7 @@ export default function AdminSeoPage() {
                 <Input value={seo.defaultTitle} onChange={(e) => update({ defaultTitle: e.target.value })} />
                 <p className="text-xs text-muted-foreground num">
                   الطول: {seo.defaultTitle.length} حرف
-                  {seo.defaultTitle.length > 60 && <span className="text-warning ms-1">⚠ مفضّل تحت 60 حرفاً</span>}
+                  {seo.defaultTitle.length > 60 && <span className="text-warning ms-1 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> مفضّل تحت 60 حرفا</span>}
                 </p>
               </div>
 
@@ -88,7 +89,7 @@ export default function AdminSeoPage() {
                 />
                 <p className="text-xs text-muted-foreground num">
                   الطول: {seo.defaultDescription.length} حرف
-                  {seo.defaultDescription.length > 160 && <span className="text-warning ms-1">⚠ مفضّل تحت 160 حرفاً</span>}
+                  {seo.defaultDescription.length > 160 && <span className="text-warning ms-1 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> مفضّل تحت 160 حرفا</span>}
                 </p>
               </div>
 
@@ -232,11 +233,11 @@ export default function AdminSeoPage() {
             </CardHeader>
             <CardContent className="space-y-4 max-w-3xl">
               <div className="space-y-2">
-                <Label>Google Search Console — رمز التحقق</Label>
+                <Label>Google Search Console · رمز التحقق</Label>
                 <Input dir="ltr" value={seo.googleSiteVerification} onChange={(e) => update({ googleSiteVerification: e.target.value })} placeholder="google-site-verification=..." />
               </div>
               <div className="space-y-2">
-                <Label>Bing Webmaster — رمز التحقق</Label>
+                <Label>Bing Webmaster · رمز التحقق</Label>
                 <Input dir="ltr" value={seo.bingSiteVerification} onChange={(e) => update({ bingSiteVerification: e.target.value })} placeholder="msvalidate.01=..." />
               </div>
 
@@ -258,7 +259,7 @@ export default function AdminSeoPage() {
           <Card>
             <CardHeader>
               <CardTitle>كيف يظهر الموقع في Google</CardTitle>
-              <CardDescription>تقريبي — قد يختلف حسب جهاز البحث وكلمات البحث</CardDescription>
+              <CardDescription>تقريبي، قد يختلف حسب جهاز البحث وكلمات البحث</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="max-w-2xl rounded-lg border p-4 bg-card font-sans" dir="ltr">

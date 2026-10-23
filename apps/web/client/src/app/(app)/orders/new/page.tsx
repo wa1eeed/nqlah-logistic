@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import {
   Check, ChevronLeft, ChevronRight, Clock, Eye, MapPin, Package, Radio,
   Search, Send, ShieldCheck, Snowflake, Truck, UserSearch, Wallet,
+  Building2, Route,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -242,47 +243,47 @@ export default function NewOrderWizard() {
     <>
       <PageHeader title="طلب نقل جديد" subtitle="املأ الخطوات التالية لنشر طلبك" />
 
-      {/* Stepper */}
-      <Card>
-        <CardContent className="py-5 overflow-x-auto">
-          <ol className="flex items-center min-w-max">
-            {STEPS.map((s, i) => {
-              const Icon = s.icon;
-              const isDone = s.id < step;
-              const isActive = s.id === step;
-              const clickable = isDone;
-              return (
-                <li key={s.id} className="flex items-center min-w-0">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={!clickable}
-                      onClick={() => clickable && setStep(s.id)}
-                      className={cn(
-                        'shrink-0 h-9 w-9 rounded-full grid place-items-center border transition-colors',
-                        isDone && 'bg-primary border-primary text-primary-foreground',
-                        isActive && 'bg-primary border-primary text-primary-foreground ring-4 ring-primary/15',
-                        !isDone && !isActive && 'bg-card border-border text-muted-foreground',
-                        clickable ? 'cursor-pointer' : 'cursor-default',
-                      )}
-                    >
-                      {isDone ? <Check className="h-4 w-4" strokeWidth={3} /> : <Icon className="h-4 w-4" />}
-                    </button>
-                    <span className={cn('text-sm font-medium whitespace-nowrap', isActive ? 'text-foreground' : 'text-muted-foreground')}>
-                      {s.label}
-                    </span>
-                  </div>
-                  {i < STEPS.length - 1 && (
-                    <div className="flex-1 mx-3 h-px bg-border min-w-[20px]" />
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        </CardContent>
-      </Card>
+      {/* Stepper — modern */}
+      <div className="rounded-2xl border border-border/70 bg-card px-4 py-5 overflow-x-auto">
+        <ol className="flex items-start min-w-max">
+          {STEPS.map((s, i) => {
+            const Icon = s.icon;
+            const isDone = s.id < step;
+            const isActive = s.id === step;
+            const clickable = isDone;
+            return (
+              <li key={s.id} className="flex items-start">
+                <div className="flex w-[92px] flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={!clickable}
+                    onClick={() => clickable && setStep(s.id)}
+                    className={cn(
+                      'grid h-11 w-11 shrink-0 place-items-center rounded-2xl transition-all',
+                      isDone && 'bg-[hsl(var(--mint))] text-primary',
+                      isActive && 'bg-[hsl(var(--mint))] text-primary ring-4 ring-[hsl(var(--mint))]/20',
+                      !isDone && !isActive && 'bg-secondary text-muted-foreground',
+                      clickable ? 'cursor-pointer hover:scale-105' : 'cursor-default',
+                    )}
+                  >
+                    {isDone ? <Check className="h-5 w-5" strokeWidth={3} /> : <Icon className="h-5 w-5" />}
+                  </button>
+                  <span className={cn('text-center text-xs font-semibold leading-tight', isActive ? 'text-foreground' : 'text-muted-foreground')}>
+                    {s.label}
+                  </span>
+                </div>
+                {i < STEPS.length - 1 && (
+                  <div className={cn('mt-5 h-[3px] w-8 rounded-full transition-colors sm:w-14', s.id < step ? 'bg-[hsl(var(--mint))]' : 'bg-border')} />
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
 
-      {/* Step content */}
+      {/* Step content + live summary */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+       <div className="space-y-4 lg:col-span-2">
       <Card>
         <CardContent className="p-6">
           {step === 1 && (
@@ -331,14 +332,14 @@ export default function NewOrderWizard() {
                     // sync destination city to origin when switching to same-city
                     set('destinationCity', form.originCity);
                   }}
-                  icon={<span className="text-2xl">🏙️</span>}
+                  icon={<Building2 className="h-6 w-6" />}
                   title="داخل المدينة"
                   description="استلام وتسليم داخل نفس المدينة"
                 />
                 <ChoiceCard
                   selected={form.tripType === 'INTER_CITY'}
                   onClick={() => set('tripType', 'INTER_CITY')}
-                  icon={<span className="text-2xl">🛣️</span>}
+                  icon={<Route className="h-6 w-6" />}
                   title="بين المدن"
                   description="رحلة طويلة عبر المسافات"
                 />
@@ -418,15 +419,15 @@ export default function NewOrderWizard() {
                   <Select value={form.pickupWindow} onValueChange={(v) => set('pickupWindow', v as PickupWindow)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MORNING">🌅 صباحاً (8:00 - 12:00)</SelectItem>
-                      <SelectItem value="EVENING">🌇 مساءً (12:00 - 18:00)</SelectItem>
-                      <SelectItem value="ALL_DAY">☀️ طوال اليوم (8:00 - 18:00)</SelectItem>
+                      <SelectItem value="MORNING">صباحا (8:00 - 12:00)</SelectItem>
+                      <SelectItem value="EVENING">مساء (12:00 - 18:00)</SelectItem>
+                      <SelectItem value="ALL_DAY">طوال اليوم (8:00 - 18:00)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                💡 الناقل سيؤكّد الوقت الدقيق داخل النافذة عند قبول العرض.
+                الناقل سيؤكّد الوقت الدقيق داخل النافذة عند قبول العرض.
               </p>
             </Step>
           )}
@@ -439,7 +440,7 @@ export default function NewOrderWizard() {
                   onClick={() => { set('mode', 'OPEN'); set('targetCarrierId', null); }}
                   icon={<Radio className="h-6 w-6" />}
                   title="نشر للجميع"
-                  description="يظهر طلبك لكل الناقلين المؤهلين وتستقبل عروضاً متعددة للمقارنة."
+                  description="يظهر طلبك لكل الناقلين المؤهلين وتستقبل عروضا متعددة للمقارنة."
                   badge="موصى به"
                 />
                 <ChoiceCard
@@ -447,16 +448,16 @@ export default function NewOrderWizard() {
                   onClick={() => set('mode', 'DIRECT')}
                   icon={<UserSearch className="h-6 w-6" />}
                   title="إرسال مباشر"
-                  description="اختر ناقلاً معتمداً وأرسل له الطلب بشكل مباشر."
+                  description="اختر ناقلا معتمدا وأرسل له الطلب بشكل مباشر."
                 />
               </div>
 
               {form.mode === 'DIRECT' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label>اختر ناقلاً معتمداً</Label>
+                    <Label>اختر ناقلا معتمدا</Label>
                     <span className="text-xs text-muted-foreground">
-                      {carriersLoading ? 'جارٍ التحميل...' : `${carriers.length} ناقل متاح`}
+                      {carriersLoading ? 'جار التحميل...' : `${carriers.length} ناقل متاح`}
                     </span>
                   </div>
                   <div className="relative">
@@ -472,7 +473,7 @@ export default function NewOrderWizard() {
                     {carriersLoading && (
                       <div className="col-span-2 text-center py-8 text-sm text-muted-foreground">
                         <Truck className="h-6 w-6 mx-auto mb-2 animate-pulse" />
-                        جارٍ تحميل الناقلين...
+                        جار تحميل الناقلين...
                       </div>
                     )}
                     {!carriersLoading && carriers.length === 0 && (
@@ -512,7 +513,7 @@ export default function NewOrderWizard() {
                     <div className="rounded-lg border p-4 space-y-3">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <div className="text-sm font-medium">هل لديك سعر متفق مسبقاً مع هذا الناقل؟</div>
+                          <div className="text-sm font-medium">هل لديك سعر متفق مسبقا مع هذا الناقل؟</div>
                           <div className="text-xs text-muted-foreground mt-0.5">يتجاوز مرحلة التفاوض ويُسند الطلب مباشرة</div>
                         </div>
                         <div className="flex gap-2 shrink-0">
@@ -599,7 +600,7 @@ export default function NewOrderWizard() {
               <div className="space-y-2">
                 <Label>تعليمات خاصة (اختياري)</Label>
                 <Textarea value={form.specialInstructions} onChange={(e) => set('specialInstructions', e.target.value)}
-                  placeholder="مثال: التحميل من 7 صباحاً، يلزم تصريح دخول" />
+                  placeholder="مثال: التحميل من 7 صباحا، يلزم تصريح دخول" />
               </div>
             </Step>
           )}
@@ -658,7 +659,113 @@ export default function NewOrderWizard() {
           {submitError}
         </div>
       )}
+       </div>
+
+       {/* Live order summary */}
+       <aside className="lg:col-span-1">
+         <OrderSummary form={form} step={step} truckTypes={truckTypesList} carriers={carriersRaw ?? []} />
+       </aside>
+      </div>
     </>
+  );
+}
+
+const WINDOW_LABEL: Record<string, string> = {
+  MORNING: 'صباحا', EVENING: 'مساء', ALL_DAY: 'طوال اليوم',
+};
+
+function SummaryRow({ icon: Icon, label, value, muted }: { icon: React.ElementType; label: string; value: React.ReactNode; muted?: boolean }) {
+  return (
+    <div className="flex items-start gap-2.5 py-2.5">
+      <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', muted ? 'text-muted-foreground/40' : 'text-[hsl(var(--mint))]')} />
+      <div className="min-w-0 flex-1">
+        <div className="text-[11px] text-muted-foreground">{label}</div>
+        <div className={cn('text-sm font-semibold', muted && 'text-muted-foreground/50')}>{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function OrderSummary({
+  form, step, truckTypes, carriers,
+}: {
+  form: FormState;
+  step: number;
+  truckTypes: { value: string; label: string }[];
+  carriers: ApiCarrier[];
+}) {
+  const cargoLabel = CARGO_TYPES.find((c) => c.value === form.cargoType)?.label;
+  const truckLabel = truckTypes.find((tt) => tt.value === form.truckType)?.label;
+  const carrierName = carriers.find((c) => c.id === form.targetCarrierId)?.nameAr;
+  const nf = new Intl.NumberFormat('en-US');
+  const modeValue = form.mode === 'DIRECT'
+    ? `مباشر${carrierName ? ` · ${carrierName}` : ''}`
+    : form.mode === 'OPEN' ? 'سوق مفتوح للعروض' : null;
+
+  return (
+    <div className="sticky top-24 overflow-hidden rounded-2xl border border-border/70 bg-card">
+      <div className="border-b border-border/60 bg-secondary/40 px-5 py-3.5">
+        <h3 className="text-sm font-bold">ملخّص الطلب</h3>
+        <p className="num mt-0.5 text-xs text-muted-foreground">الخطوة {nf.format(step)} من {nf.format(STEPS.length)}</p>
+      </div>
+      <div className="divide-y divide-border/50 px-5">
+        <SummaryRow
+          icon={MapPin}
+          label="المسار"
+          muted={!form.originCity || !form.destinationCity}
+          value={form.originCity && form.destinationCity
+            ? `${form.originCity} ← ${form.destinationCity}`
+            : 'لم يُحدّد بعد'}
+        />
+        <SummaryRow
+          icon={Package}
+          label="الحمولة"
+          muted={!cargoLabel}
+          value={cargoLabel
+            ? `${cargoLabel}${form.weightKg > 0 ? ` · ${nf.format(form.weightKg)} كجم` : ''}`
+            : 'لم تُحدّد بعد'}
+        />
+        <SummaryRow
+          icon={Clock}
+          label="موعد الاستلام"
+          muted={!form.pickupDate}
+          value={form.pickupDate
+            ? `${form.pickupDate} · ${WINDOW_LABEL[form.pickupWindow]}`
+            : 'لم يُحدّد بعد'}
+        />
+        <SummaryRow
+          icon={form.mode === 'DIRECT' ? UserSearch : Radio}
+          label="طريقة الإرسال"
+          muted={!modeValue}
+          value={modeValue ?? 'لم تُحدّد بعد'}
+        />
+        <SummaryRow
+          icon={Truck}
+          label="نوع الشاحنة"
+          muted={!truckLabel}
+          value={truckLabel ?? 'لم يُحدّد بعد'}
+        />
+        {(form.requiresInsurance || form.requiresRefrigeration) && (
+          <div className="flex flex-wrap gap-1.5 py-3">
+            {form.requiresInsurance && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--mint))]/12 px-2.5 py-1 text-[11px] font-semibold text-[hsl(var(--mint))]">
+                <ShieldCheck className="h-3 w-3" /> تأمين شامل
+              </span>
+            )}
+            {form.requiresRefrigeration && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--mint))]/12 px-2.5 py-1 text-[11px] font-semibold text-[hsl(var(--mint))]">
+                <Snowflake className="h-3 w-3" /> تبريد
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="border-t border-border/60 bg-secondary/30 px-5 py-3">
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          بعد النشر يصلك عروض من ناقلين معتمدين، وتُحتجَز أموالك في Escrow حتى تأكيد التسليم.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -696,7 +803,7 @@ function RouteMapsBlock({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="space-y-2">
-        <Label>📍 موقع الاستلام في {originCity}</Label>
+        <Label>موقع الاستلام في {originCity}</Label>
         <MapAddressPicker
           center={originCenter}
           value={originPin ?? undefined}
@@ -711,7 +818,7 @@ function RouteMapsBlock({
         />
       </div>
       <div className="space-y-2">
-        <Label>📦 موقع التسليم في {destinationCity}</Label>
+        <Label>موقع التسليم في {destinationCity}</Label>
         <MapAddressPicker
           center={destCenter}
           value={destinationPin ?? undefined}

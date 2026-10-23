@@ -15,6 +15,9 @@ import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
+import { MiniStat } from '@/components/ui/mini-stat';
+import { FadeIn } from '@/components/ui/fade-in';
+import { FileText, Truck, Gavel, Wallet } from 'lucide-react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import { ORDERS, companyById, formatDate, normalizeOrderList, SAUDI_CITIES, type Order } from '@naqla/shared-utils';
@@ -58,9 +61,21 @@ export default function AdminOrdersPage() {
     { key: 'CANCELLED',  label: 'ملغى' },
   ];
 
+  const inTransit = all.filter((o) => o.status === 'IN_TRANSIT').length;
+  const bidding = all.filter((o) => o.status === 'BIDDING' || o.status === 'PUBLISHED').length;
+  const gmv = all.reduce((s, o) => s + (o.agreedPrice ?? o.clientBudget ?? 0), 0);
+
   return (
     <>
-      <PageHeader title="الطلبات" subtitle={`${all.length} طلب على المنصة`} />
+      <PageHeader eyebrow="إدارة المنصة" title="الطلبات" subtitle="متابعة جميع طلبات الشحن وحالتها عبر المنصة" />
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <MiniStat label="إجمالي الطلبات" value={all.length} icon={FileText} index={0} />
+        <MiniStat label="في الطريق" value={inTransit} icon={Truck} tone="success" index={1} />
+        <MiniStat label="عروض نشطة" value={bidding} icon={Gavel} tone="warning" index={2} />
+        <MiniStat label="قيمة المعاملات" value={<Currency amount={gmv} />} icon={Wallet} tone="default" index={3} />
+      </div>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <Tabs value={tab} onValueChange={setTab}>
@@ -92,6 +107,7 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
+      <FadeIn delay={0.08}>
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -140,6 +156,7 @@ export default function AdminOrdersPage() {
           </Table>
         </CardContent>
       </Card>
+      </FadeIn>
     </>
   );
 }

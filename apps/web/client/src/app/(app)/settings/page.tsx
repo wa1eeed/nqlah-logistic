@@ -141,7 +141,7 @@ export default function ClientSettingsPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>{t('company.info')}</CardTitle>
-                  <Badge variant={kycStatus === 'APPROVED' ? 'success' : 'warning'}>
+                  <Badge variant={kycStatus === 'APPROVED' ? 'success' : 'secondary'}>
                     {kycStatus === 'APPROVED' ? t('company.verifiedAccount') : t('company.awaitingVerification')}
                   </Badge>
                 </div>
@@ -180,7 +180,7 @@ export default function ClientSettingsPage() {
                 <dl className="divide-y">
                   <Row label={t('company.monthlyVolume')} value={<Currency amount={monthlyVolume} />} />
                   <Row label={t('company.kycStatus')} value={
-                    <Badge variant={kycStatus === 'APPROVED' ? 'success' : 'warning'}>
+                    <Badge variant={kycStatus === 'APPROVED' ? 'success' : 'secondary'}>
                       {kycStatus === 'APPROVED' ? t('kyc.approved') : t('company.awaitingVerification')}
                     </Badge>
                   } />
@@ -248,7 +248,7 @@ export default function ClientSettingsPage() {
                     onClick={() => fileRef.current?.click()}
                   >
                     {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    {uploading ? 'جارٍ الرفع…' : t('kyc.uploadDoc')}
+                    {uploading ? 'جار الرفع…' : t('kyc.uploadDoc')}
                   </Button>
                 </div>
               </div>

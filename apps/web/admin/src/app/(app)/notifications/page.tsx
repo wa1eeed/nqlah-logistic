@@ -27,9 +27,9 @@ type ApiNotification = {
 };
 
 const ICONS: Record<string, { icon: any; tone: string }> = {
-  ORDER_BID:        { icon: Inbox,       tone: 'bg-info/15 text-info' },
+  ORDER_BID:        { icon: Inbox,       tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
   ORDER_ACCEPTED:   { icon: Check,       tone: 'bg-success/15 text-success' },
-  ORDER_PICKED_UP:  { icon: Truck,       tone: 'bg-info/15 text-info' },
+  ORDER_PICKED_UP:  { icon: Truck,       tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
   ORDER_DELIVERED:  { icon: Package,     tone: 'bg-success/15 text-success' },
   INVOICE_OVERDUE:  { icon: FileText,    tone: 'bg-destructive/15 text-destructive' },
   PAYMENT_RELEASED: { icon: Wallet,      tone: 'bg-success/15 text-success' },
@@ -37,11 +37,11 @@ const ICONS: Record<string, { icon: any; tone: string }> = {
   KYC_PENDING:      { icon: ShieldCheck, tone: 'bg-warning/15 text-warning' },
   DISPUTE_NEW:      { icon: AlertCircle, tone: 'bg-destructive/15 text-destructive' },
   ORDER_CREATED:      { icon: Sparkles,    tone: 'bg-primary/10 text-primary' },
-  BID_RECEIVED:       { icon: Inbox,       tone: 'bg-info/15 text-info' },
+  BID_RECEIVED:       { icon: Inbox,       tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
   BID_ACCEPTED:       { icon: Check,       tone: 'bg-success/15 text-success' },
   BID_REJECTED:       { icon: AlertCircle, tone: 'bg-warning/15 text-warning' },
-  ORDER_ASSIGNED:     { icon: Truck,       tone: 'bg-info/15 text-info' },
-  ORDER_CONFIRMED:    { icon: Check,       tone: 'bg-info/15 text-info' },
+  ORDER_ASSIGNED:     { icon: Truck,       tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
+  ORDER_CONFIRMED:    { icon: Check,       tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
   SHIPMENT_STARTED:   { icon: Truck,       tone: 'bg-warning/15 text-warning' },
   SHIPMENT_DELIVERED: { icon: Package,     tone: 'bg-success/15 text-success' },
   PAYMENT_RECEIVED:   { icon: Wallet,      tone: 'bg-success/15 text-success' },
@@ -102,6 +102,7 @@ export default function AdminNotificationsPage() {
   return (
     <>
       <PageHeader
+        eyebrow="النظام"
         title="مركز الإشعارات"
         subtitle={`${unread} إشعار غير مقروء`}
         actions={

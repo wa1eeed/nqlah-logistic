@@ -58,13 +58,13 @@ export function OnlineStatusBar() {
       aria-live="polite"
       className={cn(
         'fixed top-0 inset-x-0 z-[9999] flex items-center justify-center gap-2 py-1.5 text-xs font-medium text-white shadow-md transition-transform',
-        online ? 'bg-emerald-600' : 'bg-red-600',
+        online ? 'bg-success' : 'bg-destructive',
       )}
     >
       {online ? (
         <>
           <Wifi className="h-3.5 w-3.5" />
-          تم الاتصال — جاري التزامن
+          تم الاتصال، جاري التزامن
         </>
       ) : (
         <>

@@ -4,7 +4,6 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { Filter, Phone, Search, Users } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,6 +15,8 @@ import {
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
 import { StatsCard } from '@/components/stats-card';
+import { FadeIn } from '@/components/ui/fade-in';
+import { UserCheck, UserMinus } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import { formatDate } from '@naqla/shared-utils';
 
@@ -65,17 +66,19 @@ export default function AdminDriversPage() {
   return (
     <>
       <PageHeader
+        eyebrow="الأسطول"
         title="كل السائقين في المنصة"
         subtitle="قائمة موحّدة للسائقين عبر جميع شركات النقل"
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatsCard label="إجمالي السائقين" value={total.toLocaleString('en-US')}   icon={Users} />
-        <StatsCard label="في رحلة"          value={onTrip.toLocaleString('en-US')}  icon={Users} tone="warning" />
-        <StatsCard label="متاحون"            value={available.toLocaleString('en-US')} icon={Users} tone="success" />
-        <StatsCard label="خارج الخدمة"       value={offDuty.toLocaleString('en-US')} icon={Users} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard label="إجمالي السائقين" value={total}   icon={Users} index={0} />
+        <StatsCard label="في رحلة"          value={onTrip}  icon={Users} tone="warning" index={1} />
+        <StatsCard label="متاحون"            value={available} icon={UserCheck} tone="success" index={2} />
+        <StatsCard label="خارج الخدمة"       value={offDuty} icon={UserMinus} index={3} />
       </div>
 
+      <FadeIn delay={0.1}>
       <Card>
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -158,9 +161,7 @@ export default function AdminDriversPage() {
                           <Link href={`/orders/${activeOrder.id}`} className="group">
                             <div className="text-xs font-mono text-primary hover:underline">{activeOrder.orderNumber}</div>
                             <div className="text-xs text-muted-foreground">{activeOrder.originCity} ← {activeOrder.destinationCity}</div>
-                            <Badge variant="secondary" className="mt-0.5 h-4 text-[10px]">
-                              <StatusBadge status={activeOrder.status} />
-                            </Badge>
+                            <div className="mt-1"><StatusBadge status={activeOrder.status} /></div>
                           </Link>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
@@ -175,6 +176,7 @@ export default function AdminDriversPage() {
           </Table>
         </CardContent>
       </Card>
+      </FadeIn>
     </>
   );
 }

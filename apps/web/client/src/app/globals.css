@@ -12,27 +12,28 @@
  */
 @layer base {
   :root {
-    --background:         210 20% 98%;
-    --foreground:         174 65%  9%;
+    /* Unified with the premium-light landing palette (mint-only, no gold/orange) */
+    --background:         178 30% 97.5%;
+    --foreground:         174 55% 11%;
 
     --card:                 0  0% 100%;
-    --card-foreground:    174 65%  9%;
+    --card-foreground:    174 55% 11%;
 
     --popover:              0  0% 100%;
-    --popover-foreground: 174 65%  9%;
+    --popover-foreground: 174 55% 11%;
 
-    /* Brand primary = #0A3D3A */
-    --primary:            174 71% 14%;
+    /* Brand primary = deep teal */
+    --primary:            174 74% 12.5%;
     --primary-foreground:   0  0% 100%;
 
-    --secondary:          174 14% 94%;
-    --secondary-foreground: 174 65% 14%;
+    --secondary:          176 24% 93%;
+    --secondary-foreground: 174 55% 14%;
 
-    --muted:              174 14% 94%;
-    --muted-foreground:   174 12% 42%;
+    --muted:              176 22% 94%;
+    --muted-foreground:   174 10% 40%;
 
     /* shadcn `accent` = hover/highlight surface (light teal-tinted) */
-    --accent:             174 72% 95%;
+    --accent:             174 70% 95%;
     --accent-foreground:  174 71% 22%;
 
     --destructive:          0 84% 60%;
@@ -41,16 +42,16 @@
     --success:            160 84% 39%;
     --success-foreground:   0  0% 100%;
 
-    --warning:             32 95% 44%;
+    --warning:             32 90% 45%;
     --warning-foreground:   0  0% 100%;
 
-    --border:             220 13% 91%;
-    --input:              220 13% 91%;
-    --ring:               174 71% 22%;
+    --border:             176 20% 89%;
+    --input:              176 20% 89%;
+    --ring:               170 85% 36%;
 
-    /* Naqla brand accents (Naqla-specific) */
-    --mint:               170 100% 39%;
-    --gold:                43  84% 60%;
+    /* Naqla accent — mint only (gold repointed to mint to retire orange) */
+    --mint:               170 88% 36%;
+    --gold:               170 88% 36%;
 
     --radius:             1rem;
 

@@ -23,7 +23,7 @@ import { TeamTab } from '@/components/settings/team-tab';
 import { useAuthStore } from '@/lib/auth-store';
 import { fetcher, api } from '@/lib/api';
 import { notify } from '@/lib/notify';
-import { formatDate } from '@naqla/shared-utils';
+import { formatDate, CURRENT_CARRIER_ID } from '@naqla/shared-utils';
 
 const KYC_TYPES = [
   { value: 'COMMERCIAL_REGISTER', label: 'السجل التجاري' },
@@ -45,7 +45,10 @@ type KycDoc = {
 
 export default function CarrierSettingsPage() {
   const t = useTranslations('settings');
-  const companyId = useAuthStore((s) => s.user?.companyId);
+  // Prefer the authenticated company; fall back to the demo carrier id so
+  // settings still populate from mock data in offline demo mode (matches the
+  // fallback pattern used across the other carrier pages).
+  const companyId = useAuthStore((s) => s.user?.companyId) ?? CURRENT_CARRIER_ID;
 
   const { data: company, mutate: mutateCompany } = useSWR<Record<string, unknown>>(
     companyId ? `/companies/${companyId}` : null,
@@ -166,7 +169,7 @@ export default function CarrierSettingsPage() {
                     <Row label={t('company.nameEn')} value={<span className="num">{company.nameEn as string}</span>} />
                     <Row label={t('company.crNumber')} value={<span className="num">{(company.crNumber as string) || '—'}</span>} />
                     <Row label={t('company.vatNumber')} value={<span className="num">{(company.vatNumber as string) || '—'}</span>} />
-                    <Row label={t('company.city')} icon={MapPin} value={`${company.city as string} — ${company.region as string}`} />
+                    <Row label={t('company.city')} icon={MapPin} value={`${company.city as string}، ${company.region as string}`} />
                     <Row label={t('company.email')} icon={Mail} value={<span className="num">{company.contactEmail as string}</span>} />
                     <Row label={t('company.phone')} icon={Phone} value={<span className="num" dir="ltr">{company.contactPhone as string}</span>} />
                     <Row label={t('company.joinDate')} value={formatDate((company.createdAt as string) ?? '', 'd MMMM yyyy')} />
@@ -259,7 +262,7 @@ export default function CarrierSettingsPage() {
                     onClick={() => fileRef.current?.click()}
                   >
                     {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    {uploading ? 'جارٍ الرفع…' : t('kyc.uploadDoc')}
+                    {uploading ? 'جار الرفع…' : t('kyc.uploadDoc')}
                   </Button>
                 </div>
               </div>
@@ -309,7 +312,7 @@ export default function CarrierSettingsPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t('company.updateBtn')}</DialogTitle>
-            <DialogDescription>تعديل بيانات الشركة — لن تؤثر التغييرات على حالة التحقق المعتمدة.</DialogDescription>
+            <DialogDescription>تعديل بيانات الشركة، لن تؤثر التغييرات على حالة التحقق المعتمدة.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
             <div className="space-y-1.5">

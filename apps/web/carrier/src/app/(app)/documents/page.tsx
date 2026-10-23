@@ -23,7 +23,7 @@ const DOC_LABELS: Record<CarrierDoc['type'], string> = {
 
 const STATUS_META: Record<DocStatus, { label: string; tone: 'success' | 'warning' | 'destructive'; icon: any; bg: string; iconColor: string }> = {
   VALID:          { label: 'سارية',           tone: 'success',     icon: CheckCircle2,  bg: 'bg-success/10',     iconColor: 'text-success' },
-  EXPIRING_SOON:  { label: 'تنتهي قريباً',    tone: 'warning',     icon: AlertTriangle, bg: 'bg-warning/10',     iconColor: 'text-warning' },
+  EXPIRING_SOON:  { label: 'تنتهي قريبا',    tone: 'warning',     icon: AlertTriangle, bg: 'bg-warning/10',     iconColor: 'text-warning' },
   EXPIRED:        { label: 'منتهية',           tone: 'destructive', icon: AlertCircle,   bg: 'bg-destructive/10', iconColor: 'text-destructive' },
   MISSING:        { label: 'غير مرفقة',       tone: 'destructive', icon: AlertCircle,   bg: 'bg-destructive/10', iconColor: 'text-destructive' },
 };
@@ -63,7 +63,7 @@ export default function CarrierDocumentsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatsCard label="إجمالي الوثائق" value={stats.total} icon={FileCheck2} />
         <StatsCard label="سارية" value={stats.valid} icon={CheckCircle2} tone="success" />
-        <StatsCard label="تنتهي قريباً" value={stats.expiring} icon={AlertTriangle} tone="warning" />
+        <StatsCard label="تنتهي قريبا" value={stats.expiring} icon={AlertTriangle} tone="warning" />
         <StatsCard label="مفقودة/منتهية" value={stats.missing} icon={AlertCircle} tone={stats.missing > 0 ? 'danger' : 'success'} />
       </div>
 

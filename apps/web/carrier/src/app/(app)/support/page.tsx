@@ -57,9 +57,9 @@ type ApiTicket = { id: string; subject: string; category: string; status: string
 
 const FAQ = [
   { q: 'متى يُفرَج عن المبلغ بعد التسليم؟',  a: 'يُفرَج عن المبلغ من Escrow خلال 3 أيام عمل من تأكيد التسليم وعدم وجود نزاع.' },
-  { q: 'كيف أرفع وثائق شركتي؟',             a: 'من صفحة "الوثائق" يمكنك رفع السجل التجاري، التأمين، رخصة النقل، وغيرها — ومتابعة صلاحيتها.' },
+  { q: 'كيف أرفع وثائق شركتي؟',             a: 'من صفحة "الوثائق" يمكنك رفع السجل التجاري والتأمين ورخصة النقل وغيرها، ومتابعة صلاحيتها.' },
   { q: 'ما نسبة العمولة على كل رحلة؟',       a: 'نسبة العمولة الافتراضية 8% من قيمة الطلب، وتظهر بشفافية في تفاصيل كل عملية.' },
-  { q: 'كيف أضيف سائق أو شاحنة جديدة؟',    a: 'من قسم "الأسطول": شاحنات أو سائقون، ثم زر "إضافة". تظهر الشاحنة فوراً في الأسطول وقابلة لقبول الطلبات.' },
+  { q: 'كيف أضيف سائق أو شاحنة جديدة؟',    a: 'من قسم "الأسطول": شاحنات أو سائقون، ثم زر "إضافة". تظهر الشاحنة فورا في الأسطول وقابلة لقبول الطلبات.' },
   { q: 'هل يمكنني سحب عرض بعد تقديمه؟',    a: 'نعم، طالما لم يُقبل بعد. من سجل العروض اختر العرض ثم "سحب".' },
 ];
 
@@ -84,7 +84,7 @@ export default function CarrierSupportPage() {
         description: form.description.trim(),
       });
       await mutateTickets();
-      notify.success('تم إنشاء التذكرة', 'سيردّ عليك فريق الدعم قريباً');
+      notify.success('تم إنشاء التذكرة', 'سيردّ عليك فريق الدعم قريبا');
       setCreateOpen(false);
       setForm({ subject: '', category: '', description: '' });
     } catch (err) {
@@ -117,7 +117,7 @@ export default function CarrierSupportPage() {
         <ChannelCard
           icon={Phone}
           title="اتصال هاتفي"
-          subtitle="السبت – الخميس، 8 ص – 8 م"
+          subtitle="السبت إلى الخميس، 8 ص إلى 8 م"
           cta="+966 920 000 000"
           tone="bg-info/15 text-info"
         />
@@ -140,7 +140,7 @@ export default function CarrierSupportPage() {
             {myTickets.length === 0 ? (
               <div className="py-16 text-center text-muted-foreground">
                 <LifeBuoy className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                لا توجد تذاكر — ابدأ بإنشاء واحدة عند الحاجة
+                لا توجد تذاكر، ابدأ بإنشاء واحدة عند الحاجة
               </div>
             ) : (
               <Table>

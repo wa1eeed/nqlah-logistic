@@ -126,7 +126,7 @@ export default function AddressesPage() {
     <>
       <PageHeader
         title="العناوين المحفوظة"
-        subtitle="مواقع الاستلام والتسليم المتكررة — تظهر تلقائياً في نموذج إنشاء الطلب"
+        subtitle="مواقع الاستلام والتسليم المتكررة — تظهر تلقائيا في نموذج إنشاء الطلب"
         actions={
           <Button onClick={openAdd} disabled={!companyId}>
             <Plus className="h-4 w-4" /> إضافة عنوان
@@ -194,7 +194,7 @@ export default function AddressesPage() {
                   <div className="flex items-center gap-1 pt-2 border-t">
                     {!a.isDefault && (
                       <Button size="sm" variant="ghost" onClick={() => makeDefault(a)}>
-                        <Star className="h-3.5 w-3.5" /> اجعله افتراضياً
+                        <Star className="h-3.5 w-3.5" /> اجعله افتراضيا
                       </Button>
                     )}
                     <div className="flex-1" />
@@ -224,7 +224,7 @@ export default function AddressesPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? 'تعديل العنوان' : 'إضافة عنوان جديد'}</DialogTitle>
-            <DialogDescription>اعطِ العنوان اسماً واضحاً ليسهل اختياره لاحقاً</DialogDescription>
+            <DialogDescription>اعطِ العنوان اسما واضحا ليسهل اختياره لاحقا</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-2">

@@ -119,13 +119,16 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                     isActive
-                      ? 'bg-primary/10 text-primary'
+                      ? 'bg-[hsl(var(--mint))]/10 text-primary font-semibold'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
+                  {isActive && (
+                    <span className="absolute inset-y-1.5 start-0 w-1 rounded-full bg-[hsl(var(--mint))]" aria-hidden />
+                  )}
+                  <Icon className={cn('h-4 w-4 shrink-0', isActive && 'text-[hsl(var(--mint))]')} />
                   <span className="flex-1">{t(`nav.${item.labelKey}`)}</span>
                   {item.comingSoon && (
                     <span className="text-[10px] rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground">

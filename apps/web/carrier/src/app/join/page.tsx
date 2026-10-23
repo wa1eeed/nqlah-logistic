@@ -92,7 +92,7 @@ function JoinForm() {
       <Shell>
         <Card>
           <CardHeader className="text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success/12 text-success">
               <CheckCircle2 className="h-7 w-7" />
             </div>
             <CardTitle className="text-xl mt-3">{t('successTitle')}</CardTitle>

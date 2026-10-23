@@ -73,7 +73,7 @@ export default function AdminDashboard() {
   return (
     <>
       <PageHeader
-        title="لوحة التحكم 👋"
+        title="لوحة التحكم"
         subtitle="نظرة شاملة على نشاط منصة نقلة"
         actions={
           <Button variant="outline">

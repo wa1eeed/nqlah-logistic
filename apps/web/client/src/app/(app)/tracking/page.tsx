@@ -29,7 +29,7 @@ export default function TrackingPage() {
         <Card>
           <CardContent className="py-20 text-center">
             <Truck className="h-14 w-14 mx-auto mb-4 text-muted-foreground/40" />
-            <h3 className="font-semibold">لا توجد شحنات نشطة حالياً</h3>
+            <h3 className="font-semibold">لا توجد شحنات نشطة حاليا</h3>
             <p className="mt-2 text-sm text-muted-foreground">سيظهر هنا التتبع المباشر فور انطلاق أي شاحنة</p>
             <Button asChild className="mt-4">
               <Link href="/orders/new">إنشاء طلب جديد</Link>
@@ -111,10 +111,10 @@ function TrackingDetail({ order }: { order: any }) {
           className="rounded-b-none border-b"
         />
         <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
-          <Stat icon="📍" label="إجمالي المسافة" value={<span className="num">{km.toLocaleString('en-US')} كم</span>} />
-          <Stat icon="🚚" label="متبقّي" value={<span className="num text-success font-bold">{remaining.toLocaleString('en-US')} كم</span>} />
-          <Stat icon="⏱" label="الوصول المتوقّع" value={duration} />
-          <Stat icon="🛣" label="الطريق" value={road} />
+          <Stat icon={MapPin} label="إجمالي المسافة" value={<span className="num">{km.toLocaleString('en-US')} كم</span>} />
+          <Stat icon={Truck} label="متبقّي" value={<span className="num text-[hsl(var(--mint))] font-bold">{remaining.toLocaleString('en-US')} كم</span>} />
+          <Stat icon={Clock} label="الوصول المتوقّع" value={duration} />
+          <Stat icon={Navigation} label="الطريق" value={road} />
         </CardContent>
       </Card>
 
@@ -166,7 +166,7 @@ function TrackingDetail({ order }: { order: any }) {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-full bg-info/15 text-info grid place-items-center shrink-0 animate-pulse">
+            <div className="h-10 w-10 rounded-full bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))] grid place-items-center shrink-0 animate-pulse">
               <Navigation className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
@@ -202,10 +202,12 @@ function TrackingDetail({ order }: { order: any }) {
   );
 }
 
-function Stat({ icon, label, value }: { icon: string; label: string; value: React.ReactNode }) {
+function Stat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="text-2xl" aria-hidden>{icon}</span>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]">
+        <Icon className="h-4 w-4" />
+      </span>
       <div className="min-w-0">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="mt-0.5 text-sm font-semibold truncate">{value}</div>

@@ -180,7 +180,7 @@ export default function ClientRegisterPage() {
                   disabled={!stepValid[step] || submitting}
                   size="lg"
                 >
-                  {step === 4 ? (submitting ? 'جارٍ إنشاء الحساب...' : 'إنشاء الحساب') : (
+                  {step === 4 ? (submitting ? 'جار إنشاء الحساب...' : 'إنشاء الحساب') : (
                     <>التالي <ArrowLeft className="h-4 w-4 rtl:rotate-180" /></>
                   )}
                 </Button>
@@ -256,7 +256,7 @@ function StepAccountKind({
 }: { form: Form; set: <K extends keyof Form>(k: K, v: Form[K]) => void }) {
   return (
     <>
-      <StepHeader icon={User} title="مرحباً بك" subtitle="اختر نوع الحساب الذي يناسبك" />
+      <StepHeader icon={User} title="مرحبا بك" subtitle="اختر نوع الحساب الذي يناسبك" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <KindCard
           selected={form.kind === 'INDIVIDUAL'}
@@ -372,7 +372,7 @@ function strengthScore(pw: string): number {
 }
 
 function PwStrength({ score }: { score: number }) {
-  const labels = ['ضعيفة جداً', 'ضعيفة', 'متوسطة', 'قوية', 'ممتازة'];
+  const labels = ['ضعيفة جدا', 'ضعيفة', 'متوسطة', 'قوية', 'ممتازة'];
   const colors = ['bg-destructive', 'bg-destructive', 'bg-warning', 'bg-info', 'bg-success'];
   return (
     <div className="space-y-1">
@@ -456,7 +456,7 @@ function StepVerify({
 }: { form: Form; set: <K extends keyof Form>(k: K, v: Form[K]) => void }) {
   return (
     <>
-      <StepHeader icon={ShieldCheck} title="تحقّق من حسابك" subtitle="أرسلنا رمزاً للبريد والجوال" />
+      <StepHeader icon={ShieldCheck} title="تحقّق من حسابك" subtitle="أرسلنا رمزا للبريد والجوال" />
       <div className="space-y-5">
         <div className="rounded-lg border bg-muted/30 p-4 flex items-start gap-3">
           <Mail className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
@@ -534,7 +534,7 @@ function StepPreferences({
         </div>
 
         <div className="space-y-2">
-          <Label>المسارات الأكثر استخداماً (اختياري)</Label>
+          <Label>المسارات الأكثر استخداما (اختياري)</Label>
           <p className="text-xs text-muted-foreground">سنُظهر لك أفضل الناقلين على هذه المسارات</p>
           <div className="flex flex-wrap gap-2">
             {ROUTES.map((r) => {

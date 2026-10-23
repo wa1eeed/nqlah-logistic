@@ -18,13 +18,13 @@ import {
 
 const CATEGORY_META: Record<AuditCategory, { label: string; icon: any; tone: string }> = {
   AUTH:     { label: 'حساب',      icon: Key,        tone: 'bg-muted text-muted-foreground' },
-  COMPANY:  { label: 'شركة',      icon: Building2,  tone: 'bg-info/15 text-info' },
+  COMPANY:  { label: 'شركة',      icon: Building2,  tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
   KYC:      { label: 'KYC',       icon: ShieldCheck,tone: 'bg-success/15 text-success' },
   ORDER:    { label: 'طلب',       icon: Package,    tone: 'bg-primary/10 text-primary' },
   PAYMENT:  { label: 'دفع',       icon: CreditCard, tone: 'bg-success/15 text-success' },
   DISPUTE:  { label: 'نزاع',      icon: Shield,     tone: 'bg-warning/15 text-warning' },
   SETTINGS: { label: 'إعدادات',  icon: Settings,   tone: 'bg-muted text-muted-foreground' },
-  WALLET:   { label: 'محفظة',     icon: Wallet,     tone: 'bg-info/15 text-info' },
+  WALLET:   { label: 'محفظة',     icon: Wallet,     tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
   TICKET:   { label: 'تذكرة',    icon: FileText,   tone: 'bg-muted text-muted-foreground' },
 };
 
@@ -57,6 +57,7 @@ export default function AuditLogPage() {
   return (
     <>
       <PageHeader
+        eyebrow="النظام"
         title="سجل التدقيق"
         subtitle="سجل غير قابل للتعديل لكل الإجراءات الحساسة على المنصة"
       />

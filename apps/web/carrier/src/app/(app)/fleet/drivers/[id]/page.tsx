@@ -126,7 +126,7 @@ export default function DriverDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <StatCard label="إجمالي الرحلات" value={String(driver.totalTrips ?? 0)} />
-            <StatCard label="التقييم" value={`${(driver.rating ?? 0).toFixed(1)} ★`} />
+            <StatCard label="التقييم" value={(driver.rating ?? 0).toFixed(1)} />
             <StatCard label="فئة الرخصة" value={`فئة ${driver.licenseType}`} />
           </div>
 

@@ -22,7 +22,7 @@ import {
 
 const STATUS_LABELS: Record<Bid['status'], string> = {
   PENDING: 'في الانتظار', ACCEPTED: 'مقبول', REJECTED: 'مرفوض',
-  WITHDRAWN: 'مسحوب', EXPIRED: 'منتهٍ',
+  WITHDRAWN: 'مسحوب', EXPIRED: 'منته',
 };
 const STATUS_BADGE: Record<Bid['status'], 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
   PENDING: 'warning', ACCEPTED: 'success', REJECTED: 'destructive',
@@ -56,7 +56,7 @@ export default function CarrierBidsPage() {
       <FadeItem>
         <PageHeader
           title="سجل العروض"
-          subtitle="كل العروض التي قدّمتها على فرص النقل — مقبولة، معلّقة، أو مرفوضة"
+          subtitle="كل العروض التي قدّمتها على فرص النقل، مقبولة أو معلّقة أو مرفوضة"
         />
       </FadeItem>
 

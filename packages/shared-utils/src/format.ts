@@ -4,7 +4,7 @@ export function formatCurrency(
   locale: 'ar' | 'en' = 'ar',
 ): string {
   if (amount === null || amount === undefined) return '—';
-  const intlLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
+  const intlLocale = locale === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US';
   return new Intl.NumberFormat(intlLocale, {
     style: 'currency',
     currency,
@@ -18,7 +18,7 @@ export function formatNumber(
   locale: 'ar' | 'en' = 'ar',
 ): string {
   if (value === null || value === undefined) return '—';
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US').format(value);
+  return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US').format(value);
 }
 
 export function formatDate(
@@ -28,7 +28,7 @@ export function formatDate(
 ): string {
   if (!date) return '—';
   const d = new Date(date);
-  const intlLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
+  const intlLocale = locale === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US';
   const opts: Intl.DateTimeFormatOptions = {
     day: 'numeric',
     month: pattern.includes('MMMM') ? 'long' : 'short',
@@ -56,7 +56,7 @@ export function formatRelative(
   if (!date) return '—';
   const diffMs = new Date(date).getTime() - Date.now();
   const absMs = Math.abs(diffMs);
-  const rtf = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US', { numeric: 'auto' });
   if (absMs < 60_000) return rtf.format(Math.round(diffMs / 1000), 'second');
   if (absMs < 3_600_000) return rtf.format(Math.round(diffMs / 60_000), 'minute');
   if (absMs < 86_400_000) return rtf.format(Math.round(diffMs / 3_600_000), 'hour');

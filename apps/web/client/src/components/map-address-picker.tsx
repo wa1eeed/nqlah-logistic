@@ -8,7 +8,7 @@ const Impl = dynamic(() => import('./map-address-picker-impl').then((m) => m.Map
   loading: () => (
     <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm border rounded-lg" style={{ height: 280 }}>
       <Loader2 className="h-4 w-4 animate-spin" />
-      جارٍ تحميل الخريطة...
+      جار تحميل الخريطة...
     </div>
   ),
 });

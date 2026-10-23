@@ -105,13 +105,14 @@ export default function CarrierReportsPage() {
             <CardDescription>آخر 5 أشهر</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-end gap-4 h-48">
+            <div className="flex items-end gap-3 sm:gap-4">
               {monthly.map((m) => (
                 <div key={m.month} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="text-xs font-medium num"><Currency amount={m.rev} /></div>
-                  <div className="w-full rounded-t-md bg-success/15 relative" style={{ height: `${(m.rev / maxRev) * 100}%` }}>
-                    <div className="absolute inset-x-0 bottom-0 rounded-t-md bg-success" style={{ height: '100%' }} />
-                  </div>
+                  <div className="text-xs font-semibold num"><Currency amount={m.rev} /></div>
+                  <div
+                    className="w-full rounded-t-lg bg-[hsl(var(--mint))]/85 transition-all hover:bg-[hsl(var(--mint))]"
+                    style={{ height: `${Math.round((m.rev / maxRev) * 150) + 8}px` }}
+                  />
                   <div className="text-xs text-muted-foreground">{m.month}</div>
                 </div>
               ))}
@@ -163,7 +164,7 @@ export default function CarrierReportsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>أعلى المسارات إيراداً</CardTitle>
+            <CardTitle>أعلى المسارات إيرادا</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {topRoutes.length === 0 ? (

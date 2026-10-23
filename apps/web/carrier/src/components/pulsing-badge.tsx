@@ -35,7 +35,7 @@ export function PulsingBadge({
 
   const palette = {
     red:     { ring: 'bg-red-500',     dot: 'bg-red-500',     text: 'text-white' },
-    amber:   { ring: 'bg-amber-500',   dot: 'bg-amber-500',   text: 'text-white' },
+    amber:   { ring: 'bg-[hsl(var(--mint))]', dot: 'bg-[hsl(var(--mint))]', text: 'text-white' },
     primary: { ring: 'bg-primary',     dot: 'bg-primary',     text: 'text-primary-foreground' },
   }[tone];
 

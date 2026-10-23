@@ -24,7 +24,7 @@ export default function GlobalError({
         <h1 className="text-6xl font-bold tracking-tight num mb-2">500</h1>
         <h2 className="text-xl font-semibold mb-2">حدث خطأ غير متوقع</h2>
         <p className="text-muted-foreground mb-2 leading-relaxed">
-          نعتذر، حدث خلل في النظام. تم إخطار فريق الهندسة وسيتم حل المشكلة قريباً.
+          نعتذر، حدث خلل في النظام. تم إخطار فريق الهندسة وسيتم حل المشكلة قريبا.
         </p>
         {error.digest && (
           <p className="text-xs text-muted-foreground font-mono mb-4">

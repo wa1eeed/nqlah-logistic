@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  AlertCircle, BadgeCheck, Check, Crown, MoreVertical, Pencil, Plus, Trash2, X,
+  AlertCircle, BadgeCheck, Check, Crown, MoreVertical, Pencil, Plus, Trash2, X, Smartphone,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +54,7 @@ export function TeamTab({ companyId, companyKind, currentRole }: TeamTabProps) {
     return (
       <Card>
         <CardContent className="py-16 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-warning/15 text-warning mx-auto grid place-items-center mb-3">
+          <div className="h-14 w-14 rounded-2xl bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))] mx-auto grid place-items-center mb-3">
             <AlertCircle className="h-7 w-7" />
           </div>
           <h3 className="font-semibold text-lg">{t('noPermissionTitle')}</h3>
@@ -127,9 +127,9 @@ function MemberRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold truncate">{member.fullName}</span>
-          {member.isOwner && <Crown className="h-4 w-4 text-warning shrink-0" />}
+          {member.isOwner && <Crown className="h-4 w-4 text-[hsl(var(--mint))] shrink-0" />}
           {member.status === 'SUSPENDED' && <Badge variant="destructive" className="text-[10px]">{t('suspended')}</Badge>}
-          {member.status === 'PENDING_ACTIVATION' && <Badge variant="warning" className="text-[10px]">{t('pendingActivation')}</Badge>}
+          {member.status === 'PENDING_ACTIVATION' && <Badge variant="secondary" className="text-[10px]">{t('pendingActivation')}</Badge>}
         </div>
         <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
           <span className="num" dir="ltr">{member.phone}</span>
@@ -178,7 +178,7 @@ function MemberRow({
 
 function RoleBadge({ role, tRoles }: { role: CompanyRole; tRoles: ReturnType<typeof useTranslations> }) {
   const tone: Record<CompanyRole, 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
-    OWNER: 'warning', ADMIN: 'default', STAFF: 'outline', DISPATCH: 'outline', FINANCE: 'success',
+    OWNER: 'default', ADMIN: 'default', STAFF: 'outline', DISPATCH: 'outline', FINANCE: 'success',
   };
   return (
     <Badge variant={tone[role]} className="gap-1">
@@ -265,8 +265,9 @@ function AddMemberDialog({
             </div>
           </div>
 
-          <div className="rounded-md bg-info/10 border border-info/30 p-3 text-xs text-muted-foreground">
-            📱 {t('smsNotice')}
+          <div className="flex items-start gap-2 rounded-xl border border-[hsl(var(--mint))]/20 bg-[hsl(var(--mint))]/[0.06] p-3 text-xs text-muted-foreground">
+            <Smartphone className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--mint))]" />
+            <span>{t('smsNotice')}</span>
           </div>
         </div>
 

@@ -51,7 +51,7 @@ export default function CarrierOpportunitiesPage() {
     });
   }, [data, myCompanyId]);
   // Per-order: which of THIS carrier's bids (if any) is on the order, used to
-  // switch the row CTA between "قدّم عرضاً" / "تفاصيل" / "إعادة تقديم".
+  // switch the row CTA between "قدّم عرضا" / "تفاصيل" / "إعادة تقديم".
   type OppWithBids = Order & { bids?: Array<{ carrierId: string; status: string }> };
   const hasMyPendingBid = (o: Order) => {
     const bids = (o as OppWithBids).bids ?? [];
@@ -62,6 +62,10 @@ export default function CarrierOpportunitiesPage() {
     const mine = bids.find((b) => b.carrierId === myCompanyId);
     return mine?.status ?? null;
   };
+  // Effective visibility mode. Real API / rich mock data carry `mode`; the
+  // offline demo fixtures don't, so default those to the open marketplace
+  // instead of letting an undefined `mode` empty every tab.
+  const orderMode = (o: Order): 'OPEN' | 'DIRECT' => (o.mode as 'OPEN' | 'DIRECT') ?? 'OPEN';
 
   // `pool` = opps after the cross-tab filters (city + search) but BEFORE the
   // tab filter. Counts derived from `pool` therefore always match what the
@@ -85,8 +89,8 @@ export default function CarrierOpportunitiesPage() {
   // Tab counts highlight opportunities the carrier hasn't bid on yet (the
   // actionable ones). Orders awaiting client decision still appear in the
   // lists with a "تفاصيل" CTA, but aren't counted as "new actions to take".
-  const openCount  = pool.filter((o) => o.mode === 'OPEN'   && !hasMyPendingBid(o)).length;
-  const directCount = pool.filter((o) => o.mode === 'DIRECT' && !hasMyPendingBid(o)).length;
+  const openCount  = pool.filter((o) => orderMode(o) === 'OPEN'   && !hasMyPendingBid(o)).length;
+  const directCount = pool.filter((o) => orderMode(o) === 'DIRECT' && !hasMyPendingBid(o)).length;
 
   // Note: "new order" chime is handled centrally by NotificationCenter when
   // an unread notification arrives — not on every visit to this page.
@@ -94,7 +98,7 @@ export default function CarrierOpportunitiesPage() {
   const filtered = useMemo(() => {
     // Tab filter applied on `pool` (already filtered by city + search) so the
     // displayed list matches the badge counts exactly.
-    let arr = pool.filter((o) => o.mode === tab);
+    let arr = pool.filter((o) => orderMode(o) === tab);
     if (sort === 'newest') arr = [...arr].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
     if (sort === 'weight') arr = [...arr].sort((a, b) => b.weightKg - a.weightKg);
     if (sort === 'pickup') arr = [...arr].sort((a, b) => +new Date(a.pickupDate) - +new Date(b.pickupDate));
@@ -135,9 +139,9 @@ export default function CarrierOpportunitiesPage() {
         <Select value={sort} onValueChange={setSort}>
           <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">الأحدث أولاً</SelectItem>
-            <SelectItem value="weight">الأثقل وزناً</SelectItem>
-            <SelectItem value="pickup">الأقرب استلاماً</SelectItem>
+            <SelectItem value="newest">الأحدث أولا</SelectItem>
+            <SelectItem value="weight">الأثقل وزنا</SelectItem>
+            <SelectItem value="pickup">الأقرب استلاما</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -146,13 +150,13 @@ export default function CarrierOpportunitiesPage() {
         <EmptyState
           icon={Compass}
           title="لا توجد فرص متاحة"
-          description="لم تُنشر أي فرص نقل حالياً — تحقق لاحقاً"
+          description="لم تُنشر أي فرص نقل حاليا، تحقق لاحقا"
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((o) => {
             const client = companyById(o.clientId);
-            const isDirect = o.mode === 'DIRECT';
+            const isDirect = orderMode(o) === 'DIRECT';
             const myStatus = myBidStatus(o);
             const isPending = myStatus === 'PENDING';
             const isRejected = myStatus === 'REJECTED';
@@ -202,7 +206,7 @@ export default function CarrierOpportunitiesPage() {
                       <div className="text-sm font-medium truncate max-w-[220px]">{client?.nameAr ?? '—'}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
                         {isPending ? 'عرضك قيد المراجعة لدى العميل'
-                          : isRejected ? 'تم رفض عرضك السابق — يمكنك إعادة المحاولة'
+                          : isRejected ? 'تم رفض عرضك السابق، يمكنك إعادة المحاولة'
                           : 'قدّم سعرك التنافسي'}
                       </div>
                     </div>
@@ -210,7 +214,7 @@ export default function CarrierOpportunitiesPage() {
                       <Button size="sm" variant={isPending ? 'outline' : 'default'}>
                         {isPending ? 'تفاصيل'
                           : isRejected ? 'إعادة تقديم'
-                          : 'قدّم عرضاً'}
+                          : 'قدّم عرضا'}
                         <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
                       </Button>
                     </Link>

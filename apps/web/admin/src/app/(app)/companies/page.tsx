@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Building2, Plus, Search, Truck, User as UserIcon, Users } from 'lucide-react';
+import { Building2, Plus, Search, Truck, User as UserIcon, Users, ShieldCheck, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
+import { MiniStat } from '@/components/ui/mini-stat';
+import { FadeIn } from '@/components/ui/fade-in';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import { COMPANIES, formatDate, type Company } from '@naqla/shared-utils';
@@ -37,6 +39,8 @@ export default function AdminCompaniesPage() {
     CLIENT: list.filter((c) => c.kind === 'CLIENT').length,
     CARRIER: list.filter((c) => c.kind === 'CARRIER').length,
   };
+  const approved = list.filter((c) => c.kycStatus === 'APPROVED').length;
+  const pending = list.filter((c) => c.kycStatus === 'PENDING_VERIFICATION').length;
 
   const rows = useMemo(() => {
     let arr = filter === 'ALL' ? list : list.filter((c) => c.kind === filter);
@@ -52,8 +56,9 @@ export default function AdminCompaniesPage() {
   return (
     <>
       <PageHeader
+        eyebrow="إدارة المنصة"
         title="الناقلون والعملاء"
-        subtitle={`${list.length} كيان مسجّل — ${counts.CARRIER} ناقل (${list.filter((c) => c.kind === 'CARRIER' && c.accountType === 'INDIVIDUAL').length} فرد) · ${counts.CLIENT} عميل`}
+        subtitle="إدارة الكيانات المسجّلة، حالة التحقق والنشاط التجاري"
         actions={
           <Button>
             <Plus className="h-4 w-4" />
@@ -62,6 +67,15 @@ export default function AdminCompaniesPage() {
         }
       />
 
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <MiniStat label="إجمالي الكيانات" value={counts.ALL} icon={Building2} index={0} />
+        <MiniStat label="ناقلون" value={counts.CARRIER} icon={Truck} tone="success" index={1} />
+        <MiniStat label="معتمدون (KYC)" value={approved} icon={ShieldCheck} tone="success" index={2} />
+        <MiniStat label="بانتظار التحقق" value={pending} icon={Clock} tone="warning" index={3} />
+      </div>
+
+      {/* Toolbar */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
           <TabsList>
@@ -91,82 +105,84 @@ export default function AdminCompaniesPage() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>الشركة</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>المدينة</TableHead>
-                <TableHead>KYC</TableHead>
-                <TableHead className="text-end">المؤشر</TableHead>
-                <TableHead>الانضمام</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
+      <FadeIn delay={0.08}>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
-                    لا توجد شركات تطابق البحث
-                  </TableCell>
+                  <TableHead>الشركة</TableHead>
+                  <TableHead>النوع</TableHead>
+                  <TableHead>المدينة</TableHead>
+                  <TableHead>KYC</TableHead>
+                  <TableHead className="text-end">المؤشر</TableHead>
+                  <TableHead>الانضمام</TableHead>
                 </TableRow>
-              ) : (
-                rows.map((c) => (
-                  <TableRow key={c.id} className="cursor-pointer" onClick={() => (window.location.href = `/companies/${c.id}`)}>
-                    <TableCell>
-                      <Link href={`/companies/${c.id}`} className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback>{c.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col leading-tight">
-                          <span className="font-medium hover:text-primary transition-colors">{c.nameAr}</span>
-                          <span className="text-xs font-mono text-muted-foreground">
-                            {c.accountType === 'INDIVIDUAL'
-                              ? c.nationalId ? `هوية · ${c.nationalId}` : `معرّف · ${c.id}`
-                              : c.crNumber ? `CR · ${c.crNumber}` : c.id}
-                          </span>
-                        </div>
-                      </Link>
+              </TableHeader>
+              <TableBody>
+                {rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-14">
+                      لا توجد شركات تطابق البحث
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant={c.kind === 'CLIENT' ? 'default' : 'success'}>
-                          {c.kind === 'CLIENT' ? 'عميل' : 'ناقل'}
-                        </Badge>
-                        {c.accountType === 'INDIVIDUAL' && (
-                          <Badge variant="outline" className="inline-flex items-center gap-1 w-fit">
-                            <UserIcon className="h-3 w-3" /> فرد
-                          </Badge>
-                        )}
-                        {c.kind === 'CARRIER' && (c.accountType ?? 'COMPANY') === 'COMPANY' && (
-                          <Badge variant="outline" className="inline-flex items-center gap-1 w-fit">
-                            <Building2 className="h-3 w-3" /> شركة
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{c.city}</TableCell>
-                    <TableCell><StatusBadge status={c.kycStatus} /></TableCell>
-                    <TableCell className="text-end">
-                      {c.kind === 'CARRIER' ? (
-                        <span className="text-xs text-muted-foreground num">
-                          {(c.completedTrips ?? 0).toLocaleString('en-US')} رحلة
-                        </span>
-                      ) : c.monthlyVolume ? (
-                        <Currency amount={c.monthlyVolume} />
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{formatDate(c.joinedAt)}</TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                ) : (
+                  rows.map((c) => (
+                    <TableRow key={c.id} className="cursor-pointer" onClick={() => (window.location.href = `/companies/${c.id}`)}>
+                      <TableCell>
+                        <Link href={`/companies/${c.id}`} className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback>{c.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('')}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col leading-tight">
+                            <span className="font-medium hover:text-primary transition-colors">{c.nameAr}</span>
+                            <span className="text-xs font-mono text-muted-foreground">
+                              {c.accountType === 'INDIVIDUAL'
+                                ? c.nationalId ? `هوية · ${c.nationalId}` : `معرّف · ${c.id}`
+                                : c.crNumber ? `CR · ${c.crNumber}` : c.id}
+                            </span>
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant={c.kind === 'CLIENT' ? 'default' : 'success'}>
+                            {c.kind === 'CLIENT' ? 'عميل' : 'ناقل'}
+                          </Badge>
+                          {c.accountType === 'INDIVIDUAL' && (
+                            <Badge variant="outline" className="inline-flex items-center gap-1 w-fit">
+                              <UserIcon className="h-3 w-3" /> فرد
+                            </Badge>
+                          )}
+                          {c.kind === 'CARRIER' && (c.accountType ?? 'COMPANY') === 'COMPANY' && (
+                            <Badge variant="outline" className="inline-flex items-center gap-1 w-fit">
+                              <Building2 className="h-3 w-3" /> شركة
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{c.city}</TableCell>
+                      <TableCell><StatusBadge status={c.kycStatus} /></TableCell>
+                      <TableCell className="text-end">
+                        {c.kind === 'CARRIER' ? (
+                          <span className="text-xs text-muted-foreground num">
+                            {(c.completedTrips ?? 0).toLocaleString('en-US')} رحلة
+                          </span>
+                        ) : c.monthlyVolume ? (
+                          <Currency amount={c.monthlyVolume} />
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDate(c.joinedAt)}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </FadeIn>
     </>
   );
 }

@@ -178,6 +178,7 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 
 ## ✨ الميزات الرئيسية (v0.9.3)
 
+- ✅ **نظام تصميم Premium (Mint)** — ثيم فاتح راقٍ بلون نعناعي واحد كلون تمييز، لوحات تيل غامقة، بطاقات بيضاء وظلال ناعمة، حركات framer-motion، أرقام لاتينية، بلا تدرّجات لونية. يغطّي الصفحة التسويقية وصفحاتها الداخلية وكل اللوحات الثلاث
 - ✅ **3 لوحات تحكم متخصّصة**: Admin / Client / Carrier — مع sidebars وlayouts مستقلّة
 - ✅ **Marketplace مفتوح + Direct Request** — طريقتان لإسناد الطلبات
 - ✅ **نظام عروض كامل** — تقديم، مقارنة، قبول، سحب
@@ -257,7 +258,7 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 ```bash
 # تحقّق من اكتمال الترجمة
 pnpm check:i18n
-# → ✅ Translations OK — 10 file(s), 468 key(s), 2 locales.
+# → ✅ Translations OK — 11 file(s), 646 key(s), 2 locales.
 ```
 
 📄 **التفاصيل**: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) قسم 11

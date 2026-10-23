@@ -32,7 +32,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen grid place-items-center text-muted-foreground">
         <div className="flex items-center gap-2">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm">جارٍ التحويل...</span>
+          <span className="text-sm">جار التحويل...</span>
         </div>
       </div>
     );
