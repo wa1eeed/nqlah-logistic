@@ -37,6 +37,13 @@ const MAP: Record<string, { variant: Variant; label: string }> = {
   ACCEPTED:  { variant: 'success', label: 'مقبول' },
   WITHDRAWN: { variant: 'secondary', label: 'مسحوب' },
   EXPIRED:   { variant: 'destructive', label: 'منتهي' },
+
+  // Fleet (trucks & drivers)
+  AVAILABLE:   { variant: 'success',   label: 'متاح' },
+  ON_TRIP:     { variant: 'warning',   label: 'في رحلة' },
+  MAINTENANCE: { variant: 'warning',   label: 'صيانة' },
+  OFF_DUTY:    { variant: 'secondary', label: 'خارج الخدمة' },
+  INACTIVE:    { variant: 'secondary', label: 'غير نشط' },
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {

@@ -74,15 +74,15 @@ interface Form {
 const CITIES = ['الرياض', 'جدة', 'الدمام', 'الخبر', 'مكة المكرمة', 'المدينة', 'الطائف', 'تبوك', 'حائل', 'بريدة', 'الجبيل', 'ينبع', 'أبها'];
 const REGIONS = ['الوسطى', 'الغربية', 'الشرقية', 'الشمالية', 'الجنوبية'];
 const FLEET_SIZES = [
-  { v: '1-5',   l: '1 – 5 شاحنات' },
-  { v: '6-15',  l: '6 – 15 شاحنة' },
-  { v: '16-50', l: '16 – 50 شاحنة' },
+  { v: '1-5',   l: '1 إلى 5 شاحنات' },
+  { v: '6-15',  l: '6 إلى 15 شاحنة' },
+  { v: '16-50', l: '16 إلى 50 شاحنة' },
   { v: '50+',   l: 'أكثر من 50' },
 ];
 const YEARS_OPTS = [
   { v: '<1',  l: 'أقل من سنة' },
-  { v: '1-3', l: '1 – 3 سنوات' },
-  { v: '3-10',l: '3 – 10 سنوات' },
+  { v: '1-3', l: '1 إلى 3 سنوات' },
+  { v: '3-10',l: '3 إلى 10 سنوات' },
   { v: '10+', l: 'أكثر من 10' },
 ];
 /**
@@ -284,7 +284,7 @@ export default function CarrierRegisterPage() {
                 </Button>
                 <Button onClick={goNext} disabled={!stepValid[step] || submitting} size="lg">
                   {step === 6
-                    ? (submitting ? 'جارٍ التقديم...' : 'تقديم طلب التسجيل')
+                    ? (submitting ? 'جار التقديم...' : 'تقديم طلب التسجيل')
                     : (<>التالي <ArrowLeft className="h-4 w-4 rtl:rotate-180" /></>)}
                 </Button>
               </div>
@@ -302,11 +302,11 @@ export default function CarrierRegisterPage() {
                   <h3 className="font-bold">انضم كناقل على نقلة</h3>
                 </div>
                 <ul className="space-y-3 text-sm">
-                  <Benefit text="آلاف الطلبات شهرياً عبر المنصة" />
+                  <Benefit text="آلاف الطلبات شهريا عبر المنصة" />
                   <Benefit text="دفع مضمون عبر Escrow بعد التسليم" />
                   <Benefit text="إدارة كاملة لأسطولك وسائقيك" />
                   <Benefit text="تقارير وإحصاءات أداء مفصّلة" />
-                  <Benefit text="عمولة 8% فقط — بدون رسوم خفية" />
+                  <Benefit text="عمولة 8% فقط بدون رسوم خفية" />
                 </ul>
               </CardContent>
             </Card>
@@ -318,7 +318,7 @@ export default function CarrierRegisterPage() {
                   <span className="text-xs font-semibold">طلبك يخضع للمراجعة</span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  بعد تقديم الطلب، يراجع فريق الامتثال المستندات خلال 24 – 48 ساعة عمل، ثم يتم تفعيل حسابك.
+                  بعد تقديم الطلب، يراجع فريق الامتثال المستندات خلال 24 إلى 48 ساعة عمل، ثم يتم تفعيل حسابك.
                 </p>
               </CardContent>
             </Card>
@@ -384,8 +384,8 @@ function StepAccountType({
       <div className="rounded-lg bg-info/10 border border-info/30 p-3 flex items-start gap-2 text-sm">
         <ShieldCheck className="h-4 w-4 text-info shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          متطلبات التسجيل تختلف حسب النوع. الأفراد لا يحتاجون سجلاً تجارياً، لكن يجب توفير الهوية الوطنية،
-          رخصة القيادة المناسبة، استمارة الشاحنة، والتأمين — وفق أنظمة هيئة النقل العام (TGA).
+          متطلبات التسجيل تختلف حسب النوع. الأفراد لا يحتاجون سجلا تجاريا، لكن يجب توفير الهوية الوطنية
+          ورخصة القيادة المناسبة واستمارة الشاحنة والتأمين، وفق أنظمة هيئة النقل العام (TGA).
         </p>
       </div>
     </>
@@ -525,7 +525,7 @@ function StepCompany({
               onChange={(e) => set('nationalId', e.target.value.replace(/\D/g, ''))}
               placeholder="1xxxxxxxxx"
             />
-            <p className="text-xs text-muted-foreground">10 أرقام — يجب أن تطابق الهوية المرفقة لاحقاً في المستندات</p>
+            <p className="text-xs text-muted-foreground">10 أرقام، يجب أن تطابق الهوية المرفقة لاحقا في المستندات</p>
           </div>
         ) : (
           // ── COMPANY: Company name + CR ────────────────────────────
@@ -575,7 +575,7 @@ function StepCompany({
             >
               <div className="font-semibold mb-0.5">لا يوجد تسجيل ضريبي</div>
               <div className="text-xs text-muted-foreground">
-                {isIndividual ? 'إيراداتك أقل من حد الإلزام (375,000 ر.س.)' : 'الشركة غير مُلزَمة حالياً'}
+                {isIndividual ? 'إيراداتك أقل من حد الإلزام (375,000 ر.س.)' : 'الشركة غير مُلزَمة حاليا'}
               </div>
             </button>
           </div>
@@ -674,7 +674,7 @@ function StepFleet({
                     on ? 'border-primary ring-1 ring-primary/30' : 'border-border hover:border-primary/40',
                   )}
                 >
-                  <div className="aspect-[16/10] bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-2 border-b">
+                  <div className="aspect-[16/10] bg-muted/40 flex items-center justify-center p-2 border-b">
                     {t.imageUrl ? (
                       <>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -932,7 +932,7 @@ function StepVerify({
           <div>
             <p className="font-semibold text-warning-foreground">ماذا بعد التقديم؟</p>
             <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-              يراجع فريق الامتثال طلبك خلال 24 – 48 ساعة عمل. سيصلك إشعار بالقبول/الرفض على البريد والجوال.
+              يراجع فريق الامتثال طلبك خلال 24 إلى 48 ساعة عمل. سيصلك إشعار بالقبول/الرفض على البريد والجوال.
             </p>
           </div>
         </div>

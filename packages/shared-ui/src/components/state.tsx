@@ -4,7 +4,7 @@ import { cn } from '../utils/cn';
 
 /* ─── Loading ──────────────────────────────────────────────────── */
 
-export function LoadingState({ label = 'جارٍ التحميل...', className }: { label?: string; className?: string }) {
+export function LoadingState({ label = 'جار التحميل...', className }: { label?: string; className?: string }) {
   return (
     <div className={cn('flex items-center justify-center py-16 text-muted-foreground', className)}>
       <Loader2 className="w-5 h-5 me-2 animate-spin" />

@@ -13,9 +13,9 @@ import { cn } from '@/lib/utils';
 import { notificationsFor, type AppNotification, type NotificationKind, formatRelative } from '@naqla/shared-utils';
 
 const ICONS: Record<NotificationKind, { icon: any; tone: string }> = {
-  ORDER_BID:        { icon: Inbox,       tone: 'bg-info/15 text-info' },
+  ORDER_BID:        { icon: Inbox,       tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
   ORDER_ACCEPTED:   { icon: Check,       tone: 'bg-success/15 text-success' },
-  ORDER_PICKED_UP:  { icon: Truck,       tone: 'bg-info/15 text-info' },
+  ORDER_PICKED_UP:  { icon: Truck,       tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
   ORDER_DELIVERED:  { icon: Package,     tone: 'bg-success/15 text-success' },
   INVOICE_OVERDUE:  { icon: FileText,    tone: 'bg-destructive/15 text-destructive' },
   PAYMENT_RELEASED: { icon: Wallet,      tone: 'bg-success/15 text-success' },

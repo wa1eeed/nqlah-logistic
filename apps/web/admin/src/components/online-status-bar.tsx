@@ -64,7 +64,7 @@ export function OnlineStatusBar() {
       {online ? (
         <>
           <Wifi className="h-3.5 w-3.5" />
-          تم الاتصال — جاري التزامن
+          تم الاتصال، جاري التزامن
         </>
       ) : (
         <>

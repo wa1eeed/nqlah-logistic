@@ -14,17 +14,17 @@ import {
 } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 
-// ─── Theme tokens ──────────────────────────────────────────────────────────────
-const BG     = '#0F172A';
-const CARD   = '#1E293B';
-const BORDER = '#334155';
-const TEXT   = '#F8FAFC';
-const MUTED  = '#94A3B8';
-const GREEN  = '#00C9A7';
-const TEAL   = '#0D5C57';
-const GOLD   = '#F59E0B';
-const RED    = '#EF4444';
-const BLUE   = '#3B82F6';
+// ─── Theme tokens (premium LIGHT theme, mint-only palette) ──────────────────────
+const BG     = '#EEF6F4'; // app background (hsl 178 30% 97.5% family)
+const CARD   = '#FFFFFF';
+const BORDER = '#DCE8E6';
+const TEXT   = '#0C2522'; // deep foreground
+const MUTED  = '#5F716E';
+const GREEN  = '#00C9A7'; // mint (primary series)
+const TEAL   = '#0D5C57'; // deep teal
+const GOLD   = '#0F766E'; // retinted to teal (was orange #F59E0B)
+const RED    = '#EF4444'; // destructive — kept for errors only
+const BLUE   = '#2DD4BF'; // retinted to teal (was blue #3B82F6)
 
 type Period = '7d' | '30d' | '90d' | '1y';
 
@@ -92,7 +92,7 @@ function KpiCard({
   return (
     <div
       className="rounded-2xl p-5 flex flex-col gap-3"
-      style={{ background: CARD, border: `1px solid ${BORDER}` }}
+      style={{ background: CARD, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}
     >
       <div className="flex items-center justify-between">
         <span style={{ color: MUTED, fontSize: 12 }}>{label}</span>
@@ -148,7 +148,7 @@ function ChartCard({
   return (
     <div
       className={`rounded-2xl p-5 ${span === 2 ? 'col-span-2' : ''}`}
-      style={{ background: CARD, border: `1px solid ${BORDER}` }}
+      style={{ background: CARD, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}
     >
       <div style={{ color: MUTED, fontSize: 12, marginBottom: 16 }}>{title}</div>
       {children}
@@ -156,7 +156,8 @@ function ChartCard({
   );
 }
 
-const CHART_COLORS = [GREEN, TEAL, GOLD, BLUE, '#8B5CF6', '#EC4899'];
+// Mint→teal ramp so every series stays on-palette (no gold/blue/purple/pink).
+const CHART_COLORS = ['#00C9A7', '#0D5C57', '#14B8A6', '#0F766E', '#2DD4BF', '#5EEAD4'];
 
 // ─── PDF Export ───────────────────────────────────────────────────────────────
 async function exportPDF(summary: Record<string, unknown> | undefined, period: string) {
@@ -168,7 +169,7 @@ async function exportPDF(summary: Record<string, unknown> | undefined, period: s
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const today = new Date().toLocaleDateString('ar-SA');
+  const today = new Date().toLocaleDateString('ar-SA-u-nu-latn');
 
   const addHeader = (page: number, total: number) => {
     doc.setFillColor(10, 61, 58);
@@ -224,11 +225,11 @@ async function exportPDF(summary: Record<string, unknown> | undefined, period: s
     startY: 45,
     head: [['المؤشر', 'القيمة', 'التقييم']],
     body: [
-      ['GMV (إجمالي المعاملات)', fmtSAR(gmv), gmvMoM > 0 ? '↑ نمو' : '—'],
+      ['GMV (إجمالي المعاملات)', fmtSAR(gmv), gmvMoM > 0 ? 'نمو' : '—'],
       ['الإيراد (العمولات)', fmtSAR(revenue), ''],
-      ['معدل الإكمال', fmtPct(completionRate), completionRate >= 90 ? '✓ ممتاز' : '⚠ تحسين مطلوب'],
-      ['التسليم في الوقت', fmtPct(onTimeRate), onTimeRate >= 95 ? '✓' : '⚠'],
-      ['معدل النزاعات', fmtPct(disputeRate), disputeRate <= 2 ? '✓' : '⚠'],
+      ['معدل الإكمال', fmtPct(completionRate), completionRate >= 90 ? 'ممتاز' : 'تحسين مطلوب'],
+      ['التسليم في الوقت', fmtPct(onTimeRate), onTimeRate >= 95 ? 'جيد' : 'مراجعة'],
+      ['معدل النزاعات', fmtPct(disputeRate), disputeRate <= 2 ? 'جيد' : 'مراجعة'],
       ['عملاء جدد', fmt(newClients), ''],
       ['ناقلون جدد', fmt(newCarriers), ''],
     ],
@@ -242,7 +243,7 @@ async function exportPDF(summary: Record<string, unknown> | undefined, period: s
   doc.setFontSize(11);
   doc.setTextColor(50, 50, 50);
   const summaryText = gmvMoM > 0
-    ? `حققت المنصة نمواً بنسبة ${gmvMoM.toFixed(1)}% في GMV مقارنة بالفترة السابقة. معدل الإكمال ${fmtPct(completionRate)} ومعدل التسليم في الوقت ${fmtPct(onTimeRate)}.`
+    ? `حققت المنصة نموا بنسبة ${gmvMoM.toFixed(1)}% في GMV مقارنة بالفترة السابقة. معدل الإكمال ${fmtPct(completionRate)} ومعدل التسليم في الوقت ${fmtPct(onTimeRate)}.`
     : `أداء المنصة مستقر خلال الفترة. GMV: ${fmtSAR(gmv)}. معدل الإكمال: ${fmtPct(completionRate)}.`;
   doc.text(summaryText, pageW - 20, summaryY, { align: 'right', maxWidth: pageW - 30 });
   addFooter();
@@ -261,7 +262,7 @@ async function exportPDF(summary: Record<string, unknown> | undefined, period: s
     startY: 45,
     head: [['المؤشر', 'الفعلي', 'الهدف', 'الحالة']],
     body: [
-      ['Take Rate', fmtPct(takeRate), '8%', Math.abs(takeRate - 8) <= 1 ? '✓' : '⚠'],
+      ['Take Rate', fmtPct(takeRate), '8%', Math.abs(takeRate - 8) <= 1 ? 'جيد' : 'مراجعة'],
       ['أعلى مسار', topRoutes[0]?.route ?? '—', '—', ''],
       ['أعلى ناقل', topCarriers[0]?.name ?? '—', '—', ''],
     ],
@@ -332,7 +333,7 @@ function MarketTab({ period }: { period: Period }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard label="استخدام الناقلين" value={fmtPct(d?.carrierUtilization)} icon={Truck} accent={BLUE} />
         <KpiCard label="سيولة العروض" value={`${(d?.supplyLiquidity ?? 0).toFixed(1)} عرض/طلب`} icon={Activity} accent={GREEN} />
-        <KpiCard label="معدل التكرار" value={fmtPct(d?.repeatRate)} sub="عملاء بطلب ثانٍ" icon={RefreshCw} accent={TEAL} />
+        <KpiCard label="معدل التكرار" value={fmtPct(d?.repeatRate)} sub="عملاء بطلب ثان" icon={RefreshCw} accent={TEAL} />
         <KpiCard label="العمولات" value={fmtSAR(d?.commission)} icon={Wallet} accent={GOLD} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -357,7 +358,7 @@ function MarketTab({ period }: { period: Period }) {
             </PieChart>
           </ResponsiveContainer>
         </ChartCard>
-        <ChartCard title="أكثر المسارات طلباً">
+        <ChartCard title="أكثر المسارات طلبا">
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={(d?.topRoutes ?? []).slice(0, 6)} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke={BORDER} />
@@ -371,7 +372,7 @@ function MarketTab({ period }: { period: Period }) {
       </div>
       <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
         <div className="px-5 py-3" style={{ background: CARD }}>
-          <span style={{ color: MUTED, fontSize: 12 }}>أعلى الناقلين إيراداً</span>
+          <span style={{ color: MUTED, fontSize: 12 }}>أعلى الناقلين إيرادا</span>
         </div>
         <table className="w-full text-sm">
           <thead>
@@ -421,7 +422,7 @@ function FinancialTab({ period }: { period: Period }) {
         <KpiCard label="ضريبة القيمة المضافة" value={fmtSAR(d?.vat)} sub="15% من الإيراد" icon={Building2} accent={MUTED} />
         <KpiCard label="نمو GMV MoM" value={fmtPct(d?.gmvGrowth)} change={d?.gmvGrowth} icon={TrendingUp} accent={(d?.gmvGrowth ?? 0) >= 0 ? GREEN : RED} />
       </div>
-      <ChartCard title="GMV مقابل الإيراد — اتجاه زمني" span={2}>
+      <ChartCard title="GMV مقابل الإيراد · اتجاه زمني" span={2}>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart
             data={(d?.gmvTrend ?? []).map((t: { label: string; value: number }, i: number) => ({
@@ -489,7 +490,7 @@ function OpsTab({ period }: { period: Period }) {
                 <span style={{ color, fontSize: 18, fontWeight: 700 }}>{fmtPct(val ?? 0)}</span>
               </div>
               <span style={{ color, fontSize: 11 }}>
-                {color === GREEN ? '🟢 ممتاز' : color === GOLD ? '🟡 مقبول' : '🔴 تحسين مطلوب'}
+                {color === GREEN ? 'ممتاز' : color === GOLD ? 'مقبول' : 'تحسين مطلوب'}
               </span>
             </div>
           );
@@ -520,7 +521,7 @@ function GrowthTab({ period }: { period: Period }) {
         <KpiCard label="التغطية الجغرافية" value={`${fmt(d?.geographicCoverage)} مدينة`} icon={Globe} accent={BLUE} />
         <KpiCard label="إجمالي الطلبات" value={fmt(d?.ordersNow)} sub={`vs ${fmt(d?.ordersPrev)}`} icon={Package} accent={GOLD} />
       </div>
-      <ChartCard title="مقارنة النمو — الفترة الحالية vs السابقة">
+      <ChartCard title="مقارنة النمو · الفترة الحالية vs السابقة">
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={[
             { name: 'الطلبات',        current: d?.ordersNow   ?? 0, prev: d?.ordersPrev   ?? 0 },
@@ -562,7 +563,7 @@ function InvestorTab({ period, summary }: { period: Period; summary: Record<stri
     const clients   = Number(summary.newClients ?? 0);
     const carriers  = Number(summary.newCarriers ?? 0);
     return growth > 0
-      ? `حققت المنصة نمواً بنسبة ${growth.toFixed(1)}% في GMV مقارنة بالفترة السابقة. معدل الإكمال ${cr.toFixed(1)}% ومعدل التسليم في الوقت ${ot.toFixed(1)}%. تم استقطاب ${clients} عميل و${carriers} ناقل جديد خلال الفترة.`
+      ? `حققت المنصة نموا بنسبة ${growth.toFixed(1)}% في GMV مقارنة بالفترة السابقة. معدل الإكمال ${cr.toFixed(1)}% ومعدل التسليم في الوقت ${ot.toFixed(1)}%. تم استقطاب ${clients} عميل و${carriers} ناقل جديد خلال الفترة.`
       : `أداء المنصة مستقر خلال الفترة. GMV: ${fmtSAR(gmv)}. معدل إكمال الطلبات: ${cr.toFixed(1)}%. ${clients} عميل جديد.`;
   }, [summary]);
 
@@ -615,7 +616,7 @@ export default function AdminReportsPage() {
         <div>
           <h1 style={{ color: TEXT, fontSize: 22, fontWeight: 700 }}>لوحة المؤشرات التنفيذية</h1>
           <p style={{ color: MUTED, fontSize: 12, marginTop: 4 }}>
-            آخر تحديث: {lastRefresh.toLocaleTimeString('ar-SA')} · يتجدد كل 5 دقائق
+            آخر تحديث: {lastRefresh.toLocaleTimeString('ar-SA-u-nu-latn')} · يتجدد كل 5 دقائق
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -642,7 +643,7 @@ export default function AdminReportsPage() {
             style={{ background: TEAL, color: '#fff' }}
           >
             <Download className="h-3.5 w-3.5" />
-            {exporting ? 'جارٍ التصدير...' : 'تصدير PDF'}
+            {exporting ? 'جار التصدير...' : 'تصدير PDF'}
           </button>
         </div>
       </div>

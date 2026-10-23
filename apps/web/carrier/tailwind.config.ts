@@ -58,6 +58,9 @@ const config: Config = {
           DEFAULT:    'hsl(var(--warning))',
           foreground: 'hsl(var(--warning-foreground))',
         },
+        // `info` is intentionally an alias of the mint accent: informational
+        // chips read as the brand accent rather than a decorative blue.
+        info: 'hsl(var(--mint))',
         // Naqla brand accents
         mint: 'hsl(var(--mint))',
         gold: 'hsl(var(--gold))',

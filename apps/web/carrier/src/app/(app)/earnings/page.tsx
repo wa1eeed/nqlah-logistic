@@ -75,7 +75,7 @@ export default function CarrierEarningsPage() {
               </div>
               <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Calendar className="h-3.5 w-3.5" />
-                آخر 30 يوماً
+                آخر 30 يوما
               </span>
             </div>
           </CardHeader>

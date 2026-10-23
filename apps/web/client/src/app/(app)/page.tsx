@@ -22,7 +22,7 @@ import {
 
 const STATUS_EVENT: Record<string, { label: string; color: string }> = {
   PUBLISHED:  { label: 'تم نشر طلب جديد',       color: 'bg-primary/10 text-primary' },
-  BIDDING:    { label: 'وصلت عروض جديدة',        color: 'bg-warning/10 text-warning' },
+  BIDDING:    { label: 'وصلت عروض جديدة',        color: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
   ASSIGNED:   { label: 'تم تعيين ناقل',          color: 'bg-success/10 text-success' },
   IN_TRANSIT: { label: 'الطلب قيد التوصيل',      color: 'bg-primary/10 text-primary' },
   COMPLETED:  { label: 'تم إتمام الطلب',         color: 'bg-success/10 text-success' },
@@ -30,9 +30,9 @@ const STATUS_EVENT: Record<string, { label: string; color: string }> = {
 };
 
 const QUICK_ACTIONS = [
-  { label: 'طلب نقل جديد',  href: '/orders/new',  Icon: Plus,        color: 'bg-primary/10 text-primary' },
-  { label: 'تتبع طلباتي',   href: '/tracking',    Icon: MapPin,      color: 'bg-success/10 text-success' },
-  { label: 'فواتيري',        href: '/invoices',    Icon: FileText,    color: 'bg-warning/10 text-warning' },
+  { label: 'طلب نقل جديد',  href: '/orders/new',  Icon: Plus,        color: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
+  { label: 'تتبع طلباتي',   href: '/tracking',    Icon: MapPin,      color: 'bg-primary/10 text-primary' },
+  { label: 'فواتيري',        href: '/invoices',    Icon: FileText,    color: 'bg-success/12 text-success' },
   { label: 'الدعم',          href: '/support',     Icon: Headphones,  color: 'bg-muted text-muted-foreground' },
 ];
 
@@ -58,7 +58,7 @@ export default function ClientDashboard() {
   const active    = all.filter((o) => ['PUBLISHED', 'BIDDING', 'ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'].includes(o.status));
   const completed = all.filter((o) => o.status === 'COMPLETED' || o.status === 'DELIVERED');
   const overdue   = invoices.filter((i) => i.status === 'OVERDUE');
-  const totalSpent = invoices.filter((i) => i.status === 'PAID').reduce((s, i) => s + i.total, 0);
+  const totalSpent = invoices.filter((i) => i.status === 'PAID').reduce((s, i) => s + (Number(i.total) || 0), 0);
 
   const feedEvents = useMemo(() => {
     return all
@@ -77,40 +77,30 @@ export default function ClientDashboard() {
   return (
     <motion.div className="space-y-6" variants={container} initial="hidden" animate="show">
 
-      {/* ── Hero ── */}
-      <motion.div variants={item}>
-        <div className="relative overflow-hidden rounded-2xl" style={{ background: 'linear-gradient(135deg, #0A3D3A 0%, #0D5C57 60%, #00C9A7 100%)' }}>
-          {/* decorative blobs */}
-          <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/5" />
-          <div className="pointer-events-none absolute -bottom-6 left-20 h-28 w-28 rounded-full bg-white/5" />
-
-          <div className="relative z-10 flex flex-col gap-1 p-8 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">مرحباً بعودتك 👋</h1>
-              <p className="mt-1 text-sm text-white/70">
-                {active.length} طلب نشط &middot; {overdue.length > 0 ? `${overdue.length} فاتورة متأخرة` : 'لا فواتير متأخرة'}
-              </p>
-            </div>
-            <Link href="/orders/new">
-              <Button className="mt-4 sm:mt-0 bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm shadow-none">
-                <Plus className="h-4 w-4" />
-                طلب نقل جديد
-              </Button>
-            </Link>
-          </div>
-
-          {/* wave */}
-          <svg viewBox="0 0 1200 56" className="absolute bottom-0 left-0 right-0 w-full" preserveAspectRatio="none">
-            <path d="M0,35 C300,5 900,65 1200,25 L1200,56 L0,56 Z" fill="rgba(255,255,255,0.06)" />
-            <path d="M0,45 C400,18 800,60 1200,38 L1200,56 L0,56 Z" fill="rgba(255,255,255,0.04)" />
-          </svg>
+      {/* ── Header ── */}
+      <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">مرحبا بعودتك 👋</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            <span className="num font-semibold text-foreground">{active.length}</span> طلب نشط
+            <span className="mx-1.5 text-border">•</span>
+            {overdue.length > 0
+              ? <><span className="num font-semibold text-destructive">{overdue.length}</span> فاتورة متأخرة</>
+              : 'لا فواتير متأخرة'}
+          </p>
         </div>
+        <Link href="/orders/new">
+          <Button size="lg" className="rounded-full">
+            <Plus className="h-4 w-4" />
+            طلب نقل جديد
+          </Button>
+        </Link>
       </motion.div>
 
       {/* ── Stats ── */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatsCard label="إجمالي الطلبات" value={all.length}        hint="منذ بداية حسابك"  icon={Package}     tone="default" />
-        <StatsCard label="طلبات نشطة"     value={active.length}     hint="قيد التنفيذ"       icon={Clock}       tone="warning" />
+        <StatsCard label="طلبات نشطة"     value={active.length}     hint="قيد التنفيذ"       icon={Clock}       tone="default" />
         <StatsCard label="مكتملة"          value={completed.length}  hint="تم التسليم"        icon={CheckCircle} tone="success" />
         <StatsCard label="إجمالي الإنفاق" value={<Currency amount={totalSpent} />} hint="فواتير مدفوعة" icon={Wallet} tone="default" />
       </motion.div>
@@ -122,14 +112,15 @@ export default function ClientDashboard() {
           {QUICK_ACTIONS.map(({ label, href, Icon, color }) => (
             <Link key={href} href={href}>
               <motion.div
-                whileHover={{ y: -3, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
-                whileTap={{ scale: 0.97 }}
-                className="flex flex-col items-center gap-2.5 rounded-2xl border bg-card p-5 cursor-pointer transition-colors hover:border-border/80"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4 cursor-pointer transition-colors hover:border-[hsl(var(--mint))]/40 hover:bg-[hsl(var(--mint))]/[0.03]"
               >
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${color}`}>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-sm font-medium text-center">{label}</span>
+                <span className="text-sm font-semibold">{label}</span>
+                <ArrowLeft className="ms-auto h-4 w-4 text-muted-foreground/50 rtl:rotate-180" />
               </motion.div>
             </Link>
           ))}
@@ -241,7 +232,7 @@ export default function ClientDashboard() {
               <div className="flex-1">
                 <h3 className="font-semibold">لديك {overdue.length} فاتورة متأخرة</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  المجموع المتأخر: <Currency amount={overdue.reduce((s, i) => s + i.total, 0)} />
+                  المجموع المتأخر: <Currency amount={overdue.reduce((s, i) => s + (Number(i.total) || 0), 0)} />
                 </p>
               </div>
               <Link href="/invoices">

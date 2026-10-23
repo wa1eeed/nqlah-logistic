@@ -15,6 +15,8 @@ import { PageHeader } from '@/components/page-header';
 import { SaudiPlate, parsePlateString } from '@/components/saudi-plate';
 import { StatusBadge } from '@/components/status-badge';
 import { StatsCard } from '@/components/stats-card';
+import { FadeIn } from '@/components/ui/fade-in';
+import { Wrench, CheckCircle2 } from 'lucide-react';
 import { TRUCKS, carrierById, driverById, formatDate } from '@naqla/shared-utils';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -48,17 +50,19 @@ export default function AdminTrucksPage() {
   return (
     <>
       <PageHeader
+        eyebrow="الأسطول"
         title="كل الشاحنات في المنصة"
         subtitle="نظرة شاملة على أسطول جميع الناقلين المسجّلين"
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatsCard label="إجمالي الشاحنات" value={total.toLocaleString('en-US')} icon={Truck} />
-        <StatsCard label="في رحلة" value={onTrip.toLocaleString('en-US')} icon={Truck} />
-        <StatsCard label="متاحة" value={available.toLocaleString('en-US')} icon={Truck} tone="success" />
-        <StatsCard label="صيانة" value={maintenance.toLocaleString('en-US')} icon={Truck} tone="warning" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard label="إجمالي الشاحنات" value={total} icon={Truck} index={0} />
+        <StatsCard label="في رحلة" value={onTrip} icon={Truck} tone="warning" index={1} />
+        <StatsCard label="متاحة" value={available} icon={CheckCircle2} tone="success" index={2} />
+        <StatsCard label="صيانة" value={maintenance} icon={Wrench} tone="danger" index={3} />
       </div>
 
+      <FadeIn delay={0.1}>
       <Card>
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -142,6 +146,7 @@ export default function AdminTrucksPage() {
           </Table>
         </CardContent>
       </Card>
+      </FadeIn>
     </>
   );
 }

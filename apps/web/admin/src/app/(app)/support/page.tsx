@@ -65,15 +65,16 @@ export default function AdminSupportPage() {
   return (
     <>
       <PageHeader
+        eyebrow="النظام"
         title="الدعم الفني"
         subtitle="تذاكر الدعم الواردة من العملاء والناقلين"
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatsCard label="إجمالي التذاكر" value={total.toLocaleString('en-US')} icon={LifeBuoy} />
-        <StatsCard label="مفتوحة"          value={open.toLocaleString('en-US')} icon={Inbox} tone="warning" />
-        <StatsCard label="قيد المعالجة"   value={inProgress.toLocaleString('en-US')} icon={MessageSquare} />
-        <StatsCard label="عاجلة"            value={urgent.toLocaleString('en-US')} icon={Clock} tone={urgent > 0 ? 'danger' : 'success'} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard label="إجمالي التذاكر" value={total} icon={LifeBuoy} index={0} />
+        <StatsCard label="مفتوحة"          value={open} icon={Inbox} tone="warning" index={1} />
+        <StatsCard label="قيد المعالجة"   value={inProgress} icon={MessageSquare} index={2} />
+        <StatsCard label="عاجلة"            value={urgent} icon={Clock} tone={urgent > 0 ? 'danger' : 'success'} index={3} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">

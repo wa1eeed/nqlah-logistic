@@ -72,7 +72,7 @@ function ProvidersTab() {
     setTesting(kind);
     await new Promise((r) => setTimeout(r, 800));
     setTesting(null);
-    alert(kind === 'email' ? '✓ تم إرسال بريد اختبار (تجريبي)' : '✓ تم إرسال SMS اختبار (تجريبي)');
+    alert(kind === 'email' ? 'تم إرسال بريد اختبار (تجريبي)' : 'تم إرسال SMS اختبار (تجريبي)');
   };
 
   return (
@@ -82,11 +82,11 @@ function ProvidersTab() {
         <CardHeader>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-xl bg-info/15 text-info grid place-items-center shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))] grid place-items-center shrink-0">
                 <Mail className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle>البريد الإلكتروني — Resend.com</CardTitle>
+                <CardTitle>البريد الإلكتروني · Resend.com</CardTitle>
                 <CardDescription className="mt-1">قنوات البريد العابر (OTP، فواتير، تأكيدات)</CardDescription>
               </div>
             </div>
@@ -159,7 +159,7 @@ function ProvidersTab() {
               onClick={() => testProvider('email')}
             >
               <TestTube2 className="h-4 w-4" />
-              {testing === 'email' ? 'جارٍ الاختبار...' : 'إرسال اختبار'}
+              {testing === 'email' ? 'جار الاختبار...' : 'إرسال اختبار'}
             </Button>
             {providers.email.apiKey && providers.email.enabled && (
               <Badge variant="success" className="ms-auto">
@@ -180,7 +180,7 @@ function ProvidersTab() {
                 <Smartphone className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle>الرسائل النصية — SMS</CardTitle>
+                <CardTitle>الرسائل النصية · SMS</CardTitle>
                 <CardDescription className="mt-1">قنوات الرسائل (OTP، تنبيهات، تذكير)</CardDescription>
               </div>
             </div>
@@ -239,7 +239,7 @@ function ProvidersTab() {
               placeholder="NAQLA"
               maxLength={11}
             />
-            <p className="text-xs text-muted-foreground">حروف إنجليزية فقط، حد أقصى 11 حرفاً</p>
+            <p className="text-xs text-muted-foreground">حروف إنجليزية فقط، حد أقصى 11 حرفا</p>
           </div>
 
           <div className="pt-3 border-t flex items-center gap-2">
@@ -250,7 +250,7 @@ function ProvidersTab() {
               onClick={() => testProvider('sms')}
             >
               <TestTube2 className="h-4 w-4" />
-              {testing === 'sms' ? 'جارٍ الاختبار...' : 'إرسال اختبار'}
+              {testing === 'sms' ? 'جار الاختبار...' : 'إرسال اختبار'}
             </Button>
             {providers.sms.apiKey && providers.sms.enabled && (
               <Badge variant="success" className="ms-auto">
@@ -270,7 +270,7 @@ function ProvidersTab() {
             <div className="flex-1">
               <h4 className="font-semibold text-sm">حماية المفاتيح</h4>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                المفاتيح مخزّنة محلياً في هذا العرض التجريبي. في الإنتاج، احفظها كأسرار في خدمة الـ Secrets الخاصة بالبيئة (AWS Secrets Manager / Doppler / Vault) ولا تعرضها في الواجهة. هذه الواجهة تكون آمنة فقط إذا كانت مرئية للأدمن المعتمد عبر RBAC.
+                المفاتيح مخزّنة محليا في هذا العرض التجريبي. في الإنتاج، احفظها كأسرار في خدمة الـ Secrets الخاصة بالبيئة (AWS Secrets Manager / Doppler / Vault) ولا تعرضها في الواجهة. هذه الواجهة تكون آمنة فقط إذا كانت مرئية للأدمن المعتمد عبر RBAC.
               </p>
             </div>
           </CardContent>
@@ -375,7 +375,7 @@ function TemplatesTab() {
         {selected ? <TemplateEditor template={selected} /> : (
           <Card>
             <CardContent className="py-20 text-center text-sm text-muted-foreground">
-              اختر قالباً من القائمة لتعديله
+              اختر قالبا من القائمة لتعديله
             </CardContent>
           </Card>
         )}
@@ -588,7 +588,7 @@ function TemplateEditor({ template }: { template: NotificationTemplate }) {
               {template.channels.sms.body.length > 160 && (
                 <p className="text-xs text-warning flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
-                  سيُحتسب كرسالتين (تجاوز 160 حرفاً)
+                  سيُحتسب كرسالتين (تجاوز 160 حرفا)
                 </p>
               )}
             </div>
@@ -710,7 +710,7 @@ function GeneralTab() {
             <TestTube2 className="h-4 w-4 text-warning shrink-0 mt-0.5" />
             <div>
               <Label>وضع الاختبار (Sandbox)</Label>
-              <p className="mt-0.5 text-xs text-muted-foreground">لا تُرسل رسائل حقيقية — تُسجَّل فقط</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">لا تُرسل رسائل حقيقية، تُسجَّل فقط</p>
             </div>
           </div>
           <Switch

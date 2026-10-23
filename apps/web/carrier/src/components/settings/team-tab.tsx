@@ -2,7 +2,8 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  AlertCircle, BadgeCheck, Check, Crown, MoreVertical, Pencil, Plus, Trash2, X,
+  AlertCircle, BadgeCheck, Check, Crown, MoreVertical, Package, Pencil, Plus,
+  ShieldCheck, Smartphone, Trash2, Truck, Wallet, X, type LucideIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,11 @@ import {
   type CompanyKind, type CompanyRole, type TeamMember,
 } from '@naqla/shared-utils';
 import { cn } from '@/lib/utils';
+
+/** Role glyphs as lucide icons (not emoji) — keyed to the CompanyRole enum. */
+const ROLE_ICONS: Record<CompanyRole, LucideIcon> = {
+  OWNER: Crown, ADMIN: ShieldCheck, STAFF: Package, DISPATCH: Truck, FINANCE: Wallet,
+};
 
 interface TeamTabProps {
   companyId: string;
@@ -180,9 +186,10 @@ function RoleBadge({ role, tRoles }: { role: CompanyRole; tRoles: ReturnType<typ
   const tone: Record<CompanyRole, 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
     OWNER: 'warning', ADMIN: 'default', STAFF: 'outline', DISPATCH: 'outline', FINANCE: 'success',
   };
+  const Icon = ROLE_ICONS[role];
   return (
     <Badge variant={tone[role]} className="gap-1">
-      <span>{tRoles(`${role}.icon`)}</span>
+      <Icon className="h-3 w-3" />
       {tRoles(`${role}.label`)}
     </Badge>
   );
@@ -265,8 +272,9 @@ function AddMemberDialog({
             </div>
           </div>
 
-          <div className="rounded-md bg-info/10 border border-info/30 p-3 text-xs text-muted-foreground">
-            📱 {t('smsNotice')}
+          <div className="rounded-md bg-info/10 border border-info/30 p-3 text-xs text-muted-foreground flex items-start gap-2">
+            <Smartphone className="h-4 w-4 text-[hsl(var(--mint))] shrink-0 mt-0.5" />
+            <span>{t('smsNotice')}</span>
           </div>
         </div>
 
@@ -302,7 +310,9 @@ function RoleCard({
       )}
     >
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-2xl" aria-hidden>{tRoles(`${role}.icon`)}</span>
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]">
+          {(() => { const Icon = ROLE_ICONS[role]; return <Icon className="h-5 w-5" />; })()}
+        </span>
         <span className="font-bold">{tRoles(`${role}.label`)}</span>
       </div>
       <ul className="space-y-1.5 mb-2">

@@ -84,6 +84,155 @@
   }
 }
 
+/* ─── Naqla premium-dark palette (scoped to the landing board) ───────────────
+ * A bespoke deep-teal dark theme, independent of the shadcn .dark used by the
+ * dashboards. Most tiles are dark surfaces; mint and gold are the only accents.
+ */
+.naqla-dark {
+  color-scheme: dark;
+  --background:          174 58%  4.5%;
+  --foreground:          165 24%  96%;
+
+  --card:                174 36%   8.5%;
+  --card-foreground:     165 24%  96%;
+
+  --popover:             174 36%   8.5%;
+  --popover-foreground:  165 24%  96%;
+
+  /* rich brand-teal tile, a shade greener than the plain card */
+  --primary:             170 55%  15%;
+  --primary-foreground:    0  0% 100%;
+
+  --secondary:           174 42%   6.5%;
+  --secondary-foreground:165 24%  96%;
+
+  --muted:               174 26%  13%;
+  --muted-foreground:    168 13%  64%;
+
+  --accent:              174 38%  13%;
+  --accent-foreground:   165 24%  96%;
+
+  --destructive:           0 72%  52%;
+  --destructive-foreground:0  0% 100%;
+
+  --success:             160 70%  46%;
+  --success-foreground:    0  0% 100%;
+
+  --warning:              38 92%  55%;
+  --warning-foreground:  174 60%  10%;
+
+  --border:              170 24%  17%;
+  --input:               170 24%  17%;
+  --ring:                167 82%  48%;
+
+  /* accents, brightened for glow on dark */
+  --mint:                167 84%  48%;
+  --gold:                 44 92%  62%;
+}
+
+/* ─── Naqla premium-light palette (scoped to the landing board) ──────────────
+ * A refined, airy light theme: a soft mint-white ground, crisp white tiles with
+ * gentle depth, a deep-teal brand tile, and mint/gold as the only accents.
+ */
+.naqla-light {
+  --background:          178 30%  97.5%;
+  --foreground:          174 55%  11%;
+
+  --card:                  0  0% 100%;
+  --card-foreground:     174 55%  11%;
+
+  --popover:               0  0% 100%;
+  --popover-foreground:  174 55%  11%;
+
+  --primary:             174 74%  12.5%;
+  --primary-foreground:    0  0% 100%;
+
+  --secondary:           176 24%  93%;
+  --secondary-foreground:174 55%  14%;
+
+  --muted:               176 22%  94%;
+  --muted-foreground:    174 10%  40%;
+
+  --accent:              174 70%  95%;
+  --accent-foreground:   174 71%  22%;
+
+  --destructive:           0 84%  60%;
+  --destructive-foreground:0  0% 100%;
+
+  --success:             162 78%  38%;
+  --success-foreground:    0  0% 100%;
+
+  --warning:              34 94%  48%;
+  --warning-foreground:    0  0% 100%;
+
+  --border:              176 20%  89%;
+  --input:               176 20%  89%;
+  --ring:                170 85%  36%;
+
+  --mint:                170 88%  36%;
+  --gold:                 41 90%  54%;
+}
+
+@layer utilities {
+  /* tasteful accent glow + gentle tile depth */
+  .glow-mint  { box-shadow: 0 0 40px -12px hsl(var(--mint) / 0.45); }
+  .glow-soft  { box-shadow: 0 24px 60px -30px hsl(174 60% 2% / 0.9); }
+  .shadow-tile {
+    box-shadow:
+      0 1px 2px  hsl(174 45% 16% / 0.05),
+      0 14px 34px -20px hsl(174 45% 16% / 0.14);
+  }
+}
+
+/* ─── Animated glowing edge (interactive marketplace cards) ──────────────── */
+@property --shine-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes shine-rotate { to { --shine-angle: 360deg; } }
+@keyframes route-dash { to { stroke-dashoffset: -28; } }
+.route-line { animation: route-dash 2.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .route-line { animation: none; } }
+
+/* Continuous, seamless truck marquee. The track holds two identical halves and
+ * shifts exactly one half (-50%); per-item margin (not flex gap) keeps spacing
+ * uniform across the seam so the loop never jumps. */
+@keyframes truck-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.truck-marquee-track { animation: truck-marquee 55s linear infinite; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .truck-marquee-track { animation: none; } }
+
+.shine-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.6px;
+  background: conic-gradient(
+    from var(--shine-angle),
+    transparent 0deg,
+    hsl(var(--mint)) 55deg,
+    transparent 130deg,
+    transparent 230deg,
+    hsl(var(--mint) / 0.55) 305deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
+  animation: shine-rotate 6s linear infinite;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0.85;
+  transition: opacity 0.3s;
+}
+.shine-card:hover::before { opacity: 1; animation-duration: 2.8s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .shine-card::before { animation: none; }
+}
+
 @layer base {
   * { @apply border-border; }
   html { -webkit-font-smoothing: antialiased; }

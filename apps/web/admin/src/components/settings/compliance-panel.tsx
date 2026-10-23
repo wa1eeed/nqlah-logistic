@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Building2, Pencil, Plus, Trash2, User, X } from 'lucide-react';
+import { Building2, Check, Pencil, Plus, Trash2, User, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -56,7 +56,7 @@ export function CompliancePanel() {
         icon={<Building2 className="h-5 w-5" />}
         docs={companyDocs}
         onChange={setCompanyDocs}
-        emptyMsg="لا توجد متطلبات — أضف واحداً للبدء"
+        emptyMsg="لا توجد متطلبات، أضف واحدا للبدء"
       />
       <DocsSection
         title="متطلبات الناقل الفرد"
@@ -64,7 +64,7 @@ export function CompliancePanel() {
         icon={<User className="h-5 w-5" />}
         docs={individualDocs}
         onChange={setIndividualDocs}
-        emptyMsg="لا توجد متطلبات — أضف واحداً للبدء"
+        emptyMsg="لا توجد متطلبات، أضف واحدا للبدء"
       />
     </div>
   );
@@ -137,7 +137,7 @@ function DocsSection({
                     autoFocus
                     value={draftLabel}
                     onChange={(e) => setDraftLabel(e.target.value)}
-                    placeholder="مثلاً: شهادة المنشأة"
+                    placeholder="مثلا: شهادة المنشأة"
                   />
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -177,9 +177,9 @@ function DocsSection({
                     size="sm"
                     variant="ghost"
                     onClick={() => toggleRequired(doc.id)}
-                    title={doc.required ? 'اجعله اختيارياً' : 'اجعله إلزامياً'}
+                    title={doc.required ? 'اجعله اختياريا' : 'اجعله إلزاميا'}
                   >
-                    {doc.required ? <X className="h-3.5 w-3.5" /> : '✓'}
+                    {doc.required ? <X className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => openEdit(doc)}>
                     <Pencil className="h-3.5 w-3.5" />

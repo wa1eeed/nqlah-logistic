@@ -254,7 +254,7 @@ export default function NewTruckPage() {
                   {selectedType && (
                     <p className="text-xs text-success flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3" />
-                      مُلئت تلقائياً من النوع المُختار — يمكنك تعديلها
+                      مُلئت تلقائيا من النوع المُختار، يمكنك تعديلها
                     </p>
                   )}
                 </div>
@@ -264,7 +264,7 @@ export default function NewTruckPage() {
               {selectedType && (
                 <div className="rounded-lg border bg-card overflow-hidden">
                   <div className="grid grid-cols-1 sm:grid-cols-[220px_1fr]">
-                    <div className="aspect-[16/10] sm:aspect-auto bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-3 border-b sm:border-b-0 sm:border-e">
+                    <div className="aspect-[16/10] sm:aspect-auto bg-muted/40 flex items-center justify-center p-3 border-b sm:border-b-0 sm:border-e">
                       {selectedType.imageUrl ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -331,7 +331,7 @@ export default function NewTruckPage() {
                       <SelectValue
                         placeholder={
                           !form.brandId
-                            ? 'اختر البراند أولاً'
+                            ? 'اختر البراند أولا'
                             : availableModels.length === 0
                             ? 'لا توجد موديلات لهذا البراند'
                             : 'اختر الموديل'
@@ -360,7 +360,7 @@ export default function NewTruckPage() {
           <Card>
             <CardHeader>
               <CardTitle>الأبعاد</CardTitle>
-              <CardDescription className="mt-1">بالأمتار — اختياري</CardDescription>
+              <CardDescription className="mt-1">بالأمتار · اختياري</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <DimensionInput label="الطول" id="length" value={form.length} onChange={(v) => set('length', v)} />
@@ -397,7 +397,7 @@ export default function NewTruckPage() {
           <Card>
             <CardHeader>
               <CardTitle>صور الشاحنة</CardTitle>
-              <CardDescription className="mt-1">حتى 5 صور — اختياري</CardDescription>
+              <CardDescription className="mt-1">حتى 5 صور · اختياري</CardDescription>
             </CardHeader>
             <CardContent>
               <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed cursor-pointer hover:bg-muted/30 transition-colors">
@@ -447,7 +447,7 @@ export default function NewTruckPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">معاينة اللوحة</CardTitle>
-                <CardDescription className="mt-1">تتحدث لحظياً مع التعديل</CardDescription>
+                <CardDescription className="mt-1">تتحدث لحظيا مع التعديل</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center gap-4 py-8">
                 <SaudiPlate
@@ -458,7 +458,7 @@ export default function NewTruckPage() {
                 />
                 {form.registrationType && (
                   <Badge variant={form.registrationType === 'light' ? 'default' : 'warning'}>
-                    {form.registrationType === 'light' ? '🔵 نقل خفيف' : '🟡 نقل عام'}
+                    {form.registrationType === 'light' ? 'نقل خفيف' : 'نقل عام'}
                   </Badge>
                 )}
               </CardContent>
@@ -517,7 +517,7 @@ function LetterSelect({
       <Select value={value || '__empty__'} onValueChange={(v) => onChange(v === '__empty__' ? '' : v)}>
         <SelectTrigger className="w-[100px] h-11"><SelectValue placeholder="حرف" /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="__empty__">— بلا —</SelectItem>
+          <SelectItem value="__empty__">بلا</SelectItem>
           {SAUDI_PLATE_LETTERS.map((l) => (
             <SelectItem key={l.ar} value={l.ar}>
               <span className="num me-2">{l.en}</span>

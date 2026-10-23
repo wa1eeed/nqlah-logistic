@@ -52,8 +52,8 @@ export function EscrowCountdown({ deliveredAt, total, onConfirmEarly }: EscrowCo
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold">إفراج تلقائي عن المبلغ</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              المبلغ مُحتجَز في Escrow وسيُحوَّل للناقل تلقائياً بعد 72 ساعة من التسليم
-              إذا لم تفتح نزاعاً.
+              المبلغ مُحتجَز في Escrow وسيُحوَّل للناقل تلقائيا بعد 72 ساعة من التسليم
+              إذا لم تفتح نزاعا.
             </p>
           </div>
         </div>
@@ -113,7 +113,7 @@ export function EscrowCountdown({ deliveredAt, total, onConfirmEarly }: EscrowCo
             onClick={onConfirmEarly}
             className="w-full text-sm text-info hover:underline"
           >
-            تأكيد الاستلام الآن والإفراج فوراً
+            تأكيد الاستلام الآن والإفراج فورا
           </button>
         )}
       </CardContent>

@@ -7,22 +7,22 @@ const ACTIVE_STATUSES = new Set(['PUBLISHED', 'IN_TRANSIT', 'BIDDING', 'ASSIGNED
 const MAP: Record<string, { variant: Variant; label: string }> = {
   DRAFT:        { variant: 'secondary',   label: 'مسودة' },
   PUBLISHED:    { variant: 'default',     label: 'منشور' },
-  BIDDING:      { variant: 'warning',     label: 'قيد العروض' },
-  ASSIGNED:     { variant: 'warning',     label: 'مُسند' },
+  BIDDING:      { variant: 'default',     label: 'قيد العروض' },
+  ASSIGNED:     { variant: 'default',     label: 'مُسند' },
   CONFIRMED:    { variant: 'default',     label: 'مؤكد' },
   IN_TRANSIT:   { variant: 'success',     label: 'في الطريق' },
   DELIVERED:    { variant: 'success',     label: 'تم التسليم' },
   COMPLETED:    { variant: 'success',     label: 'مكتمل' },
   CANCELLED:    { variant: 'destructive', label: 'ملغى' },
-  DISPUTED:     { variant: 'warning',     label: 'نزاع' },
+  DISPUTED:     { variant: 'destructive', label: 'نزاع' },
 
-  PENDING_VERIFICATION: { variant: 'warning',     label: 'بانتظار التحقق' },
+  PENDING_VERIFICATION: { variant: 'secondary',   label: 'بانتظار التحقق' },
   APPROVED:             { variant: 'success',     label: 'معتمد' },
   REJECTED:             { variant: 'destructive', label: 'مرفوض' },
   ACTIVE:               { variant: 'success',     label: 'نشط' },
   SUSPENDED:            { variant: 'destructive', label: 'موقوف' },
 
-  HELD:     { variant: 'warning', label: 'محجوز' },
+  HELD:     { variant: 'default', label: 'محجوز' },
   RELEASED: { variant: 'success', label: 'مُفرج' },
   REFUNDED: { variant: 'default', label: 'مُسترد' },
   FAILED:   { variant: 'destructive', label: 'فشل' },
@@ -32,7 +32,7 @@ const MAP: Record<string, { variant: Variant; label: string }> = {
   OVERDUE:  { variant: 'destructive', label: 'متأخرة' },
 
   OPEN:         { variant: 'destructive', label: 'مفتوح' },
-  UNDER_REVIEW: { variant: 'warning',     label: 'قيد المراجعة' },
+  UNDER_REVIEW: { variant: 'secondary',   label: 'قيد المراجعة' },
   RESOLVED:     { variant: 'success',     label: 'محلول' },
   CLOSED:       { variant: 'secondary',   label: 'مغلق' },
 

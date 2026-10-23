@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowRight, Building2, Check, Clock, Crown, FileCheck, FileText, FileX, Mail,
-  MapPin, MoreVertical, Phone, ShieldCheck, Trash2, Truck, Upload, Users, X,
+  MapPin, MoreVertical, Package, Phone, ShieldCheck, Star, Trash2, Truck, Upload,
+  Users, Wallet, X, type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,7 +48,15 @@ export default function AdminCompanyDetail() {
   return (
     <>
       <PageHeader
-        title={company.nameAr}
+        eyebrow="ملف الكيان"
+        title={
+          <span className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 border border-border/70">
+              <AvatarFallback>{company.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('')}</AvatarFallback>
+            </Avatar>
+            {company.nameAr}
+          </span>
+        }
         subtitle={`${company.kind === 'CLIENT' ? 'عميل' : 'ناقل'} · ${company.city}`}
         actions={
           <>
@@ -70,7 +79,7 @@ export default function AdminCompanyDetail() {
                 <Row label="Name (EN)" value={<span className="num">{company.nameEn}</span>} />
                 <Row label="السجل التجاري" value={<span className="num">{company.crNumber}</span>} />
                 <Row label="الرقم الضريبي" value={<span className="num">{company.vatNumber}</span>} />
-                <Row label="المدينة" icon={MapPin} value={`${company.city} — ${company.region}`} />
+                <Row label="المدينة" icon={MapPin} value={`${company.city}، ${company.region}`} />
                 <Row label="البريد" icon={Mail} value={<span className="num">{company.contactEmail}</span>} />
                 <Row label="الهاتف" icon={Phone} value={<span className="num" dir="ltr">{company.contactPhone}</span>} />
                 <Row label="تاريخ التسجيل" value={formatDate(company.joinedAt, 'd MMMM yyyy')} />
@@ -163,7 +172,7 @@ export default function AdminCompanyDetail() {
               <CardHeader><CardTitle>أداء الناقل</CardTitle></CardHeader>
               <CardContent>
                 <dl className="divide-y">
-                  <Row label="التقييم" value={<span className="num font-medium">{company.rating?.toFixed(1)} ⭐</span>} />
+                  <Row label="التقييم" icon={Star} value={<span className="num font-medium">{company.rating?.toFixed(1)}</span>} />
                   <Row label="رحلات منجزة" icon={Truck} value={<span className="num font-medium">{(company.completedTrips ?? 0).toLocaleString('en-US')}</span>} />
                   <Row label="حجم الأسطول" value={<span className="num font-medium">{company.fleetSize} شاحنة</span>} />
                   <Row label="متوسط الاستجابة" value={<span className="num font-medium">{company.responseTimeMins} دقيقة</span>} />
@@ -266,12 +275,12 @@ function AdminTeamSection({ companyId, companyKind }: { companyId: string; compa
     );
   }
 
-  const roleLabels: Record<CompanyRole, string> = {
-    OWNER: '👑 المالك',
-    ADMIN: '👑 مدير',
-    STAFF: '📦 مشرف عمليات',
-    DISPATCH: '🚚 مشرف أسطول',
-    FINANCE: '💰 محاسب',
+  const roleLabels: Record<CompanyRole, { icon: LucideIcon; label: string }> = {
+    OWNER:    { icon: Crown,       label: 'المالك' },
+    ADMIN:    { icon: ShieldCheck, label: 'مدير' },
+    STAFF:    { icon: Package,     label: 'مشرف عمليات' },
+    DISPATCH: { icon: Truck,       label: 'مشرف أسطول' },
+    FINANCE:  { icon: Wallet,      label: 'محاسب' },
   };
 
   return (
@@ -307,7 +316,10 @@ function AdminTeamSection({ companyId, companyKind }: { companyId: string; compa
                     <span>· انضم {formatDate(m.addedAt)}</span>
                   </div>
                 </div>
-                <Badge variant="outline" className="shrink-0">{roleLabels[m.role]}</Badge>
+                <Badge variant="outline" className="shrink-0 gap-1">
+                  {(() => { const Icon = roleLabels[m.role].icon; return <Icon className="h-3 w-3" />; })()}
+                  {roleLabels[m.role].label}
+                </Badge>
                 {!m.isOwner && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

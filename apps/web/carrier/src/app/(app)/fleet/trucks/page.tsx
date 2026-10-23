@@ -56,7 +56,7 @@ export default function CarrierFleetTrucks() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatsCard label="إجمالي الأسطول" value={total} hint="شاحنة" icon={Truck} tone="default" />
         <StatsCard label="متاحة" value={available} hint="جاهزة الآن" icon={CheckCircle} tone="success" />
-        <StatsCard label="في رحلة" value={onTrip} hint="حالياً" icon={Clock} tone="default" />
+        <StatsCard label="في رحلة" value={onTrip} hint="حاليا" icon={Clock} tone="default" />
         <StatsCard label="صيانة" value={maintenance} hint="غير متاحة" icon={Wrench} tone="warning" />
       </div>
 

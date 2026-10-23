@@ -38,12 +38,12 @@ export interface PickupWindowInfo {
 }
 
 export const PICKUP_WINDOWS: Record<PickupWindow, PickupWindowInfo> = {
-  MORNING: { startHour:  8, endHour: 12, labelAr: 'صباحاً',     labelEn: 'Morning',   icon: '🌅' },
-  EVENING: { startHour: 12, endHour: 18, labelAr: 'مساءً',      labelEn: 'Evening',   icon: '🌇' },
+  MORNING: { startHour:  8, endHour: 12, labelAr: 'صباحا',     labelEn: 'Morning',   icon: '🌅' },
+  EVENING: { startHour: 12, endHour: 18, labelAr: 'مساء',      labelEn: 'Evening',   icon: '🌇' },
   ALL_DAY: { startHour:  8, endHour: 18, labelAr: 'طوال اليوم', labelEn: 'All day',   icon: '☀️' },
 };
 
-/** Renders e.g. "🌅 صباحاً (8:00 - 12:00)". */
+/** Renders e.g. "🌅 صباحا (8:00 - 12:00)". */
 export function pickupWindowLabel(window: PickupWindow, locale: 'ar' | 'en' = 'ar'): string {
   const w = PICKUP_WINDOWS[window];
   const label = locale === 'ar' ? w.labelAr : w.labelEn;
@@ -109,7 +109,7 @@ export function cancellationPolicy(order: Pick<Order, 'status' | 'agreedPrice' |
     return {
       tier: 'DISPUTE_ONLY',
       feeRate: 0, feeAmount: 0, refundAmount: 0,
-      blockedReason: 'الشحنة في الطريق — لا يمكن الإلغاء، افتح نزاعاً لو فيه مشكلة',
+      blockedReason: 'الشحنة في الطريق — لا يمكن الإلغاء، افتح نزاعا لو فيه مشكلة',
       suggestDispute: true,
     };
   }

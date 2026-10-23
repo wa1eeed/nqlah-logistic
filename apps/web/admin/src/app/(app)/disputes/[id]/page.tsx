@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import {
   AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock, FileText, Loader2,
-  MessageSquare, Package, Scale, ShieldCheck, User, X,
+  MessageSquare, Package, Scale, ShieldCheck, Star, User, X,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -32,8 +32,8 @@ import {
 type ResolutionType = 'REFUND_CLIENT' | 'PAY_CARRIER' | 'SPLIT' | 'DISMISS';
 
 const RESOLUTIONS: { value: ResolutionType; label: string; description: string; tone: string }[] = [
-  { value: 'REFUND_CLIENT', label: 'استرداد كامل للعميل',  description: 'يُعاد المبلغ كاملاً وتُحمَّل الغرامة على الناقل',     tone: 'text-info' },
-  { value: 'PAY_CARRIER',   label: 'إفراج المبلغ للناقل',  description: 'الناقل محقّ — يُصرف المبلغ كما هو متّفق',             tone: 'text-success' },
+  { value: 'REFUND_CLIENT', label: 'استرداد كامل للعميل',  description: 'يُعاد المبلغ كاملا وتُحمَّل الغرامة على الناقل',     tone: 'text-[hsl(var(--mint))]' },
+  { value: 'PAY_CARRIER',   label: 'إفراج المبلغ للناقل',  description: 'الناقل محقّ، يُصرف المبلغ كما هو متّفق',             tone: 'text-success' },
   { value: 'SPLIT',         label: 'تقسيم 50/50',          description: 'يُقسَّم المبلغ بين الطرفين بالتساوي',                  tone: 'text-warning' },
   { value: 'DISMISS',       label: 'رفض النزاع',           description: 'لا يوجد أساس للنزاع، يستمر الإجراء الطبيعي',           tone: 'text-muted-foreground' },
 ];
@@ -121,6 +121,7 @@ export default function AdminDisputeDetail() {
   return (
     <>
       <PageHeader
+        eyebrow="تفاصيل النزاع"
         title={`نزاع ${dispute.id}`}
         subtitle={`${dispute.reason} · ${formatRelative(dispute.createdAt)}`}
         actions={
@@ -326,8 +327,8 @@ export default function AdminDisputeDetail() {
                 <span className="text-muted-foreground">SLA الموصى</span>
                 <span className="font-medium">24 ساعة</span>
               </div>
-              <div className="rounded-md bg-info/10 border border-info/30 p-2 text-xs flex items-start gap-2 mt-3">
-                <AlertCircle className="h-3 w-3 text-info shrink-0 mt-0.5" />
+              <div className="rounded-md bg-[hsl(var(--mint))]/10 border border-[hsl(var(--mint))]/30 p-2 text-xs flex items-start gap-2 mt-3">
+                <AlertCircle className="h-3 w-3 text-[hsl(var(--mint))] shrink-0 mt-0.5" />
                 <span className="text-muted-foreground">يجب الرد خلال 24 ساعة لتجنّب تصعيد النزاع</span>
               </div>
             </CardContent>
@@ -452,7 +453,7 @@ function PartyCard({
           {company.rating != null && (
             <div className="flex justify-between">
               <dt className="text-muted-foreground">التقييم</dt>
-              <dd className="num">⭐ {company.rating.toFixed(1)}</dd>
+              <dd className="num flex items-center gap-1"><Star className="h-3.5 w-3.5 text-[hsl(var(--mint))]" /> {company.rating.toFixed(1)}</dd>
             </div>
           )}
         </dl>

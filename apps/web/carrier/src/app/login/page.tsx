@@ -46,14 +46,11 @@ export default function CarrierLoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* ── Left branding panel (desktop only) ─────────────────────────── */}
-      <div
-        className="hidden lg:flex lg:w-[440px] xl:w-[520px] shrink-0 flex-col justify-between p-10"
-        style={{ background: 'linear-gradient(160deg, #0A3D3A 0%, #0D5C57 55%, #00C9A7 100%)' }}
-      >
+      <div className="hidden lg:flex lg:w-[440px] xl:w-[520px] shrink-0 flex-col justify-between bg-primary p-10">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
-            <Truck className="h-6 w-6 text-white" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[hsl(var(--mint))]/20 ring-1 ring-[hsl(var(--mint))]/30">
+            <Truck className="h-6 w-6 text-[hsl(var(--mint))]" />
           </div>
           <div>
             <div className="text-lg font-bold text-white">نقلة لوجيستك</div>
@@ -85,7 +82,9 @@ export default function CarrierLoginPage() {
                 transition={{ delay: 0.2 + i * 0.1 }}
                 className="flex items-center gap-3"
               >
-                <Icon className="h-5 w-5 text-white/80 shrink-0" />
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[hsl(var(--mint))]/15">
+                  <Icon className="h-4 w-4 text-[hsl(var(--mint))]" />
+                </span>
                 <span className="text-white/90 text-sm">{text}</span>
               </motion.div>
             ))}
@@ -115,7 +114,7 @@ export default function CarrierLoginPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">أهلاً بعودتك</CardTitle>
+              <CardTitle className="text-xl">أهلا بعودتك</CardTitle>
               <CardDescription>سجّل دخولك للمتابعة إلى منصة الناقل</CardDescription>
             </CardHeader>
             <CardContent>
@@ -167,7 +166,7 @@ export default function CarrierLoginPage() {
                 )}
 
                 <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                  {loading ? 'جارٍ الدخول...' : 'تسجيل الدخول'}
+                  {loading ? 'جار الدخول...' : 'تسجيل الدخول'}
                 </Button>
 
                 <div className="relative pt-2">

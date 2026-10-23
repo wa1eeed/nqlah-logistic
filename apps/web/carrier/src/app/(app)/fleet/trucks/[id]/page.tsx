@@ -52,7 +52,6 @@ export default function TruckDetailPage() {
   const truckType = truckTypes.find((t) => t.id === truck.truckType);
   const meta = {
     label: truckType?.nameAr ?? truck.truckType,
-    icon: truckType?.icon ?? '🚚',
     imageUrl: truckType?.imageUrl,
     description: truckType?.description,
   };
@@ -81,7 +80,7 @@ export default function TruckDetailPage() {
           {/* Image + Plate */}
           <Card>
             <CardContent className="pt-6 flex flex-col sm:flex-row items-center gap-6">
-              <div className="h-44 w-64 rounded-xl bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 grid place-items-center shrink-0 border overflow-hidden p-3" aria-hidden>
+              <div className="h-44 w-64 rounded-xl bg-muted/40 grid place-items-center shrink-0 border overflow-hidden p-3" aria-hidden>
                 {meta.imageUrl ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -96,10 +95,10 @@ export default function TruckDetailPage() {
                         if (fb) fb.style.display = 'flex';
                       }}
                     />
-                    <div className="text-5xl" style={{ display: 'none' }}>{meta.icon}</div>
+                    <div style={{ display: 'none' }} className="text-muted-foreground"><Truck className="h-14 w-14" /></div>
                   </>
                 ) : (
-                  <div className="text-5xl">{meta.icon}</div>
+                  <div className="text-muted-foreground"><Truck className="h-14 w-14" /></div>
                 )}
               </div>
               <div className="flex-1 min-w-0 space-y-3 text-center sm:text-start">

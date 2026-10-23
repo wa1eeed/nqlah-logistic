@@ -78,7 +78,7 @@ export function Sidebar({
                   <span className="flex-1">{item.label}</span>
                   {isComingSoon && (
                     <span className="text-[10px] rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground">
-                      قريباً
+                      قريبا
                     </span>
                   )}
                   {item.badge && !isComingSoon && (

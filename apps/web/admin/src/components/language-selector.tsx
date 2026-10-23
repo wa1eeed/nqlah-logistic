@@ -69,7 +69,7 @@ export function LanguageSelector() {
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
         {current === 'ar'
-          ? 'يُحفظ التفضيل تلقائياً ويُطبَّق على كل الجلسات.'
+          ? 'يُحفظ التفضيل تلقائيا ويُطبَّق على كل الجلسات.'
           : 'Your preference is saved automatically and applied across all sessions.'}
       </p>
     </div>

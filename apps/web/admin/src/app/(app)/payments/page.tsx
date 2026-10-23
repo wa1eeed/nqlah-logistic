@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/page-header';
 import { StatsCard } from '@/components/stats-card';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
+import { FadeIn } from '@/components/ui/fade-in';
 import useSWR from 'swr';
 import { Loader2 } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
@@ -59,7 +60,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <>
-      <PageHeader title="المدفوعات" subtitle="معاملات Escrow، الإفراج، والعمولات" />
+      <PageHeader eyebrow="المالية" title="المدفوعات" subtitle="معاملات الضمان (Escrow)، الإفراج عن المبالغ، والعمولات" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatsCard
@@ -68,6 +69,7 @@ export default function AdminPaymentsPage() {
           hint={`${PAYMENTS.filter((p) => p.state === 'HELD').length} عملية`}
           icon={ShieldCheck}
           tone="warning"
+          index={0}
         />
         <StatsCard
           label="تم الإفراج"
@@ -75,6 +77,7 @@ export default function AdminPaymentsPage() {
           hint={`${PAYMENTS.filter((p) => p.state === 'RELEASED').length} عملية`}
           icon={ArrowDownRight}
           tone="success"
+          index={1}
         />
         <StatsCard
           label="عمولة المنصة"
@@ -82,6 +85,7 @@ export default function AdminPaymentsPage() {
           hint="على كل المعاملات"
           icon={Wallet}
           tone="default"
+          index={2}
         />
         <StatsCard
           label="مردود"
@@ -89,6 +93,7 @@ export default function AdminPaymentsPage() {
           hint="استرداد"
           icon={RotateCcw}
           tone="danger"
+          index={3}
         />
       </div>
 
@@ -101,6 +106,7 @@ export default function AdminPaymentsPage() {
         </TabsList>
       </Tabs>
 
+      <FadeIn delay={0.08}>
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -147,6 +153,7 @@ export default function AdminPaymentsPage() {
           </Table>
         </CardContent>
       </Card>
+      </FadeIn>
     </>
   );
 }

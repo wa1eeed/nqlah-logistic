@@ -22,7 +22,7 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
           <h1 className="text-h1 tracking-tight">{title}</h1>
           {/* Gradient underline */}
           <span
-            className="absolute -bottom-1 left-0 h-[3px] w-10 rounded-full bg-gradient-to-r from-[#0A3D3A] to-[#0D5C57]"
+            className="absolute -bottom-1 left-0 h-[3px] w-10 rounded-full bg-[hsl(var(--mint))]"
             aria-hidden
           />
         </div>

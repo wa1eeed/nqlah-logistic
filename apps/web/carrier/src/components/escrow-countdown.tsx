@@ -49,7 +49,7 @@ export function EscrowCountdown({ deliveredAt, total }: EscrowCountdownProps) {
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold">دفعتك قادمة</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              المبلغ سيُحوَّل لمحفظتك تلقائياً بعد 72 ساعة من التسليم — أو فور تأكيد العميل (أيهما أسبق).
+              المبلغ سيُحوَّل لمحفظتك تلقائيا بعد 72 ساعة من التسليم، أو فور تأكيد العميل (أيهما أسبق).
             </p>
           </div>
         </div>

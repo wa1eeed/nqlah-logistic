@@ -139,6 +139,7 @@ export default function AdminWalletDetailPage() {
   return (
     <>
       <PageHeader
+        eyebrow="المحفظة"
         title={`محفظة ${company.nameAr}`}
         subtitle={`${wallet.id} · آخر تحديث ${formatDate(wallet.updatedAt, 'd MMM · HH:mm')}`}
         actions={

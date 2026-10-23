@@ -1,137 +1,157 @@
-import Link from 'next/link';
-import { Award, Lightbulb, MapPin, Shield, Target, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+'use client';
+
+import { useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { Award, Lightbulb, MapPin, Shield, Target, Users, ArrowLeft } from 'lucide-react';
 import { PageShell } from '@/components/page-shell';
 
-export const metadata = {
-  title: 'عن نقلة لوجيستك — رؤيتنا ورسالتنا',
-  description: 'تعرّف على رؤية ورسالة وقيم منصة نقلة لوجيستك في رقمنة قطاع النقل السعودي',
-};
+const CLIENT_URL = process.env.NEXT_PUBLIC_CLIENT_URL ?? 'http://localhost:3002';
+const CARRIER_URL = process.env.NEXT_PUBLIC_CARRIER_URL ?? 'http://localhost:3003';
 
 const VALUES = [
-  { icon: Shield,    title: 'الثقة',      desc: 'كل ناقل معتمد، كل دفعة محمية، كل تعامل موثّق.' },
-  { icon: Lightbulb, title: 'الابتكار',  desc: 'حلول تقنية ذكية تختصر الوقت والتكلفة.' },
-  { icon: Users,     title: 'الشراكة',   desc: 'نمو مشترك مع شركاء النقل والعملاء.' },
-  { icon: Award,     title: 'الجودة',     desc: 'معايير صارمة في الخدمة والتقنية.' },
+  { icon: Shield, title: 'الثقة', desc: 'كل ناقل معتمد، كل دفعة محمية، كل تعامل موثق.' },
+  { icon: Lightbulb, title: 'الابتكار', desc: 'حلول تقنية ذكية تختصر الوقت والتكلفة.' },
+  { icon: Users, title: 'الشراكة', desc: 'نمو مشترك مع شركاء النقل والعملاء.' },
+  { icon: Award, title: 'الجودة', desc: 'معايير صارمة في الخدمة والتقنية.' },
 ];
 
 const STATS = [
-  { num: '500+',     label: 'شركة نقل معتمدة' },
-  { num: '12,000+',  label: 'شحنة شهرياً' },
-  { num: '15',       label: 'مدينة سعودية' },
-  { num: '98.4%',    label: 'معدّل التسليم الناجح' },
+  { num: '500+', label: 'شركة نقل معتمدة' },
+  { num: '12,000+', label: 'شحنة شهريا' },
+  { num: '15', label: 'مدينة سعودية' },
+  { num: '98.4%', label: 'معدل تسليم ناجح' },
 ];
+
+function Reveal({
+  children, className, delay = 0,
+}: { children: React.ReactNode; className?: string; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-50px' });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 24 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, ease: 'easeOut', delay }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export default function AboutPage() {
   return (
     <PageShell>
-      {/* Hero */}
-      <section className="bg-primary/[0.03] border-b">
-        <div className="max-w-[1280px] mx-auto px-6 py-16 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">عن نقلة لوجيستك</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            نُعيد تعريف قطاع النقل اللوجستي في المملكة العربية السعودية عبر منصة تقنية متكاملة تربط الشركات بأفضل ناقلي البضائع المعتمدين، بشفافية كاملة وأمان مالي مضمون.
-          </p>
-        </div>
-      </section>
+      <div className="mx-auto max-w-[1200px] px-4">
+        {/* Hero */}
+        <section className="py-16 text-center sm:py-24">
+          <motion.div
+            initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="mx-auto max-w-3xl"
+          >
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-[hsl(var(--mint))]/12 px-3.5 py-1.5 text-xs font-bold text-[hsl(var(--mint))]">
+              <Shield className="h-3.5 w-3.5" /> عن المنصة
+            </div>
+            <h1 className="mt-5 font-extrabold leading-[1.1] tracking-tight text-foreground" style={{ fontSize: 'clamp(32px, 4.6vw, 56px)' }}>
+              نعيد تعريف النقل اللوجستي في المملكة
+            </h1>
+            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              منصة تقنية متكاملة تربط الشركات بأفضل الناقلين المعتمدين، بشفافية كاملة وأمان مالي مضمون في كل خطوة.
+            </p>
+          </motion.div>
+        </section>
 
-      {/* Stats */}
-      <section className="py-12 border-b">
-        <div className="max-w-[1280px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+        {/* Stats */}
+        <Reveal className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {STATS.map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="text-4xl font-bold text-primary num">{s.num}</div>
-              <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
+            <div key={s.label} className="rounded-2xl bg-card p-5 text-center shadow-tile sm:p-6">
+              <div className="num text-3xl font-extrabold text-[hsl(var(--mint))] sm:text-4xl">{s.num}</div>
+              <div className="mt-1.5 text-sm text-muted-foreground">{s.label}</div>
             </div>
           ))}
-        </div>
-      </section>
+        </Reveal>
 
-      {/* Mission */}
-      <section className="py-16">
-        <div className="max-w-[1280px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          <div>
-            <div className="inline-flex items-center gap-2 text-sm font-semibold text-primary mb-3">
+        {/* Mission & Vision */}
+        <section className="mt-24 grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-5">
+          <Reveal className="flex flex-col rounded-3xl bg-card p-6 shadow-tile sm:p-8">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]">
               <Target className="h-5 w-5" />
-              رسالتنا
-            </div>
-            <h2 className="text-3xl font-bold mb-4">رقمنة قطاع النقل في المملكة</h2>
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              نهدف إلى توحيد سوق النقل اللوجستي في منصة واحدة شفافة، حيث يجد العميل أفضل الأسعار والخدمات في دقائق، ويجد الناقل طلبات حقيقية ومستقرة لتوسيع أعماله.
+            </span>
+            <h2 className="mt-4 text-2xl font-extrabold sm:text-3xl">رسالتنا</h2>
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+              توحيد سوق النقل اللوجستي في منصة واحدة شفافة، يجد فيها العميل أفضل الأسعار والخدمات في دقائق، ويجد الناقل طلبات حقيقية ومستقرة لتوسيع أعماله.
             </p>
-            <p className="text-muted-foreground leading-relaxed">
-              نُسهم بذلك في تحقيق أهداف رؤية المملكة 2030 لرقمنة القطاع اللوجستي، الذي يُعد من الركائز الأساسية للاقتصاد الوطني.
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+              نسهم بذلك في تحقيق أهداف رؤية المملكة 2030 لرقمنة القطاع اللوجستي، أحد الركائز الأساسية للاقتصاد الوطني.
             </p>
-          </div>
+          </Reveal>
 
-          <div>
-            <div className="inline-flex items-center gap-2 text-sm font-semibold text-primary mb-3">
+          <Reveal delay={0.08} className="flex flex-col rounded-3xl bg-primary p-6 text-primary-foreground shadow-tile sm:p-8">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-[hsl(var(--mint))]">
               <Lightbulb className="h-5 w-5" />
-              رؤيتنا
-            </div>
-            <h2 className="text-3xl font-bold mb-4">المنصة الأولى للوجستيات</h2>
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              أن نكون المنصة الأولى للنقل والشحن اللوجستي في الشرق الأوسط، نخدم آلاف الشركات يومياً عبر شبكة موسّعة من الناقلين المعتمدين.
+            </span>
+            <h2 className="mt-4 text-2xl font-extrabold sm:text-3xl">رؤيتنا</h2>
+            <p className="mt-3 text-base leading-relaxed text-white/75">
+              أن نكون المنصة الأولى للنقل والشحن اللوجستي في الشرق الأوسط، نخدم آلاف الشركات يوميا عبر شبكة موسعة من الناقلين المعتمدين.
             </p>
-            <p className="text-muted-foreground leading-relaxed">
-              نسعى لتقديم تجربة مستخدم سلسة، تكنولوجيا متقدمة (تتبع لحظي، Escrow، AI matching)، ودعم على مدار الساعة.
+            <p className="mt-3 text-base leading-relaxed text-white/75">
+              تجربة سلسة وتقنية متقدمة: تتبع لحظي، حماية مالية للمدفوعات، ومطابقة ذكية للطلبات، مع دعم على مدار الساعة.
             </p>
-          </div>
-        </div>
-      </section>
+          </Reveal>
+        </section>
 
-      {/* Values */}
-      <section className="py-16 bg-muted/30">
-        <div className="max-w-[1280px] mx-auto px-6">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold mb-2">قيمنا</h2>
-            <p className="text-muted-foreground">الأسس التي نبني عليها كل قرار في المنصة</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {VALUES.map((v) => {
+        {/* Values */}
+        <section className="mt-24">
+          <Reveal className="mx-auto mb-10 max-w-2xl text-center">
+            <h2 className="font-extrabold tracking-tight text-foreground" style={{ fontSize: 'clamp(28px, 3.6vw, 44px)' }}>قيمنا</h2>
+            <p className="mt-3 text-muted-foreground">الأسس التي نبني عليها كل قرار في المنصة</p>
+          </Reveal>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {VALUES.map((v, i) => {
               const Icon = v.icon;
               return (
-                <Card key={v.title}>
-                  <CardContent className="pt-6 text-center">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary grid place-items-center mx-auto mb-3">
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <h3 className="font-semibold mb-1">{v.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{v.desc}</p>
-                  </CardContent>
-                </Card>
+                <Reveal key={v.title} delay={i * 0.06} className="flex flex-col rounded-3xl bg-card p-6 shadow-tile">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-4 text-lg font-bold">{v.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{v.desc}</p>
+                </Reveal>
               );
             })}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Location */}
-      <section className="py-16">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <MapPin className="h-10 w-10 text-primary mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-3">مقرّنا الرئيسي</h2>
-          <p className="text-muted-foreground mb-2">المملكة العربية السعودية — الرياض</p>
-          <p className="text-muted-foreground text-sm">طريق الملك فهد، واحة الأعمال، الدور 12</p>
-        </div>
-      </section>
+        {/* Location */}
+        <section className="mt-24">
+          <Reveal className="flex flex-col items-start gap-4 rounded-3xl bg-card p-6 shadow-tile sm:flex-row sm:items-center sm:p-8">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]">
+              <MapPin className="h-6 w-6" />
+            </span>
+            <div>
+              <h2 className="text-xl font-bold">مقرنا الرئيسي</h2>
+              <p className="mt-1 text-muted-foreground">المملكة العربية السعودية، الرياض، طريق الملك فهد، واحة الأعمال، الدور 12</p>
+            </div>
+          </Reveal>
+        </section>
 
-      {/* CTA */}
-      <section className="py-16 bg-primary text-primary-foreground">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold mb-3">جاهز للبدء؟</h2>
-          <p className="opacity-90 mb-6">انضم لآلاف الشركات التي تستخدم نقلة يومياً</p>
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            <Button asChild variant="secondary" size="lg">
-              <a href={`${process.env.NEXT_PUBLIC_CLIENT_URL ?? 'http://localhost:3002'}/register`}>سجّل كعميل</a>
-            </Button>
-            <Button asChild size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-              <a href={`${process.env.NEXT_PUBLIC_CARRIER_URL ?? 'http://localhost:3003'}/register`}>سجّل كناقل</a>
-            </Button>
+        {/* CTA */}
+        <Reveal className="mb-6 mt-24 flex flex-col items-start justify-between gap-6 rounded-3xl bg-primary p-8 text-primary-foreground shadow-tile sm:flex-row sm:items-center sm:p-10">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">جاهز للبدء؟</h2>
+            <p className="mt-2 text-white/70">انضم لآلاف الشركات التي تستخدم نقلة يوميا</p>
           </div>
-        </div>
-      </section>
+          <div className="flex shrink-0 flex-wrap gap-2.5">
+            <a href={`${CLIENT_URL}/register`} className="glow-mint inline-flex items-center gap-1.5 rounded-xl bg-[hsl(var(--mint))] px-6 py-3 text-sm font-bold text-primary transition-transform hover:scale-[1.03]">
+              سجل كعميل <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+            </a>
+            <a href={`${CARRIER_URL}/register`} className="rounded-xl bg-white/10 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/20">
+              سجل كناقل
+            </a>
+          </div>
+        </Reveal>
+      </div>
     </PageShell>
   );
 }

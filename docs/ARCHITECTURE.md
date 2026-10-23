@@ -492,11 +492,11 @@ apps/api/src/common/
 
        ↓ كلا النمطين يقرآن من ↓
 
-   `messages/{ar|en}/*.json`  (10 files × 2 locales = 468 keys)
+   `messages/{ar|en}/*.json`  (11 files × 2 locales = 646 keys)
        │
        ├─ common · auth · orders · fleet · payments
        ├─ notifications · admin · client · carrier
-       └─ landing
+       └─ landing · settings
 ```
 
 ### 11.2 الـ Stack
@@ -514,8 +514,8 @@ apps/api/src/common/
 ```
 naqla-platform/
 ├── messages/
-│   ├── ar/         # 10 ملفات JSON بالعربية
-│   └── en/         # 10 ملفات JSON بالإنجليزية
+│   ├── ar/         # 11 ملفات JSON بالعربية
+│   └── en/         # 11 ملفات JSON بالإنجليزية
 ├── scripts/
 │   └── check-translations.ts        # CI validator
 │
@@ -595,24 +595,25 @@ Migration: `apps/api/prisma/migrations/20260516120000_add_language_preference/`
 
 | File | Keys | الغرض |
 |---|---|---|
-| `common.json` | 50+ | أزرار، حالات، عملة، تحميل، فاليديشن |
-| `auth.json` | 40+ | تسجيل، دخول، OTP، موافقات قانونية |
-| `orders.json` | 60+ | حالات، حقول، أنواع البضائع، الإجراءات |
-| `fleet.json` | 40+ | أنواع الشاحنات، السائقون، الوثائق |
-| `payments.json` | 25+ | المحفظة، Escrow، أنواع المعاملات |
-| `notifications.json` | 25+ | القنوات، الفئات، الأحداث |
-| `admin.json` | 50+ | Sidebar، KYC، Settings tabs |
-| `client.json` | 30+ | dashboard، addresses، tracking |
-| `carrier.json` | 50+ | فرص، عروض، وثائق، أسطول |
-| `landing.json` | 80+ | hero، features، how-it-works، CTA |
+| `common.json` | 54 | أزرار، حالات، عملة، تحميل، فاليديشن |
+| `auth.json` | 52 | تسجيل، دخول، OTP، موافقات قانونية |
+| `orders.json` | 61 | حالات، حقول، أنواع البضائع، الإجراءات |
+| `fleet.json` | 49 | أنواع الشاحنات، السائقون، الوثائق |
+| `payments.json` | 31 | المحفظة، Escrow، أنواع المعاملات |
+| `notifications.json` | 25 | القنوات، الفئات، الأحداث |
+| `admin.json` | 129 | Sidebar، KYC، Settings tabs |
+| `client.json` | 43 | dashboard، addresses، tracking |
+| `carrier.json` | 47 | فرص، عروض، وثائق، أسطول |
+| `landing.json` | 80 | hero، features، how-it-works، CTA |
+| `settings.json` | 75 | تفضيلات، حساب، فريق، إشعارات |
 
-**المجموع: 468 مفتاحاً متطابقاً بين العربية والإنجليزية.**
+**المجموع: 646 مفتاحاً متطابقاً بين العربية والإنجليزية.**
 
 ### 11.8 CI Validation
 
 ```bash
 pnpm check:i18n
-# → ✅ Translations OK — 10 file(s), 468 key(s), 2 locales.
+# → ✅ Translations OK — 11 file(s), 646 key(s), 2 locales.
 ```
 
 السكربت يتحقق من:

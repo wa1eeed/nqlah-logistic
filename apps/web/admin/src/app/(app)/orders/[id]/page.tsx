@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowRight, Building2, Calendar, CheckCircle2, Clock, MapPin, Package, Phone,
-  ShieldCheck, Snowflake, Truck, User, Wallet, Weight,
+  ArrowRight, Building2, Calendar, CheckCircle2, Clock, MapPin, Navigation, Package, Phone,
+  ShieldCheck, Snowflake, Timer, Truck, User, Wallet, Weight, type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -86,6 +86,7 @@ export default function AdminOrderDetail() {
   return (
     <>
       <PageHeader
+        eyebrow="تفاصيل الطلب"
         title={order.orderNumber}
         subtitle={`${order.originCity} ← ${order.destinationCity} · ${formatDateTime(order.createdAt)}`}
         actions={
@@ -332,9 +333,9 @@ function MapSection({ order }: { order: any }) {
         className="rounded-b-none border-b"
       />
       <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
-        <RouteStat icon="📍" label="المسافة" value={<span className="num">{km.toLocaleString('en-US')} كم</span>} />
-        <RouteStat icon="⏱" label="المدة المتوقعة" value={duration} />
-        <RouteStat icon="🛣" label="الطريق الرئيسي" value={road} />
+        <RouteStat icon={MapPin} label="المسافة" value={<span className="num">{km.toLocaleString('en-US')} كم</span>} />
+        <RouteStat icon={Timer} label="المدة المتوقعة" value={duration} />
+        <RouteStat icon={Navigation} label="الطريق الرئيسي" value={road} />
       </CardContent>
     </Card>
   );
@@ -354,11 +355,11 @@ function AdminShipmentStatus({
   fromCarrierBid: boolean;
 }) {
   const meta: Record<string, { text: string; step: 1 | 2 | 3; tone: 'info' | 'warning' | 'success' }> = {
-    ASSIGNED:   { text: 'الطلب مُسند للناقل — قبل الاستلام',           step: 1, tone: 'info' },
+    ASSIGNED:   { text: 'الطلب مُسند للناقل، قبل الاستلام',            step: 1, tone: 'info' },
     CONFIRMED:  { text: 'الناقل أكّد الموعد',                          step: 1, tone: 'info' },
     IN_TRANSIT: { text: 'الشحنة قيد التوصيل',                            step: 2, tone: 'warning' },
-    DELIVERED:  { text: 'تم التسليم — Escrow في انتظار تأكيد العميل',   step: 3, tone: 'warning' },
-    COMPLETED:  { text: 'مكتمل ✓',                                      step: 3, tone: 'success' },
+    DELIVERED:  { text: 'تم التسليم، بانتظار تأكيد العميل',             step: 3, tone: 'warning' },
+    COMPLETED:  { text: 'مكتمل',                                        step: 3, tone: 'success' },
   };
   const m = meta[order.status] ?? meta.ASSIGNED;
   const stepClass = (s: 1 | 2 | 3) =>
@@ -394,15 +395,15 @@ function AdminShipmentStatus({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="text-xs text-muted-foreground">📅 موعد الاستلام</div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Calendar className="h-3.5 w-3.5" /> موعد الاستلام</div>
             <div className="mt-0.5 font-medium">
               {effectivePickup ? formatDate(effectivePickup, 'EEEE d MMM') : '—'}
             </div>
           </div>
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="text-xs text-muted-foreground">📦 موعد التسليم المتوقع</div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Package className="h-3.5 w-3.5" /> موعد التسليم المتوقع</div>
             <div className="mt-0.5 font-medium">
-              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : 'سيُحدَّد لاحقاً'}
+              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : 'سيُحدَّد لاحقا'}
             </div>
             {fromCarrierBid && (
               <Badge variant="outline" className="mt-1 h-4 text-[10px]">من عرض الناقل</Badge>
@@ -441,7 +442,7 @@ function AdminEscrowSummary({ deliveredAt, total }: { deliveredAt: Date | string
             <Wallet className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-base">Escrow — في انتظار الإفراج</CardTitle>
+            <CardTitle className="text-base">Escrow · في انتظار الإفراج</CardTitle>
             <p className="mt-0.5 text-xs text-muted-foreground">
               الإفراج التلقائي بعد {ESCROW_AUTO_RELEASE_HOURS} ساعة من التسليم، أو فور تأكيد العميل (أيهما أسبق).
             </p>
@@ -490,10 +491,12 @@ function AdminEscrowSummary({ deliveredAt, total }: { deliveredAt: Date | string
   );
 }
 
-function RouteStat({ icon, label, value }: { icon: string; label: string; value: React.ReactNode }) {
+function RouteStat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="text-2xl" aria-hidden>{icon}</span>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]">
+        <Icon className="h-4 w-4" />
+      </span>
       <div className="min-w-0">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="mt-0.5 text-sm font-semibold truncate">{value}</div>

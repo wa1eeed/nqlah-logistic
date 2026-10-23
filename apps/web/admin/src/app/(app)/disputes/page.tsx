@@ -39,12 +39,12 @@ export default function AdminDisputesPage() {
 
   return (
     <>
-      <PageHeader title="النزاعات" subtitle="إدارة النزاعات بين العملاء والناقلين" />
+      <PageHeader eyebrow="إدارة المنصة" title="النزاعات" subtitle="إدارة النزاعات بين العملاء والناقلين ومتابعة حلّها" />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatsCard label="مفتوحة" value={open} hint="تحتاج تعيين" icon={AlertTriangle} tone="danger" />
-        <StatsCard label="قيد المراجعة" value={review} hint="فريق الامتثال" icon={Clock} tone="warning" />
-        <StatsCard label="محلولة" value={resolved} hint="مغلقة بنجاح" icon={CheckCircle} tone="success" />
+        <StatsCard label="مفتوحة" value={open} hint="تحتاج تعيين" icon={AlertTriangle} tone="danger" index={0} />
+        <StatsCard label="قيد المراجعة" value={review} hint="فريق الامتثال" icon={Clock} tone="warning" index={1} />
+        <StatsCard label="محلولة" value={resolved} hint="مغلقة بنجاح" icon={CheckCircle} tone="success" index={2} />
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -72,8 +72,12 @@ export default function AdminDisputesPage() {
               d.status === 'OPEN' ? 'bg-destructive/15 text-destructive' :
               d.status === 'UNDER_REVIEW' ? 'bg-warning/15 text-warning' :
               'bg-success/15 text-success';
+            const accent =
+              d.status === 'OPEN' ? 'border-s-destructive' :
+              d.status === 'UNDER_REVIEW' ? 'border-s-warning' :
+              'border-s-success';
             return (
-              <Card key={d.id} className="hover:border-primary/40 cursor-pointer transition-colors" onClick={() => router.push(`/disputes/${d.id}`)}>
+              <Card key={d.id} className={`border-s-4 ${accent} hover:shadow-[var(--shadow-hover)] hover:-translate-y-0.5 cursor-pointer transition-all`} onClick={() => router.push(`/disputes/${d.id}`)}>
                 <CardContent className="p-6 flex items-start gap-4">
                   <div className={`flex h-12 w-12 items-center justify-center rounded-xl shrink-0 ${tone}`}>
                     <AlertTriangle className="h-5 w-5" />

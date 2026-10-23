@@ -117,7 +117,7 @@ export default function ClientLoginPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">أهلاً بعودتك</CardTitle>
+              <CardTitle className="text-xl">أهلا بعودتك</CardTitle>
               <CardDescription>سجّل دخولك للمتابعة إلى منصة العميل</CardDescription>
             </CardHeader>
             <CardContent>
@@ -169,7 +169,7 @@ export default function ClientLoginPage() {
                 )}
 
                 <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                  {loading ? 'جارٍ الدخول...' : 'تسجيل الدخول'}
+                  {loading ? 'جار الدخول...' : 'تسجيل الدخول'}
                 </Button>
 
                 <div className="relative pt-2">
@@ -181,7 +181,7 @@ export default function ClientLoginPage() {
 
                 <Link href="/register" className="block">
                   <Button type="button" variant="outline" className="w-full" size="lg">
-                    سجّل حسابك مجاناً
+                    سجّل حسابك مجانا
                   </Button>
                 </Link>
               </form>

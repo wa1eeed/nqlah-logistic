@@ -129,7 +129,7 @@ export function CargoTypesPanel({ onPersist }: { onPersist?: (types: CargoTypeDe
                         onChange={(e) => setDraft({ ...draft, hazardous: e.target.checked })}
                         className="h-4 w-4 rounded border-input"
                       />
-                      <TriangleAlert className="h-4 w-4 text-amber-500" />
+                      <TriangleAlert className="h-4 w-4 text-warning" />
                       <span className="text-sm">{t('cargoTypes.fields.hazardous')}</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -193,7 +193,7 @@ export function CargoTypesPanel({ onPersist }: { onPersist?: (types: CargoTypeDe
                         )}
                         {type.hazardous && (
                           <Badge variant="outline" className="gap-1">
-                            <TriangleAlert className="h-3 w-3 text-amber-500" />
+                            <TriangleAlert className="h-3 w-3 text-warning" />
                             {t('cargoTypes.flags.hazardous')}
                           </Badge>
                         )}

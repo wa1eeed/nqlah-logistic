@@ -281,7 +281,7 @@ DELETE /api/companies/:id/members/:userId
 ### ملفات الترجمة
 - مكان الـ master: `messages/{ar|en}/*.json` على الـ root
 - لكل تطبيق نسخة محلية في `apps/web/<app>/messages/` (يقرأها next-intl)
-- 10 ملفات لكل لغة، **468 مفتاحاً** متطابقاً
+- 11 ملفاً لكل لغة، **646 مفتاحاً** متطابقاً
 
 ### الـ Switchers
 | التطبيق | المكان | السلوك |

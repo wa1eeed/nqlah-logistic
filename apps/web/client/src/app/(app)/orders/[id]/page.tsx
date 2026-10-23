@@ -6,7 +6,7 @@ import { fetcher, api } from '@/lib/api';
 import {
   AlertTriangle, ArrowRight, BadgeCheck, Calendar, CheckCircle2, MapPin, MessageSquare,
   Package, Phone, ShieldCheck, Shield, Snowflake, Star, Timer, Truck, User, UserSearch,
-  Weight, X,
+  Weight, X, Navigation,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -193,7 +193,7 @@ export default function ClientOrderDetail() {
                     <span className="text-muted-foreground me-1">ترتيب:</span>
                     {[
                       { k: 'price' as const,  l: 'الأرخص' },
-                      { k: 'rating' as const, l: 'الأعلى تقييماً' },
+                      { k: 'rating' as const, l: 'الأعلى تقييما' },
                       { k: 'days' as const,   l: 'الأسرع' },
                     ].map((s) => (
                       <Button
@@ -288,14 +288,14 @@ export default function ClientOrderDetail() {
                           {/* ETA card — at-a-glance pickup + delivery */}
                           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs rounded-md border bg-muted/20 p-2.5">
                             <div>
-                              <div className="text-muted-foreground">📅 الاستلام</div>
+                              <div className="text-muted-foreground">الاستلام</div>
                               <div className="font-medium">
                                 {formatDate(bid.proposedPickupDate ?? order.pickupDate, 'EEEE d MMM')}
                                 {order.pickupWindow && <span className="ms-1 text-muted-foreground">· {pickupWindowLabel(order.pickupWindow).split(' ')[1]}</span>}
                               </div>
                             </div>
                             <div>
-                              <div className="text-muted-foreground">📦 التسليم المتوقّع</div>
+                              <div className="text-muted-foreground">التسليم المتوقّع</div>
                               <div className="font-medium">
                                 {bid.proposedDeliveryDate
                                   ? formatDate(bid.proposedDeliveryDate, 'EEEE d MMM')
@@ -310,7 +310,7 @@ export default function ClientOrderDetail() {
                                               ),
                                               'EEEE d MMM',
                                             )
-                                          : 'سيُحدَّد لاحقاً'))}
+                                          : 'سيُحدَّد لاحقا'))}
                               </div>
                             </div>
                           </div>
@@ -400,7 +400,7 @@ export default function ClientOrderDetail() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>تأكيد قبول العرض</DialogTitle>
-            <DialogDescription>سيُسند الطلب للناقل ويُحجَز المبلغ في Escrow. تُرفض باقي العروض تلقائياً.</DialogDescription>
+            <DialogDescription>سيُسند الطلب للناقل ويُحجَز المبلغ في Escrow. تُرفض باقي العروض تلقائيا.</DialogDescription>
           </DialogHeader>
           {acceptBid && (() => {
             const carrier = (acceptBid as typeof acceptBid & { carrier?: { id: string; nameAr: string; logo?: string | null; rating?: number; completedTrips?: number } }).carrier
@@ -515,7 +515,7 @@ export default function ClientOrderDetail() {
                 <div className="rounded-lg border bg-card p-3 space-y-2 text-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-xs text-muted-foreground">📅 الاستلام</div>
+                      <div className="text-xs text-muted-foreground">الاستلام</div>
                       <div className="font-medium">{formatDate(detailsBid.proposedPickupDate ?? order.pickupDate, 'EEEE d MMM')}</div>
                     </div>
                     {detailsBid.proposedPickupDate && detailsBid.proposedPickupDate !== order.pickupDate && (
@@ -526,11 +526,11 @@ export default function ClientOrderDetail() {
                   </div>
                   <div className="flex items-start justify-between gap-3 pt-2 border-t">
                     <div>
-                      <div className="text-xs text-muted-foreground">📦 التسليم المتوقّع</div>
+                      <div className="text-xs text-muted-foreground">التسليم المتوقّع</div>
                       <div className="font-medium">
                         {detailsBid.proposedDeliveryDate
                           ? formatDate(detailsBid.proposedDeliveryDate, 'EEEE d MMM')
-                          : (order.deliveryDate ? formatDate(order.deliveryDate, 'EEEE d MMM') : 'سيُحدَّد لاحقاً')}
+                          : (order.deliveryDate ? formatDate(order.deliveryDate, 'EEEE d MMM') : 'سيُحدَّد لاحقا')}
                       </div>
                     </div>
                     {detailsBid.proposedDeliveryDate && order.deliveryDate && detailsBid.proposedDeliveryDate !== order.deliveryDate && (
@@ -621,7 +621,7 @@ export default function ClientOrderDetail() {
             <div className="rounded-lg bg-success/10 border border-success/30 p-3 flex items-start gap-2 text-sm">
               <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
               <p className="text-muted-foreground leading-relaxed">
-                بتأكيدك الاستلام تُقرّ بأن البضاعة وصلت بحالة جيدة. لن يمكنك فتح نزاع بعد التأكيد إلا في حالة عيب خفي يظهر لاحقاً.
+                بتأكيدك الاستلام تُقرّ بأن البضاعة وصلت بحالة جيدة. لن يمكنك فتح نزاع بعد التأكيد إلا في حالة عيب خفي يظهر لاحقا.
               </p>
             </div>
             <p className="text-sm">سيُحوّل للناقل: <Currency amount={(order.agreedPrice ?? 0) * 0.92} /> (بعد خصم 8% عمولة)</p>
@@ -690,7 +690,7 @@ function OrderActionButtons({
 
 const CANCEL_REASONS = [
   'لم أعد بحاجة للنقل',
-  'وجدت بديلاً أرخص',
+  'وجدت بديلا أرخص',
   'تغيّر الموعد أو الوجهة',
   'مشكلة في البضاعة',
   'الناقل لا يستجيب',
@@ -744,7 +744,7 @@ function CancelOrderDialog({
               <div className="flex-1">
                 <p className="font-semibold">رسوم إلغاء 10%</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  تُخصم رسوم تعويضاً للناقل الذي خصّص شاحنته وسائقه لهذا الطلب.
+                  تُخصم رسوم تعويضا للناقل الذي خصّص شاحنته وسائقه لهذا الطلب.
                 </p>
                 <dl className="mt-2 pt-2 border-t border-warning/30 text-xs space-y-1">
                   <div className="flex justify-between">
@@ -844,10 +844,10 @@ function ShipmentProgressCard({ order, bids }: { order: Order; bids: typeof BIDS
   // Map status → (helper text, which of the 3 steps is the current focus).
   const meta: Record<string, { text: string; step: 1 | 2 | 3; tone: 'info' | 'warning' | 'success' }> = {
     ASSIGNED:   { text: 'تم إسناد الطلب — الناقل يحضّر للتحميل',  step: 1, tone: 'info' },
-    CONFIRMED:  { text: 'الناقل أكّد الموعد — جارٍ التحرّك للاستلام', step: 1, tone: 'info' },
+    CONFIRMED:  { text: 'الناقل أكّد الموعد — جار التحرّك للاستلام', step: 1, tone: 'info' },
     IN_TRANSIT: { text: 'الشحنة في الطريق إلى وجهتها',              step: 2, tone: 'warning' },
     DELIVERED:  { text: 'تم التسليم — يرجى تأكيد الاستلام',         step: 3, tone: 'warning' },
-    COMPLETED:  { text: 'الطلب مكتمل ✓',                          step: 3, tone: 'success' },
+    COMPLETED:  { text: 'الطلب مكتمل ',                          step: 3, tone: 'success' },
   };
   const m = meta[order.status] ?? meta.ASSIGNED;
   const stepClass = (s: 1 | 2 | 3) =>
@@ -885,7 +885,7 @@ function ShipmentProgressCard({ order, bids }: { order: Order; bids: typeof BIDS
         {/* Pickup + delivery dates */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="text-xs text-muted-foreground">📅 موعد الاستلام</div>
+            <div className="text-xs text-muted-foreground">موعد الاستلام</div>
             <div className="mt-0.5 font-medium">
               {effectivePickup ? formatDate(effectivePickup, 'EEEE d MMM') : '—'}
             </div>
@@ -894,9 +894,9 @@ function ShipmentProgressCard({ order, bids }: { order: Order; bids: typeof BIDS
             )}
           </div>
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="text-xs text-muted-foreground">📦 موعد التسليم المتوقع</div>
+            <div className="text-xs text-muted-foreground">موعد التسليم المتوقع</div>
             <div className="mt-0.5 font-medium">
-              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : 'سيُحدَّد لاحقاً'}
+              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : 'سيُحدَّد لاحقا'}
             </div>
             {accepted?.proposedDeliveryDate && order.deliveryDate && accepted.proposedDeliveryDate !== order.deliveryDate && (
               <Badge variant="warning" className="mt-1 h-4 text-[10px]">موعد بديل من الناقل</Badge>
@@ -1054,7 +1054,7 @@ function CarrierInfoCard({ order }: { order: Order }) {
                 </dl>
               </>
             ) : (
-              <div className="text-xs text-muted-foreground py-2">سيتم تخصيص الشاحنة قريباً</div>
+              <div className="text-xs text-muted-foreground py-2">سيتم تخصيص الشاحنة قريبا</div>
             )}
           </div>
 
@@ -1087,7 +1087,7 @@ function CarrierInfoCard({ order }: { order: Order }) {
                 </dl>
               </>
             ) : (
-              <div className="text-xs text-muted-foreground py-2">سيتم تخصيص السائق قريباً</div>
+              <div className="text-xs text-muted-foreground py-2">سيتم تخصيص السائق قريبا</div>
             )}
           </div>
         </div>
@@ -1133,18 +1133,20 @@ function MapSection({ order }: { order: any }) {
         className="rounded-b-none border-b"
       />
       <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
-        <RouteStat icon="📍" label="المسافة" value={<span className="num">{km.toLocaleString('en-US')} كم</span>} />
-        <RouteStat icon="⏱" label="المدة المتوقعة" value={duration} />
-        <RouteStat icon="🛣" label="الطريق الرئيسي" value={road} />
+        <RouteStat icon={MapPin} label="المسافة" value={<span className="num">{km.toLocaleString('en-US')} كم</span>} />
+        <RouteStat icon={Timer} label="المدة المتوقعة" value={duration} />
+        <RouteStat icon={Navigation} label="الطريق الرئيسي" value={road} />
       </CardContent>
     </Card>
   );
 }
 
-function RouteStat({ icon, label, value }: { icon: string; label: string; value: React.ReactNode }) {
+function RouteStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="text-2xl" aria-hidden>{icon}</span>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]">
+        <Icon className="h-4 w-4" />
+      </span>
       <div className="min-w-0">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="mt-0.5 text-sm font-semibold truncate">{value}</div>
@@ -1228,7 +1230,7 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <CardDescription className="mb-1">
-                {isClientTurn ? `🟡 سعر مقترَح من ${carrier?.nameAr}` : `بانتظار رد ${carrier?.nameAr}`}
+                {isClientTurn ? `سعر مقترَح من ${carrier?.nameAr}` : `بانتظار رد ${carrier?.nameAr}`}
               </CardDescription>
               {onTable && (
                 <>
@@ -1264,7 +1266,7 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
         <Card>
           <CardHeader>
             <CardTitle>الإجراءات المتاحة</CardTitle>
-            <CardDescription>اختر ما يناسبك — يصل ردّك للناقل فوراً</CardDescription>
+            <CardDescription>اختر ما يناسبك — يصل ردّك للناقل فورا</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <ProposalAction
@@ -1312,7 +1314,7 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
           <CardContent className="pt-6 flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-success">تم الاتفاق ✓</h3>
+              <h3 className="font-semibold text-success">تم الاتفاق </h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 انتقل الطلب لـ ASSIGNED مع <strong>{carrier?.nameAr}</strong>. سيُجهَّز للاستلام في الموعد المتّفق.
               </p>
@@ -1406,7 +1408,7 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
                 value={counterNote}
                 onChange={(e) => setCounterNote(e.target.value)}
                 className="w-full p-3 rounded-md border bg-background text-sm"
-                placeholder="مثال: السعر أعلى من ميزانيتنا، نأمل تخفيضاً"
+                placeholder="مثال: السعر أعلى من ميزانيتنا، نأمل تخفيضا"
               />
             </div>
           </div>

@@ -14,7 +14,7 @@ export default function NotFound() {
           <h1 className="text-6xl font-bold tracking-tight num mb-2">404</h1>
           <h2 className="text-xl font-semibold mb-2">الصفحة غير موجودة</h2>
           <p className="text-muted-foreground mb-6 leading-relaxed">
-            عذراً، الصفحة التي تبحث عنها غير متاحة أو تم نقلها لمكان آخر.
+            عذرا، الصفحة التي تبحث عنها غير متاحة أو تم نقلها لمكان آخر.
           </p>
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <Button asChild>

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Search, Wallet } from 'lucide-react';
+import { ArrowLeft, Search, Wallet, Lock } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,6 +12,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
+import { StatsCard } from '@/components/stats-card';
+import { FadeIn } from '@/components/ui/fade-in';
 import { Currency } from '@/components/currency';
 import { COMPANIES, WALLETS, companyById, formatRelative } from '@naqla/shared-utils';
 
@@ -39,35 +41,28 @@ export default function AdminWalletsPage() {
   return (
     <>
       <PageHeader
+        eyebrow="المالية"
         title="محافظ الشركات"
-        subtitle={`${WALLETS.length} محفظة · إجمالي الأرصدة في النظام`}
+        subtitle="إجمالي الأرصدة والمبالغ المحجوزة عبر محافظ المنصة"
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="pt-6 flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">إجمالي الأرصدة الفعّالة</p>
-              <p className="text-2xl font-bold tracking-tight mt-1.5 num">{totalBalance.toLocaleString('en-US')}<span className="text-base text-muted-foreground ms-1.5">ر.س.</span></p>
-              <p className="text-xs text-muted-foreground mt-1">عبر {WALLETS.length} محفظة</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Wallet className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">محجوز في Escrow</p>
-              <p className="text-2xl font-bold tracking-tight mt-1.5 num">{totalEscrow.toLocaleString('en-US')}<span className="text-base text-muted-foreground ms-1.5">ر.س.</span></p>
-              <p className="text-xs text-muted-foreground mt-1">بانتظار التسليم والإفراج</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-warning/15 text-warning">
-              <Wallet className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          label="إجمالي الأرصدة الفعّالة"
+          value={<Currency amount={totalBalance} />}
+          hint={`عبر ${WALLETS.length} محفظة`}
+          icon={Wallet}
+          tone="default"
+          index={0}
+        />
+        <StatsCard
+          label="محجوز في Escrow"
+          value={<Currency amount={totalEscrow} />}
+          hint="بانتظار التسليم والإفراج"
+          icon={Lock}
+          tone="warning"
+          index={1}
+        />
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -84,6 +79,7 @@ export default function AdminWalletsPage() {
         </div>
       </div>
 
+      <FadeIn delay={0.08}>
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -135,6 +131,7 @@ export default function AdminWalletsPage() {
           </Table>
         </CardContent>
       </Card>
+      </FadeIn>
     </>
   );
 }

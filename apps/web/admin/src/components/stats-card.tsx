@@ -1,5 +1,9 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { motion } from 'framer-motion';
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface StatsCardProps {
@@ -8,30 +12,65 @@ export interface StatsCardProps {
   hint?: string;
   icon: LucideIcon;
   tone?: 'default' | 'success' | 'warning' | 'danger';
+  /** optional trend chip, e.g. { value: '+12%', up: true } */
+  delta?: { value: string; up?: boolean };
+  /** stagger index for entrance animation */
+  index?: number;
 }
 
-const TONES = {
-  default: 'bg-primary/10 text-primary',
-  success: 'bg-success/15 text-success',
-  warning: 'bg-warning/15 text-warning',
-  danger:  'bg-destructive/15 text-destructive',
-} as const;
+const TONE: Record<NonNullable<StatsCardProps['tone']>, string> = {
+  default: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]',
+  success: 'bg-success/12 text-success',
+  warning: 'bg-warning/12 text-warning',
+  danger:  'bg-destructive/12 text-destructive',
+};
 
-export function StatsCard({ label, value, hint, icon: Icon, tone = 'default' }: StatsCardProps) {
+function AnimatedCounter({ value }: { value: number }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(value);
+  ref.current = value;
+  useEffect(() => {
+    if (value === 0) { setCount(0); return; }
+    let start = 0;
+    const step = value / (800 / 16);
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= ref.current) { setCount(ref.current); clearInterval(timer); }
+      else setCount(Math.floor(start));
+    }, 16);
+    return () => clearInterval(timer);
+  }, [value]);
+  return <>{count.toLocaleString('en-US')}</>;
+}
+
+export function StatsCard({ label, value, hint, icon: Icon, tone = 'default', delta, index = 0 }: StatsCardProps) {
+  const isNumeric = typeof value === 'number';
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-1.5 min-w-0">
-            <p className="text-sm font-medium text-muted-foreground">{label}</p>
-            <div className="text-2xl font-bold tracking-tight">{value}</div>
-            {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-          </div>
-          <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl shrink-0', TONES[tone])}>
-            <Icon className="h-5 w-5" />
-          </div>
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut', delay: index * 0.05 }}
+      className="group rounded-2xl border border-border/70 bg-card p-5 shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)]"
+    >
+      <div className="flex items-center justify-between">
+        <div className={cn('grid h-11 w-11 place-items-center rounded-xl', TONE[tone])}>
+          <Icon className="h-5 w-5" />
         </div>
-      </CardContent>
-    </Card>
+        {delta && (
+          <span className={cn(
+            'num inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-bold',
+            delta.up ? 'bg-success/12 text-success' : 'bg-destructive/12 text-destructive',
+          )}>
+            {delta.up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            {delta.value}
+          </span>
+        )}
+      </div>
+      <div className="mt-4 num text-3xl font-extrabold tracking-tight text-foreground">
+        {isNumeric ? <AnimatedCounter value={value as number} /> : value}
+      </div>
+      <p className="mt-1 text-sm font-medium text-muted-foreground">{label}</p>
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground/70">{hint}</p>}
+    </motion.div>
   );
 }

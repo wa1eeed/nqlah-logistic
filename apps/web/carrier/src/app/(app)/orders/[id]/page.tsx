@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowRight, Building2, Calendar, CheckCircle2, Mail, MapPin, Navigation, Package,
-  Phone, Shield, ShieldCheck, Snowflake, Truck, Users, Weight, X,
+  Phone, Shield, ShieldCheck, Snowflake, Timer, Truck, Users, Weight, X,
+  type LucideIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -221,7 +222,7 @@ export default function CarrierOrderDetail() {
                       <Badge variant="warning">محجوز</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      سيُفرَج تلقائياً بعد تأكيد العميل لاستلام الشحنة
+                      سيُفرَج تلقائيا بعد تأكيد العميل لاستلام الشحنة
                     </p>
                     <dl className="mt-3 pt-3 border-t space-y-1 text-xs">
                       <div className="flex justify-between">
@@ -314,8 +315,8 @@ export default function CarrierOrderDetail() {
             <CardHeader><CardTitle>المسار</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
-                <Row label="من" icon={MapPin} value={`${order.originCity} — ${order.originAddress}`} />
-                <Row label="إلى" icon={MapPin} value={`${order.destinationCity} — ${order.destinationAddress}`} />
+                <Row label="من" icon={MapPin} value={`${order.originCity}، ${order.originAddress}`} />
+                <Row label="إلى" icon={MapPin} value={`${order.destinationCity}، ${order.destinationAddress}`} />
                 <Row label="الاستلام" icon={Calendar} value={formatDate(order.pickupDate, 'EEEE d MMM · HH:mm')} />
               </dl>
             </CardContent>
@@ -355,7 +356,7 @@ export default function CarrierOrderDetail() {
                 if (!order) return;
                 try {
                   await api.post(`/orders/${order.id}/confirm`, {});
-                  notify.success('تم تأكيد الاستلام', 'الطلب أصبح مؤكَّداً');
+                  notify.success('تم تأكيد الاستلام', 'الطلب أصبح مؤكَّدا');
                   await refetchOrder();
                   setConfirmPickupOpen(false);
                 } catch (err: unknown) {
@@ -387,7 +388,7 @@ export default function CarrierOrderDetail() {
                 try {
                   await api.post(`/orders/${order.id}/tracking`, {
                     status: 'PICKED_UP',
-                    description: 'بدأت الرحلة — الشحنة في الطريق',
+                    description: 'بدأت الرحلة، الشحنة في الطريق',
                   });
                   notify.success('بدأت الرحلة', 'العميل يتابع الشحنة الآن');
                   await refetchOrder();
@@ -420,7 +421,7 @@ export default function CarrierOrderDetail() {
             <div className="rounded-md bg-success/10 border border-success/30 p-3 text-xs flex items-start gap-2 mt-3">
               <ShieldCheck className="h-4 w-4 text-success shrink-0 mt-0.5" />
               <span className="text-muted-foreground">
-                سيُحوَّل مبلغك تلقائياً من Escrow بعد تأكيد العميل أو خلال 72 ساعة.
+                سيُحوَّل مبلغك تلقائيا من Escrow بعد تأكيد العميل أو خلال 72 ساعة.
               </span>
             </div>
           </div>
@@ -451,7 +452,7 @@ export default function CarrierOrderDetail() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>تحديث موقع الشاحنة</DialogTitle>
-            <DialogDescription>سيُحدَّث الموقع لحظياً للعميل والأدمن.</DialogDescription>
+            <DialogDescription>سيُحدَّث الموقع لحظيا للعميل والأدمن.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-2">
@@ -476,7 +477,7 @@ export default function CarrierOrderDetail() {
                     description: location,
                   });
                   await refetchOrder();
-                  notify.success('تم تحديث الموقع', 'سيظهر للعميل لحظياً');
+                  notify.success('تم تحديث الموقع', 'سيظهر للعميل لحظيا');
                   setUpdateLocOpen(false);
                   setLocation('');
                 } catch (err) {
@@ -500,10 +501,10 @@ export default function CarrierOrderDetail() {
           </DialogHeader>
           <div className="py-2 space-y-2 max-h-64 overflow-y-auto">
             {driversLoading && (
-              <p className="text-sm text-muted-foreground text-center py-4">جارٍ التحميل…</p>
+              <p className="text-sm text-muted-foreground text-center py-4">جار التحميل…</p>
             )}
             {!driversLoading && (!availableDrivers || availableDrivers.length === 0) && (
-              <p className="text-sm text-muted-foreground text-center py-4">لا يوجد سائقون متاحون حالياً.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">لا يوجد سائقون متاحون حاليا.</p>
             )}
             {availableDrivers?.map((driver) => (
               <button
@@ -586,11 +587,11 @@ function ShipmentStatusCard({
   titles: Record<string, string>;
 }) {
   const meta: Record<string, { text: string; step: 1 | 2 | 3; tone: 'info' | 'warning' | 'success' }> = {
-    ASSIGNED:   { text: 'الطلب أُسند إليك — توجّه لنقطة الاستلام في الموعد المتفق', step: 1, tone: 'info' },
-    CONFIRMED:  { text: 'أكّدت الموعد — توجّه إلى نقطة الاستلام',                  step: 1, tone: 'info' },
+    ASSIGNED:   { text: 'الطلب أُسند إليك، توجّه لنقطة الاستلام في الموعد المتفق', step: 1, tone: 'info' },
+    CONFIRMED:  { text: 'أكّدت الموعد، توجّه إلى نقطة الاستلام',                  step: 1, tone: 'info' },
     IN_TRANSIT: { text: 'الشحنة في طريقها إلى الوجهة',                              step: 2, tone: 'warning' },
-    DELIVERED:  { text: 'تم تسليم الشحنة — بانتظار تأكيد العميل',                    step: 3, tone: 'warning' },
-    COMPLETED:  { text: 'مكتمل — تم الإفراج عن المبلغ',                              step: 3, tone: 'success' },
+    DELIVERED:  { text: 'تم تسليم الشحنة، بانتظار تأكيد العميل',                    step: 3, tone: 'warning' },
+    COMPLETED:  { text: 'مكتمل، تم الإفراج عن المبلغ',                              step: 3, tone: 'success' },
   };
   const m = meta[order.status] ?? meta.ASSIGNED;
   const stepClass = (s: 1 | 2 | 3) =>
@@ -626,15 +627,15 @@ function ShipmentStatusCard({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="text-xs text-muted-foreground">📅 موعد الاستلام</div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Calendar className="h-3.5 w-3.5" /> موعد الاستلام</div>
             <div className="mt-0.5 font-medium">
               {effectivePickup ? formatDate(effectivePickup, 'EEEE d MMM') : '—'}
             </div>
           </div>
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="text-xs text-muted-foreground">📦 موعد التسليم</div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Package className="h-3.5 w-3.5" /> موعد التسليم</div>
             <div className="mt-0.5 font-medium">
-              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : 'سيُحدَّد لاحقاً'}
+              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : 'سيُحدَّد لاحقا'}
             </div>
             {fromCarrierBid && (
               <Badge variant="outline" className="mt-1 h-4 text-[10px]">حسب عرضك</Badge>
@@ -700,18 +701,20 @@ function MapSection({ order }: { order: any }) {
         className="rounded-b-none border-b"
       />
       <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
-        <RouteStat icon="📍" label="المسافة" value={<span className="num">{(km ?? 0).toLocaleString('en-US')} كم</span>} />
-        <RouteStat icon="⏱" label="المدة المتوقعة" value={duration} />
-        <RouteStat icon="🛣" label="الطريق" value={road} />
+        <RouteStat icon={MapPin} label="المسافة" value={<span className="num">{(km ?? 0).toLocaleString('en-US')} كم</span>} />
+        <RouteStat icon={Timer} label="المدة المتوقعة" value={duration} />
+        <RouteStat icon={Navigation} label="الطريق" value={road} />
       </CardContent>
     </Card>
   );
 }
 
-function RouteStat({ icon, label, value }: { icon: string; label: string; value: React.ReactNode }) {
+function RouteStat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="text-2xl" aria-hidden>{icon}</span>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]">
+        <Icon className="h-4 w-4" />
+      </span>
       <div className="min-w-0">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="mt-0.5 text-sm font-semibold truncate">{value}</div>

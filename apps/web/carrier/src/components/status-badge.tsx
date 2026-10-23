@@ -41,6 +41,18 @@ const MAP: Record<string, { variant: Variant; label: string }> = {
   ACCEPTED:  { variant: 'success', label: 'مقبول' },
   WITHDRAWN: { variant: 'secondary', label: 'مسحوب' },
   EXPIRED:   { variant: 'destructive', label: 'منتهي' },
+
+  // Fleet — truck statuses
+  AVAILABLE:   { variant: 'success',   label: 'متاحة' },
+  ON_TRIP:     { variant: 'default',   label: 'في رحلة' },
+  MAINTENANCE: { variant: 'warning',   label: 'صيانة' },
+  OFFLINE:     { variant: 'secondary', label: 'غير متصلة' },
+  INACTIVE:    { variant: 'secondary', label: 'غير نشطة' },
+
+  // Fleet — driver statuses
+  ON_DUTY:   { variant: 'success',   label: 'على رأس العمل' },
+  OFF_DUTY:  { variant: 'secondary', label: 'خارج الدوام' },
+  ON_LEAVE:  { variant: 'warning',   label: 'في إجازة' },
 };
 
 const PULSE_STATUSES = new Set(['PUBLISHED', 'IN_TRANSIT', 'BIDDING', 'ASSIGNED']);

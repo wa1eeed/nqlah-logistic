@@ -25,6 +25,7 @@ export default function AdminLegalPage() {
   return (
     <>
       <PageHeader
+        eyebrow="قانوني و SEO"
         title="إدارة الصفحات القانونية"
         subtitle="تحرير ونشر شروط الاستخدام، سياسة الخصوصية، وشروط النقل"
       />
@@ -89,7 +90,7 @@ function DocEditor({ docId }: { docId: LegalDocId }) {
             <div className="mt-2 text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
               <span><History className="h-3 w-3 inline me-1" />آخر نشر: {formatDate(doc.publishedAt, 'd MMMM yyyy · HH:mm')}</span>
               {doc.draftUpdatedAt && <span>• مسودة محفوظة: {formatDate(doc.draftUpdatedAt, 'd MMMM · HH:mm')}</span>}
-              {savedAt && <span className="text-success">• حُفظ الآن ✓</span>}
+              {savedAt && <span className="text-success inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> حُفظ الآن</span>}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -144,7 +145,7 @@ function DocEditor({ docId }: { docId: LegalDocId }) {
             />
             <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
               <Save className="h-3 w-3" />
-              يُحفظ تلقائياً كمسودّة. اضغط "نشر" لتطبيق التغييرات.
+              يُحفظ تلقائيا كمسودّة. اضغط "نشر" لتطبيق التغييرات.
             </div>
           </TabsContent>
 
@@ -160,7 +161,7 @@ function DocEditor({ docId }: { docId: LegalDocId }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>تأكيد النشر</DialogTitle>
-            <DialogDescription>سيتم تحديث الإصدار من v{doc.version} إلى v{bumpVersionLabel(doc.version)} ويُعرض المحتوى الجديد لكل المستخدمين فوراً.</DialogDescription>
+            <DialogDescription>سيتم تحديث الإصدار من v{doc.version} إلى v{bumpVersionLabel(doc.version)} ويُعرض المحتوى الجديد لكل المستخدمين فورا.</DialogDescription>
           </DialogHeader>
           <div className="rounded-md bg-warning/10 border border-warning/30 p-3 flex items-start gap-2 text-sm">
             <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
