@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppTopbar } from '@/components/app-topbar';
-import { DEV_BYPASS_TOKEN } from '@naqla/shared-utils';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -13,8 +12,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const token = localStorage.getItem('naqla_carrier_token');
-    // DEV_BYPASS_TOKEN is treated as "not logged in" — API rejects it anyway.
-    if (!token || token === DEV_BYPASS_TOKEN) {
+    // Demo mode: dev login sets DEV_BYPASS_TOKEN and GETs fall back to mock data
+    // when the backend is offline, so the bypass token is a valid signed-in state.
+    if (!token) {
       try {
         localStorage.removeItem('naqla_carrier_token');
         localStorage.removeItem('naqla_carrier_refresh');
