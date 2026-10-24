@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import {
-  Building2, FileText, Loader2, Mail, MapPin, Phone, Settings, Star, Truck, Upload, Users,
+  Building2, FileText, Loader2, Mail, MapPin, Phone, Star, Truck, Upload, Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/page-header';
-import { LanguageSelector } from '@/components/language-selector';
 import { TeamTab } from '@/components/settings/team-tab';
 import { useAuthStore } from '@/lib/auth-store';
 import { fetcher, api } from '@/lib/api';
@@ -137,7 +136,6 @@ export default function CarrierSettingsPage() {
         <TabsList>
           <TabsTrigger value="company"><Building2 className="h-4 w-4 me-1.5" /> {t('tabs.company')}</TabsTrigger>
           <TabsTrigger value="team"><Users className="h-4 w-4 me-1.5" /> {t('tabs.team')}</TabsTrigger>
-          <TabsTrigger value="settings"><Settings className="h-4 w-4 me-1.5" /> {t('tabs.settings')}</TabsTrigger>
           <TabsTrigger value="kyc"><FileText className="h-4 w-4 me-1.5" /> {t('tabs.kyc')}</TabsTrigger>
         </TabsList>
 
@@ -211,21 +209,6 @@ export default function CarrierSettingsPage() {
             companyKind="CARRIER"
             currentRole="OWNER"
           />
-        </TabsContent>
-
-        {/* ─── Preferences ─── */}
-        <TabsContent value="settings">
-          <div className="max-w-2xl">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('preferences.title')}</CardTitle>
-                <CardDescription className="mt-1">{t('preferences.languageHint')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LanguageSelector />
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
 
         {/* ─── KYC Documents ─── */}

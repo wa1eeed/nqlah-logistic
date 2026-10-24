@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
-import { Building2, FileText, Loader2, Mail, MapPin, Phone, Settings, Upload, Users } from 'lucide-react';
+import { Building2, FileText, Loader2, Mail, MapPin, Phone, Upload, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/page-header';
 import { Currency } from '@/components/currency';
-import { LanguageSelector } from '@/components/language-selector';
 import { TeamTab } from '@/components/settings/team-tab';
 import { useAuthStore } from '@/lib/auth-store';
 import { fetcher, api } from '@/lib/api';
@@ -130,7 +129,6 @@ export default function ClientSettingsPage() {
         <TabsList>
           <TabsTrigger value="company"><Building2 className="h-4 w-4 me-1.5" /> {t('tabs.company')}</TabsTrigger>
           <TabsTrigger value="team"><Users className="h-4 w-4 me-1.5" /> {t('tabs.team')}</TabsTrigger>
-          <TabsTrigger value="settings"><Settings className="h-4 w-4 me-1.5" /> {t('tabs.settings')}</TabsTrigger>
           <TabsTrigger value="kyc"><FileText className="h-4 w-4 me-1.5" /> {t('tabs.kyc')}</TabsTrigger>
         </TabsList>
 
@@ -197,21 +195,6 @@ export default function ClientSettingsPage() {
             companyKind="CLIENT"
             currentRole="OWNER"
           />
-        </TabsContent>
-
-        {/* ─── Preferences ─── */}
-        <TabsContent value="settings">
-          <div className="max-w-2xl">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('preferences.title')}</CardTitle>
-                <CardDescription className="mt-1">{t('preferences.languageHint')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LanguageSelector />
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
 
         {/* ─── KYC Documents ─── */}
