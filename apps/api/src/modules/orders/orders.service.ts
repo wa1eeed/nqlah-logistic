@@ -113,10 +113,28 @@ export class OrdersService {
       throw new BadRequestException({ code: 'NO_COMPANY', message: 'يجب أن تكون ضمن شركة' });
     }
     const orderNumber = `ORD-${new Date().getFullYear()}-${orderNumberGen()}`;
+
+    // Consolidated orders ship `truckCount` legs. Each leg carries a shipment
+    // reference the client either typed (one per leg) or left to the system to
+    // auto-generate as `<orderNumber>-L<n>`. Blank entries fall back to auto.
+    const isConsolidated = dto.orderType === 'CONSOLIDATED';
+    const truckCount = isConsolidated
+      ? Math.min(20, Math.max(2, Math.trunc(dto.truckCount ?? 2)))
+      : null;
+    const legReferences = isConsolidated && truckCount
+      ? Array.from({ length: truckCount }, (_, i) => {
+          const typed = dto.legReferences?.[i]?.trim();
+          return typed && typed.length > 0 ? typed : `${orderNumber}-L${i + 1}`;
+        })
+      : [];
+
     return this.prisma.order.create({
       data: {
         orderNumber,
         clientId: actor.companyId,
+        orderType: isConsolidated ? 'CONSOLIDATED' : 'SINGLE',
+        truckCount,
+        legReferences,
         // v0.6.0 workflow fields — defaults preserve old behavior.
         mode: dto.mode ?? 'OPEN',
         targetCarrierId: dto.mode === 'DIRECT' ? dto.targetCarrierId : null,
@@ -465,19 +483,21 @@ export class OrdersService {
     };
 
     const bySeq = new Map(order.orderTrucks.map((l) => [l.sequence, l]));
+    const refFor = (index: number) => order.legReferences?.[index - 1] || undefined;
     const legs = Array.from({ length: count }, (_, i) => {
       const index = i + 1;
       const row = bySeq.get(index);
       return row
         ? {
             index,
+            reference: refFor(index),
             truckId: row.truckId,
             driverId: row.driverId ?? undefined,
             status: row.status,
             plateNumber: row.truck?.plateNumber,
             driverName: driverName(row.driverId),
           }
-        : { index, status: 'PENDING' };
+        : { index, reference: refFor(index), status: 'PENDING' };
     });
     return { orderId: order.id, orderNumber: order.orderNumber, truckCount: count, status: order.status, legs };
   }

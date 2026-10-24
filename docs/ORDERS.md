@@ -97,3 +97,13 @@ Consolidated orders and their legs are persisted by the API (see
 - The carrier `ConsolidatedPanel` and the client/admin **read-only** breakdowns
   all read `/orders/:id/legs` (mock `order.legs` fallback kept); distribute/clear
   persist to the DB.
+
+## Per-leg shipment references (v0.9.35)
+
+- `Order.legReferences String[]` holds one shipment reference per leg, ordered
+  by sequence (`legReferences[index-1]`). Set at creation: the client either
+  types one per shipment or lets the system auto-generate `<orderNumber>-L<n>`
+  (blank manual entries fall back to auto).
+- `CreateOrderDto` now accepts `orderType`, `truckCount`, and `legReferences`;
+  `create` persists them. `GET /orders/:id/legs` returns `reference` per leg,
+  shown in the consolidated table on the client + admin order-detail pages.

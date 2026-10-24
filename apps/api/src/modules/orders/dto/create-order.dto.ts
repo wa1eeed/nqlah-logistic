@@ -22,6 +22,7 @@ const TRUCKS = [
 const MODES = ['OPEN', 'DIRECT'] as const;
 const TRIP_TYPES = ['SAME_CITY', 'INTER_CITY'] as const;
 const PICKUP_WINDOWS = ['MORNING', 'EVENING', 'ALL_DAY'] as const;
+const ORDER_TYPES = ['SINGLE', 'CONSOLIDATED'] as const;
 
 export class CreateOrderDto {
   @IsEnum(CARGO) cargoType!: (typeof CARGO)[number];
@@ -68,6 +69,14 @@ export class CreateOrderDto {
   @IsOptional() @IsString() poNumber?: string;
   @IsOptional() @IsString() notes?: string;
   @IsOptional() @IsArray() documents?: string[];
+
+  /// SINGLE (default) or CONSOLIDATED (ships `truckCount` trucks along the route).
+  @IsOptional() @IsEnum(ORDER_TYPES) orderType?: (typeof ORDER_TYPES)[number];
+  /// Consolidated only — number of trucks/legs (2..20).
+  @IsOptional() @IsInt() @Min(2) truckCount?: number;
+  /// Consolidated only — a shipment reference per leg, in leg order. Omit (or
+  /// send an empty array) to have the server auto-generate `<orderNumber>-L<n>`.
+  @IsOptional() @IsArray() @IsString({ each: true }) legReferences?: string[];
 }
 
 export class UpdateOrderDto {
