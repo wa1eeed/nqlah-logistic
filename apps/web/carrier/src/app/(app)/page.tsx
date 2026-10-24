@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/page-header';
 import { StatsCard } from '@/components/stats-card';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
+import { Skeleton, SkeletonStatCards, SkeletonRows } from '@/components/ui/skeleton';
 import { fetcher } from '@/lib/api';
 import {
   CURRENT_CARRIER_ID, DRIVERS, TRUCKS, companyById, formatDate, formatRelative,
@@ -42,7 +43,7 @@ const item      = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 export default function CarrierDashboard() {
   const me = companyById(CURRENT_CARRIER_ID)!;
 
-  const { data: oppsData }   = useSWR<unknown>('/orders', fetcher);
+  const { data: oppsData, isLoading }   = useSWR<unknown>('/orders', fetcher);
   const { data: mineData }   = useSWR<unknown>('/orders?mine=true', fetcher);
   const { data: trucksData } = useSWR<unknown>('/fleet/trucks', fetcher);
   const { data: paysData }   = useSWR<unknown>('/payments', fetcher);
@@ -90,6 +91,18 @@ export default function CarrierDashboard() {
         time:  formatRelative(o.createdAt),
       }));
   }, [myOrders]);
+
+  // First load with nothing from the API yet: show the dashboard shape as a
+  // skeleton instead of flashing fallback data that then jumps to real values.
+  if (isLoading && !oppsData) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-9 w-56" />
+        <SkeletonStatCards count={4} />
+        <SkeletonRows rows={6} />
+      </div>
+    );
+  }
 
   return (
     <motion.div className="space-y-6" variants={container} initial="hidden" animate="show">

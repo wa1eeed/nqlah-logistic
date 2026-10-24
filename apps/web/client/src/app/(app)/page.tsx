@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { StatsCard } from '@/components/stats-card';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
+import { Skeleton, SkeletonStatCards, SkeletonRows } from '@/components/ui/skeleton';
 import { fetcher } from '@/lib/api';
 import {
   CURRENT_CLIENT_ID, formatRelative, invoicesForClient, ordersForClient,
@@ -40,7 +41,7 @@ const container = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } 
 const item      = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 
 export default function ClientDashboard() {
-  const { data: ordersData } = useSWR<unknown>('/orders', fetcher);
+  const { data: ordersData, isLoading } = useSWR<unknown>('/orders', fetcher);
   const all: Order[] = useMemo(() => {
     const normalized = normalizeOrderList(ordersData);
     return normalized.length > 0 ? normalized : ordersForClient(CURRENT_CLIENT_ID);
@@ -73,6 +74,18 @@ export default function ClientDashboard() {
         time:  formatRelative(o.createdAt),
       }));
   }, [all]);
+
+  // First load with nothing from the API yet: show the dashboard shape as a
+  // skeleton instead of flashing fallback data that then jumps to real values.
+  if (isLoading && !ordersData) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-9 w-56" />
+        <SkeletonStatCards count={4} />
+        <SkeletonRows rows={6} />
+      </div>
+    );
+  }
 
   return (
     <motion.div className="space-y-6" variants={container} initial="hidden" animate="show">

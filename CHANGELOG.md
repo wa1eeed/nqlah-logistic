@@ -6,6 +6,22 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.34 — Stop the empty-page flash (2026-10-24)
+
+> Pre-deploy fix #7: pages briefly rendered empty before data appeared.
+
+- **Global SWR config (all three portals):** a new `SWRProvider` wraps each
+  app with `keepPreviousData` (the page keeps the last data on navigation /
+  filter / refocus instead of blanking to `undefined`), plus
+  `focusThrottleInterval` + `dedupingInterval` to collapse the refocus
+  revalidation burst.
+- **Faster offline fallback:** the axios client now has a 20s `timeout`, so a
+  hung/unreachable request falls to the mock GET fallback instead of hanging.
+- **Skeletons on the dashboards:** admin/client/carrier dashboards render a
+  shaped skeleton on first load (shared `components/ui/skeleton.tsx`) instead
+  of flashing fallback numbers that then jump to the real values. The admin
+  dashboard's previously-dead `isLoading` is now used.
+
 ### v0.9.33 — Admin companies wired to the API (2026-10-24)
 
 > Pre-deploy fixes #4 + #5: the admin "Carriers & Clients" pages were still
