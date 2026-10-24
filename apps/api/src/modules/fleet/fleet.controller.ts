@@ -1,9 +1,12 @@
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { FleetService } from './fleet.service';
-import { CreateDriverDto, CreateTruckDto, InviteDriverDto, LocationDto, UpdateTruckDto } from './dto/fleet.dto';
+import {
+  AssignDriverDto, CreateDriverDto, CreateTruckDto, DriverStatusDto, InviteDriverDto,
+  LocationDto, TruckStatusDto, UpdateTruckDto,
+} from './dto/fleet.dto';
 
 @ApiTags('fleet')
 @ApiBearerAuth()
@@ -26,6 +29,18 @@ export class FleetController {
   @Put('trucks/:id')
   updateTruck(@Param('id') id: string, @Body() dto: UpdateTruckDto, @CurrentUser() actor: AuthUser) {
     return this.fleet.updateTruck(id, dto, actor);
+  }
+  @Post('trucks/:id/assign')
+  assignDriver(@Param('id') id: string, @Body() dto: AssignDriverDto, @CurrentUser() actor: AuthUser) {
+    return this.fleet.assignDriverToTruck(id, dto.driverId, actor);
+  }
+  @Post('trucks/:id/unassign')
+  unassignTruck(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
+    return this.fleet.unassignTruck(id, actor);
+  }
+  @Patch('trucks/:id/status')
+  setTruckStatus(@Param('id') id: string, @Body() dto: TruckStatusDto, @CurrentUser() actor: AuthUser) {
+    return this.fleet.setTruckStatus(id, dto.status, actor);
   }
 
   @Get('drivers')
@@ -52,5 +67,9 @@ export class FleetController {
   @Post('drivers/:id/location')
   updateLocation(@Param('id') id: string, @Body() dto: LocationDto, @CurrentUser() actor: AuthUser) {
     return this.fleet.updateDriverLocation(id, dto, actor);
+  }
+  @Patch('drivers/:id/status')
+  setDriverStatus(@Param('id') id: string, @Body() dto: DriverStatusDto, @CurrentUser() actor: AuthUser) {
+    return this.fleet.setDriverStatus(id, dto.status, actor);
   }
 }

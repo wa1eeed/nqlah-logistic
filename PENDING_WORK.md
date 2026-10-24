@@ -42,8 +42,9 @@ real NestJS + Prisma API (live-verified against a local backend, see
 
 - [x] **Stage 1 — Fleet + ownership** (v0.9.23): `ownership` persisted on
   Truck/DriverProfile; carrier fleet lists + detail pages are API-backed.
-- [ ] **Stage 2 — Fleet assignment**: persist truck↔driver link + driver status
-  (assign/unassign/status endpoints); fleet-store → API.
+- [x] **Stage 2 — Fleet assignment** (v0.9.24): truck↔driver link + truck/driver
+  status persisted (assign/unassign/status endpoints with sync); carrier detail
+  pages wired to the API.
 - [ ] **Stage 3 — Freelancer invoices**: `FreelancerInvoice` model + endpoints;
   freelancer-store + profitability page → API; issue invoice on assignment.
 - [ ] **Stage 4 — Consolidated legs + status rollup**: per-leg status on
