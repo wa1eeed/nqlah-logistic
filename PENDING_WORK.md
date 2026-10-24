@@ -38,9 +38,23 @@
   assignment (single + consolidated legs), and a carrier **profitability** page
   (revenue vs freelancer cost, mark paid/reopen). → `docs/FREELANCERS.md`
 
-**Cross-cutting backend wiring (future):** persist fleet / legs / policies /
-invoices server-side; roll leg statuses up to the parent order; resolve client
-policy per request; replace the mock tracking socket with a real WebSocket.
+**Backend wiring — switching the demo features from localStorage/mock to the
+real NestJS + Prisma API (live-verified against a local backend, see
+`docs/LOCAL_BACKEND.md`):**
+
+- [x] **Stage 1 — Fleet + ownership** (v0.9.23): `ownership` persisted on
+  Truck/DriverProfile; carrier fleet lists + detail pages are API-backed.
+- [ ] **Stage 2 — Fleet assignment**: persist truck↔driver link + driver status
+  (assign/unassign/status endpoints); fleet-store → API.
+- [ ] **Stage 3 — Freelancer invoices**: `FreelancerInvoice` model + endpoints;
+  freelancer-store + profitability page → API; issue invoice on assignment.
+- [ ] **Stage 4 — Consolidated legs + status rollup**: per-leg status on
+  OrderTruck, distribution endpoints, roll leg statuses up to the parent order.
+- [ ] **Stage 5 — Client policies**: Policy/PolicyGroup models + guarded
+  endpoints; resolve per request; admin + client form → API.
+- [ ] **Stage 6 — Real WebSocket tracking**: emit from the (existing but unused)
+  RealtimeGateway on location/status writes; client `socket.io-client` replaces
+  the mock `tracking-socket.ts`.
 
 ---
 

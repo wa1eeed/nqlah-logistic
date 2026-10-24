@@ -28,6 +28,8 @@ polish pass before release.
 
 ## Operations
 
+- [`LOCAL_BACKEND.md`](LOCAL_BACKEND.md) — run the API + Postgres + Redis
+  locally (needed to wire features to the real backend and verify them).
 - [`DEPLOYMENT.md`](DEPLOYMENT.md) — deployment.
 - [`MONITORING.md`](MONITORING.md) — monitoring.
 - [`SECURITY.md`](SECURITY.md) — security.

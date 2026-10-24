@@ -8,9 +8,13 @@ const TRUCKS = [
   'CONTAINER_20','CONTAINER_40','CONTAINER_TRAILER','TANKER','CURTAINSIDER','BOX_TRUCK','LOWBED',
 ] as const;
 
+// Must stay in sync with Prisma enum `FleetOwnership`.
+const OWNERSHIP = ['OWNED', 'FREELANCER'] as const;
+
 export class CreateTruckDto {
   @IsString() plateNumber!: string;
   @IsEnum(TRUCKS) type!: (typeof TRUCKS)[number];
+  @IsOptional() @IsEnum(OWNERSHIP) ownership?: (typeof OWNERSHIP)[number];
   @IsNumber() capacity!: number;
   @IsOptional() @IsNumber() length?: number;
   @IsOptional() @IsNumber() width?: number;
@@ -42,6 +46,7 @@ export class InviteDriverDto {
   @IsString() licenseNumber!: string;
   @IsDateString() licenseExpiry!: string;
   @IsString() licenseType!: string;
+  @IsOptional() @IsEnum(OWNERSHIP) ownership?: (typeof OWNERSHIP)[number];
   @IsOptional() @IsString() photo?: string;
 }
 

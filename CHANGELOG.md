@@ -6,6 +6,25 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.23 — Backend wiring (1): local backend + fleet ownership end-to-end (2026-10-24)
+
+> See `docs/LOCAL_BACKEND.md` and `docs/FREELANCERS.md`. First stage of wiring
+> the recent demo features to the real NestJS + Prisma API.
+
+- **Local backend bring-up** documented and verified: Postgres + Redis, repo
+  `.env`, Prisma migrate + seed, API on `http://localhost:4000/api`. The seed now
+  ships a realistic carrier fleet (5 trucks / 5 drivers, Saudi-format plates, an
+  owned-vs-freelancer mix, drivers linked to trucks).
+- **Fleet ownership persisted server-side**: new Prisma enum `FleetOwnership`
+  (`OWNED` | `FREELANCER`) + `ownership` on `Truck` and `DriverProfile`
+  (migration `add_fleet_ownership`); accepted by the create-truck and
+  invite-driver DTOs/services.
+- **Carrier fleet pages are now API-backed** (trucks & drivers lists + detail
+  pages) via SWR, reading real rows and their `ownership`, with a mock fallback
+  when the API is down. New adapters `normalizeDriver`/`normalizeDriverList` and
+  `ownership`/`code`/`currentDriverId` mapping in `normalizeTruck`.
+- The new-truck form's `ownership` choice now round-trips to the DB.
+
 ### v0.9.22 — Provider dispatcher: freelancers + per-trip invoices + profitability (2026-10-24)
 
 > See `docs/FREELANCERS.md`.

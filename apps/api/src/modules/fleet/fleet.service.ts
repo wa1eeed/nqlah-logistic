@@ -102,6 +102,7 @@ export class FleetService {
           licenseNumber: dto.licenseNumber,
           licenseExpiry: new Date(dto.licenseExpiry),
           licenseType: dto.licenseType,
+          ownership: dto.ownership ?? 'OWNED',
           photo: dto.photo,
           status: 'AVAILABLE',
         },

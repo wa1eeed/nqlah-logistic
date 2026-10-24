@@ -170,6 +170,14 @@ enum DriverStatus {
   OFF_DUTY
 }
 
+/// Whether a truck/driver is part of the provider's OWN fleet or a FREELANCER
+/// contracted and paid per delivery. Freelancer trips are billed via
+/// per-trip invoices (see provider profitability).
+enum FleetOwnership {
+  OWNED
+  FREELANCER
+}
+
 // ─── MODELS ───────────────────────────────────────────────────────
 
 model User {
@@ -298,6 +306,8 @@ model Truck {
   hasGPS           Boolean   @default(false)
   isActive         Boolean   @default(true)
 
+  ownership        FleetOwnership @default(OWNED)
+
   photos           String[]
   documents        String[]
 
@@ -324,7 +334,8 @@ model DriverProfile {
   licenseExpiry   DateTime
   licenseType     String
 
-  status          DriverStatus @default(OFF_DUTY)
+  status          DriverStatus   @default(OFF_DUTY)
+  ownership       FleetOwnership @default(OWNED)
   currentLat      Float?
   currentLng      Float?
   lastLocationAt  DateTime?

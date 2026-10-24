@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, Hash, Loader2, Plus, Truck as TruckIcon, Users } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -19,9 +20,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageHeader } from '@/components/page-header';
 import { DriverStatusBadge, ExpiryBadge, OwnershipBadge, expiryState } from '@/components/fleet-bits';
 import { useFleetStore } from '@/stores/fleet-store';
-import { api } from '@/lib/api';
+import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
-import { DRIVERS, TRUCKS, type DriverStatus } from '@naqla/shared-utils';
+import {
+  DRIVERS, TRUCKS, normalizeDriverList, normalizeTruckList,
+  type Driver, type DriverStatus, type Truck,
+} from '@naqla/shared-utils';
 
 const LICENSE_CLASSES = ['حمولة ثقيلة', 'حمولة استثنائية', 'تركيب وقاطرة'] as const;
 
@@ -31,14 +35,31 @@ export default function CarrierFleetDrivers() {
   const assignMap = useFleetStore((s) => s.assign);
   const driverStatusMap = useFleetStore((s) => s.driverStatus);
 
-  const all = useMemo(() => DRIVERS.map((d) => {
-    const truckId = Object.keys(assignMap).find((tid) => assignMap[tid] === d.id) ?? null;
+  // Live fleet from the API (mock fallback when the backend is down).
+  const { data: driversRaw } = useSWR<unknown>('/fleet/drivers', fetcher);
+  const { data: trucksRaw } = useSWR<unknown>('/fleet/trucks', fetcher);
+  const srcDrivers = useMemo<Driver[]>(() => {
+    const apiRows = normalizeDriverList<Driver>(driversRaw);
+    return apiRows.length ? apiRows : DRIVERS;
+  }, [driversRaw]);
+  const srcTrucks = useMemo<Truck[]>(() => {
+    const apiRows = normalizeTruckList<Truck>(trucksRaw);
+    return apiRows.length ? apiRows : TRUCKS;
+  }, [trucksRaw]);
+
+  const all = useMemo(() => srcDrivers.map((d) => {
+    // Truck link: the session's assign overlay first, else the truck whose
+    // (API) currentDriverId points at this driver.
+    const overlaidTruckId = Object.keys(assignMap).find((tid) => assignMap[tid] === d.id) ?? null;
+    const truck = srcTrucks.find((t) => t.id === overlaidTruckId)
+      ?? srcTrucks.find((t) => t.assignedDriverId === d.id)
+      ?? null;
     return {
       ...d,
       status: (driverStatusMap[d.id] ?? d.status) as DriverStatus,
-      truck: TRUCKS.find((t) => t.id === truckId) ?? null,
+      truck,
     };
-  }), [assignMap, driverStatusMap]);
+  }), [srcDrivers, srcTrucks, assignMap, driverStatusMap]);
 
   const counts = useMemo(() => ({
     all: all.length,
