@@ -55,3 +55,6 @@ temp/
 # Design-skill scratch / reference assets (not app source)
 .taste-skill/
 /assets/
+
+# Redis snapshot (created when running redis-server from the repo root)
+dump.rdb
