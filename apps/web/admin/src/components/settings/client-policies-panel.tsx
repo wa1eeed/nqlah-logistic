@@ -32,18 +32,22 @@ const POLICY_KEYS: { key: keyof ClientPolicy; label: string; hint: string }[] = 
 export function ClientPoliciesPanel() {
   // Live from the API (admin changes are shared server-side with clients); the
   // Zustand store is a fallback for offline/design runs.
-  const { data: groupsData } = useSWR<unknown>('/policies/groups', fetcher);
+  const { data: groupsData, error: groupsError } = useSWR<unknown>('/policies/groups', fetcher);
   const { data: clientsData } = useSWR<ApiCompany[]>('/companies?type=CLIENT&limit=200', fetcher);
   const { data: carriersData } = useSWR<ApiCompany[]>('/companies?type=CARRIER&status=ACTIVE&limit=200', fetcher);
   const { mutate } = useSWRConfig();
   const apiMode = Array.isArray(groupsData);
+  // Distinguish loading from a real failure so we don't flash the local fallback
+  // groups while the request is in flight.
+  const loading = groupsData === undefined && !groupsError;
+  const offline = !apiMode && !!groupsError;
 
   const storeGroups = usePolicyStore((s) => s.groups);
   const addGroup = usePolicyStore((s) => s.addGroup);
   const removeGroup = usePolicyStore((s) => s.removeGroup);
   const renameGroup = usePolicyStore((s) => s.renameGroup);
 
-  const groups: PolicyGroup[] = apiMode ? (groupsData as PolicyGroup[]) : storeGroups;
+  const groups: PolicyGroup[] = apiMode ? (groupsData as PolicyGroup[]) : (offline ? storeGroups : []);
 
   const clients: Co[] = Array.isArray(clientsData)
     ? clientsData.map((c) => ({ id: c.id, nameAr: c.nameAr }))
@@ -112,6 +116,17 @@ export function ClientPoliciesPanel() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {loading ? (
+          <div className="space-y-4">
+            {[0, 1].map((i) => <div key={i} className="h-40 rounded-lg border bg-muted/20 animate-pulse" />)}
+          </div>
+        ) : (
+          <>
+        {groups.length === 0 && (
+          <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+            لا توجد قروبات تخصيص بعد. أنشئ قروبا لتخصيص خيارات مجموعة من العملاء.
+          </div>
+        )}
         {groups.map((g) => (
           <GroupCard
             key={g.id}
@@ -139,6 +154,8 @@ export function ClientPoliciesPanel() {
             {defaultClients.length === 0 && <span className="text-xs text-muted-foreground">كل العملاء مخصّصون.</span>}
           </div>
         </div>
+          </>
+        )}
       </CardContent>
 
       {/* Create / rename dialog */}

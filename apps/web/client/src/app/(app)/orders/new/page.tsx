@@ -189,6 +189,11 @@ export default function NewOrderWizard() {
     [carriersRaw, carrierSearch],
   );
 
+  // Resolve a carrier's name from the live list first (ids are API cuids now),
+  // then the mock catalog, so the forced-carrier notice shows the real name.
+  const carrierName = (id?: string | null) =>
+    (carriersRaw ?? []).find((c) => c.id === id)?.nameAr ?? companyById(id)?.nameAr ?? 'المزوّد المحدّد';
+
   // Resolve catalogs: DB data takes priority, fall back to static constants
   const activeCities: CatalogCity[] = catalog?.cities
     ? catalog.cities.filter((c) => c.active !== false)
@@ -559,7 +564,7 @@ export default function NewOrderWizard() {
               {policy.forcedCarrierId && (
                 <div className="rounded-lg border bg-[hsl(var(--mint))]/[0.06] p-3 text-sm">
                   <span className="font-semibold">إسناد مباشر مُلزَم:</span>{' '}
-                  وفق إعدادات حسابك، تُسنَد طلباتك مباشرة إلى {companyById(policy.forcedCarrierId)?.nameAr ?? 'المزوّد المحدّد'}.
+                  وفق إعدادات حسابك، تُسنَد طلباتك مباشرة إلى {carrierName(policy.forcedCarrierId)}.
                 </div>
               )}
 
