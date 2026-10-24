@@ -470,6 +470,78 @@ export function paymentsForClient(clientId: string): Payment[] {
 export const CURRENT_CLIENT_ID = 'CL-1001';
 export const CURRENT_CARRIER_ID = 'CR-2001';
 
+// ─── Client assignment & pricing policy (admin-configurable) ─────────
+//
+// Admins tailor how the platform behaves per client (or per group of clients):
+// which distribution modes, pricing modes, and payment methods are available.
+// A client with no group falls back to DEFAULT_CLIENT_POLICY.
+
+export interface ClientPolicy {
+  /** Publish the order to the open market. */
+  allowMarket: boolean;
+  /** Direct-assign the order to a chosen carrier. */
+  allowDirect: boolean;
+  /** When set, direct-assign is locked to this carrier (market is implicitly off). */
+  forcedCarrierId?: string;
+  /** Pricing: carriers bid. */
+  allowMarketPricing: boolean;
+  /** Pricing: client sets a fixed price. */
+  allowFixedPricing: boolean;
+  /** Payment: held in Escrow (prepaid). */
+  allowPrepaid: boolean;
+  /** Payment: cash/transfer on delivery. */
+  allowCOD: boolean;
+}
+
+export const DEFAULT_CLIENT_POLICY: ClientPolicy = {
+  allowMarket: true,
+  allowDirect: true,
+  allowMarketPricing: true,
+  allowFixedPricing: true,
+  allowPrepaid: true,
+  allowCOD: true,
+};
+
+export interface PolicyGroup {
+  id: string;
+  name: string;
+  description?: string;
+  policy: ClientPolicy;
+  /** Client ids governed by this group. */
+  clientIds: string[];
+}
+
+export const POLICY_GROUPS_SEED: PolicyGroup[] = [
+  {
+    id: 'pg-contracted',
+    name: 'عملاء متعاقدون — إسناد مباشر',
+    description: 'يُسنَد الطلب مباشرة لمزوّد متعاقد، بسعر ثابت ودفع مسبق، دون نشر في السوق.',
+    policy: {
+      allowMarket: false, allowDirect: true, forcedCarrierId: 'CR-2001',
+      allowMarketPricing: false, allowFixedPricing: true,
+      allowPrepaid: true, allowCOD: false,
+    },
+    clientIds: ['CL-1003', 'CL-1006'],
+  },
+  {
+    id: 'pg-market-only',
+    name: 'عملاء السوق المفتوح',
+    description: 'النشر في السوق فقط مع استقبال عروض الناقلين؛ دون دفع عند التسليم.',
+    policy: {
+      allowMarket: true, allowDirect: false,
+      allowMarketPricing: true, allowFixedPricing: true,
+      allowPrepaid: true, allowCOD: false,
+    },
+    clientIds: ['CL-1002'],
+  },
+];
+
+/** The effective policy for a client: its group's policy, else the default. */
+export function policyForClient(clientId: string, groups: PolicyGroup[] = POLICY_GROUPS_SEED): ClientPolicy {
+  const g = groups.find((x) => x.clientIds.includes(clientId));
+  return g ? g.policy : DEFAULT_CLIENT_POLICY;
+}
+
 // ─── Saudi city coordinates (for Leaflet maps) ───────────────────────
 
 export const SAUDI_COORDS: Record<string, { lat: number; lng: number }> = {

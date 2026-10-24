@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { Currency } from '@/components/currency';
 import { playSoundIfEnabled } from '@/lib/sound';
-import { DEFAULT_CITIES } from '@naqla/shared-utils';
+import { DEFAULT_CITIES, CURRENT_CLIENT_ID, companyById, policyForClient } from '@naqla/shared-utils';
 import { MapAddressPicker, type MapPoint } from '@/components/map-address-picker';
 import { api, fetcher } from '@/lib/api';
 
@@ -120,6 +120,8 @@ type ApiCarrier = { id: string; nameAr: string; nameEn: string | null; city: str
 
 export default function NewOrderWizard() {
   const router = useRouter();
+  // Admin-configurable policy for this client (gates the available options).
+  const policy = policyForClient(CURRENT_CLIENT_ID);
   const { data: catalog } = useSWR<CatalogData>('/settings/catalogs', fetcher);
   const { data: carriersRaw, isLoading: carriersLoading } =
     useSWR<ApiCarrier[]>('/companies?type=CARRIER&status=ACTIVE&limit=100', fetcher);
@@ -140,11 +142,12 @@ export default function NewOrderWizard() {
     destinationPin: null,
     pickupDate: '',
     pickupWindow: 'ALL_DAY',
-    mode: null,
-    targetCarrierId: null,
-    pricingMode: 'MARKET',
+    // Initial selections honour the client's policy (pre-pick when only one option).
+    mode: policy.forcedCarrierId ? 'DIRECT' : (policy.allowMarket ? null : (policy.allowDirect ? 'DIRECT' : null)),
+    targetCarrierId: policy.forcedCarrierId ?? null,
+    pricingMode: policy.allowMarketPricing ? 'MARKET' : 'FIXED',
     fixedPrice: null,
-    paymentMethod: 'PREPAID',
+    paymentMethod: policy.allowPrepaid ? 'PREPAID' : 'COD',
     truckType: 'LARGE_FLATBED',
     requiresInsurance: false,
     requiresRefrigeration: false,
@@ -507,24 +510,35 @@ export default function NewOrderWizard() {
           {step === 3 && (
             <Step title="كيف تريد إرسال الطلب؟" description="انشره لكل الناقلين أو أرسله مباشرة لناقل محدد">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ChoiceCard
-                  selected={form.mode === 'OPEN'}
-                  onClick={() => { set('mode', 'OPEN'); set('targetCarrierId', null); }}
-                  icon={<Radio className="h-6 w-6" />}
-                  title="نشر للجميع"
-                  description="يظهر طلبك لكل الناقلين المؤهلين وتستقبل عروضا متعددة للمقارنة."
-                  badge="موصى به"
-                />
-                <ChoiceCard
-                  selected={form.mode === 'DIRECT'}
-                  onClick={() => set('mode', 'DIRECT')}
-                  icon={<UserSearch className="h-6 w-6" />}
-                  title="إرسال مباشر"
-                  description="اختر ناقلا معتمدا وأرسل له الطلب بشكل مباشر."
-                />
+                {policy.allowMarket && (
+                  <ChoiceCard
+                    selected={form.mode === 'OPEN'}
+                    onClick={() => { set('mode', 'OPEN'); set('targetCarrierId', null); }}
+                    icon={<Radio className="h-6 w-6" />}
+                    title="نشر للجميع"
+                    description="يظهر طلبك لكل الناقلين المؤهلين وتستقبل عروضا متعددة للمقارنة."
+                    badge="موصى به"
+                  />
+                )}
+                {policy.allowDirect && (
+                  <ChoiceCard
+                    selected={form.mode === 'DIRECT'}
+                    onClick={() => set('mode', 'DIRECT')}
+                    icon={<UserSearch className="h-6 w-6" />}
+                    title="إرسال مباشر"
+                    description="اختر ناقلا معتمدا وأرسل له الطلب بشكل مباشر."
+                  />
+                )}
               </div>
 
-              {form.mode === 'DIRECT' && (
+              {policy.forcedCarrierId && (
+                <div className="rounded-lg border bg-[hsl(var(--mint))]/[0.06] p-3 text-sm">
+                  <span className="font-semibold">إسناد مباشر مُلزَم:</span>{' '}
+                  وفق إعدادات حسابك، تُسنَد طلباتك مباشرة إلى {companyById(policy.forcedCarrierId)?.nameAr ?? 'المزوّد المحدّد'}.
+                </div>
+              )}
+
+              {form.mode === 'DIRECT' && !policy.forcedCarrierId && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label>اختر ناقلا معتمدا</Label>
@@ -587,20 +601,24 @@ export default function NewOrderWizard() {
               <div className="rounded-lg border p-4 space-y-3">
                 <Label>التسعير</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <ChoiceCard
-                    selected={form.pricingMode === 'MARKET'}
-                    onClick={() => { set('pricingMode', 'MARKET'); set('fixedPrice', null); }}
-                    icon={<Gavel className="h-6 w-6" />}
-                    title="عروض الناقلين"
-                    description="تستقبل عروض أسعار من الناقلين وتقارن بينها."
-                  />
-                  <ChoiceCard
-                    selected={form.pricingMode === 'FIXED'}
-                    onClick={() => set('pricingMode', 'FIXED')}
-                    icon={<Coins className="h-6 w-6" />}
-                    title="سعر ثابت"
-                    description="تحدّد أنت سعر الطلب، ويقبله الناقل كما هو."
-                  />
+                  {policy.allowMarketPricing && (
+                    <ChoiceCard
+                      selected={form.pricingMode === 'MARKET'}
+                      onClick={() => { set('pricingMode', 'MARKET'); set('fixedPrice', null); }}
+                      icon={<Gavel className="h-6 w-6" />}
+                      title="عروض الناقلين"
+                      description="تستقبل عروض أسعار من الناقلين وتقارن بينها."
+                    />
+                  )}
+                  {policy.allowFixedPricing && (
+                    <ChoiceCard
+                      selected={form.pricingMode === 'FIXED'}
+                      onClick={() => set('pricingMode', 'FIXED')}
+                      icon={<Coins className="h-6 w-6" />}
+                      title="سعر ثابت"
+                      description="تحدّد أنت سعر الطلب، ويقبله الناقل كما هو."
+                    />
+                  )}
                 </div>
                 {form.pricingMode === 'FIXED' && (
                   <div className="space-y-1.5">
@@ -623,20 +641,24 @@ export default function NewOrderWizard() {
               <div className="rounded-lg border p-4 space-y-3">
                 <Label>طريقة الدفع</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <ChoiceCard
-                    selected={form.paymentMethod === 'PREPAID'}
-                    onClick={() => set('paymentMethod', 'PREPAID')}
-                    icon={<Wallet className="h-6 w-6" />}
-                    title="دفع مسبق"
-                    description="يُحجز المبلغ في الضمان (Escrow) ويُفرج بعد تأكيد التسليم."
-                  />
-                  <ChoiceCard
-                    selected={form.paymentMethod === 'COD'}
-                    onClick={() => set('paymentMethod', 'COD')}
-                    icon={<Banknote className="h-6 w-6" />}
-                    title="دفع عند التسليم"
-                    description="يُدفع للناقل مباشرة عند استلام الشحنة."
-                  />
+                  {policy.allowPrepaid && (
+                    <ChoiceCard
+                      selected={form.paymentMethod === 'PREPAID'}
+                      onClick={() => set('paymentMethod', 'PREPAID')}
+                      icon={<Wallet className="h-6 w-6" />}
+                      title="دفع مسبق"
+                      description="يُحجز المبلغ في الضمان (Escrow) ويُفرج بعد تأكيد التسليم."
+                    />
+                  )}
+                  {policy.allowCOD && (
+                    <ChoiceCard
+                      selected={form.paymentMethod === 'COD'}
+                      onClick={() => set('paymentMethod', 'COD')}
+                      icon={<Banknote className="h-6 w-6" />}
+                      title="دفع عند التسليم"
+                      description="يُدفع للناقل مباشرة عند استلام الشحنة."
+                    />
+                  )}
                 </div>
               </div>
             </Step>

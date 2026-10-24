@@ -6,6 +6,28 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.21 — Admin per-client / per-group platform policy (2026-10-24)
+
+> See `docs/POLICIES.md`.
+
+- New **«سياسات العملاء»** tab in admin settings lets admins tailor how the
+  platform behaves per client: which **distribution** (publish-to-market /
+  direct-assign, with an optional **forced provider**), **pricing** (carrier
+  bidding / client fixed price), and **payment** (prepaid / cash-on-delivery)
+  options are available.
+- **Customization groups**: create / edit / delete groups, toggle each group's
+  policy, and link clients to it. Clients with no group use the default (all
+  options enabled).
+- Shared model: `ClientPolicy`, `PolicyGroup`, `policyForClient` + seed
+  (`packages/shared-utils/src/mock-data.ts`). Admin store
+  `apps/web/admin/src/stores/policy-store.ts`; panel
+  `components/settings/client-policies-panel.tsx`.
+- The client new-order form reads the client's effective policy and
+  hides/pre-selects the options accordingly (e.g. a forced provider locks
+  direct-assign; a disabled payment method is hidden).
+- Next: provider owned-vs-freelancer fleet + per-trip freelancer invoices +
+  provider profitability page.
+
 ### v0.9.20 — Order pricing: fixed price + payment method (2026-10-24)
 
 - The new-order form (client) adds a **pricing mode** that works with either
