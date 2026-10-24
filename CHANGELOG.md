@@ -28,6 +28,10 @@
   status) and the **consolidated invoice** (N × per-truck amount → total) under a
   single order number. The carrier view is interactive; client and admin are
   read-only (`ConsolidatedReadonly`).
+- **Assign a truck from within a single order**: the carrier picks a fleet truck
+  (its linked driver attaches automatically) on the order detail; the choice is
+  stored per order and shown in the shipment block. Replaces the previous
+  API-only "assign driver" dialog that did not work offline.
 
 ### v0.9.17 — Saudi plate component + Fleet management (2026-10-24)
 

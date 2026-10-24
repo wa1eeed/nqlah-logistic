@@ -6,11 +6,15 @@ import type { ConsolidatedLeg } from '@naqla/shared-utils';
 interface LegAssignment { truckId: string; driverId: string; }
 
 interface ConsolidatedState {
-  /** orderId → legIndex → assignment (carrier's distribution overlay). */
+  /** orderId → legIndex → assignment (consolidated distribution overlay). */
   overrides: Record<string, Record<number, LegAssignment>>;
+  /** orderId → assignment (single-order truck/driver chosen by the carrier). */
+  singleAssign: Record<string, LegAssignment>;
   distribute: (orderId: string, index: number, truckId: string, driverId: string) => void;
   clearLeg: (orderId: string, index: number) => void;
-  /** Clear all consolidated-order distributions (demo convenience). */
+  assignOrderTruck: (orderId: string, truckId: string, driverId: string) => void;
+  clearOrderTruck: (orderId: string) => void;
+  /** Clear all distributions/assignments (demo convenience). */
   resetAll: () => void;
 }
 
@@ -18,6 +22,15 @@ export const useConsolidatedStore = create<ConsolidatedState>()(
   persist(
     (set) => ({
       overrides: {},
+      singleAssign: {},
+      assignOrderTruck: (orderId, truckId, driverId) =>
+        set((s) => ({ singleAssign: { ...s.singleAssign, [orderId]: { truckId, driverId } } })),
+      clearOrderTruck: (orderId) =>
+        set((s) => {
+          const next = { ...s.singleAssign };
+          delete next[orderId];
+          return { singleAssign: next };
+        }),
       distribute: (orderId, index, truckId, driverId) =>
         set((s) => ({
           overrides: {
@@ -31,7 +44,7 @@ export const useConsolidatedStore = create<ConsolidatedState>()(
           delete forOrder[index];
           return { overrides: { ...s.overrides, [orderId]: forOrder } };
         }),
-      resetAll: () => set({ overrides: {} }),
+      resetAll: () => set({ overrides: {}, singleAssign: {} }),
     }),
     { name: 'naqla:consolidated', version: 1 },
   ),
