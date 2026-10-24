@@ -4,8 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { fetcher, api } from '@/lib/api';
 import {
-  AlertTriangle, ArrowRight, BadgeCheck, Calendar, CheckCircle2, MapPin, MessageSquare,
-  Package, Phone, ShieldCheck, Shield, Snowflake, Star, Timer, Truck, User, UserSearch,
+  AlertTriangle, ArrowRight, BadgeCheck, Calendar, CheckCircle2, Layers, MapPin, MessageSquare,
+  Package, Phone, ShieldCheck, Shield, Snowflake, Star, Timer, Truck, User, Users, UserSearch,
   Weight, X, Navigation,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -21,7 +21,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { PageHeader } from '@/components/page-header';
-import { SaudiPlate, parsePlateString } from '@/components/saudi-plate';
+import { SaudiLicensePlate, SaudiPlate, parsePlateString } from '@/components/saudi-plate';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
@@ -34,7 +34,7 @@ import {
   lastRound, proposalForOrder, timelineFor,
   cancellationPolicy, escrowBreakdown, COMMISSION_RATE, pickupWindowLabel, estimateDeliveryDate,
   normalizeOrder,
-  type DirectProposal, type Order,
+  type DirectProposal, type Order, type ConsolidatedLeg,
 } from '@naqla/shared-utils';
 
 const TRUCK_LABELS: Record<string, string> = {
@@ -1020,7 +1020,11 @@ function CarrierInfoCard({ order }: { order: Order }) {
           </div>
         </div>
 
+        {order.orderType === 'CONSOLIDATED' && order.legs && order.legs.length > 0 && (
+          <ConsolidatedReadonly order={order} />
+        )}
         {/* Truck + Driver split */}
+        {order.orderType !== 'CONSOLIDATED' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Truck */}
           <div className="rounded-lg border bg-card p-4">
@@ -1091,6 +1095,7 @@ function CarrierInfoCard({ order }: { order: Order }) {
             )}
           </div>
         </div>
+        )}
 
         {/* Agreed price + ETA */}
         {(order.agreedPrice || acceptedBid) && (
@@ -1459,5 +1464,69 @@ function ProposalAction({
       <div className="font-semibold">{title}</div>
       <div className="text-xs text-muted-foreground">{subtitle}</div>
     </button>
+  );
+}
+
+const LEG_LABEL: Record<ConsolidatedLeg['status'], string> = {
+  PENDING: 'لم تُوزَّع', ASSIGNED: 'موزّعة', IN_TRANSIT: 'في الطريق', DELIVERED: 'سُلّمت',
+};
+const LEG_TONE: Record<ConsolidatedLeg['status'], string> = {
+  PENDING: 'bg-muted text-muted-foreground',
+  ASSIGNED: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
+  IN_TRANSIT: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
+  DELIVERED: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
+};
+
+/** Read-only consolidated-order breakdown + invoice (client view). */
+function ConsolidatedReadonly({ order }: {
+  order: { orderNumber: string; truckCount?: number; legs?: ConsolidatedLeg[]; agreedPrice: number | null };
+}) {
+  const legs = order.legs ?? [];
+  const count = order.truckCount ?? legs.length;
+  const distributed = legs.filter((l) => l.truckId).length;
+  const perLeg = Math.round((order.agreedPrice ?? 0) / Math.max(1, count));
+  const pct = count > 0 ? Math.round((distributed / count) * 100) : 0;
+  return (
+    <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+          <Layers className="h-3.5 w-3.5" /> طلب مجمّع · {count} شاحنات
+        </div>
+        <span className="num text-xs text-muted-foreground">موزّعة {distributed}/{count}</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-[hsl(var(--mint))]" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="space-y-2">
+        {legs.map((leg) => {
+          const truck = TRUCKS.find((t) => t.id === leg.truckId);
+          const driver = DRIVERS.find((d) => d.id === leg.driverId);
+          const plate = truck ? parsePlateString(truck.plateNumber) : null;
+          return (
+            <div key={leg.index} className="flex items-center gap-3 rounded-md border bg-card p-2.5">
+              <span className="num flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold">{leg.index}</span>
+              {truck && plate ? (
+                <>
+                  <div className="w-[100px] shrink-0"><SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="fill" /></div>
+                  <div className="min-w-0 flex-1">
+                    <div className="num text-xs font-medium">{truck.code}</div>
+                    {driver && <div className="flex items-center gap-1 text-[11px] text-muted-foreground"><Users className="h-3 w-3" /> {driver.fullName}</div>}
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 text-xs text-muted-foreground">لم تُوزَّع بعد</div>
+              )}
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${LEG_TONE[leg.status]}`}>{LEG_LABEL[leg.status]}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="rounded-md border bg-card p-3 text-sm">
+        <div className="mb-1 font-semibold">الفاتورة المجمّعة</div>
+        <div className="flex justify-between text-muted-foreground"><span className="num">{count} شاحنات × </span><Currency amount={perLeg} /></div>
+        <div className="mt-1 flex justify-between border-t pt-1 font-semibold"><span>الإجمالي</span><Currency amount={order.agreedPrice ?? 0} /></div>
+        <p className="mt-1 text-[11px] text-muted-foreground">فاتورة واحدة برقم الطلب {order.orderNumber}.</p>
+      </div>
+    </div>
   );
 }

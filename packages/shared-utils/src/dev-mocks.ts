@@ -316,14 +316,45 @@ const ORDERS = [
     bids: [], trackingEvents: [], payment: null, invoice: null,
     _count: { bids: 2 },
   },
+  {
+    id: 'ord-9', orderNumber: 'ORD-2025-0180', status: 'ASSIGNED',
+    orderType: 'CONSOLIDATED', truckCount: 5,
+    legs: [
+      { index: 1, status: 'IN_TRANSIT', truckId: 'TRK-002', driverId: 'DRV-004' },
+      { index: 2, status: 'ASSIGNED',   truckId: 'TRK-003', driverId: 'DRV-002' },
+      { index: 3, status: 'PENDING' },
+      { index: 4, status: 'PENDING' },
+      { index: 5, status: 'PENDING' },
+    ],
+    clientId: 'co-client-1', carrierId: 'co-carrier-1',
+    cargoType: 'CONSTRUCTION', cargoDescription: 'دفعة أسمنت ومواد بناء — طلب مجمّع على 5 شاحنات',
+    weight: 25000, pallets: null, volume: null,
+    originCity: 'الرياض', originRegion: 'الرياض', originAddress: 'المدينة الصناعية الثانية',
+    originLat: null, originLng: null,
+    destinationCity: 'جدة', destinationRegion: 'مكة المكرمة', destinationAddress: 'المنطقة اللوجستية، جدة',
+    destinationLat: null, destinationLng: null,
+    requiredTruckType: 'LARGE_FLATBED', requiresRefrigeration: false, requiresInsurance: true,
+    specialInstructions: 'طلب مجمّع — يوزَّع على 5 شاحنات لنفس المسار، بفاتورة مجمّعة ورقم طلب واحد.',
+    pickupDate: iso(-1), deliveryDate: iso(2), bidDeadline: null,
+    clientBudget: 48000, agreedPrice: 46000, commissionAmount: 3680, carrierAmount: 42320,
+    actualPickupAt: iso(1), actualDeliveryAt: null,
+    poNumber: 'PO-2025-901', bolNumber: null, documents: [],
+    clientRating: null, carrierRating: null,
+    notes: null, cancelReason: null,
+    createdAt: iso(4), updatedAt: iso(0, 3),
+    client: { id: 'co-client-1', nameAr: 'شركة الجزيرة للطاقة', logo: null },
+    carrier: { id: 'co-carrier-1', nameAr: 'شركة المسار السريع للنقل', logo: null },
+    bids: [], trackingEvents: [], payment: null, invoice: null,
+    _count: { bids: 6 },
+  },
 ];
 
 // ─── Trucks ──────────────────────────────────────────────────
 const TRUCKS = [
-  { id: 'tr-1', companyId: 'co-carrier-1', plateNumber: 'ABC-1234', type: 'LARGE_FLATBED', capacity: 25, length: 13.6, width: 2.5, height: 2.8, make: 'Mercedes', model: 'Actros', year: 2022, hasRefrigeration: false, hasGPS: true, isActive: true, photos: [], documents: [], currentDriverId: 'drv-1', createdAt: iso(60), updatedAt: iso(2) },
-  { id: 'tr-2', companyId: 'co-carrier-1', plateNumber: 'XYZ-5678', type: 'REFRIGERATED', capacity: 18, length: 12, width: 2.5, height: 2.6, make: 'Volvo', model: 'FH16', year: 2023, hasRefrigeration: true, hasGPS: true, isActive: true, photos: [], documents: [], currentDriverId: 'drv-2', createdAt: iso(45), updatedAt: iso(1) },
-  { id: 'tr-3', companyId: 'co-carrier-1', plateNumber: 'JED-9012', type: 'CONTAINER_40', capacity: 30, length: 12.2, width: 2.4, height: 2.7, make: 'Scania', model: 'R450', year: 2021, hasRefrigeration: false, hasGPS: true, isActive: true, photos: [], documents: [], currentDriverId: null, createdAt: iso(90), updatedAt: iso(5) },
-  { id: 'tr-4', companyId: 'co-carrier-1', plateNumber: 'RYD-3456', type: 'BOX_TRUCK', capacity: 10, length: 7.5, width: 2.3, height: 2.5, make: 'Hino', model: '300', year: 2020, hasRefrigeration: false, hasGPS: false, isActive: false, photos: [], documents: [], currentDriverId: null, createdAt: iso(120), updatedAt: iso(20) },
+  { id: 'tr-1', companyId: 'co-carrier-1', plateNumber: 'ب د ر 1234', type: 'LARGE_FLATBED', capacity: 25, length: 13.6, width: 2.5, height: 2.8, make: 'Mercedes', model: 'Actros', year: 2022, hasRefrigeration: false, hasGPS: true, isActive: true, photos: [], documents: [], currentDriverId: 'drv-1', createdAt: iso(60), updatedAt: iso(2) },
+  { id: 'tr-2', companyId: 'co-carrier-1', plateNumber: 'س ع ل 5678', type: 'REFRIGERATED', capacity: 18, length: 12, width: 2.5, height: 2.6, make: 'Volvo', model: 'FH16', year: 2023, hasRefrigeration: true, hasGPS: true, isActive: true, photos: [], documents: [], currentDriverId: 'drv-2', createdAt: iso(45), updatedAt: iso(1) },
+  { id: 'tr-3', companyId: 'co-carrier-1', plateNumber: 'ح ك م 9012', type: 'CONTAINER_40', capacity: 30, length: 12.2, width: 2.4, height: 2.7, make: 'Scania', model: 'R450', year: 2021, hasRefrigeration: false, hasGPS: true, isActive: true, photos: [], documents: [], currentDriverId: null, createdAt: iso(90), updatedAt: iso(5) },
+  { id: 'tr-4', companyId: 'co-carrier-1', plateNumber: 'ط ن و 3456', type: 'BOX_TRUCK', capacity: 10, length: 7.5, width: 2.3, height: 2.5, make: 'Hino', model: '300', year: 2020, hasRefrigeration: false, hasGPS: false, isActive: false, photos: [], documents: [], currentDriverId: null, createdAt: iso(120), updatedAt: iso(20) },
 ];
 
 // ─── Drivers ─────────────────────────────────────────────────

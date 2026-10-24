@@ -6,6 +6,75 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.18 — Order types: single & consolidated (multi-truck) (2026-10-24)
+
+> See `docs/ORDERS.md` for the full lifecycle and data model.
+
+- **New-order form (client)** now offers an **order type**: *single truck* (the
+  existing flow) or *consolidated* — a bulk request for N trucks on the **same
+  route and cargo**, billed as one order with one order number and one
+  consolidated invoice. A stepper sets the truck count (2–20). `orderType` and
+  `truckCount` flow into the submit payload, the live summary, and the review step.
+- **Shared model**: `OrderType`, `ConsolidatedLeg` (+ `ConsolidatedLegStatus`),
+  and `orderType` / `truckCount` / `legs` on `Order`
+  (`packages/shared-utils/src/mock-data.ts`). Seeded a consolidated order
+  (`ORD-2025-0180`, 5 trucks, partially distributed) in `dev-mocks`.
+- **Carrier distribution** — `apps/web/carrier/src/components/consolidated-panel.tsx`
+  + `stores/consolidated-store.ts`: on a consolidated order the carrier
+  distributes each leg to one of its fleet trucks (the truck's linked driver is
+  attached automatically), with a progress indicator (X / N) and per-leg status.
+  Distribution is persisted per order.
+- **All parties** see a consolidated **breakdown** (each leg: plate + driver +
+  status) and the **consolidated invoice** (N × per-truck amount → total) under a
+  single order number. The carrier view is interactive; client and admin are
+  read-only (`ConsolidatedReadonly`).
+
+### v0.9.17 — Saudi plate component + Fleet management (2026-10-24)
+
+> First changelog entry written in English per the documentation standard
+> (`docs/DOCUMENTATION.md`). Earlier entries remain in Arabic pending the final
+> documentation pass.
+
+**Saudi license plate — `SaudiLicensePlate`**
+- New self-contained SVG component rendering an official **Saudi transport
+  plate** (standard geometry, `viewBox 0 0 480 230`): separate rounded cells
+  (Arabic-Indic over Western digits; Arabic over Latin letters), a **yellow**
+  national side strip with the official palm-and-swords emblem, "السعودية" and a
+  stacked "K S A", a metallic gloss + inner-shadow, and the official Saudi
+  Arabic↔Latin letter map. Western and Arabic glyphs are **column-aligned** (ب
+  sits directly above B, ١ above 1). Font is **Arial** (applied via inline
+  `style` so page CSS cannot override it). Unique SVG ids via `useId()`.
+- Sizes: `thumbnail` / `card` / `stage` / `fullscreen` / `fill`. The legacy
+  `SaudiPlate` wrapper forwards to the new component for backward compatibility.
+- Official emblem flattened to black and served from each app's
+  `public/saudi-emblem.svg`.
+- Files: `apps/web/{client,admin,carrier}/src/components/saudi-plate.tsx`,
+  `apps/web/{client,admin,carrier}/public/saudi-emblem.svg`.
+- Used in: carrier fleet (trucks list / truck detail / new-truck preview),
+  admin trucks list, and order detail for all parties.
+
+**Fleet management (carrier)** — see `docs/FLEET.md`
+- **Bidirectional truck↔driver linking**: assign / change / unassign from either
+  the truck page or the driver page; a driver can only be on one truck at a time.
+- **Status sync**: a truck's status drives its linked driver's status and vice
+  versa (maintenance wins → driver off-duty). Every truck has an assigned driver.
+- **Audit log**: assign / unassign / online / offline / trip events, seeded and
+  appended to on every action.
+- **ID codes** for trucks (`TRK-1001…`) and drivers (`DRV-2001…`).
+- **Trips timeline** per truck and per driver (route, dates, distance, amount),
+  seeded with demo trips across the fleet.
+- Truck and driver detail pages reorganized into **tabs** (Trips / Activity log /
+  Specs). Assign and unassign now require a **confirmation dialog**.
+- New: `apps/web/carrier/src/stores/fleet-store.ts` (Zustand + persist),
+  `apps/web/carrier/src/components/fleet-bits.tsx` (audit/trips timelines,
+  status select, confirm dialog). Carrier fleet pages unified on `mock-data`
+  for consistent ids.
+- Shared data: `code` on `Truck`/`Driver`, `FleetAuditEvent` + `auditForTruck`/
+  `auditForDriver`, `tripsForDriver`, richer `TRIP_BASE`
+  (`packages/shared-utils/src/mock-data.ts`).
+- Order detail (all parties) now shows the assigned truck's plate **and the
+  driver** (name, code, licence, phone).
+
 ### 🎨 v0.9.16 — Premium "Mint" Design System عبر كل الواجهات (2026-10-23)
 
 > يحلّ هذا الإصدار محلّ تصميم اللاندنق ذي التدرّجات اللونية والبلوبات المتحركة من v0.9.15،

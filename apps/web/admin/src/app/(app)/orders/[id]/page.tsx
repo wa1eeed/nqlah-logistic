@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowRight, Building2, Calendar, CheckCircle2, Clock, MapPin, Navigation, Package, Phone,
-  ShieldCheck, Snowflake, Timer, Truck, User, Wallet, Weight, type LucideIcon,
+  ArrowRight, Building2, Calendar, CheckCircle2, Clock, Layers, MapPin, Navigation, Package, Phone,
+  ShieldCheck, Snowflake, Timer, Truck, User, Users, Wallet, Weight, type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,11 +18,12 @@ import { fetcher } from '@/lib/api';
 import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
 import {
-  ORDERS, bidsForOrder, companyById, coordsFor, distanceKm, estimatedDurationLabel,
+  ORDERS, TRUCKS, DRIVERS, bidsForOrder, companyById, coordsFor, distanceKm, estimatedDurationLabel,
   primaryRoadFor, timelineFor, formatDate, formatDateTime,
   normalizeOrder, COMMISSION_RATE, ESCROW_AUTO_RELEASE_HOURS, escrowAutoReleaseAt,
-  escrowBreakdown, escrowMsRemaining,
+  escrowBreakdown, escrowMsRemaining, type ConsolidatedLeg,
 } from '@naqla/shared-utils';
+import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 
 const TITLES: Record<string, string> = {
   CREATED: 'إنشاء الطلب', PUBLISHED: 'نشر الطلب', BID_RECEIVED: 'استلام عرض',
@@ -81,6 +82,14 @@ export default function AdminOrderDetail() {
     ?? null;
   const showShipmentCard = ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED'].includes(order.status);
   const showEscrow = order.status === 'DELIVERED' && (order.agreedPrice ?? 0) > 0;
+  // Assigned truck for this order (demo: prefer the order carrier's on-trip truck).
+  const assignedTruck =
+    TRUCKS.find((t) => t.carrierId === order.carrierId && t.status === 'ON_TRIP') ??
+    TRUCKS.find((t) => t.carrierId === order.carrierId) ??
+    TRUCKS.find((t) => t.status === 'ON_TRIP') ??
+    TRUCKS[0];
+  const assignedPlate = assignedTruck ? parsePlateString(assignedTruck.plateNumber) : null;
+  const assignedDriver = assignedTruck ? DRIVERS.find((d) => d.id === assignedTruck.assignedDriverId) : null;
   const deliveredAt = (timeline.find((t) => t.kind === 'DELIVERED')?.at) ?? new Date();
 
   return (
@@ -243,6 +252,38 @@ export default function AdminOrderDetail() {
           <Card>
             <CardHeader><CardTitle>تفاصيل الشحنة</CardTitle></CardHeader>
             <CardContent>
+              {showShipmentCard && order.orderType === 'CONSOLIDATED' && order.legs && order.legs.length > 0 && (
+                <ConsolidatedReadonly order={order} />
+              )}
+              {showShipmentCard && order.orderType !== 'CONSOLIDATED' && assignedPlate && (
+                <div className="mb-4 rounded-lg border bg-muted/30 p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                    <Truck className="h-3.5 w-3.5" /> الشاحنة والسائق
+                  </div>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <SaudiLicensePlate
+                      letters={assignedPlate.letters}
+                      numbers={assignedPlate.numbers}
+                      plateType="transport"
+                      plateFormat="standard"
+                      size="stage"
+                    />
+                    {assignedTruck && <div className="num text-xs text-muted-foreground">{assignedTruck.code}</div>}
+                  </div>
+                  {assignedDriver && (
+                    <div className="flex items-center gap-3 rounded-md border bg-background p-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]">
+                        <User className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold">{assignedDriver.fullName}</div>
+                        <div className="text-xs text-muted-foreground"><span className="num">{assignedDriver.code}</span> · رخصة {assignedDriver.licenseClass}</div>
+                      </div>
+                      <a href={`tel:${assignedDriver.phone}`} dir="ltr" className="num text-xs font-medium text-[hsl(var(--mint))]">{assignedDriver.phone}</a>
+                    </div>
+                  )}
+                </div>
+              )}
               <dl className="divide-y">
                 <Row label="الوصف" value={order.cargoDescription} />
                 <Row label="الوزن" icon={Weight} value={<span className="num">{order.weightKg.toLocaleString('en-US')} كجم</span>} />
@@ -500,6 +541,70 @@ function RouteStat({ icon: Icon, label, value }: { icon: LucideIcon; label: stri
       <div className="min-w-0">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="mt-0.5 text-sm font-semibold truncate">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+const LEG_LABEL: Record<ConsolidatedLeg['status'], string> = {
+  PENDING: 'لم تُوزَّع', ASSIGNED: 'موزّعة', IN_TRANSIT: 'في الطريق', DELIVERED: 'سُلّمت',
+};
+const LEG_TONE: Record<ConsolidatedLeg['status'], string> = {
+  PENDING: 'bg-muted text-muted-foreground',
+  ASSIGNED: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
+  IN_TRANSIT: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
+  DELIVERED: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
+};
+
+/** Read-only consolidated-order breakdown + invoice (client/admin view). */
+function ConsolidatedReadonly({ order }: {
+  order: { orderNumber: string; truckCount?: number; legs?: ConsolidatedLeg[]; agreedPrice: number | null; commission?: number | null };
+}) {
+  const legs = order.legs ?? [];
+  const count = order.truckCount ?? legs.length;
+  const distributed = legs.filter((l) => l.truckId).length;
+  const perLeg = Math.round((order.agreedPrice ?? 0) / Math.max(1, count));
+  const pct = count > 0 ? Math.round((distributed / count) * 100) : 0;
+  return (
+    <div className="mb-4 space-y-3 rounded-lg border bg-muted/30 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+          <Layers className="h-3.5 w-3.5" /> طلب مجمّع · {count} شاحنات
+        </div>
+        <span className="num text-xs text-muted-foreground">موزّعة {distributed}/{count}</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-[hsl(var(--mint))]" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="space-y-2">
+        {legs.map((leg) => {
+          const truck = TRUCKS.find((t) => t.id === leg.truckId);
+          const driver = DRIVERS.find((d) => d.id === leg.driverId);
+          const plate = truck ? parsePlateString(truck.plateNumber) : null;
+          return (
+            <div key={leg.index} className="flex items-center gap-3 rounded-md border bg-background p-2.5">
+              <span className="num flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold">{leg.index}</span>
+              {truck && plate ? (
+                <>
+                  <div className="w-[100px] shrink-0"><SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="fill" /></div>
+                  <div className="min-w-0 flex-1">
+                    <div className="num text-xs font-medium">{truck.code}</div>
+                    {driver && <div className="flex items-center gap-1 text-[11px] text-muted-foreground"><Users className="h-3 w-3" /> {driver.fullName}</div>}
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 text-xs text-muted-foreground">لم تُوزَّع بعد</div>
+              )}
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${LEG_TONE[leg.status]}`}>{LEG_LABEL[leg.status]}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="rounded-md border bg-background p-3 text-sm">
+        <div className="mb-1 font-semibold">الفاتورة المجمّعة</div>
+        <div className="flex justify-between text-muted-foreground"><span className="num">{count} شاحنات × </span><Currency amount={perLeg} /></div>
+        <div className="mt-1 flex justify-between border-t pt-1 font-semibold"><span>الإجمالي</span><Currency amount={order.agreedPrice ?? 0} /></div>
+        <p className="mt-1 text-[11px] text-muted-foreground">فاتورة واحدة برقم الطلب {order.orderNumber}.</p>
       </div>
     </div>
   );

@@ -1,0 +1,188 @@
+'use client';
+import { useState } from 'react';
+import { CheckCircle2, Layers, Link2Off, MapPin, Truck as TruckIcon, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
+import { Currency } from '@/components/currency';
+import { useFleetStore } from '@/stores/fleet-store';
+import { useConsolidatedStore, effectiveLegs } from '@/stores/consolidated-store';
+import { notify } from '@/lib/notify';
+import { DRIVERS, TRUCKS, type ConsolidatedLeg, type ConsolidatedLegStatus, type Order } from '@naqla/shared-utils';
+
+const LEG_LABEL: Record<ConsolidatedLegStatus, string> = {
+  PENDING: 'لم تُوزَّع',
+  ASSIGNED: 'موزّعة',
+  IN_TRANSIT: 'في الطريق',
+  DELIVERED: 'سُلّمت',
+};
+const LEG_TONE: Record<ConsolidatedLegStatus, string> = {
+  PENDING: 'bg-muted text-muted-foreground',
+  ASSIGNED: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
+  IN_TRANSIT: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
+  DELIVERED: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
+};
+
+export function ConsolidatedPanel({ order, canDistribute = false }: { order: Order; canDistribute?: boolean }) {
+  const overrides = useConsolidatedStore((s) => s.overrides[order.id] ?? {});
+  const distribute = useConsolidatedStore((s) => s.distribute);
+  const clearLeg = useConsolidatedStore((s) => s.clearLeg);
+  const assignMap = useFleetStore((s) => s.assign);
+
+  const [openLeg, setOpenLeg] = useState<number | null>(null);
+  const [pick, setPick] = useState('');
+
+  const legs = effectiveLegs(order.legs ?? [], overrides);
+  const count = order.truckCount ?? legs.length;
+  const distributed = legs.filter((l) => l.truckId).length;
+  const perLeg = Math.round((order.agreedPrice ?? 0) / Math.max(1, count));
+  const pct = count > 0 ? Math.round((distributed / count) * 100) : 0;
+
+  // trucks already used by other legs of THIS order
+  const usedTrucks = new Set(legs.filter((l) => l.truckId).map((l) => l.truckId));
+
+  const driverForTruck = (truckId: string) =>
+    (truckId in assignMap ? assignMap[truckId] : TRUCKS.find((t) => t.id === truckId)?.assignedDriverId) ?? '';
+
+  const doDistribute = () => {
+    if (openLeg == null || !pick) return;
+    const driverId = driverForTruck(pick);
+    distribute(order.id, openLeg, pick, driverId);
+    notify.success('تم توزيع الرِجل', `شاحنة ${openLeg} → ${TRUCKS.find((t) => t.id === pick)?.code ?? ''}`);
+    setOpenLeg(null);
+    setPick('');
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-[hsl(var(--mint))]" /> طلب مجمّع · {count} شاحنات
+              </CardTitle>
+              <CardDescription className="mt-1 flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" /> {order.originCity} ← {order.destinationCity}
+              </CardDescription>
+            </div>
+            <div className="text-end">
+              <div className="num text-sm font-bold">{distributed} / {count}</div>
+              <div className="text-xs text-muted-foreground">موزّعة على شاحناتك</div>
+            </div>
+          </div>
+          {/* progress */}
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-[hsl(var(--mint))] transition-all" style={{ width: `${pct}%` }} />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {canDistribute && distributed < count && (
+            <p className="text-xs text-muted-foreground">وزّع كل رِجل على شاحنة من أسطولك — السائق المربوط بها يُضاف تلقائيًا.</p>
+          )}
+          {legs.map((leg) => {
+            const truck = TRUCKS.find((t) => t.id === leg.truckId);
+            const driver = DRIVERS.find((d) => d.id === leg.driverId);
+            const plate = truck ? parsePlateString(truck.plateNumber) : null;
+            return (
+              <div key={leg.index} className="flex items-center gap-3 rounded-lg border p-3">
+                <span className="num flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold">{leg.index}</span>
+                {truck && plate ? (
+                  <>
+                    <div className="w-[120px] shrink-0">
+                      <SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="fill" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium num">{truck.code}</div>
+                      {driver && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Users className="h-3 w-3" /> {driver.fullName}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
+                    <TruckIcon className="h-4 w-4 opacity-40" /> لم تُوزَّع بعد
+                  </div>
+                )}
+                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${LEG_TONE[leg.status]}`}>
+                  {LEG_LABEL[leg.status]}
+                </span>
+                {canDistribute && (
+                  leg.truckId ? (
+                    leg.status === 'PENDING' || leg.status === 'ASSIGNED' ? (
+                      <Button variant="ghost" size="sm" className="shrink-0" onClick={() => clearLeg(order.id, leg.index)}>
+                        <Link2Off className="h-4 w-4" />
+                      </Button>
+                    ) : null
+                  ) : (
+                    <Button size="sm" className="shrink-0" onClick={() => { setPick(''); setOpenLeg(leg.index); }}>
+                      توزيع
+                    </Button>
+                  )
+                )}
+              </div>
+            );
+          })}
+
+          {/* Consolidated invoice */}
+          <div className="mt-2 rounded-lg border bg-muted/20 p-4">
+            <div className="mb-2 text-sm font-semibold">الفاتورة المجمّعة</div>
+            <dl className="space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground num">{count} شاحنات × <Currency amount={perLeg} /></dt>
+                <dd><Currency amount={order.agreedPrice ?? 0} /></dd>
+              </div>
+              {order.commission != null && (
+                <div className="flex justify-between text-muted-foreground">
+                  <dt>عمولة المنصة</dt>
+                  <dd>− <Currency amount={order.commission} /></dd>
+                </div>
+              )}
+              <div className="flex justify-between border-t pt-1.5 font-semibold">
+                <dt>صافي مستحقّك</dt>
+                <dd><Currency amount={order.carrierAmount ?? order.agreedPrice ?? 0} /></dd>
+              </div>
+            </dl>
+            <p className="mt-2 text-[11px] text-muted-foreground">فاتورة واحدة مجمّعة برقم الطلب {order.orderNumber}.</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Distribute dialog */}
+      <Dialog open={openLeg != null} onOpenChange={(o) => { if (!o) setOpenLeg(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>توزيع الشاحنة رقم {openLeg}</DialogTitle>
+            <DialogDescription>اختر شاحنة من أسطولك — السائق المربوط بها يُسنَد تلقائيًا.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Select value={pick} onValueChange={setPick}>
+              <SelectTrigger><SelectValue placeholder="اختر شاحنة" /></SelectTrigger>
+              <SelectContent>
+                {TRUCKS.map((t) => {
+                  const used = usedTrucks.has(t.id);
+                  const drv = DRIVERS.find((d) => d.id === driverForTruck(t.id))?.fullName;
+                  return (
+                    <SelectItem key={t.id} value={t.id} disabled={used}>
+                      {t.code} · {t.plateNumber}{drv ? ` · ${drv}` : ''}{used ? ' (مستخدمة بهذا الطلب)' : ''}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenLeg(null)}>إلغاء</Button>
+            <Button onClick={doDistribute} disabled={!pick}><CheckCircle2 className="h-4 w-4" /> توزيع</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

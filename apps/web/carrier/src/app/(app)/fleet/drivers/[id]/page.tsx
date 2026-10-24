@@ -1,65 +1,49 @@
 'use client';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import useSWR from 'swr';
-import { ArrowRight, Calendar, Phone, Star, User } from 'lucide-react';
+import {
+  ArrowRight, Calendar, CheckCircle2, Fingerprint, Hash, History, Link2, Link2Off,
+  Phone, Route, Truck as TruckIcon, User, UserCog,
+} from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/page-header';
+import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 import { StatusBadge } from '@/components/status-badge';
-import { fetcher } from '@/lib/api';
-import { formatDate, DRIVERS } from '@naqla/shared-utils';
-
-type DriverDetail = {
-  id: string;
-  licenseNumber: string;
-  licenseExpiry: string;
-  licenseType: string;
-  status: string;
-  totalTrips: number;
-  rating: number;
-  photo?: string | null;
-  user?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    phone: string;
-    nationalId?: string | null;
-  };
-};
-
-type TripHistory = {
-  id: string;
-  orderNumber: string;
-  originCity: string;
-  destinationCity: string;
-  status: string;
-  agreedPrice?: number | null;
-  createdAt: string;
-};
+import { useFleetStore } from '@/stores/fleet-store';
+import { notify } from '@/lib/notify';
+import {
+  DRIVERS, TRUCKS, auditForDriver, formatDate, tripsForDriver, type DriverStatus,
+} from '@naqla/shared-utils';
+import {
+  AuditTimeline, ConfirmDialog, DRIVER_STATUS_OPTIONS, FleetStatusSelect, TripsTimeline,
+} from '@/components/fleet-bits';
 
 export default function DriverDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
-  // All hooks before any early return (Rules of Hooks)
-  const { data: driverData } = useSWR<DriverDetail>(
-    params?.id ? `/fleet/drivers/${params.id}` : null,
-    fetcher,
-  );
-  const { data: historyData } = useSWR<TripHistory[] | { items?: TripHistory[] }>(
-    params?.id ? `/fleet/drivers/${params.id}/history` : null,
-    fetcher,
-  );
+  const assignMap = useFleetStore((s) => s.assign);
+  const driverStatusMap = useFleetStore((s) => s.driverStatus);
+  const truckStatusMap = useFleetStore((s) => s.truckStatus);
+  const events = useFleetStore((s) => s.events);
+  const assignDriver = useFleetStore((s) => s.assignDriver);
+  const unassignDriver = useFleetStore((s) => s.unassignDriver);
+  const setDriverStatus = useFleetStore((s) => s.setDriverStatus);
 
-  const driver = driverData ?? DRIVERS.find((d) => d.id === params.id) as unknown as DriverDetail | undefined;
-  const history: TripHistory[] = Array.isArray(historyData)
-    ? historyData
-    : Array.isArray((historyData as { items?: TripHistory[] })?.items)
-      ? (historyData as { items: TripHistory[] }).items
-      : [];
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [confirmUnassign, setConfirmUnassign] = useState(false);
+  const [confirmAssign, setConfirmAssign] = useState(false);
+  const [pick, setPick] = useState('');
+
+  const driver = DRIVERS.find((d) => d.id === params.id);
 
   if (!driver) {
     return (
@@ -73,97 +57,200 @@ export default function DriverDetailPage() {
     );
   }
 
-  const fullName = driver.user
-    ? `${driver.user.firstName} ${driver.user.lastName}`
-    : (driver as unknown as { fullName?: string }).fullName ?? '—';
+  const status: DriverStatus = driverStatusMap[driver.id] ?? driver.status;
+  const truckId = Object.keys(assignMap).find((tid) => assignMap[tid] === driver.id) ?? null;
+  const truck = TRUCKS.find((t) => t.id === truckId);
+  const trips = tripsForDriver(driver.id);
+  const audit = auditForDriver(driver.id, events);
+  const initials = driver.fullName.split(' ').slice(0, 2).map((w) => w[0]).join('');
+  const pickTruck = TRUCKS.find((t) => t.id === pick);
+  const done = trips.filter((t) => t.status === 'COMPLETED' || t.status === 'DELIVERED');
+  const totalKm = trips.reduce((s, t) => s + t.distanceKm, 0);
 
-  const initials = fullName.split(' ').slice(0, 2).map((w) => w[0]).join('');
+  const doAssign = () => {
+    if (!pick) return;
+    assignDriver(pick, driver.id);
+    notify.success('تم ربط الشاحنة', `${driver.fullName} → ${pickTruck?.code ?? ''}`);
+    setAssignOpen(false);
+    setPick('');
+  };
+
+  const doUnassign = () => {
+    if (!truckId) return;
+    unassignDriver(truckId);
+    notify.success('تم فك الارتباط', `${driver.fullName} بدون شاحنة الآن`);
+  };
 
   return (
     <>
       <PageHeader
-        title={fullName}
-        subtitle={`سائق · ${driver.licenseType} · ${driver.licenseNumber}`}
+        title={driver.fullName}
+        subtitle={`سائق · ${driver.code} · رخصة ${driver.licenseClass}`}
         actions={
-          <Button variant="outline" onClick={() => router.push('/fleet/drivers')}>
-            <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
-          </Button>
+          <>
+            <FleetStatusSelect
+              value={status}
+              options={DRIVER_STATUS_OPTIONS}
+              onChange={(v) => {
+                setDriverStatus(driver.id, v as DriverStatus);
+                notify.success('تم تحديث حالة السائق', DRIVER_STATUS_OPTIONS.find((o) => o.value === v)?.label);
+              }}
+            />
+            <Button variant="outline" onClick={() => router.push('/fleet/drivers')}>
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
+            </Button>
+          </>
         }
       />
 
+      {/* Top: info + assigned truck */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main info card */}
         <Card className="lg:col-span-1">
           <CardHeader>
             <div className="flex flex-col items-center gap-3 text-center">
-              <Avatar className="h-20 w-20">
-                {driver.photo && <img src={driver.photo} alt={fullName} className="object-cover" />}
-                <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="text-xl font-semibold">{fullName}</h2>
-                <StatusBadge status={driver.status} />
+              <Avatar className="h-20 w-20"><AvatarFallback className="text-2xl">{initials}</AvatarFallback></Avatar>
+              <div className="space-y-1.5">
+                <h2 className="text-xl font-semibold">{driver.fullName}</h2>
+                <div className="flex items-center justify-center gap-2">
+                  <Badge variant="outline" className="num gap-1"><Hash className="h-3 w-3" />{driver.code}</Badge>
+                  <StatusBadge status={status} />
+                </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-0">
+          <CardContent>
             <dl className="divide-y">
-              {driver.user?.phone && (
-                <InfoRow icon={Phone} label="الهاتف" value={<span className="num" dir="ltr">{driver.user.phone}</span>} />
-              )}
-              {driver.user?.nationalId && (
-                <InfoRow icon={User} label="رقم الهوية" value={<span className="num">{driver.user.nationalId}</span>} />
-              )}
+              <InfoRow icon={Phone} label="الهاتف" value={<span className="num" dir="ltr">{driver.phone}</span>} />
+              <InfoRow icon={Fingerprint} label="رقم الهوية" value={<span className="num">{driver.nationalId}</span>} />
+              <InfoRow icon={UserCog} label="فئة الرخصة" value={driver.licenseClass} />
               <InfoRow icon={Calendar} label="انتهاء الرخصة" value={formatDate(driver.licenseExpiry)} />
-              <InfoRow icon={Star} label="التقييم" value={
-                <span className="num">{(driver.rating ?? 0).toFixed(1)} / 5.0</span>
-              } />
+              <InfoRow icon={TruckIcon} label="إجمالي الرحلات" value={<span className="num">{driver.totalTrips}</span>} />
             </dl>
           </CardContent>
         </Card>
 
-        {/* Stats + trip history */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <StatCard label="إجمالي الرحلات" value={String(driver.totalTrips ?? 0)} />
-            <StatCard label="التقييم" value={(driver.rating ?? 0).toFixed(1)} />
-            <StatCard label="فئة الرخصة" value={`فئة ${driver.licenseType}`} />
-          </div>
+        {/* Assigned truck */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>الشاحنة المربوطة</CardTitle>
+              {truck ? (
+                <Button variant="ghost" size="sm" onClick={() => setConfirmUnassign(true)}><Link2Off className="h-4 w-4" /> فك</Button>
+              ) : null}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {truck ? (
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="cursor-pointer" onClick={() => router.push(`/fleet/trucks/${truck.id}`)}>
+                  {(() => { const p = parsePlateString(truck.plateNumber ?? ''); return <SaudiLicensePlate letters={p.letters} numbers={p.numbers} plateType="transport" size="card" />; })()}
+                </div>
+                <div className="flex-1 min-w-0 text-center sm:text-start space-y-1">
+                  <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                    <span className="font-semibold">{truck.code}</span>
+                    <StatusBadge status={truckStatusMap[truck.id] ?? truck.status} />
+                  </div>
+                  <div className="text-sm text-muted-foreground num">{((truck.capacityKg ?? 0) / 1000).toFixed(0)} طن · موديل {truck.modelYear}</div>
+                  <Button variant="outline" size="sm" className="mt-2" onClick={() => { setPick(truck.id); setAssignOpen(true); }}>
+                    <Link2 className="h-4 w-4" /> تغيير الشاحنة
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4 space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  <TruckIcon className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  لا توجد شاحنة مربوطة
+                </div>
+                <Button size="sm" onClick={() => { setPick(''); setAssignOpen(true); }}>
+                  <Link2 className="h-4 w-4" /> ربط شاحنة
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
+      {/* Tabs */}
+      <Tabs defaultValue="trips" className="mt-2">
+        <TabsList>
+          <TabsTrigger value="trips"><Route className="h-4 w-4 me-1.5" /> الرحلات <Badge variant="secondary" className="ms-1.5">{trips.length}</Badge></TabsTrigger>
+          <TabsTrigger value="audit"><History className="h-4 w-4 me-1.5" /> سجل النشاط <Badge variant="secondary" className="ms-1.5">{audit.length}</Badge></TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="trips">
           <Card>
             <CardHeader>
-              <CardTitle>سجل الرحلات</CardTitle>
-              <CardDescription>آخر الرحلات المنجزة</CardDescription>
+              <CardTitle>تايم‑لاين الرحلات</CardTitle>
+              <CardDescription className="mt-1">
+                {trips.length} رحلة · <span className="num">{done.length}</span> منجزة · إجمالي مسافة <span className="num">{totalKm.toLocaleString('en-US')}</span> كم
+              </CardDescription>
             </CardHeader>
-            <CardContent className="p-0">
-              {history.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">لا توجد رحلات مسجّلة بعد.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>الطلب</TableHead>
-                      <TableHead>المسار</TableHead>
-                      <TableHead>الحالة</TableHead>
-                      <TableHead>التاريخ</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {history.map((trip) => (
-                      <TableRow key={trip.id}>
-                        <TableCell className="font-mono text-xs">{trip.orderNumber}</TableCell>
-                        <TableCell className="text-sm">{trip.originCity} ← {trip.destinationCity}</TableCell>
-                        <TableCell><StatusBadge status={trip.status} /></TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{formatDate(trip.createdAt)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
+            <CardContent><TripsTimeline trips={trips} /></CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><History className="h-4 w-4" /> سجل النشاط</CardTitle>
+              <CardDescription className="mt-1">الإسناد وتغيّر الحالة والرحلات</CardDescription>
+            </CardHeader>
+            <CardContent><AuditTimeline events={audit} max={30} /></CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Assign truck dialog */}
+      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>ربط شاحنة بالسائق {driver.fullName}</DialogTitle>
+            <DialogDescription>اختر شاحنة. إذا كان لها سائق آخر سيُستبدل تلقائيًا.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Select value={pick} onValueChange={setPick}>
+              <SelectTrigger><SelectValue placeholder="اختر شاحنة" /></SelectTrigger>
+              <SelectContent>
+                {TRUCKS.map((t) => {
+                  const curDriverId = assignMap[t.id];
+                  const curDriver = curDriverId ? DRIVERS.find((d) => d.id === curDriverId)?.fullName : null;
+                  return (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.code} · {t.plateNumber}{curDriver && curDriverId !== driver.id ? ` (مع ${curDriver})` : ''}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignOpen(false)}>إلغاء</Button>
+            <Button onClick={() => { if (pick) setConfirmAssign(true); }} disabled={!pick}><CheckCircle2 className="h-4 w-4" /> ربط</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm assign */}
+      <ConfirmDialog
+        open={confirmAssign}
+        onOpenChange={setConfirmAssign}
+        title="تأكيد ربط الشاحنة"
+        description={pickTruck ? `سيتم ربط ${driver.fullName} بالشاحنة ${pickTruck.code}${assignMap[pickTruck.id] && assignMap[pickTruck.id] !== driver.id ? ` واستبدال سائقها الحالي (${DRIVERS.find((d) => d.id === assignMap[pickTruck.id])?.fullName})` : ''}.` : undefined}
+        confirmLabel="تأكيد الربط"
+        onConfirm={doAssign}
+      />
+
+      {/* Confirm unassign */}
+      <ConfirmDialog
+        open={confirmUnassign}
+        onOpenChange={setConfirmUnassign}
+        title="فك ارتباط الشاحنة"
+        description={truck ? `سيتم فك ارتباط ${driver.fullName} عن الشاحنة ${truck.code} وتحويله إلى خارج الخدمة.` : undefined}
+        confirmLabel="فك الارتباط"
+        destructive
+        onConfirm={doUnassign}
+      />
     </>
   );
 }
@@ -181,16 +268,5 @@ function InfoRow({ label, value, icon: Icon }: {
       </dt>
       <dd className="text-sm font-medium">{value}</dd>
     </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card>
-      <CardContent className="pt-6 text-center">
-        <div className="text-2xl font-bold num">{value}</div>
-        <div className="text-xs text-muted-foreground mt-1">{label}</div>
-      </CardContent>
-    </Card>
   );
 }

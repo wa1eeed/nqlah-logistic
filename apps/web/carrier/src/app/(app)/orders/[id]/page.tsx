@@ -25,9 +25,11 @@ import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
 import { EscrowCountdown } from '@/components/escrow-countdown';
 import {
-  ORDERS, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
-  formatDate, formatDateTime, timelineFor, normalizeOrder,
+  ORDERS, TRUCKS, DRIVERS, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
+  formatDate, formatDateTime, timelineFor, normalizeOrder, type Order,
 } from '@naqla/shared-utils';
+import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
+import { ConsolidatedPanel } from '@/components/consolidated-panel';
 
 const TITLES: Record<string, string> = {
   CREATED: 'إنشاء الطلب', PUBLISHED: 'نشر الطلب', BID_ACCEPTED: 'قبول عرضك',
@@ -91,6 +93,14 @@ export default function CarrierOrderDetail() {
     ?? (order as { deliveryDate?: string }).deliveryDate
     ?? null;
   const showShipmentCard = ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED'].includes(order.status);
+  // Assigned truck for this order (demo: prefer the carrier's on-trip truck).
+  const assignedTruck =
+    TRUCKS.find((t) => t.carrierId === order.carrierId && t.status === 'ON_TRIP') ??
+    TRUCKS.find((t) => t.carrierId === order.carrierId) ??
+    TRUCKS.find((t) => t.status === 'ON_TRIP') ??
+    TRUCKS[0];
+  const assignedPlate = assignedTruck ? parsePlateString(assignedTruck.plateNumber) : null;
+  const assignedDriver = assignedTruck ? DRIVERS.find((d) => d.id === assignedTruck.assignedDriverId) : null;
 
   return (
     <>
@@ -110,6 +120,10 @@ export default function CarrierOrderDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <MapSection order={order} />
+
+          {order.orderType === 'CONSOLIDATED' && order.legs && order.legs.length > 0 && (
+            <ConsolidatedPanel order={order as Order} canDistribute={showShipmentCard} />
+          )}
 
           {showShipmentCard && (
             <ShipmentStatusCard
@@ -301,6 +315,37 @@ export default function CarrierOrderDetail() {
           <Card>
             <CardHeader><CardTitle>تفاصيل الشحنة</CardTitle></CardHeader>
             <CardContent>
+              {order.orderType !== 'CONSOLIDATED' && showShipmentCard && assignedPlate && (
+                <div className="mb-4 rounded-lg border bg-muted/30 p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                    <Truck className="h-3.5 w-3.5" /> الشاحنة والسائق
+                  </div>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <SaudiLicensePlate
+                      letters={assignedPlate.letters}
+                      numbers={assignedPlate.numbers}
+                      plateType="transport"
+                      plateFormat="standard"
+                      size="stage"
+                    />
+                    {assignedTruck && <div className="num text-xs text-muted-foreground">{assignedTruck.code}</div>}
+                  </div>
+                  {assignedDriver && (
+                    <div className="flex items-center gap-3 rounded-md border bg-background p-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]">
+                        <Users className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold">{assignedDriver.fullName}</div>
+                        <div className="text-xs text-muted-foreground"><span className="num">{assignedDriver.code}</span> · رخصة {assignedDriver.licenseClass}</div>
+                      </div>
+                      <a href={`tel:${assignedDriver.phone}`} dir="ltr" className="num inline-flex items-center gap-1 text-xs font-medium text-[hsl(var(--mint))]">
+                        <Phone className="h-3.5 w-3.5" /> {assignedDriver.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
               <dl className="divide-y">
                 <Row label="الوصف" value={order.cargoDescription} />
                 <Row label="الوزن" icon={Weight} value={<span className="num">{(order.weightKg ?? 0).toLocaleString('en-US')} كجم</span>} />
