@@ -20,10 +20,11 @@ RUN pnpm --filter @naqla/shared-utils run build
 RUN pnpm --filter @naqla/api run db:generate && pnpm --filter @naqla/api run build
 # tsc compiles .ts files only; Prisma generates .js+.d.ts, so copy manually
 RUN cp -r /repo/apps/api/src/generated /repo/apps/api/dist/src/
-# Compile seed.ts → dist/prisma/seed.js so it can run with plain node in production
+# Compile seed.ts + ensure-admin.ts → dist/prisma so they can run with plain
+# node in production (seed = demo data; ensure-admin = super-admin only).
 RUN cd /repo/apps/api && node_modules/.bin/tsc \
   --target ES2020 --module commonjs --esModuleInterop --skipLibCheck \
-  --resolveJsonModule --outDir dist/prisma prisma/seed.ts
+  --resolveJsonModule --outDir dist/prisma prisma/seed.ts prisma/ensure-admin.ts
 
 # pnpm deploy produces flat node_modules (no pnpm store symlinks)
 # No .prisma copy needed: client is generated into src/generated/prisma
