@@ -6,6 +6,27 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.25 — Backend wiring (3): freelancer invoices + profitability (2026-10-24)
+
+> Third stage of backend wiring (see `PENDING_WORK.md`, `docs/FREELANCERS.md`),
+> verified live.
+
+- **`FreelancerInvoice` persisted server-side**: new Prisma model + enum
+  `FreelancerInvoiceStatus` (migration `add_freelancer_invoices`), unique per
+  `(carrier, order, truck)`. `orderRevenue` snapshots the client-side earning so
+  provider margin is shown without re-resolving the order.
+- **New `freelancer-invoices` module**: `GET /freelancer-invoices` (carrier
+  scoped), `POST` (idempotent upsert), `PATCH /:id/pay`, `PATCH /:id/reopen`.
+  Seed ships the historical freelancer trips (totals match the earlier demo:
+  revenue 564,000 / cost 405,000 / profit 159,000 / due 176,000).
+- **Profitability page is API-backed**: reads `/freelancer-invoices`, resolves
+  plate/driver from the live fleet, and mark-paid / reopen persist to the DB
+  (mock fallback kept for offline/design runs; the demo-reset button is hidden
+  when live).
+- **Assign-to-freelancer issues the invoice via the API**: the single-order
+  dialog and the consolidated-leg distribution `POST /freelancer-invoices`
+  (with the leg's revenue share), falling back to localStorage when offline.
+
 ### v0.9.24 — Backend wiring (2): fleet assignment + status persisted (2026-10-24)
 
 > Second stage of backend wiring (see `PENDING_WORK.md`), verified live.

@@ -15,6 +15,7 @@ import { Currency } from '@/components/currency';
 import { useFleetStore } from '@/stores/fleet-store';
 import { useConsolidatedStore, effectiveLegs } from '@/stores/consolidated-store';
 import { useFreelancerStore } from '@/stores/freelancer-store';
+import { api } from '@/lib/api';
 import { notify } from '@/lib/notify';
 import { CURRENT_CARRIER_ID, DRIVERS, TRUCKS, type ConsolidatedLeg, type ConsolidatedLegStatus, type Order } from '@naqla/shared-utils';
 
@@ -61,19 +62,28 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
   const feeValid = Number.isFinite(feeNum) && feeNum > 0;
   const distributeBlocked = openLeg == null || !pick || (isFreelancerPick && !feeValid);
 
-  const doDistribute = () => {
+  const doDistribute = async () => {
     if (distributeBlocked || !pickedTruck) return;
     const driverId = driverForTruck(pick);
     distribute(order.id, openLeg!, pick, driverId);
     const legOrderId = `${order.orderNumber ?? order.id}-L${openLeg}`;
-    if (isFreelancerPick && !invoiceForOrderTruck(legOrderId, pick)) {
-      addFreelancerInvoice((order as { carrierId?: string }).carrierId ?? CURRENT_CARRIER_ID, {
+    if (isFreelancerPick) {
+      // Per-leg freelancer invoice — orderRevenue snapshots the leg's share.
+      const payload = {
         orderId: legOrderId,
         orderNumber: `${order.orderNumber ?? order.id} · شاحنة ${openLeg}`,
         truckId: pick,
         driverId: driverId || undefined,
         amount: feeNum,
-      });
+        orderRevenue: perLeg,
+      };
+      try {
+        await api.post('/freelancer-invoices', payload);
+      } catch {
+        if (!invoiceForOrderTruck(legOrderId, pick)) {
+          addFreelancerInvoice((order as { carrierId?: string }).carrierId ?? CURRENT_CARRIER_ID, payload);
+        }
+      }
       notify.success('تم توزيع الرِجل للفري‑لانسر', `أُنشئت فاتورة رحلة بمبلغ ${feeNum.toLocaleString('en-US')} ر.س.`);
     } else {
       notify.success('تم توزيع الرِجل', `شاحنة ${openLeg} → ${pickedTruck.code ?? ''}`);

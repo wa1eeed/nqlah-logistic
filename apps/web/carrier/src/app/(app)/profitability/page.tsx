@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState, useEffect } from 'react';
+import useSWR, { useSWRConfig } from 'swr';
 import { BadgeCheck, Coins, HandCoins, RotateCcw, TrendingUp, Wallet } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,13 +13,26 @@ import { Currency } from '@/components/currency';
 import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 import { ConfirmDialog } from '@/components/fleet-bits';
 import { useFreelancerStore, resolveInvoices } from '@/stores/freelancer-store';
+import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
 import {
   CURRENT_CARRIER_ID, driverById, truckById, revenueForOrder, formatDate,
-  type FreelancerInvoice,
+  normalizeTruckList, normalizeDriverList,
+  type Driver, type Truck,
 } from '@naqla/shared-utils';
 
-interface Row extends FreelancerInvoice {
+/** A freelancer invoice as rendered — API rows carry `orderRevenue`; mock rows
+ *  resolve revenue from the trip table. */
+interface Row {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  truckId: string;
+  driverId?: string | null;
+  amount: number;
+  status: 'DUE' | 'PAID';
+  issuedAt: string;
+  paidAt?: string | null;
   revenue: number | undefined;
   profit: number | undefined;
   marginPct: number | undefined;
@@ -26,39 +40,58 @@ interface Row extends FreelancerInvoice {
   plate: string;
 }
 
+type ApiInvoice = {
+  id: string; orderId: string; orderNumber: string; truckId: string; driverId?: string | null;
+  amount: number; status: 'DUE' | 'PAID'; issuedAt: string; paidAt?: string | null; orderRevenue?: number | null;
+};
+
 export default function CarrierProfitabilityPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Mock fallback (used only when the API is unavailable).
   const created = useFreelancerStore((s) => s.created);
   const statusOverride = useFreelancerStore((s) => s.statusOverride);
   const paidAt = useFreelancerStore((s) => s.paidAt);
-  const markPaid = useFreelancerStore((s) => s.markPaid);
-  const markDue = useFreelancerStore((s) => s.markDue);
+  const storeMarkPaid = useFreelancerStore((s) => s.markPaid);
+  const storeMarkDue = useFreelancerStore((s) => s.markDue);
   const resetInvoices = useFreelancerStore((s) => s.resetInvoices);
 
-  const [payTarget, setPayTarget] = useState<FreelancerInvoice | null>(null);
+  // Live data from the API.
+  const { data: invRaw } = useSWR<unknown>('/freelancer-invoices', fetcher);
+  const { data: trucksRaw } = useSWR<unknown>('/fleet/trucks', fetcher);
+  const { data: driversRaw } = useSWR<unknown>('/fleet/drivers', fetcher);
+  const { mutate } = useSWRConfig();
+  const apiMode = Array.isArray(invRaw);
+
+  const [payTarget, setPayTarget] = useState<Row | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
   const rows = useMemo<Row[]>(() => {
-    const invoices = resolveInvoices(CURRENT_CARRIER_ID, { created, statusOverride, paidAt });
-    return invoices.map((inv) => {
-      const revenue = revenueForOrder(inv.orderId);
+    // Resolve truck plate + driver name from the live fleet (fallback to mock).
+    const truckMap = new Map(normalizeTruckList<Truck>(trucksRaw).map((t) => [t.id, t]));
+    const driverMap = new Map(normalizeDriverList<Driver>(driversRaw).map((d) => [d.id, d]));
+    const plateOf = (id: string) => truckMap.get(id)?.plateNumber ?? truckById(id)?.plateNumber ?? '';
+    const nameOf = (id?: string | null) =>
+      (id ? driverMap.get(id)?.fullName : undefined) ?? driverById(id)?.fullName ?? '—';
+
+    const source: Array<{ inv: Omit<Row, 'revenue' | 'profit' | 'marginPct' | 'driverName' | 'plate'>; revenue: number | undefined }> =
+      apiMode
+        ? (invRaw as ApiInvoice[]).map((i) => ({
+            inv: { ...i },
+            revenue: i.orderRevenue ?? revenueForOrder(i.orderId),
+          }))
+        : resolveInvoices(CURRENT_CARRIER_ID, { created, statusOverride, paidAt }).map((i) => ({
+            inv: { ...i },
+            revenue: revenueForOrder(i.orderId),
+          }));
+
+    return source.map(({ inv, revenue }) => {
       const profit = revenue === undefined ? undefined : revenue - inv.amount;
-      const marginPct =
-        revenue && revenue > 0 && profit !== undefined ? (profit / revenue) * 100 : undefined;
-      const driver = driverById(inv.driverId);
-      const truck = truckById(inv.truckId);
-      return {
-        ...inv,
-        revenue,
-        profit,
-        marginPct,
-        driverName: driver?.fullName ?? '—',
-        plate: truck?.plateNumber ?? '',
-      };
+      const marginPct = revenue && revenue > 0 && profit !== undefined ? (profit / revenue) * 100 : undefined;
+      return { ...inv, revenue, profit, marginPct, driverName: nameOf(inv.driverId), plate: plateOf(inv.truckId) };
     });
-  }, [created, statusOverride, paidAt]);
+  }, [apiMode, invRaw, trucksRaw, driversRaw, created, statusOverride, paidAt]);
 
   const totals = useMemo(() => {
     const revenue = rows.reduce((s, r) => s + (r.revenue ?? 0), 0);
@@ -66,6 +99,24 @@ export default function CarrierProfitabilityPage() {
     const due = rows.filter((r) => r.status === 'DUE').reduce((s, r) => s + r.amount, 0);
     return { revenue, cost, profit: revenue - cost, due };
   }, [rows]);
+
+  const doMarkPaid = async (id: string) => {
+    if (apiMode) {
+      try { await api.patch(`/freelancer-invoices/${id}/pay`); mutate('/freelancer-invoices'); }
+      catch (e) { notify.error(e); return; }
+    } else {
+      storeMarkPaid(id);
+    }
+    notify.success('تم تسجيل دفع الفاتورة');
+  };
+  const doMarkDue = async (id: string) => {
+    if (apiMode) {
+      try { await api.patch(`/freelancer-invoices/${id}/reopen`); mutate('/freelancer-invoices'); }
+      catch (e) { notify.error(e); return; }
+    } else {
+      storeMarkDue(id);
+    }
+  };
 
   if (!mounted) {
     return (
@@ -84,10 +135,12 @@ export default function CarrierProfitabilityPage() {
             title="الربحية"
             subtitle="ربح المزوّد على الطلبات المُسندة للفري‑لانسر = إيراد العميل ناقص أجرة الرحلة"
           />
-          <Button variant="outline" size="sm" className="shrink-0 gap-2" onClick={() => setConfirmReset(true)}>
-            <RotateCcw className="h-4 w-4" />
-            إعادة الضبط
-          </Button>
+          {!apiMode && (
+            <Button variant="outline" size="sm" className="shrink-0 gap-2" onClick={() => setConfirmReset(true)}>
+              <RotateCcw className="h-4 w-4" />
+              إعادة الضبط
+            </Button>
+          )}
         </div>
       </FadeItem>
 
@@ -182,7 +235,7 @@ export default function CarrierProfitabilityPage() {
                               تسجيل الدفع
                             </Button>
                           ) : (
-                            <Button size="sm" variant="ghost" onClick={() => markDue(r.id)}>
+                            <Button size="sm" variant="ghost" onClick={() => doMarkDue(r.id)}>
                               إعادة فتح
                             </Button>
                           )}
@@ -209,8 +262,7 @@ export default function CarrierProfitabilityPage() {
         confirmLabel="تأكيد الدفع"
         onConfirm={() => {
           if (payTarget) {
-            markPaid(payTarget.id);
-            notify.success('تم تسجيل دفع الفاتورة');
+            doMarkPaid(payTarget.id);
             setPayTarget(null);
           }
         }}

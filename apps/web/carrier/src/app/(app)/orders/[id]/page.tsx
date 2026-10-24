@@ -121,20 +121,27 @@ export default function CarrierOrderDetail() {
   const feeValid = Number.isFinite(feeNum) && feeNum > 0;
   const assignBlocked = !pickTruck || (isFreelancerPick && !feeValid);
 
-  const doAssignOrderTruck = () => {
+  const doAssignOrderTruck = async () => {
     if (assignBlocked || !pickedTruck) return;
     const driverId = driverForTruck(pickTruck);
     assignOrderTruck(order.id, pickTruck, driverId);
     if (isFreelancerPick) {
-      // Issue (or refresh) the per-trip invoice owed to the freelancer.
-      if (!invoiceForOrderTruck(order.id, pickTruck)) {
-        addFreelancerInvoice((order as { carrierId?: string }).carrierId ?? CURRENT_CARRIER_ID, {
-          orderId: order.orderNumber ?? order.id,
-          orderNumber: order.orderNumber ?? order.id,
-          truckId: pickTruck,
-          driverId: driverId || undefined,
-          amount: feeNum,
-        });
+      // Issue (or refresh) the per-trip invoice owed to the freelancer — via the
+      // API, with a localStorage fallback so the demo still records it offline.
+      const payload = {
+        orderId: order.orderNumber ?? order.id,
+        orderNumber: order.orderNumber ?? order.id,
+        truckId: pickTruck,
+        driverId: driverId || undefined,
+        amount: feeNum,
+        orderRevenue: orderRevenue ?? undefined,
+      };
+      try {
+        await api.post('/freelancer-invoices', payload);
+      } catch {
+        if (!invoiceForOrderTruck(order.id, pickTruck)) {
+          addFreelancerInvoice((order as { carrierId?: string }).carrierId ?? CURRENT_CARRIER_ID, payload);
+        }
       }
       notify.success('تم إسناد الطلب للفري‑لانسر', `أُنشئت فاتورة رحلة بمبلغ ${feeNum.toLocaleString('en-US')} ر.س.`);
     } else {

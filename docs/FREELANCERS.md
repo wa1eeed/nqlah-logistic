@@ -84,10 +84,22 @@ the action is allowed:
   client revenue, trip fee, profit + margin %, status, and a **mark paid /
   reopen** action (with a confirmation).
 
-## 6. Demo note & future
+## 6. Backend (v0.9.25)
 
-Ownership overrides and invoices live in carrier-origin localStorage, so they
-are per-browser and do not reach the other portals. With a real backend, fleet
-ownership, invoices, and payment status are stored server-side and the
-profitability figures are computed from settled payments. The model and helpers
-are already shaped for that.
+Freelancer invoices are now persisted by the API (see `docs/LOCAL_BACKEND.md`).
+
+- Prisma model `FreelancerInvoice` + enum `FreelancerInvoiceStatus`, unique per
+  `(carrierId, orderId, truckId)`. `orderRevenue` snapshots the client-side
+  earning so provider margin needs no re-resolution.
+- Module `apps/api/src/modules/freelancer-invoices/`:
+  `GET /freelancer-invoices` (carrier scoped), `POST` (idempotent upsert),
+  `PATCH /:id/pay`, `PATCH /:id/reopen`.
+- The carrier **profitability page** reads `/freelancer-invoices` (resolving
+  plate/driver from the live fleet) and mark-paid / reopen hit the API. The
+  **assign-to-freelancer** flows (single order + consolidated legs)
+  `POST /freelancer-invoices` on assignment, passing the order/leg revenue.
+- The localStorage store (`freelancer-store.ts`) remains a **fallback** for
+  offline/design runs; the demo-reset button is hidden when the API is live.
+
+Still client-only: `ownership` edits other than via the fleet API, and tying an
+invoice's payment to a real settlement/wallet entry.
