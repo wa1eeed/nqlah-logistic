@@ -3,8 +3,8 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import {
-  Check, ChevronLeft, ChevronRight, Clock, Eye, Layers, MapPin, Minus, Package, Plus, Radio,
-  Search, Send, ShieldCheck, Snowflake, Truck, UserSearch, Wallet,
+  Banknote, Check, ChevronLeft, ChevronRight, Clock, Coins, Eye, Gavel, Layers, MapPin, Minus,
+  Package, Plus, Radio, Search, Send, ShieldCheck, Snowflake, Truck, UserSearch, Wallet,
   Building2, Route,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -72,8 +72,11 @@ interface FormState {
   pickupWindow: PickupWindow;
   mode: 'OPEN' | 'DIRECT' | null;
   targetCarrierId: string | null;
-  hasPreAgreedPrice: boolean;
-  agreedPriceUpfront: number | null;
+  /** MARKET = carriers bid; FIXED = client sets the price. */
+  pricingMode: 'MARKET' | 'FIXED';
+  fixedPrice: number | null;
+  /** PREPAID = Escrow; COD = cash/transfer on delivery. */
+  paymentMethod: 'PREPAID' | 'COD';
   truckType: string;
   requiresInsurance: boolean;
   requiresRefrigeration: boolean;
@@ -139,8 +142,9 @@ export default function NewOrderWizard() {
     pickupWindow: 'ALL_DAY',
     mode: null,
     targetCarrierId: null,
-    hasPreAgreedPrice: false,
-    agreedPriceUpfront: null,
+    pricingMode: 'MARKET',
+    fixedPrice: null,
+    paymentMethod: 'PREPAID',
     truckType: 'LARGE_FLATBED',
     requiresInsurance: false,
     requiresRefrigeration: false,
@@ -170,9 +174,9 @@ export default function NewOrderWizard() {
       case 1: return !!form.cargoType && form.cargoDescription.length > 3 && form.weightKg > 0
         && (form.orderType === 'SINGLE' || form.truckCount >= CONSOLIDATED_MIN);
       case 2: return !!form.originCity && !!form.destinationCity && !!form.pickupDate;
-      case 3: return form.mode === 'OPEN' || (
-        form.mode === 'DIRECT' && !!form.targetCarrierId &&
-        (!form.hasPreAgreedPrice || (form.agreedPriceUpfront != null && form.agreedPriceUpfront > 0))
+      case 3: return (
+        (form.mode === 'OPEN' || (form.mode === 'DIRECT' && !!form.targetCarrierId)) &&
+        (form.pricingMode === 'MARKET' || (form.fixedPrice != null && form.fixedPrice > 0))
       );
       case 4: return !!form.truckType;
       default: return true;
@@ -225,12 +229,15 @@ export default function NewOrderWizard() {
         ...(form.destinationPin?.lat != null ? { destinationLat: form.destinationPin.lat } : {}),
         ...(form.destinationPin?.lng != null ? { destinationLng: form.destinationPin.lng } : {}),
         ...(form.specialInstructions ? { specialInstructions: form.specialInstructions } : {}),
-        // DIRECT-mode only fields — never present in OPEN requests
+        pricingMode: form.pricingMode,
+        paymentMethod: form.paymentMethod,
+        // DIRECT-mode only field
         ...(form.mode === 'DIRECT' && form.targetCarrierId
           ? { targetCarrierId: form.targetCarrierId }
           : {}),
-        ...(form.mode === 'DIRECT' && form.hasPreAgreedPrice && form.agreedPriceUpfront
-          ? { agreedPriceUpfront: form.agreedPriceUpfront }
+        // Client-set fixed price (works with OPEN or DIRECT)
+        ...(form.pricingMode === 'FIXED' && form.fixedPrice
+          ? { agreedPriceUpfront: form.fixedPrice }
           : {}),
       };
       const res = await api.post('/orders', body);
@@ -573,60 +580,65 @@ export default function NewOrderWizard() {
                     ))}
                   </div>
 
-                  {/* Pre-agreed price toggle */}
-                  {form.targetCarrierId && (
-                    <div className="rounded-lg border p-4 space-y-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-medium">هل لديك سعر متفق مسبقا مع هذا الناقل؟</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">يتجاوز مرحلة التفاوض ويُسند الطلب مباشرة</div>
-                        </div>
-                        <div className="flex gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => { set('hasPreAgreedPrice', true); }}
-                            className={cn(
-                              'px-3 py-1.5 rounded-md text-sm font-medium border transition-colors',
-                              form.hasPreAgreedPrice
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'border-border text-muted-foreground hover:bg-muted',
-                            )}
-                          >
-                            نعم
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { set('hasPreAgreedPrice', false); set('agreedPriceUpfront', null); }}
-                            className={cn(
-                              'px-3 py-1.5 rounded-md text-sm font-medium border transition-colors',
-                              !form.hasPreAgreedPrice
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'border-border text-muted-foreground hover:bg-muted',
-                            )}
-                          >
-                            لا — تفاوض عادي
-                          </button>
-                        </div>
-                      </div>
-                      {form.hasPreAgreedPrice && (
-                        <div className="space-y-1.5">
-                          <Label htmlFor="agreed-price">السعر المتفق عليه (ريال)</Label>
-                          <Input
-                            id="agreed-price"
-                            type="number"
-                            dir="ltr"
-                            min={1}
-                            placeholder="0.00"
-                            className="text-end"
-                            value={form.agreedPriceUpfront ?? ''}
-                            onChange={(e) => set('agreedPriceUpfront', e.target.value ? Number(e.target.value) : null)}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
+
+              {/* Pricing — works with either distribution mode */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <Label>التسعير</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <ChoiceCard
+                    selected={form.pricingMode === 'MARKET'}
+                    onClick={() => { set('pricingMode', 'MARKET'); set('fixedPrice', null); }}
+                    icon={<Gavel className="h-6 w-6" />}
+                    title="عروض الناقلين"
+                    description="تستقبل عروض أسعار من الناقلين وتقارن بينها."
+                  />
+                  <ChoiceCard
+                    selected={form.pricingMode === 'FIXED'}
+                    onClick={() => set('pricingMode', 'FIXED')}
+                    icon={<Coins className="h-6 w-6" />}
+                    title="سعر ثابت"
+                    description="تحدّد أنت سعر الطلب، ويقبله الناقل كما هو."
+                  />
+                </div>
+                {form.pricingMode === 'FIXED' && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="fixed-price">السعر الثابت (ريال)</Label>
+                    <Input
+                      id="fixed-price"
+                      type="number"
+                      dir="ltr"
+                      min={1}
+                      placeholder="0.00"
+                      className="text-end"
+                      value={form.fixedPrice ?? ''}
+                      onChange={(e) => set('fixedPrice', e.target.value ? Number(e.target.value) : null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Payment method */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <Label>طريقة الدفع</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <ChoiceCard
+                    selected={form.paymentMethod === 'PREPAID'}
+                    onClick={() => set('paymentMethod', 'PREPAID')}
+                    icon={<Wallet className="h-6 w-6" />}
+                    title="دفع مسبق"
+                    description="يُحجز المبلغ في الضمان (Escrow) ويُفرج بعد تأكيد التسليم."
+                  />
+                  <ChoiceCard
+                    selected={form.paymentMethod === 'COD'}
+                    onClick={() => set('paymentMethod', 'COD')}
+                    icon={<Banknote className="h-6 w-6" />}
+                    title="دفع عند التسليم"
+                    description="يُدفع للناقل مباشرة عند استلام الشحنة."
+                  />
+                </div>
+              </div>
             </Step>
           )}
 
@@ -690,11 +702,15 @@ export default function NewOrderWizard() {
                 <Row label="تاريخ الاستلام" value={form.pickupDate || '—'} />
               </Section>
               <Separator />
-              <Section title="طريقة الإرسال">
-                <Row label="النوع" value={form.mode === 'OPEN' ? 'نشر للجميع' : 'إرسال مباشر'} />
+              <Section title="طريقة الإرسال والتسعير">
+                <Row label="التوزيع" value={form.mode === 'OPEN' ? 'نشر للجميع' : 'إرسال مباشر'} />
                 {form.mode === 'DIRECT' && form.targetCarrierId && (
                   <Row label="الناقل" value={carriersRaw?.find((c) => c.id === form.targetCarrierId)?.nameAr ?? '—'} />
                 )}
+                <Row label="التسعير" value={form.pricingMode === 'FIXED'
+                  ? `سعر ثابت · ${(form.fixedPrice ?? 0).toLocaleString('en-US')} ريال`
+                  : 'عروض الناقلين'} />
+                <Row label="طريقة الدفع" value={form.paymentMethod === 'COD' ? 'دفع عند التسليم' : 'دفع مسبق (Escrow)'} />
               </Section>
               <Separator />
               <Section title="المتطلبات">
@@ -851,6 +867,18 @@ function OrderSummary({
           label="طريقة الإرسال"
           muted={!modeValue}
           value={modeValue ?? 'لم تُحدّد بعد'}
+        />
+        <SummaryRow
+          icon={form.pricingMode === 'FIXED' ? Coins : Gavel}
+          label="التسعير"
+          value={form.pricingMode === 'FIXED'
+            ? `سعر ثابت${form.fixedPrice ? ` · ${nf.format(form.fixedPrice)} ريال` : ''}`
+            : 'عروض الناقلين'}
+        />
+        <SummaryRow
+          icon={form.paymentMethod === 'COD' ? Banknote : Wallet}
+          label="طريقة الدفع"
+          value={form.paymentMethod === 'COD' ? 'عند التسليم' : 'مسبق (Escrow)'}
         />
         <SummaryRow
           icon={Truck}
