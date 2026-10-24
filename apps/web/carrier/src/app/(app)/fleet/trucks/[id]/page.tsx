@@ -26,7 +26,7 @@ import {
 } from '@naqla/shared-utils';
 import {
   AuditTimeline, ConfirmDialog, DriverStatusBadge, ExpiryBadge, expiryState,
-  FleetStatusSelect, TripsTimeline, TRUCK_STATUS_OPTIONS,
+  FleetStatusSelect, OwnershipBadge, TripsTimeline, TRUCK_STATUS_OPTIONS,
 } from '@/components/fleet-bits';
 
 export default function TruckDetailPage() {
@@ -146,6 +146,7 @@ export default function TruckDetailPage() {
                 <h3 className="text-lg font-bold">{meta.label}</h3>
                 <Badge variant="outline" className="num gap-1"><Hash className="h-3 w-3" />{truck.code}</Badge>
                 <StatusBadge status={status} />
+                <OwnershipBadge ownership={truck.ownership} />
               </div>
               <SaudiLicensePlate letters={parsedPlate.letters} numbers={parsedPlate.numbers} plateType="transport" size="stage" />
               <div className="text-sm text-muted-foreground">لوحة سعودية رسمية · مسجّلة لدى المرور</div>

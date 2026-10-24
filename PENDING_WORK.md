@@ -10,7 +10,7 @@
 
 ---
 
-## Recent demo / UX work (v0.9.17–v0.9.21, 2026-10-24) — status
+## Recent demo / UX work (v0.9.17–v0.9.22, 2026-10-24) — status
 
 > Written in English per `docs/DOCUMENTATION.md`. These are UI/demo features
 > built on `mock-data` + client stores; wiring them to the real API is future
@@ -32,11 +32,11 @@
   distribution/pricing/payment; client form respects the policy.
   → `docs/POLICIES.md`
 
-**In progress — provider dispatcher / freelancers (Stage 3):**
-- Distinguish a provider's **owned** trucks/drivers from **freelancers** working
-  for a fee. When a provider assigns an order to a freelancer, set the trip price
-  and issue a **per-trip invoice** to that freelancer. Add a provider
-  **profitability** page (order revenue vs freelancer invoices paid/due).
+**Open as a PR (pending merge):**
+- **Provider dispatcher / freelancers** (v0.9.22) — owned vs freelancer fleet
+  (`ownership` + `OwnershipBadge`), per-trip freelancer invoices issued on
+  assignment (single + consolidated legs), and a carrier **profitability** page
+  (revenue vs freelancer cost, mark paid/reopen). → `docs/FREELANCERS.md`
 
 **Cross-cutting backend wiring (future):** persist fleet / legs / policies /
 invoices server-side; roll leg statuses up to the parent order; resolve client

@@ -20,6 +20,8 @@ polish pass before release.
   fixed-price pricing & payment method, carrier distribution, invoices.
 - [`POLICIES.md`](POLICIES.md) — admin per-client / per-group platform policy
   (distribution, pricing, payment; customization groups).
+- [`FREELANCERS.md`](FREELANCERS.md) — provider dispatcher: owned vs freelancer
+  fleet, per-trip freelancer invoices, and the profitability page.
 - [`TRACKING.md`](TRACKING.md) — live shipment tracking: real OSRM road routes,
   the mock realtime (WebSocket-style) channel, and the events timeline.
 - [`API.md`](API.md) — API surface.

@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/page-header';
 import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 import { StatsCard } from '@/components/stats-card';
 import { StatusBadge } from '@/components/status-badge';
-import { ConfirmDialog, ExpiryBadge, expiryState, nextInspection } from '@/components/fleet-bits';
+import { ConfirmDialog, ExpiryBadge, OwnershipBadge, expiryState, nextInspection } from '@/components/fleet-bits';
 import { useFleetStore } from '@/stores/fleet-store';
 import { useConsolidatedStore } from '@/stores/consolidated-store';
 import { notify } from '@/lib/notify';
@@ -106,6 +106,7 @@ export default function CarrierFleetTrucks() {
                 <TableHead>الرقم</TableHead>
                 <TableHead>لوحة</TableHead>
                 <TableHead>النوع</TableHead>
+                <TableHead>الملكية</TableHead>
                 <TableHead className="text-end">الحمولة</TableHead>
                 <TableHead>السائق</TableHead>
                 <TableHead>الحالة</TableHead>
@@ -126,6 +127,7 @@ export default function CarrierFleetTrucks() {
                       <SaudiLicensePlate letters={parsed.letters} numbers={parsed.numbers} plateType="transport" size="thumbnail" />
                     </TableCell>
                     <TableCell>{TRUCK_LABELS[t.truckType] ?? t.truckType ?? '—'}</TableCell>
+                    <TableCell><OwnershipBadge ownership={t.ownership} /></TableCell>
                     <TableCell className="text-end num">{tons.toFixed(0)} طن</TableCell>
                     <TableCell>
                       {drv

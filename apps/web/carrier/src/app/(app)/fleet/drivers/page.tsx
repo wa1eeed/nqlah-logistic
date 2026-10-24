@@ -17,7 +17,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
-import { DriverStatusBadge, ExpiryBadge, expiryState } from '@/components/fleet-bits';
+import { DriverStatusBadge, ExpiryBadge, OwnershipBadge, expiryState } from '@/components/fleet-bits';
 import { useFleetStore } from '@/stores/fleet-store';
 import { api } from '@/lib/api';
 import { notify } from '@/lib/notify';
@@ -110,6 +110,7 @@ export default function CarrierFleetDrivers() {
                 <TableHead>الاسم</TableHead>
                 <TableHead>الهوية</TableHead>
                 <TableHead>فئة الرخصة</TableHead>
+                <TableHead>الملكية</TableHead>
                 <TableHead>الشاحنة</TableHead>
                 <TableHead className="text-center">رحلات</TableHead>
                 <TableHead>الحالة</TableHead>
@@ -118,7 +119,7 @@ export default function CarrierFleetDrivers() {
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
                     <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
                     لا يوجد سائقون
                   </TableCell>
@@ -138,6 +139,7 @@ export default function CarrierFleetDrivers() {
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground num">{d.nationalId}</TableCell>
                     <TableCell className="whitespace-nowrap">{d.licenseClass}</TableCell>
+                    <TableCell><OwnershipBadge ownership={d.ownership} /></TableCell>
                     <TableCell>
                       {d.truck
                         ? <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><TruckIcon className="h-3.5 w-3.5 text-muted-foreground" /><span className="font-mono text-xs">{d.truck.code}</span></span>

@@ -23,6 +23,28 @@ export function DriverStatusBadge({ status }: { status: string }) {
   return <StatusBadge status={status} label={DRIVER_STATUS_LABEL[status]} />;
 }
 
+/**
+ * Ownership tag: OWNED (the provider's own fleet) vs FREELANCER (contracted,
+ * paid per delivery). FREELANCER is mint-outlined to stand out in lists.
+ */
+export function OwnershipBadge({ ownership, className }: { ownership: string; className?: string }) {
+  const freelancer = ownership === 'FREELANCER';
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium',
+        freelancer
+          ? 'border-[hsl(var(--mint))]/30 bg-[hsl(var(--mint))]/10 text-[hsl(var(--mint))]'
+          : 'border-border bg-muted/50 text-muted-foreground',
+        className,
+      )}
+    >
+      {freelancer ? <Link2 className="h-3 w-3" /> : <Flag className="h-3 w-3" />}
+      {freelancer ? 'فري‑لانسر' : 'تابع'}
+    </span>
+  );
+}
+
 /** Days until `dateStr` and a severity bucket (soon = within `soonDays`). */
 export function expiryState(dateStr?: string, soonDays = 60): { days: number; state: 'expired' | 'soon' | 'ok' } | null {
   if (!dateStr) return null;

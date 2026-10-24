@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import {
   AlertCircle, BarChart3, Bell, Compass, FileCheck2, Gavel, LayoutDashboard,
-  LifeBuoy, Package, Settings, Shield, Truck, Users, Wallet,
+  LifeBuoy, Package, Settings, Shield, TrendingUp, Truck, Users, Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -41,9 +41,10 @@ const NAV: NavGroup[] = [
   {
     titleKey: 'finance',
     items: [
-      { href: '/earnings', labelKey: 'earnings', icon: Wallet },
-      { href: '/finance',  labelKey: 'finance',  icon: Wallet },
-      { href: '/reports',  labelKey: 'reports',  icon: BarChart3 },
+      { href: '/earnings',      labelKey: 'earnings',      icon: Wallet },
+      { href: '/profitability', labelKey: 'profitability', icon: TrendingUp },
+      { href: '/finance',       labelKey: 'finance',       icon: Wallet },
+      { href: '/reports',       labelKey: 'reports',       icon: BarChart3 },
     ],
   },
   {

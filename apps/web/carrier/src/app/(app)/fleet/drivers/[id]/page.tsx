@@ -23,7 +23,7 @@ import {
   DRIVERS, TRUCKS, auditForDriver, formatDate, tripsForDriver, type DriverStatus,
 } from '@naqla/shared-utils';
 import {
-  AuditTimeline, ConfirmDialog, DRIVER_STATUS_OPTIONS, DriverStatusBadge, ExpiryBadge,
+  AuditTimeline, ConfirmDialog, DRIVER_STATUS_OPTIONS, DriverStatusBadge, ExpiryBadge, OwnershipBadge,
   FleetStatusSelect, TripsTimeline,
 } from '@/components/fleet-bits';
 
@@ -115,6 +115,7 @@ export default function DriverDetailPage() {
                 <div className="flex items-center justify-center gap-2">
                   <Badge variant="outline" className="num gap-1"><Hash className="h-3 w-3" />{driver.code}</Badge>
                   <DriverStatusBadge status={status} />
+                  <OwnershipBadge ownership={driver.ownership} />
                 </div>
               </div>
             </div>
