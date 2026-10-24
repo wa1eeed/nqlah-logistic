@@ -389,6 +389,10 @@ model Order {
   /// add a type). truckCount is null for single orders.
   orderType             String      @default("SINGLE")
   truckCount            Int?
+  /// Per-leg shipment reference numbers for a consolidated order, ordered by
+  /// leg sequence (index 1..truckCount → legReferences[0..truckCount-1]). Set
+  /// by the client at creation, or auto-generated as `<orderNumber>-L<n>`.
+  legReferences         String[]    @default([])
 
   clientId              String
   client                Company     @relation("ClientOrders", fields: [clientId], references: [id])

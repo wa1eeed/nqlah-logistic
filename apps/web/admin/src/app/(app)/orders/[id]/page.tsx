@@ -595,13 +595,17 @@ function ConsolidatedReadonly({ order }: {
                 <>
                   <div className="w-[100px] shrink-0"><SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="fill" /></div>
                   <div className="min-w-0 flex-1">
+                    {leg.reference && <div className="num font-mono text-[11px] text-foreground truncate" dir="ltr">{leg.reference}</div>}
                     {driverName
                       ? <div className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="h-3 w-3" /> {driverName}</div>
                       : <div className="text-xs text-muted-foreground">بدون سائق</div>}
                   </div>
                 </>
               ) : (
-                <div className="flex-1 text-xs text-muted-foreground">لم تُوزَّع بعد</div>
+                <div className="min-w-0 flex-1">
+                  {leg.reference && <div className="num font-mono text-[11px] text-foreground truncate" dir="ltr">{leg.reference}</div>}
+                  <div className="text-xs text-muted-foreground">لم تُوزَّع بعد</div>
+                </div>
               )}
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${LEG_TONE[leg.status]}`}>{LEG_LABEL[leg.status]}</span>
             </div>

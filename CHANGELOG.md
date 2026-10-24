@@ -6,6 +6,27 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.35 — Per-leg shipment references for consolidated orders (2026-10-24)
+
+> Feature #1. Also makes consolidated orders actually creatable via the API.
+
+- Each leg of a consolidated order now carries a **shipment reference**. At
+  creation the client either types one per shipment, or leaves it to the system
+  to auto-generate `<orderNumber>-L<n>`; blank manual entries fall back to auto.
+  The reference shows in the consolidated legs table on the client and admin
+  order-detail pages.
+- API: new `Order.legReferences String[]` (+ migration); `CreateOrderDto`
+  accepts `orderType` / `truckCount` / `legReferences`; `OrdersService.create`
+  persists them and generates/fills references; `getLegs` returns `reference`
+  per leg.
+- **Fixes a blocking gap:** creating a consolidated order used to be rejected
+  (the DTO lacked `orderType` / `truckCount`, and the strict API rejects unknown
+  keys). The create wizard also stopped sending UI-only `pricingMode` /
+  `paymentMethod` (not in the schema; FIXED pricing goes via
+  `agreedPriceUpfront`), which were 400-rejecting every create.
+- Verified live: manual references persist, a blank entry auto-fills, and a
+  no-references consolidated order generates all sub-references (HTTP 201).
+
 ### v0.9.34 — Stop the empty-page flash (2026-10-24)
 
 > Pre-deploy fix #7: pages briefly rendered empty before data appeared.

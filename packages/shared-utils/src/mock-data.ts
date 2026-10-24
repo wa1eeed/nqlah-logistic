@@ -85,6 +85,8 @@ export type ConsolidatedLegStatus = 'PENDING' | 'ASSIGNED' | 'IN_TRANSIT' | 'DEL
 export interface ConsolidatedLeg {
   index: number;
   status: ConsolidatedLegStatus;
+  /** Per-leg shipment reference (client-entered or auto-generated). */
+  reference?: string;
   truckId?: string;
   driverId?: string;
 }

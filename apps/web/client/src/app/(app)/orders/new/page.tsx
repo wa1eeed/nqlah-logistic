@@ -57,6 +57,9 @@ interface FormState {
   tripType: TripType;
   orderType: OrderKind;
   truckCount: number;
+  /** Consolidated: client types a reference per leg; off = system auto-generates. */
+  legReferencesManual: boolean;
+  legReferences: string[];
   cargoType: string;
   cargoDescription: string;
   weightKg: number;
@@ -134,6 +137,8 @@ export default function NewOrderWizard() {
     tripType: 'INTER_CITY',
     orderType: 'SINGLE',
     truckCount: 1,
+    legReferencesManual: false,
+    legReferences: [],
     cargoType: 'GENERAL',
     cargoDescription: '',
     weightKg: 0,
@@ -240,6 +245,11 @@ export default function NewOrderWizard() {
         tripType: form.tripType,
         orderType: form.orderType,
         ...(form.orderType === 'CONSOLIDATED' ? { truckCount: form.truckCount } : {}),
+        // Manual per-leg references (blanks are auto-filled server-side); omit
+        // entirely when auto so the server generates every sub-reference.
+        ...(form.orderType === 'CONSOLIDATED' && form.legReferencesManual
+          ? { legReferences: Array.from({ length: form.truckCount }, (_, i) => (form.legReferences[i] ?? '').trim()) }
+          : {}),
         pickupWindow: form.pickupWindow,
         cargoType: form.cargoType,
         cargoDescription: form.cargoDescription,
@@ -262,8 +272,9 @@ export default function NewOrderWizard() {
         ...(form.destinationPin?.lat != null ? { destinationLat: form.destinationPin.lat } : {}),
         ...(form.destinationPin?.lng != null ? { destinationLng: form.destinationPin.lng } : {}),
         ...(form.specialInstructions ? { specialInstructions: form.specialInstructions } : {}),
-        pricingMode: form.pricingMode,
-        paymentMethod: form.paymentMethod,
+        // Note: pricingMode / paymentMethod are UI-only and not part of the API
+        // schema (FIXED pricing is sent via agreedPriceUpfront below), so they
+        // are intentionally NOT included — the strict API rejects unknown keys.
         // DIRECT-mode only field
         ...(form.mode === 'DIRECT' && form.targetCarrierId
           ? { targetCarrierId: form.targetCarrierId }
@@ -369,27 +380,75 @@ export default function NewOrderWizard() {
                   />
                 </div>
                 {form.orderType === 'CONSOLIDATED' && (
-                  <div className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3 mt-1">
-                    <div>
-                      <div className="text-sm font-semibold">عدد الشاحنات المطلوبة</div>
-                      <div className="text-xs text-muted-foreground">نفس المسار والحمولة · فاتورة مجمّعة برقم طلب واحد</div>
+                  <>
+                    <div className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3 mt-1">
+                      <div>
+                        <div className="text-sm font-semibold">عدد الشاحنات المطلوبة</div>
+                        <div className="text-xs text-muted-foreground">نفس المسار والحمولة · فاتورة مجمّعة برقم طلب واحد</div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          type="button" variant="outline" size="icon" className="h-9 w-9"
+                          disabled={form.truckCount <= CONSOLIDATED_MIN}
+                          onClick={() => set('truckCount', Math.max(CONSOLIDATED_MIN, form.truckCount - 1))}
+                          aria-label="إنقاص"
+                        ><Minus className="h-4 w-4" /></Button>
+                        <span className="num w-10 text-center text-lg font-bold">{form.truckCount}</span>
+                        <Button
+                          type="button" variant="outline" size="icon" className="h-9 w-9"
+                          disabled={form.truckCount >= CONSOLIDATED_MAX}
+                          onClick={() => set('truckCount', Math.min(CONSOLIDATED_MAX, form.truckCount + 1))}
+                          aria-label="زيادة"
+                        ><Plus className="h-4 w-4" /></Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        type="button" variant="outline" size="icon" className="h-9 w-9"
-                        disabled={form.truckCount <= CONSOLIDATED_MIN}
-                        onClick={() => set('truckCount', Math.max(CONSOLIDATED_MIN, form.truckCount - 1))}
-                        aria-label="إنقاص"
-                      ><Minus className="h-4 w-4" /></Button>
-                      <span className="num w-10 text-center text-lg font-bold">{form.truckCount}</span>
-                      <Button
-                        type="button" variant="outline" size="icon" className="h-9 w-9"
-                        disabled={form.truckCount >= CONSOLIDATED_MAX}
-                        onClick={() => set('truckCount', Math.min(CONSOLIDATED_MAX, form.truckCount + 1))}
-                        aria-label="زيادة"
-                      ><Plus className="h-4 w-4" /></Button>
+
+                    {/* Per-leg shipment references: client types one per shipment, or
+                        the system auto-generates a sub-reference for each. */}
+                    <div className="rounded-xl border bg-muted/30 p-3 mt-1 space-y-3">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div>
+                          <div className="text-sm font-semibold">أرقام مرجعية للشحنات</div>
+                          <div className="text-xs text-muted-foreground">رقم مرجعي لكل شحنة داخل الطلب المجمّع</div>
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button
+                            type="button" size="sm"
+                            variant={!form.legReferencesManual ? 'default' : 'outline'}
+                            onClick={() => set('legReferencesManual', false)}
+                          >توليد تلقائي</Button>
+                          <Button
+                            type="button" size="sm"
+                            variant={form.legReferencesManual ? 'default' : 'outline'}
+                            onClick={() => set('legReferencesManual', true)}
+                          >إدخال يدوي</Button>
+                        </div>
+                      </div>
+                      {form.legReferencesManual ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {Array.from({ length: form.truckCount }).map((_, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground w-16 shrink-0">شحنة <span className="num">{i + 1}</span></span>
+                              <Input
+                                dir="ltr"
+                                value={form.legReferences[i] ?? ''}
+                                placeholder={`REF-${i + 1}`}
+                                onChange={(e) => setForm((s) => {
+                                  const arr = [...s.legReferences];
+                                  arr[i] = e.target.value;
+                                  return { ...s, legReferences: arr };
+                                })}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          سيُولّد النظام رقمًا مرجعيًا فرعيًا لكل شحنة تلقائيا (مثل ORD-2026-XXXX-L1).
+                        </p>
+                      )}
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
 
