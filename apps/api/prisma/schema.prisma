@@ -177,6 +177,11 @@ enum TruckStatus {
   OFF_DUTY
 }
 
+enum FreelancerInvoiceStatus {
+  DUE
+  PAID
+}
+
 /// Whether a truck/driver is part of the provider's OWN fleet or a FREELANCER
 /// contracted and paid per delivery. Freelancer trips are billed via
 /// per-trip invoices (see provider profitability).
@@ -272,6 +277,7 @@ model Company {
   reviewsGiven     Review[]      @relation("ReviewerCompany")
   supportTickets   SupportTicket[]
   savedAddresses   SavedAddress[]
+  freelancerInvoices FreelancerInvoice[] @relation("CarrierFreelancerInvoices")
 
   @@index([type, status])
   @@index([city])
@@ -608,6 +614,35 @@ model Invoice {
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+}
+
+/// Per-trip fee a provider (carrier) owes a FREELANCER truck/driver. Issued
+/// when an order (or a consolidated leg) is assigned to a freelancer.
+/// `orderId` is the order number or a synthetic leg id, not an Order FK, so it
+/// also covers consolidated legs that are not standalone Order rows.
+/// `orderRevenue` snapshots what the carrier earns from the client so provider
+/// profit = orderRevenue - amount without re-resolving the order later.
+model FreelancerInvoice {
+  id        String  @id @default(cuid())
+  carrierId String
+  carrier   Company @relation("CarrierFreelancerInvoices", fields: [carrierId], references: [id])
+
+  orderId     String
+  orderNumber String
+  truckId     String
+  driverId    String?
+
+  amount       Float
+  orderRevenue Float?
+  status       FreelancerInvoiceStatus @default(DUE)
+
+  issuedAt  DateTime  @default(now())
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([carrierId, orderId, truckId])
+  @@index([carrierId, status])
 }
 
 model Dispute {

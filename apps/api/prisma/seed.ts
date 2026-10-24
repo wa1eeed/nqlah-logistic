@@ -224,12 +224,43 @@ async function main() {
     { plateNumber: 'ي ك ل 3456', type: 'MEDIUM_FLATBED' as const, capacity: 18, make: 'Scania',   model: 'R500',   year: 2021, hasGPS: true,  ownership: 'FREELANCER' as const, status: 'MAINTENANCE' as const, driver: 'DL-100205' },
     { plateNumber: 'م ن س 7890', type: 'LOWBED' as const,        capacity: 50, make: 'MAN',      model: 'TGX',    year: 2023, hasGPS: true,  ownership: 'FREELANCER' as const, status: 'AVAILABLE' as const,   driver: 'DL-100203' },
   ];
+  const truckIds: Record<string, string> = {}; // plateNumber -> id
   for (const t of TRUCKS_SEED) {
     const { driver, ...data } = t;
-    await prisma.truck.upsert({
+    const row = await prisma.truck.upsert({
       where: { plateNumber: t.plateNumber },
       update: { ownership: t.ownership, status: t.status, currentDriverId: driverIds[driver] },
       create: { ...data, companyId: carrierCo.id, currentDriverId: driverIds[driver] },
+    });
+    truckIds[t.plateNumber] = row.id;
+  }
+
+  // ─── Freelancer invoices (per-trip fees to freelance trucks/drivers) ──
+  // Historical trips for the two freelancer trucks. orderRevenue snapshots the
+  // client-side earning so the profitability page shows margins directly.
+  const FREELANCER_INVOICES_SEED = [
+    { orderNumber: 'ORD-2025-0170', plate: 'م ن س 7890', license: 'DL-100203', amount: 116000, orderRevenue: 162000, status: 'PAID' as const,  issuedAt: '2026-05-20T10:00:00Z', paidAt: '2026-05-23T09:00:00Z' },
+    { orderNumber: 'ORD-2025-0158', plate: 'م ن س 7890', license: 'DL-100203', amount: 133000, orderRevenue: 184500, status: 'DUE' as const,   issuedAt: '2026-04-26T17:00:00Z' },
+    { orderNumber: 'ORD-2025-0144', plate: 'م ن س 7890', license: 'DL-100203', amount: 100000, orderRevenue: 139800, status: 'PAID' as const,  issuedAt: '2026-04-03T16:00:00Z', paidAt: '2026-04-06T11:00:00Z' },
+    { orderNumber: 'ORD-2025-0071', plate: 'ي ك ل 3456', license: 'DL-100205', amount: 43000,  orderRevenue: 59300,  status: 'DUE' as const,   issuedAt: '2026-02-03T13:00:00Z' },
+    { orderNumber: 'ORD-2025-0063', plate: 'ي ك ل 3456', license: 'DL-100205', amount: 13000,  orderRevenue: 18400,  status: 'PAID' as const,  issuedAt: '2026-01-19T12:00:00Z', paidAt: '2026-01-21T10:00:00Z' },
+  ];
+  for (const inv of FREELANCER_INVOICES_SEED) {
+    await prisma.freelancerInvoice.upsert({
+      where: { carrierId_orderId_truckId: { carrierId: carrierCo.id, orderId: inv.orderNumber, truckId: truckIds[inv.plate] } },
+      update: { amount: inv.amount, orderRevenue: inv.orderRevenue, status: inv.status, paidAt: inv.paidAt ? new Date(inv.paidAt) : null },
+      create: {
+        carrierId: carrierCo.id,
+        orderId: inv.orderNumber,
+        orderNumber: inv.orderNumber,
+        truckId: truckIds[inv.plate],
+        driverId: driverIds[inv.license],
+        amount: inv.amount,
+        orderRevenue: inv.orderRevenue,
+        status: inv.status,
+        issuedAt: new Date(inv.issuedAt),
+        paidAt: inv.paidAt ? new Date(inv.paidAt) : null,
+      },
     });
   }
 
