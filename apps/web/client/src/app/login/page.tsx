@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DEV_USERS, DEV_BYPASS_TOKEN } from '@naqla/shared-utils';
 import { useAuthStore } from '@/lib/auth-store';
 
 export default function ClientLoginPage() {
@@ -30,16 +29,11 @@ export default function ClientLoginPage() {
       router.push('/');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: { message?: string }, message?: string } }, message?: string };
-      // If the API is unreachable, fall back to dev-bypass mode so the demo
-      // UI still works (no real persistence, but routes render).
-      if (!e.response) {
-        localStorage.setItem('naqla_client_token', DEV_BYPASS_TOKEN);
-        localStorage.setItem('naqla_client_refresh', DEV_BYPASS_TOKEN);
-        useAuthStore.setState({ user: { ...DEV_USERS.client, avatar: null } as never });
-        router.push('/');
-        return;
-      }
-      setError(e.response?.data?.error?.message ?? e.response?.data?.message ?? e.message ?? 'حدث خطأ');
+      setError(
+        !e.response
+          ? 'تعذّر الوصول إلى الخادم. تأكّد من اتصالك وحاول مجددا.'
+          : (e.response?.data?.error?.message ?? e.response?.data?.message ?? e.message ?? 'حدث خطأ'),
+      );
     } finally {
       setLoading(false);
     }
