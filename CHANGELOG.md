@@ -6,6 +6,30 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.22 — Provider dispatcher: freelancers + per-trip invoices + profitability (2026-10-24)
+
+> See `docs/FREELANCERS.md`.
+
+- The provider (carrier) is a **dispatcher**: its fleet now distinguishes
+  **owned** trucks/drivers (تابع) from **freelancers** (فري‑لانسر) contracted and
+  paid per delivery. Shared model adds `ownership: 'OWNED' | 'FREELANCER'` to
+  `Truck` and `Driver` (`packages/shared-utils/src/mock-data.ts`), shown as an
+  `OwnershipBadge` in the trucks/drivers lists and detail pages, and chosen in
+  the new-truck form.
+- **Per-trip freelancer invoices**: when the provider assigns an order (single
+  or a consolidated leg) to a freelancer truck, it must set a **trip fee**, and
+  a `FreelancerInvoice` is issued for that amount. The assign dialogs show the
+  ownership, the fee field (required for freelancers), and the resulting margin.
+  New model `FreelancerInvoice` + `FREELANCER_INVOICES_SEED` +
+  `freelancerInvoicesForCarrier` / `revenueForOrder`; carrier store
+  `apps/web/carrier/src/stores/freelancer-store.ts`.
+- **Profitability page** (`/profitability`, carrier → finance): order revenue
+  (from the client) vs freelancer trip fees, with totals (revenue, freelancer
+  cost, net profit, amount still due) and per-invoice margin, plus **mark paid /
+  reopen**. New sidebar entry «الربحية».
+- Demo note: invoices and ownership overrides live in carrier-origin
+  localStorage; real invoicing/persistence is backend work.
+
 ### v0.9.21 — Admin per-client / per-group platform policy (2026-10-24)
 
 > See `docs/POLICIES.md`.

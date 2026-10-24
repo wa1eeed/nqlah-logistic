@@ -7,12 +7,16 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
+import { OwnershipBadge } from '@/components/fleet-bits';
 import { Currency } from '@/components/currency';
 import { useFleetStore } from '@/stores/fleet-store';
 import { useConsolidatedStore, effectiveLegs } from '@/stores/consolidated-store';
+import { useFreelancerStore } from '@/stores/freelancer-store';
 import { notify } from '@/lib/notify';
-import { DRIVERS, TRUCKS, type ConsolidatedLeg, type ConsolidatedLegStatus, type Order } from '@naqla/shared-utils';
+import { CURRENT_CARRIER_ID, DRIVERS, TRUCKS, type ConsolidatedLeg, type ConsolidatedLegStatus, type Order } from '@naqla/shared-utils';
 
 const LEG_LABEL: Record<ConsolidatedLegStatus, string> = {
   PENDING: 'لم تُوزَّع',
@@ -32,9 +36,12 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
   const distribute = useConsolidatedStore((s) => s.distribute);
   const clearLeg = useConsolidatedStore((s) => s.clearLeg);
   const assignMap = useFleetStore((s) => s.assign);
+  const addFreelancerInvoice = useFreelancerStore((s) => s.addInvoice);
+  const invoiceForOrderTruck = useFreelancerStore((s) => s.invoiceForOrderTruck);
 
   const [openLeg, setOpenLeg] = useState<number | null>(null);
   const [pick, setPick] = useState('');
+  const [tripFee, setTripFee] = useState('');
 
   const legs = effectiveLegs(order.legs ?? [], overrides);
   const count = order.truckCount ?? legs.length;
@@ -48,13 +55,32 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
   const driverForTruck = (truckId: string) =>
     (truckId in assignMap ? assignMap[truckId] : TRUCKS.find((t) => t.id === truckId)?.assignedDriverId) ?? '';
 
+  const pickedTruck = TRUCKS.find((t) => t.id === pick);
+  const isFreelancerPick = pickedTruck?.ownership === 'FREELANCER';
+  const feeNum = Number(tripFee);
+  const feeValid = Number.isFinite(feeNum) && feeNum > 0;
+  const distributeBlocked = openLeg == null || !pick || (isFreelancerPick && !feeValid);
+
   const doDistribute = () => {
-    if (openLeg == null || !pick) return;
+    if (distributeBlocked || !pickedTruck) return;
     const driverId = driverForTruck(pick);
-    distribute(order.id, openLeg, pick, driverId);
-    notify.success('تم توزيع الرِجل', `شاحنة ${openLeg} → ${TRUCKS.find((t) => t.id === pick)?.code ?? ''}`);
+    distribute(order.id, openLeg!, pick, driverId);
+    const legOrderId = `${order.orderNumber ?? order.id}-L${openLeg}`;
+    if (isFreelancerPick && !invoiceForOrderTruck(legOrderId, pick)) {
+      addFreelancerInvoice((order as { carrierId?: string }).carrierId ?? CURRENT_CARRIER_ID, {
+        orderId: legOrderId,
+        orderNumber: `${order.orderNumber ?? order.id} · شاحنة ${openLeg}`,
+        truckId: pick,
+        driverId: driverId || undefined,
+        amount: feeNum,
+      });
+      notify.success('تم توزيع الرِجل للفري‑لانسر', `أُنشئت فاتورة رحلة بمبلغ ${feeNum.toLocaleString('en-US')} ر.س.`);
+    } else {
+      notify.success('تم توزيع الرِجل', `شاحنة ${openLeg} → ${pickedTruck.code ?? ''}`);
+    }
     setOpenLeg(null);
     setPick('');
+    setTripFee('');
   };
 
   return (
@@ -155,31 +181,67 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
       </Card>
 
       {/* Distribute dialog */}
-      <Dialog open={openLeg != null} onOpenChange={(o) => { if (!o) setOpenLeg(null); }}>
+      <Dialog open={openLeg != null} onOpenChange={(o) => { if (!o) { setOpenLeg(null); setPick(''); setTripFee(''); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>توزيع الشاحنة رقم {openLeg}</DialogTitle>
             <DialogDescription>اختر شاحنة من أسطولك — السائق المربوط بها يُسنَد تلقائيًا.</DialogDescription>
           </DialogHeader>
-          <div className="py-2">
+          <div className="py-2 space-y-3">
             <Select value={pick} onValueChange={setPick}>
               <SelectTrigger><SelectValue placeholder="اختر شاحنة" /></SelectTrigger>
               <SelectContent>
                 {TRUCKS.map((t) => {
                   const used = usedTrucks.has(t.id);
                   const drv = DRIVERS.find((d) => d.id === driverForTruck(t.id))?.fullName;
+                  const tag = t.ownership === 'FREELANCER' ? ' · فري‑لانسر' : '';
                   return (
                     <SelectItem key={t.id} value={t.id} disabled={used}>
-                      {t.code} · {t.plateNumber}{drv ? ` · ${drv}` : ''}{used ? ' (مستخدمة بهذا الطلب)' : ''}
+                      {t.code} · {t.plateNumber}{drv ? ` · ${drv}` : ''}{tag}{used ? ' (مستخدمة بهذا الطلب)' : ''}
                     </SelectItem>
                   );
                 })}
               </SelectContent>
             </Select>
+
+            {pickedTruck && (
+              <div className="flex items-center justify-between text-xs">
+                <OwnershipBadge ownership={pickedTruck.ownership} />
+                <span className="text-muted-foreground">
+                  حصّة الرِجل من الإيراد{' '}
+                  <span className="num font-medium text-foreground" dir="ltr">{perLeg.toLocaleString('en-US')}</span>{' '}ر.س.
+                </span>
+              </div>
+            )}
+
+            {isFreelancerPick && (
+              <div className="space-y-2 rounded-lg border border-[hsl(var(--mint))]/30 bg-[hsl(var(--mint))]/5 p-3">
+                <Label htmlFor="legTripFee" className="text-sm font-medium">أجرة الرحلة للفري‑لانسر</Label>
+                <div className="relative">
+                  <Input
+                    id="legTripFee"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    value={tripFee}
+                    onChange={(e) => setTripFee(e.target.value)}
+                    placeholder="0"
+                    className="num pe-12"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-xs text-muted-foreground">ر.س.</span>
+                </div>
+                {feeValid && (
+                  <p className="text-xs text-muted-foreground">
+                    ربح الرِجل المتوقّع{' '}
+                    <span className="num font-medium text-foreground" dir="ltr">{(perLeg - feeNum).toLocaleString('en-US')}</span>{' '}ر.س.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenLeg(null)}>إلغاء</Button>
-            <Button onClick={doDistribute} disabled={!pick}><CheckCircle2 className="h-4 w-4" /> توزيع</Button>
+            <Button variant="outline" onClick={() => { setOpenLeg(null); setPick(''); setTripFee(''); }}>إلغاء</Button>
+            <Button onClick={doDistribute} disabled={distributeBlocked}><CheckCircle2 className="h-4 w-4" /> توزيع</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

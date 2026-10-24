@@ -23,6 +23,7 @@ interface FormState {
   letter2: string;
   letter3: string;
   numbers: string;
+  ownership: 'OWNED' | 'FREELANCER';
   truckType: string;
   capacity: string;
   brandId: string;
@@ -48,6 +49,7 @@ export default function NewTruckPage() {
     registrationType: '',
     letter1: '', letter2: '', letter3: '',
     numbers: '',
+    ownership: 'OWNED',
     truckType: '',
     capacity: '',
     brandId: '',
@@ -127,6 +129,7 @@ export default function NewTruckPage() {
 
       await api.post('/fleet/trucks', {
         plateNumber,
+        ownership: form.ownership,
         type: form.truckType,
         capacity: Number(form.capacity) || 0,
         length: form.length ? Number(form.length) : undefined,
@@ -221,6 +224,30 @@ export default function NewTruckPage() {
           <Card>
             <CardHeader><CardTitle>معلومات الشاحنة</CardTitle></CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>الملكية</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    { v: 'OWNED', label: 'شاحنة تابعة', hint: 'ضمن أسطول الشركة' },
+                    { v: 'FREELANCER', label: 'فري‑لانسر', hint: 'متعاقدة بأجرة لكل رحلة' },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      onClick={() => set('ownership', opt.v)}
+                      className={cn(
+                        'rounded-xl border p-3 text-start transition-colors',
+                        form.ownership === opt.v
+                          ? 'border-[hsl(var(--mint))] bg-[hsl(var(--mint))]/8 ring-1 ring-[hsl(var(--mint))]/30'
+                          : 'border-border hover:bg-muted/40',
+                      )}
+                    >
+                      <div className="text-sm font-semibold">{opt.label}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{opt.hint}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>نوع الشاحنة</Label>

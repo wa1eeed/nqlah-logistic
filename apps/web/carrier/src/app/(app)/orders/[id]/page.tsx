@@ -25,13 +25,15 @@ import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
 import { EscrowCountdown } from '@/components/escrow-countdown';
 import {
-  ORDERS, TRUCKS, DRIVERS, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
+  ORDERS, TRUCKS, DRIVERS, CURRENT_CARRIER_ID, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
   formatDate, formatDateTime, timelineFor, normalizeOrder, type Order,
 } from '@naqla/shared-utils';
 import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
+import { OwnershipBadge } from '@/components/fleet-bits';
 import { ConsolidatedPanel } from '@/components/consolidated-panel';
 import { useFleetStore } from '@/stores/fleet-store';
 import { useConsolidatedStore } from '@/stores/consolidated-store';
+import { useFreelancerStore } from '@/stores/freelancer-store';
 
 const TITLES: Record<string, string> = {
   CREATED: 'إنشاء الطلب', PUBLISHED: 'نشر الطلب', BID_ACCEPTED: 'قبول عرضك',
@@ -57,10 +59,13 @@ export default function CarrierOrderDetail() {
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [assignDriverOpen, setAssignDriverOpen] = useState(false);
   const [pickTruck, setPickTruck] = useState('');
+  const [tripFee, setTripFee] = useState('');
 
   const fleetAssign = useFleetStore((s) => s.assign);
   const singleAssign = useConsolidatedStore((s) => s.singleAssign);
   const assignOrderTruck = useConsolidatedStore((s) => s.assignOrderTruck);
+  const addFreelancerInvoice = useFreelancerStore((s) => s.addInvoice);
+  const invoiceForOrderTruck = useFreelancerStore((s) => s.invoiceForOrderTruck);
   const driverForTruck = (truckId: string) =>
     (truckId in fleetAssign ? fleetAssign[truckId] : TRUCKS.find((t) => t.id === truckId)?.assignedDriverId) ?? '';
 
@@ -106,13 +111,38 @@ export default function CarrierOrderDetail() {
     ? DRIVERS.find((d) => d.id === override.driverId)
     : (assignedTruck ? DRIVERS.find((d) => d.id === (fleetAssign[assignedTruck.id] ?? assignedTruck.assignedDriverId)) : null);
 
+  // Revenue the carrier earns on this order (client side) — used to show the
+  // provider's margin when assigning a freelancer, and to issue the invoice.
+  const orderRevenue =
+    (order as { carrierAmount?: number | null }).carrierAmount ?? order.agreedPrice ?? null;
+  const pickedTruck = TRUCKS.find((t) => t.id === pickTruck);
+  const isFreelancerPick = pickedTruck?.ownership === 'FREELANCER';
+  const feeNum = Number(tripFee);
+  const feeValid = Number.isFinite(feeNum) && feeNum > 0;
+  const assignBlocked = !pickTruck || (isFreelancerPick && !feeValid);
+
   const doAssignOrderTruck = () => {
-    if (!pickTruck) return;
+    if (assignBlocked || !pickedTruck) return;
     const driverId = driverForTruck(pickTruck);
     assignOrderTruck(order.id, pickTruck, driverId);
-    notify.success('تم إسناد الشاحنة للطلب', `${TRUCKS.find((t) => t.id === pickTruck)?.code ?? ''}`);
+    if (isFreelancerPick) {
+      // Issue (or refresh) the per-trip invoice owed to the freelancer.
+      if (!invoiceForOrderTruck(order.id, pickTruck)) {
+        addFreelancerInvoice((order as { carrierId?: string }).carrierId ?? CURRENT_CARRIER_ID, {
+          orderId: order.orderNumber ?? order.id,
+          orderNumber: order.orderNumber ?? order.id,
+          truckId: pickTruck,
+          driverId: driverId || undefined,
+          amount: feeNum,
+        });
+      }
+      notify.success('تم إسناد الطلب للفري‑لانسر', `أُنشئت فاتورة رحلة بمبلغ ${feeNum.toLocaleString('en-US')} ر.س.`);
+    } else {
+      notify.success('تم إسناد الشاحنة للطلب', `${pickedTruck.code ?? ''}`);
+    }
     setAssignDriverOpen(false);
     setPickTruck('');
+    setTripFee('');
   };
 
   return (
@@ -558,7 +588,7 @@ export default function CarrierOrderDetail() {
       </Dialog>
 
       {/* Assign driver */}
-      <Dialog open={assignDriverOpen} onOpenChange={setAssignDriverOpen}>
+      <Dialog open={assignDriverOpen} onOpenChange={(o) => { setAssignDriverOpen(o); if (!o) { setPickTruck(''); setTripFee(''); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>إسناد شاحنة للطلب</DialogTitle>
@@ -580,7 +610,10 @@ export default function CarrierOrderDetail() {
                     <SaudiLicensePlate letters={parsed.letters} numbers={parsed.numbers} plateType="transport" size="fill" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="num text-sm font-medium">{t.code}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="num text-sm font-medium">{t.code}</span>
+                      <OwnershipBadge ownership={t.ownership} />
+                    </div>
                     <div className="truncate text-xs text-muted-foreground">{drv ? drv.fullName : 'بدون سائق'}</div>
                   </div>
                   {pickTruck === t.id && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
@@ -588,9 +621,40 @@ export default function CarrierOrderDetail() {
               );
             })}
           </div>
+
+          {isFreelancerPick && (
+            <div className="space-y-2 rounded-lg border border-[hsl(var(--mint))]/30 bg-[hsl(var(--mint))]/5 p-3">
+              <Label htmlFor="tripFee" className="text-sm font-medium">أجرة الرحلة للفري‑لانسر</Label>
+              <div className="relative">
+                <Input
+                  id="tripFee"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={tripFee}
+                  onChange={(e) => setTripFee(e.target.value)}
+                  placeholder="0"
+                  className="num pe-12"
+                />
+                <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-xs text-muted-foreground">ر.س.</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                تُنشأ فاتورة رحلة بهذا المبلغ تُستحقّ للفري‑لانسر.
+                {orderRevenue !== null && feeValid && (
+                  <>
+                    {' '}ربحك المتوقّع{' '}
+                    <span className="num font-medium text-foreground" dir="ltr">
+                      {(orderRevenue - feeNum).toLocaleString('en-US')}
+                    </span>{' '}ر.س.
+                  </>
+                )}
+              </p>
+            </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setAssignDriverOpen(false); setPickTruck(''); }}>إلغاء</Button>
-            <Button disabled={!pickTruck} onClick={doAssignOrderTruck}>
+            <Button variant="outline" onClick={() => { setAssignDriverOpen(false); setPickTruck(''); setTripFee(''); }}>إلغاء</Button>
+            <Button disabled={assignBlocked} onClick={doAssignOrderTruck}>
               <CheckCircle2 className="h-4 w-4" /> إسناد
             </Button>
           </DialogFooter>

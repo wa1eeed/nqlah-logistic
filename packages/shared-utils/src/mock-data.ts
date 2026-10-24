@@ -169,11 +169,19 @@ export interface Bid {
 }
 
 export type DriverStatus = 'AVAILABLE' | 'ON_TRIP' | 'OFF_DUTY';
+
+/**
+ * Whether a truck/driver belongs to the provider (OWNED) or works for it per
+ * delivery for a fee (FREELANCER). Freelancers are invoiced per trip.
+ */
+export type FleetOwnership = 'OWNED' | 'FREELANCER';
+
 export interface Driver {
   id: string;
   /** Short human ID Code, e.g. "DRV-2001". */
   code: string;
   carrierId: string;
+  ownership: FleetOwnership;
   fullName: string;
   nationalId: string;
   licenseClass: string;
@@ -190,6 +198,7 @@ export interface Truck {
   /** Short human ID Code, e.g. "TRK-1001". */
   code: string;
   carrierId: string;
+  ownership: FleetOwnership;
   plateNumber: string;
   truckType: TruckType;
   capacityKg: number;
@@ -312,19 +321,19 @@ export const BIDS: Bid[] = [
 // ─── Fleet (Carrier-side) — sample for CR-2001 (logged-in carrier) ───
 
 export const TRUCKS: Truck[] = [
-  { id: 'TRK-001', code: 'TRK-1001', carrierId: 'CR-2001', plateNumber: 'ا ب ح 1234', truckType: 'LARGE_FLATBED', capacityKg: 25000, modelYear: 2023, status: 'ON_TRIP',     lastInspection: '2026-03-15T00:00:00Z', assignedDriverId: 'DRV-001' },
-  { id: 'TRK-002', code: 'TRK-1002', carrierId: 'CR-2001', plateNumber: 'د هـ و 5678', truckType: 'BOX_TRUCK',     capacityKg:  8000, modelYear: 2024, status: 'AVAILABLE',   lastInspection: '2026-04-02T00:00:00Z', assignedDriverId: 'DRV-004' },
-  { id: 'TRK-003', code: 'TRK-1003', carrierId: 'CR-2001', plateNumber: 'ر ح ط 9012', truckType: 'REFRIGERATED',  capacityKg: 15000, modelYear: 2022, status: 'AVAILABLE',   lastInspection: '2026-02-20T00:00:00Z', assignedDriverId: 'DRV-002' },
-  { id: 'TRK-004', code: 'TRK-1004', carrierId: 'CR-2001', plateNumber: 'ي ك ل 3456', truckType: 'MEDIUM_FLATBED', capacityKg: 18000, modelYear: 2021, status: 'MAINTENANCE', lastInspection: '2026-01-08T00:00:00Z', assignedDriverId: 'DRV-005' },
-  { id: 'TRK-005', code: 'TRK-1005', carrierId: 'CR-2001', plateNumber: 'م ن س 7890', truckType: 'LOWBED',         capacityKg: 50000, modelYear: 2023, status: 'AVAILABLE',   lastInspection: '2026-04-30T00:00:00Z', assignedDriverId: 'DRV-003' },
+  { id: 'TRK-001', code: 'TRK-1001', carrierId: 'CR-2001', ownership: 'OWNED', plateNumber: 'ا ب ح 1234', truckType: 'LARGE_FLATBED', capacityKg: 25000, modelYear: 2023, status: 'ON_TRIP',     lastInspection: '2026-03-15T00:00:00Z', assignedDriverId: 'DRV-001' },
+  { id: 'TRK-002', code: 'TRK-1002', carrierId: 'CR-2001', ownership: 'OWNED', plateNumber: 'د هـ و 5678', truckType: 'BOX_TRUCK',     capacityKg:  8000, modelYear: 2024, status: 'AVAILABLE',   lastInspection: '2026-04-02T00:00:00Z', assignedDriverId: 'DRV-004' },
+  { id: 'TRK-003', code: 'TRK-1003', carrierId: 'CR-2001', ownership: 'OWNED', plateNumber: 'ر ح ط 9012', truckType: 'REFRIGERATED',  capacityKg: 15000, modelYear: 2022, status: 'AVAILABLE',   lastInspection: '2026-02-20T00:00:00Z', assignedDriverId: 'DRV-002' },
+  { id: 'TRK-004', code: 'TRK-1004', carrierId: 'CR-2001', ownership: 'FREELANCER', plateNumber: 'ي ك ل 3456', truckType: 'MEDIUM_FLATBED', capacityKg: 18000, modelYear: 2021, status: 'MAINTENANCE', lastInspection: '2026-01-08T00:00:00Z', assignedDriverId: 'DRV-005' },
+  { id: 'TRK-005', code: 'TRK-1005', carrierId: 'CR-2001', ownership: 'FREELANCER', plateNumber: 'م ن س 7890', truckType: 'LOWBED',         capacityKg: 50000, modelYear: 2023, status: 'AVAILABLE',   lastInspection: '2026-04-30T00:00:00Z', assignedDriverId: 'DRV-003' },
 ];
 
 export const DRIVERS: Driver[] = [
-  { id: 'DRV-001', code: 'DRV-2001', carrierId: 'CR-2001', fullName: 'أحمد بن سعد الغامدي',    nationalId: '1023456789', licenseClass: 'تركيب وقاطرة', licenseExpiry: '2027-06-12', phone: '+966550001122', status: 'ON_TRIP',   assignedTruckId: 'TRK-001', totalTrips: 312 },
-  { id: 'DRV-002', code: 'DRV-2002', carrierId: 'CR-2001', fullName: 'خالد بن محمد العتيبي',    nationalId: '1029988776', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2028-02-25', phone: '+966550002233', status: 'AVAILABLE', assignedTruckId: 'TRK-003', totalTrips: 198 },
-  { id: 'DRV-003', code: 'DRV-2003', carrierId: 'CR-2001', fullName: 'سلطان بن عبدالله القحطاني', nationalId: '1011223344', licenseClass: 'حمولة استثنائية', licenseExpiry: '2026-11-04', phone: '+966550003344', status: 'AVAILABLE', assignedTruckId: 'TRK-005', totalTrips: 145 },
-  { id: 'DRV-004', code: 'DRV-2004', carrierId: 'CR-2001', fullName: 'فهد بن ناصر الدوسري',    nationalId: '1077889900', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2027-09-18', phone: '+966550004455', status: 'AVAILABLE', assignedTruckId: 'TRK-002', totalTrips: 87 },
-  { id: 'DRV-005', code: 'DRV-2005', carrierId: 'CR-2001', fullName: 'ماجد بن علي الشهري',     nationalId: '1055667788', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2027-03-30', phone: '+966550005566', status: 'OFF_DUTY',  assignedTruckId: 'TRK-004', totalTrips: 64 },
+  { id: 'DRV-001', code: 'DRV-2001', carrierId: 'CR-2001', ownership: 'OWNED', fullName: 'أحمد بن سعد الغامدي',    nationalId: '1023456789', licenseClass: 'تركيب وقاطرة', licenseExpiry: '2027-06-12', phone: '+966550001122', status: 'ON_TRIP',   assignedTruckId: 'TRK-001', totalTrips: 312 },
+  { id: 'DRV-002', code: 'DRV-2002', carrierId: 'CR-2001', ownership: 'OWNED', fullName: 'خالد بن محمد العتيبي',    nationalId: '1029988776', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2028-02-25', phone: '+966550002233', status: 'AVAILABLE', assignedTruckId: 'TRK-003', totalTrips: 198 },
+  { id: 'DRV-003', code: 'DRV-2003', carrierId: 'CR-2001', ownership: 'FREELANCER', fullName: 'سلطان بن عبدالله القحطاني', nationalId: '1011223344', licenseClass: 'حمولة استثنائية', licenseExpiry: '2026-11-04', phone: '+966550003344', status: 'AVAILABLE', assignedTruckId: 'TRK-005', totalTrips: 145 },
+  { id: 'DRV-004', code: 'DRV-2004', carrierId: 'CR-2001', ownership: 'OWNED', fullName: 'فهد بن ناصر الدوسري',    nationalId: '1077889900', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2027-09-18', phone: '+966550004455', status: 'AVAILABLE', assignedTruckId: 'TRK-002', totalTrips: 87 },
+  { id: 'DRV-005', code: 'DRV-2005', carrierId: 'CR-2001', ownership: 'FREELANCER', fullName: 'ماجد بن علي الشهري',     nationalId: '1055667788', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2027-03-30', phone: '+966550005566', status: 'OFF_DUTY',  assignedTruckId: 'TRK-004', totalTrips: 64 },
 ];
 
 // ─── Payments ─────────────────────────────────────────────────────────
@@ -825,6 +834,56 @@ export function auditForTruck(truckId: string, extra: FleetAuditEvent[] = []): F
 
 export function auditForDriver(driverId: string, extra: FleetAuditEvent[] = []): FleetAuditEvent[] {
   return [...extra, ...FLEET_AUDIT_SEED].filter((e) => e.driverId === driverId).sort(byAtDesc);
+}
+
+// ─── Freelancer invoicing (per-trip fees to non-owned trucks/drivers) ─
+//
+// A provider (carrier) is a dispatcher. When it assigns an order to a
+// FREELANCER truck/driver, it owes them a trip fee — recorded as a
+// FreelancerInvoice. The provider's profit on that order = what it earns from
+// the client minus the freelancer fee.
+
+export type FreelancerInvoiceStatus = 'DUE' | 'PAID';
+
+export interface FreelancerInvoice {
+  id: string;
+  carrierId: string;
+  orderId: string;
+  orderNumber: string;
+  truckId: string;
+  driverId?: string;
+  /** Trip fee owed to the freelancer (SAR). */
+  amount: number;
+  status: FreelancerInvoiceStatus;
+  issuedAt: string;
+  paidAt?: string;
+}
+
+export const FREELANCER_INVOICES_SEED: FreelancerInvoice[] = [
+  { id: 'INV-F-0005', carrierId: 'CR-2001', orderId: 'ORD-2025-0170', orderNumber: 'ORD-2025-0170', truckId: 'TRK-005', driverId: 'DRV-003', amount: 116000, status: 'PAID', issuedAt: '2026-05-20T10:00:00Z', paidAt: '2026-05-23T09:00:00Z' },
+  { id: 'INV-F-0004', carrierId: 'CR-2001', orderId: 'ORD-2025-0158', orderNumber: 'ORD-2025-0158', truckId: 'TRK-005', driverId: 'DRV-003', amount: 133000, status: 'DUE',  issuedAt: '2026-04-26T17:00:00Z' },
+  { id: 'INV-F-0003', carrierId: 'CR-2001', orderId: 'ORD-2025-0144', orderNumber: 'ORD-2025-0144', truckId: 'TRK-005', driverId: 'DRV-003', amount: 100000, status: 'PAID', issuedAt: '2026-04-03T16:00:00Z', paidAt: '2026-04-06T11:00:00Z' },
+  { id: 'INV-F-0002', carrierId: 'CR-2001', orderId: 'ORD-2025-0071', orderNumber: 'ORD-2025-0071', truckId: 'TRK-004', driverId: 'DRV-005', amount: 43000,  status: 'DUE',  issuedAt: '2026-02-03T13:00:00Z' },
+  { id: 'INV-F-0001', carrierId: 'CR-2001', orderId: 'ORD-2025-0063', orderNumber: 'ORD-2025-0063', truckId: 'TRK-004', driverId: 'DRV-005', amount: 13000,  status: 'PAID', issuedAt: '2026-01-19T12:00:00Z', paidAt: '2026-01-21T10:00:00Z' },
+];
+
+export function freelancerInvoicesForCarrier(carrierId: string, extra: FreelancerInvoice[] = []): FreelancerInvoice[] {
+  return [...extra, ...FREELANCER_INVOICES_SEED]
+    .filter((i) => i.carrierId === carrierId)
+    .sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
+}
+
+/**
+ * The carrier's revenue on an order (what it earns from the client) — used to
+ * compute provider profit against freelancer trip fees. Resolves a completed
+ * trip's amount first (historical trips), then a live order's agreed amount.
+ */
+export function revenueForOrder(orderId: string): number | undefined {
+  const trip = TRIP_BASE.find((t) => t.orderId === orderId);
+  if (trip) return trip.amount;
+  const order = ORDERS.find((o) => o.orderNumber === orderId || o.id === orderId);
+  if (order) return order.carrierAmount ?? order.agreedPrice ?? undefined;
+  return undefined;
 }
 
 // ─── Truck Brands & Models (admin-managed) ────────────────────────────
