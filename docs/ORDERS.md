@@ -91,6 +91,9 @@ Consolidated orders and their legs are persisted by the API (see
 - The parent order's status is **rolled up** (forward-only) from its legs: all
   delivered → DELIVERED, any in transit → IN_TRANSIT, all distributed →
   ASSIGNED.
-- The carrier `ConsolidatedPanel` reads `/orders/:id/legs` and distribute/clear
-  persist to the DB (mock fallback kept). The client/admin **read-only**
-  breakdown still reads `order.legs` and can move to `/orders/:id/legs` later.
+- `GET /orders/:id/legs` is readable by the order's client, its carrier, or an
+  admin; distributed legs are enriched with the truck plate + driver name so a
+  viewer without fleet access can render them. Mutations are carrier/admin only.
+- The carrier `ConsolidatedPanel` and the client/admin **read-only** breakdowns
+  all read `/orders/:id/legs` (mock `order.legs` fallback kept); distribute/clear
+  persist to the DB.

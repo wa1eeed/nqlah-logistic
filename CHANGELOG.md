@@ -6,6 +6,20 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.29 — Consolidated read-only (client/admin) wired to the API (2026-10-24)
+
+> Follow-up to the Stage 4 backend wiring (`docs/ORDERS.md`), verified live.
+
+- `GET /orders/:id/legs` is now readable by the order's **client** and **admin**
+  (not only the carrier), and each distributed leg is **enriched** with the
+  truck `plateNumber` and the `driverName` — so a viewer who can't query the
+  carrier's fleet can still render the breakdown. Mutations
+  (distribute/clear/status) remain carrier/admin only.
+- The client and admin order-detail **consolidated read-only** breakdowns now
+  read `/orders/:id/legs` (mock `order.legs` fallback kept) and render the real
+  per-leg plate, driver, and status. Verified live: both show 2/5 distributed
+  with drivers أحمد الغامدي / خالد العتيبي and the consolidated invoice.
+
 ### v0.9.28 — Backend wiring (6): real WebSocket tracking (2026-10-24)
 
 > Final stage of backend wiring (see `PENDING_WORK.md`, `docs/TRACKING.md`),

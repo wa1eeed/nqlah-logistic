@@ -432,16 +432,51 @@ export class OrdersService {
     return order;
   }
 
-  /** The full leg list (1..truckCount); undistributed legs are PENDING. */
+  /**
+   * The full leg list (1..truckCount); undistributed legs are PENDING. Readable
+   * by the order's client, its carrier, or an admin. Each distributed leg is
+   * enriched with the truck plate + driver name so viewers who can't query the
+   * fleet (the client) can still render the breakdown.
+   */
   async getLegs(id: string, actor: AuthUser) {
-    const order = await this.carrierOrder(id, actor);
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        orderTrucks: {
+          orderBy: { sequence: 'asc' },
+          include: { truck: { select: { plateNumber: true } } },
+        },
+      },
+    });
+    if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
+    this.assertViewAccess(order, actor);
+
     const count = order.truckCount ?? order.orderTrucks.length;
+    const driverIds = order.orderTrucks.map((l) => l.driverId).filter((d): d is string => !!d);
+    const drivers = driverIds.length
+      ? await this.prisma.driverProfile.findMany({
+          where: { id: { in: driverIds } },
+          include: { user: { select: { firstName: true, lastName: true } } },
+        })
+      : [];
+    const driverName = (did?: string | null) => {
+      const d = did ? drivers.find((x) => x.id === did) : undefined;
+      return d ? [d.user.firstName, d.user.lastName].filter(Boolean).join(' ') : undefined;
+    };
+
     const bySeq = new Map(order.orderTrucks.map((l) => [l.sequence, l]));
     const legs = Array.from({ length: count }, (_, i) => {
       const index = i + 1;
       const row = bySeq.get(index);
       return row
-        ? { index, truckId: row.truckId, driverId: row.driverId ?? undefined, status: row.status }
+        ? {
+            index,
+            truckId: row.truckId,
+            driverId: row.driverId ?? undefined,
+            status: row.status,
+            plateNumber: row.truck?.plateNumber,
+            driverName: driverName(row.driverId),
+          }
         : { index, status: 'PENDING' };
     });
     return { orderId: order.id, orderNumber: order.orderNumber, truckCount: count, status: order.status, legs };
