@@ -88,6 +88,16 @@ The mock channel is now backed by a real Socket.IO connection (see
   interface, so the UI is unchanged. If it can't connect it falls back to the
   local simulation. The tracking page lists live API orders (mock fallback).
 
+## 5b. Consolidated orders — multi-truck (v0.9.36)
+
+For a `CONSOLIDATED` order the gateway tracks **one progress per leg** (seeded
+from each leg's status: delivered → 1, in-transit/assigned → moving,
+undistributed → 0 at origin) and emits `tracking:location_update` with a
+`legs: [{ index, progress }]` array instead of a single `progress`. The client
+socket accepts both shapes. The map takes a `trucks` array and renders one
+numbered marker per leg (popup shows the leg's shipment reference); the Tracking
+page shows the average progress across trucks. Single orders are unchanged.
+
 ## 6. Future
 
 Replace the server's simulated progress with real device GPS (posted via

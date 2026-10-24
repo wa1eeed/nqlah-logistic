@@ -18,20 +18,29 @@ export interface RoutePoint {
   label: string;
 }
 
+/** One tracked truck for a consolidated order. */
+export interface MapTruck {
+  index: number;
+  progress: number;
+  reference?: string;
+}
+
 export interface RouteMapProps {
   origin: RoutePoint;
   destination: RoutePoint;
   progress?: number;
+  /** Multiple trucks (consolidated orders) — takes precedence over `progress`. */
+  trucks?: MapTruck[];
   /** When true, the truck keeps crawling toward the destination (live tracking). */
   live?: boolean;
   height?: number;
   className?: string;
 }
 
-export function RouteMap({ origin, destination, progress, live, height = 300, className }: RouteMapProps) {
+export function RouteMap({ origin, destination, progress, trucks, live, height = 300, className }: RouteMapProps) {
   return (
     <div className={cn('overflow-hidden rounded-xl border bg-card', className)}>
-      <RouteMapImpl origin={origin} destination={destination} progress={progress} live={live} height={height} />
+      <RouteMapImpl origin={origin} destination={destination} progress={progress} trucks={trucks} live={live} height={height} />
     </div>
   );
 }

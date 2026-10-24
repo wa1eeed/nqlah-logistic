@@ -105,11 +105,26 @@ function TrackingDetail({ order }: { order: any }) {
   const road = primaryRoadFor(order.originCity, order.destinationCity);
   const base = order.status === 'IN_TRANSIT' ? 0.55 : order.status === 'CONFIRMED' ? 0.1 : 0;
 
+  const isConsolidated = order.orderType === 'CONSOLIDATED';
+  // Seed one truck per leg from its status, so a consolidated order tracks
+  // every shipment (not just one). Live pings then move each truck by index.
+  const { data: legsResp } = useSWR<{ legs?: { index: number; status: string; reference?: string }[] }>(
+    isConsolidated ? `/orders/${order.id}/legs` : null, fetcher);
+  const seedTrucks = useMemo(() => {
+    const arr = legsResp?.legs ?? (order.legs ?? []);
+    const seed = (status: string) =>
+      status === 'DELIVERED' ? 1 : status === 'IN_TRANSIT' ? 0.15 : status === 'ASSIGNED' ? 0.06 : 0;
+    return (arr as { index: number; status: string; reference?: string }[])
+      .map((l) => ({ index: l.index, reference: l.reference, progress: seed(l.status) }));
+  }, [legsResp, order.legs]);
+
   // Live data is PUSHED from the tracking socket — GPS fixes, not a page timer.
   // A real WebSocket to the API when available, else a local simulation.
   const [progress, setProgress] = useState(base);
+  const [trucks, setTrucks] = useState(seedTrucks);
   const [speed, setSpeed] = useState<number | null>(null);
   const [lastAt, setLastAt] = useState<number | null>(null);
+  useEffect(() => { setTrucks(seedTrucks); }, [seedTrucks]);
   useEffect(() => {
     setProgress(base);
     setSpeed(null);
@@ -120,12 +135,25 @@ function TrackingDetail({ order }: { order: any }) {
       startProgress: base,
       orderId: order.id,
       token,
-      onPing: (p) => { setProgress(p.progress); setSpeed(p.speedKmh); setLastAt(p.at); },
+      onPing: (p) => {
+        setSpeed(p.speedKmh); setLastAt(p.at);
+        if (p.legs && p.legs.length) {
+          const byIdx = new Map(p.legs.map((l) => [l.index, l.progress]));
+          setTrucks((prev) => prev.map((t) => (byIdx.has(t.index) ? { ...t, progress: byIdx.get(t.index)! } : t)));
+        } else if (typeof p.progress === 'number') {
+          setProgress(p.progress);
+        }
+      },
     });
     return () => socket.close();
   }, [order.id, order.status, base]);
 
-  const remaining = Math.round(km * (1 - progress));
+  // Overall progress for the bar/stats: the average of the legs for a
+  // consolidated order, else the single shipment's progress.
+  const overall = isConsolidated
+    ? (trucks.length ? trucks.reduce((s, t) => s + t.progress, 0) / trucks.length : 0)
+    : progress;
+  const remaining = Math.round(km * (1 - overall));
   const isLive = order.status === 'IN_TRANSIT';
   const lastUpdate = lastAt ? new Date(lastAt).toLocaleTimeString('en-GB') : '—';
   const carrier = companyById(order.carrierId);
@@ -137,7 +165,8 @@ function TrackingDetail({ order }: { order: any }) {
         <RouteMap
           origin={{ ...o, label: order.originCity }}
           destination={{ ...d, label: order.destinationCity }}
-          progress={progress}
+          progress={isConsolidated ? undefined : progress}
+          trucks={isConsolidated ? trucks : undefined}
           height={420}
           className="rounded-b-none border-b"
         />
@@ -223,14 +252,14 @@ function TrackingDetail({ order }: { order: any }) {
         <CardContent>
           <div className="mb-5">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-              <span>التقدّم</span>
-              <span className="num font-medium">{Math.round(progress * 100)}%</span>
+              <span>{isConsolidated ? 'متوسّط تقدّم الشاحنات' : 'التقدّم'}</span>
+              <span className="num font-medium">{Math.round(overall * 100)}%</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div className="h-full bg-[hsl(var(--mint))] transition-all" style={{ width: `${progress * 100}%` }} />
+              <div className="h-full bg-[hsl(var(--mint))] transition-all" style={{ width: `${overall * 100}%` }} />
             </div>
           </div>
-          <TrackingTimeline order={order} km={km} progress={progress} road={road} />
+          <TrackingTimeline order={order} km={km} progress={overall} road={road} />
         </CardContent>
       </Card>
     </>

@@ -10,11 +10,23 @@ export interface RoutePoint {
   label: string;
 }
 
+/** One tracked truck on the route (used for consolidated multi-truck orders). */
+export interface MapTruck {
+  /** Leg index (1-based) — shown on the marker. */
+  index: number;
+  /** 0..1 — where this truck is along the route. */
+  progress: number;
+  /** Per-leg shipment reference, shown in the marker popup. */
+  reference?: string;
+}
+
 export interface RouteMapImplProps {
   origin: RoutePoint;
   destination: RoutePoint;
-  /** 0..1 — where the shipment is along the route. */
+  /** 0..1 — single-shipment position (SINGLE orders). */
   progress?: number;
+  /** Multiple trucks (CONSOLIDATED orders). Takes precedence over `progress`. */
+  trucks?: MapTruck[];
   /** When true, the truck keeps crawling toward the destination (live feel). */
   live?: boolean;
   height?: number;
@@ -45,8 +57,13 @@ const DEST_ICON = L.divIcon({
   iconAnchor: [17, 46],
   popupAnchor: [0, -40],
 });
-const TRUCK_ICON = L.divIcon({
-  html: `
+/** Truck marker, optionally stamped with a leg number (for consolidated orders). */
+function makeTruckIcon(label?: string) {
+  const badge = label
+    ? `<span class="naqla-truck-badge num">${label}</span>`
+    : '';
+  return L.divIcon({
+    html: `
     <div class="naqla-truck-wrap">
       <span class="naqla-truck-ring"></span>
       <div class="naqla-truck-dot">
@@ -56,11 +73,13 @@ const TRUCK_ICON = L.divIcon({
           <circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>
         </svg>
       </div>
+      ${badge}
     </div>`,
-  className: 'naqla-truck',
-  iconSize: [34, 34],
-  iconAnchor: [17, 17],
-});
+    className: 'naqla-truck',
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+  });
+}
 
 // ── Geometry helpers (work on [lat,lng] tuples) ──────────────────────
 function haversine(a: LatLngTuple, b: LatLngTuple): number {
@@ -121,7 +140,53 @@ function fmtDuration(sec: number): string {
   return `${m} د`;
 }
 
-export function RouteMapImpl({ origin, destination, progress, height = 300 }: RouteMapImplProps) {
+/**
+ * A single truck marker that smoothly tweens from its last position to the
+ * newly reported `progress` (like a ride-hailing app between GPS fixes). Each
+ * instance owns its own animation, so a consolidated order renders several
+ * trucks moving independently.
+ */
+function TruckMarker({ line, progress, label, reference }: {
+  line: LatLngTuple[];
+  progress: number;
+  label?: string;
+  reference?: string;
+}) {
+  const target = Math.max(0, Math.min(1, progress));
+  const animRef = React.useRef(target);
+  const [anim, setAnim] = React.useState(target);
+  React.useEffect(() => {
+    const from = animRef.current;
+    const to = target;
+    if (Math.abs(to - from) < 1e-6) { animRef.current = to; setAnim(to); return; }
+    let raf = 0;
+    const start = performance.now();
+    const dur = 1200;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const v = from + (to - from) * eased;
+      animRef.current = v;
+      setAnim(v);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+
+  const { at } = sliceAlong(line, anim);
+  const icon = React.useMemo(() => makeTruckIcon(label), [label]);
+  return (
+    <Marker position={at} icon={icon} zIndexOffset={1000}>
+      <Popup>
+        {label ? <strong>شحنة {label}</strong> : <strong>الشاحنة في الطريق</strong>}
+        {reference ? <><br /><span className="num" style={{ color: '#6B7280', direction: 'ltr', unicodeBidi: 'plaintext' }}>{reference}</span></> : null}
+      </Popup>
+    </Marker>
+  );
+}
+
+export function RouteMapImpl({ origin, destination, progress, trucks, height = 300 }: RouteMapImplProps) {
   const o: LatLngTuple = [origin.lat, origin.lng];
   const d: LatLngTuple = [destination.lat, destination.lng];
 
@@ -149,35 +214,18 @@ export function RouteMapImpl({ origin, destination, progress, height = 300 }: Ro
 
   const line = route ?? [o, d];
 
-  // The truck reflects the LAST REPORTED position. When a new `progress` fix
-  // arrives it smoothly tweens from the current point to the new one (like a
-  // ride-hailing app between GPS fixes) — no fake continuous crawl.
-  const target = progress == null ? null : Math.max(0, Math.min(1, progress));
-  const animRef = React.useRef(0);
-  const [anim, setAnim] = React.useState(0);
-  React.useEffect(() => {
-    if (target == null) return;
-    const from = animRef.current;
-    const to = target;
-    if (Math.abs(to - from) < 1e-6) { animRef.current = to; setAnim(to); return; }
-    let raf = 0;
-    const start = performance.now();
-    const dur = 1200;
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / dur);
-      const eased = 1 - Math.pow(1 - t, 3);
-      const v = from + (to - from) * eased;
-      animRef.current = v;
-      setAnim(v);
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target]);
-
-  const { traveled, at: truckPos } = target == null
-    ? { traveled: [] as LatLngTuple[], at: null as LatLngTuple | null }
-    : sliceAlong(line, anim);
+  // Unify single (`progress`) and multi-truck (`trucks`) into one list. Each
+  // truck gets its own marker that tweens between the GPS fixes it reports.
+  const truckList: MapTruck[] = trucks && trucks.length > 0
+    ? trucks
+    : progress != null
+      ? [{ index: 0, progress }]
+      : [];
+  // The traveled overlay follows the lead (furthest) truck.
+  const leadProgress = truckList.reduce((m, t) => Math.max(m, t.progress), 0);
+  const { traveled } = truckList.length > 0
+    ? sliceAlong(line, leadProgress)
+    : { traveled: [] as LatLngTuple[] };
 
   return (
     <div style={{ height, position: 'relative', zIndex: 0 }}>
@@ -185,6 +233,7 @@ export function RouteMapImpl({ origin, destination, progress, height = 300 }: Ro
         .naqla-truck-wrap{position:relative;width:34px;height:34px}
         .naqla-truck-ring{position:absolute;inset:0;border-radius:9999px;background:rgba(0,201,167,.45);animation:naqla-ping 1.6s cubic-bezier(0,0,.2,1) infinite}
         .naqla-truck-dot{position:absolute;inset:4px;background:#fff;border:2px solid #0A3D3A;border-radius:9999px;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+        .naqla-truck-badge{position:absolute;top:-6px;inset-inline-end:-6px;min-width:16px;height:16px;padding:0 3px;background:#0A3D3A;color:#fff;border:1.5px solid #fff;border-radius:9999px;font-size:10px;font-weight:700;line-height:13px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.3)}
         @keyframes naqla-ping{0%{transform:scale(.6);opacity:.8}80%,100%{transform:scale(2);opacity:0}}
       `}</style>
       <MapContainer
@@ -212,11 +261,15 @@ export function RouteMapImpl({ origin, destination, progress, height = 300 }: Ro
         <Marker position={d} icon={DEST_ICON}>
           <Popup><strong>{destination.label}</strong><br /><span style={{ color: '#6B7280' }}>نقطة الوصول</span></Popup>
         </Marker>
-        {truckPos && (
-          <Marker position={truckPos} icon={TRUCK_ICON} zIndexOffset={1000}>
-            <Popup>الشاحنة في الطريق</Popup>
-          </Marker>
-        )}
+        {truckList.map((t) => (
+          <TruckMarker
+            key={t.index}
+            line={line}
+            progress={t.progress}
+            label={t.index > 0 ? String(t.index) : undefined}
+            reference={t.reference}
+          />
+        ))}
       </MapContainer>
 
       {info && (

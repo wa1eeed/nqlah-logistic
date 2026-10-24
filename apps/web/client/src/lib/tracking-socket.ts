@@ -12,9 +12,16 @@
  */
 import { io, type Socket } from 'socket.io-client';
 
-export interface TrackingPing {
-  /** 0..1 along the trip, as reported by the latest GPS fix. */
+export interface TrackingLegPing {
+  index: number;
   progress: number;
+}
+
+export interface TrackingPing {
+  /** 0..1 along the trip (single-shipment orders). */
+  progress?: number;
+  /** Per-leg positions (consolidated orders). */
+  legs?: TrackingLegPing[];
   /** Instantaneous speed in km/h reported with this fix. */
   speedKmh: number;
   /** Epoch ms of the fix. */
@@ -93,7 +100,8 @@ export function openTrackingSocket(opts: TrackingSocketOpts): TrackingSocket {
   socket.on('tracking:location_update', (p: TrackingPing) => {
     // A real fix arrived — stop the fallback simulation if it had started.
     if (mock) { mock.close(); mock = null; }
-    if (!closed && p && typeof p.progress === 'number') opts.onPing(p);
+    const valid = p && (typeof p.progress === 'number' || Array.isArray(p.legs));
+    if (!closed && valid) opts.onPing(p);
   });
   socket.on('connect_error', startMock);
 

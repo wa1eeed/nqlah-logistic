@@ -6,6 +6,25 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.36 — Consolidated tracking shows every truck (2026-10-24)
+
+> Feature #3. The map used to show a single truck for a consolidated order.
+
+- The route map now accepts a `trucks` array and renders one **numbered**
+  marker per leg, each tweening to its own reported position (the single-truck
+  `progress` path is unchanged). The marker popup shows the leg's shipment
+  reference. Applied to all three portals' map.
+- Realtime: the gateway tracks **per-leg** progress for a consolidated order
+  (seeded from each leg's status — delivered=done, in-transit/assigned moving,
+  undistributed stay at origin) and emits `tracking:location_update` with a
+  `legs: [{index, progress}]` array; single orders still emit one `progress`.
+  The client tracking socket accepts both shapes.
+- Client Tracking page + the client/admin/carrier order-detail maps feed
+  per-leg trucks for consolidated orders; the Tracking page's progress bar
+  shows the average across trucks.
+- Verified live: subscribing to a consolidated IN_TRANSIT order streams
+  per-leg fixes (`1:0.15 2:0.06 3-5:0.00`, advancing each tick).
+
 ### v0.9.35 — Per-leg shipment references for consolidated orders (2026-10-24)
 
 > Feature #1. Also makes consolidated orders actually creatable via the API.
