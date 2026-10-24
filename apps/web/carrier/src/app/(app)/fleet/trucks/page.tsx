@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import useSWR from 'swr';
 import Link from 'next/link';
 import { AlertTriangle, CheckCircle, Clock, Hash, Plus, RotateCcw, Truck, Wrench } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,11 @@ import { ConfirmDialog, ExpiryBadge, OwnershipBadge, expiryState, nextInspection
 import { useFleetStore } from '@/stores/fleet-store';
 import { useConsolidatedStore } from '@/stores/consolidated-store';
 import { notify } from '@/lib/notify';
-import { DRIVERS, TRUCKS, formatDate, type TruckStatus } from '@naqla/shared-utils';
+import { fetcher } from '@/lib/api';
+import {
+  DRIVERS, TRUCKS, formatDate, normalizeTruckList, normalizeDriverList,
+  type Driver, type Truck as TruckModel, type TruckStatus,
+} from '@naqla/shared-utils';
 
 const TRUCK_LABELS: Record<string, string> = {
   SMALL_VAN: 'فان صغير', BOX_TRUCK: 'صندوق مغلق', MEDIUM_FLATBED: 'مسطح متوسط',
@@ -31,11 +36,24 @@ export default function CarrierFleetTrucks() {
   const resetFleet = useFleetStore((s) => s.resetFleet);
   const resetConsolidated = useConsolidatedStore((s) => s.resetAll);
 
-  const all = useMemo(() => TRUCKS.map((t) => ({
+  // Live fleet from the API (falls back to mock data when the backend is
+  // unavailable, e.g. design-only runs). Drivers are needed to resolve names.
+  const { data: trucksRaw } = useSWR<unknown>('/fleet/trucks', fetcher);
+  const { data: driversRaw } = useSWR<unknown>('/fleet/drivers', fetcher);
+  const srcTrucks = useMemo<TruckModel[]>(() => {
+    const api = normalizeTruckList<TruckModel>(trucksRaw);
+    return api.length ? api : TRUCKS;
+  }, [trucksRaw]);
+  const srcDrivers = useMemo<Driver[]>(() => {
+    const api = normalizeDriverList<Driver>(driversRaw);
+    return api.length ? api : DRIVERS;
+  }, [driversRaw]);
+
+  const all = useMemo(() => srcTrucks.map((t) => ({
     ...t,
     status: (truckStatusMap[t.id] ?? t.status) as TruckStatus,
     driverId: t.id in assignMap ? assignMap[t.id] : t.assignedDriverId ?? null,
-  })), [assignMap, truckStatusMap]);
+  })), [srcTrucks, assignMap, truckStatusMap]);
 
   const rows = useMemo(() => (tab === 'ALL' ? all : all.filter((t) => t.status === tab)), [tab, all]);
   const total = all.length;
@@ -115,7 +133,7 @@ export default function CarrierFleetTrucks() {
             </TableHeader>
             <TableBody>
               {rows.map((t) => {
-                const drv = DRIVERS.find((d) => d.id === t.driverId);
+                const drv = srcDrivers.find((d) => d.id === t.driverId);
                 const parsed = parsePlateString(t.plateNumber ?? '');
                 const tons = (t.capacityKg ?? 0) / 1000;
                 return (

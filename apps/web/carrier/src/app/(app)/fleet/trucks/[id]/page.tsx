@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import useSWR from 'swr';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowRight, Calendar, CheckCircle2, FileText, Fuel, Gauge, Hash, History, Link2, Link2Off,
@@ -21,8 +22,11 @@ import { Currency } from '@/components/currency';
 import { useTruckTypesStore } from '@/stores/truck-types-store';
 import { useFleetStore } from '@/stores/fleet-store';
 import { notify } from '@/lib/notify';
+import { fetcher } from '@/lib/api';
 import {
-  DRIVERS, TRUCKS, auditForTruck, formatDate, tripsForTruck, type TruckStatus,
+  DRIVERS, TRUCKS, auditForTruck, formatDate, tripsForTruck,
+  normalizeTruckList, normalizeDriverList,
+  type Driver, type Truck as TruckModel, type TruckStatus,
 } from '@naqla/shared-utils';
 import {
   AuditTimeline, ConfirmDialog, DriverStatusBadge, ExpiryBadge, expiryState,
@@ -47,7 +51,19 @@ export default function TruckDetailPage() {
   const [confirmAssign, setConfirmAssign] = useState(false);
   const [pick, setPick] = useState('');
 
-  const truck = TRUCKS.find((t) => t.id === params.id);
+  // Live fleet from the API (mock fallback when the backend is down).
+  const { data: trucksRaw } = useSWR<unknown>('/fleet/trucks', fetcher);
+  const { data: driversRaw } = useSWR<unknown>('/fleet/drivers', fetcher);
+  const srcTrucks = useMemo<TruckModel[]>(() => {
+    const api = normalizeTruckList<TruckModel>(trucksRaw);
+    return api.length ? api : TRUCKS;
+  }, [trucksRaw]);
+  const srcDrivers = useMemo<Driver[]>(() => {
+    const api = normalizeDriverList<Driver>(driversRaw);
+    return api.length ? api : DRIVERS;
+  }, [driversRaw]);
+
+  const truck = srcTrucks.find((t) => t.id === params.id);
 
   if (!truck) {
     return (
@@ -63,7 +79,7 @@ export default function TruckDetailPage() {
 
   const status: TruckStatus = truckStatusMap[truck.id] ?? truck.status;
   const driverId = truck.id in assignMap ? assignMap[truck.id] : truck.assignedDriverId ?? null;
-  const driver = DRIVERS.find((d) => d.id === driverId);
+  const driver = srcDrivers.find((d) => d.id === driverId);
   const trips = tripsForTruck(truck.id);
   const audit = auditForTruck(truck.id, events);
   const truckType = truckTypes.find((t) => t.id === truck.truckType);
@@ -79,7 +95,7 @@ export default function TruckDetailPage() {
   const totalAmount = done.reduce((s, t) => s + t.amount, 0);
 
   const takenBy = (did: string) => Object.keys(assignMap).find((tid) => assignMap[tid] === did && tid !== truck.id);
-  const pickDriver = DRIVERS.find((d) => d.id === pick);
+  const pickDriver = srcDrivers.find((d) => d.id === pick);
 
   const doAssign = () => {
     if (!pick) return;
@@ -266,7 +282,7 @@ export default function TruckDetailPage() {
                   {
                     label: 'الفحص الدوري',
                     expiry: truck.lastInspection
-                      ? truck.lastInspection.slice(0, 10).split('-').map((p, i) => i === 0 ? String(Number(p) + 1) : p).join('-')
+                      ? truck.lastInspection.slice(0, 10).split('-').map((p: string, i: number) => i === 0 ? String(Number(p) + 1) : p).join('-')
                       : '—',
                   },
                 ].map((doc) => (
@@ -303,9 +319,9 @@ export default function TruckDetailPage() {
             <Select value={pick} onValueChange={setPick}>
               <SelectTrigger><SelectValue placeholder="اختر سائقًا" /></SelectTrigger>
               <SelectContent>
-                {DRIVERS.map((d) => {
+                {srcDrivers.map((d) => {
                   const on = takenBy(d.id);
-                  const onTruck = on ? TRUCKS.find((t) => t.id === on)?.code : null;
+                  const onTruck = on ? srcTrucks.find((t) => t.id === on)?.code : null;
                   return (
                     <SelectItem key={d.id} value={d.id}>
                       {d.fullName} · {d.code}{onTruck ? ` (على ${onTruck})` : ''}
@@ -329,7 +345,7 @@ export default function TruckDetailPage() {
         open={confirmAssign}
         onOpenChange={setConfirmAssign}
         title="تأكيد إسناد السائق"
-        description={pickDriver ? `سيتم ربط ${pickDriver.fullName} بالشاحنة ${truck.code}${takenBy(pick) ? ` ونقله من شاحنته الحالية (${TRUCKS.find((t) => t.id === takenBy(pick))?.code})` : ''}.` : undefined}
+        description={pickDriver ? `سيتم ربط ${pickDriver.fullName} بالشاحنة ${truck.code}${takenBy(pick) ? ` ونقله من شاحنته الحالية (${srcTrucks.find((t) => t.id === takenBy(pick))?.code})` : ''}.` : undefined}
         confirmLabel="تأكيد الإسناد"
         onConfirm={doAssign}
       />

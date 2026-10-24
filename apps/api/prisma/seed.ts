@@ -184,36 +184,54 @@ async function main() {
     },
   });
 
-  // ─── Trucks ──────────────────────────────────────────────────
-  await prisma.truck.upsert({
-    where: { plateNumber: 'ABC-1234' },
-    create: {
-      companyId: carrierCo.id,
-      plateNumber: 'ABC-1234',
-      type: 'LARGE_FLATBED',
-      capacity: 25,
-      make: 'Mercedes',
-      model: 'Actros',
-      year: 2022,
-      hasGPS: true,
-    },
-    update: {},
-  });
-  await prisma.truck.upsert({
-    where: { plateNumber: 'XYZ-5678' },
-    create: {
-      companyId: carrierCo.id,
-      plateNumber: 'XYZ-5678',
-      type: 'REFRIGERATED',
-      capacity: 18,
-      make: 'Volvo',
-      model: 'FH16',
-      year: 2023,
-      hasRefrigeration: true,
-      hasGPS: true,
-    },
-    update: {},
-  });
+  // ─── Drivers + Trucks (owned vs freelancer) ──────────────────
+  // Saudi-format plates ("letters numbers") so the plate component renders
+  // correctly. Ownership is mixed to demo the provider-dispatcher feature.
+  const DRIVERS_SEED = [
+    { fullName: 'أحمد الغامدي',   phone: '+966550001122', nationalId: '1023456789', licenseNumber: 'DL-100201', licenseExpiry: '2027-06-12', licenseType: 'تركيب وقاطرة', ownership: 'OWNED' as const,      status: 'ON_TRIP' as const },
+    { fullName: 'فهد الدوسري',    phone: '+966550004455', nationalId: '1077889900', licenseNumber: 'DL-100204', licenseExpiry: '2027-09-18', licenseType: 'حمولة ثقيلة',   ownership: 'OWNED' as const,      status: 'AVAILABLE' as const },
+    { fullName: 'خالد العتيبي',   phone: '+966550002233', nationalId: '1029988776', licenseNumber: 'DL-100202', licenseExpiry: '2028-02-25', licenseType: 'حمولة ثقيلة',   ownership: 'OWNED' as const,      status: 'AVAILABLE' as const },
+    { fullName: 'ماجد الشهري',    phone: '+966550005566', nationalId: '1055667788', licenseNumber: 'DL-100205', licenseExpiry: '2027-03-30', licenseType: 'حمولة ثقيلة',   ownership: 'FREELANCER' as const, status: 'OFF_DUTY' as const },
+    { fullName: 'سلطان القحطاني', phone: '+966550003344', nationalId: '1011223344', licenseNumber: 'DL-100203', licenseExpiry: '2026-11-04', licenseType: 'حمولة استثنائية', ownership: 'FREELANCER' as const, status: 'AVAILABLE' as const },
+  ];
+  const driverIds: Record<string, string> = {};
+  for (const d of DRIVERS_SEED) {
+    const [firstName, ...rest] = d.fullName.split(' ');
+    const u = await prisma.user.upsert({
+      where: { phone: d.phone },
+      update: {},
+      create: {
+        phone: d.phone, firstName, lastName: rest.join(' ') || '', role: 'DRIVER',
+        companyId: carrierCo.id, nationalId: d.nationalId, preferredLanguage: 'ar',
+      },
+    });
+    const p = await prisma.driverProfile.upsert({
+      where: { licenseNumber: d.licenseNumber },
+      update: { ownership: d.ownership, status: d.status },
+      create: {
+        userId: u.id, companyId: carrierCo.id,
+        licenseNumber: d.licenseNumber, licenseExpiry: new Date(d.licenseExpiry),
+        licenseType: d.licenseType, ownership: d.ownership, status: d.status,
+      },
+    });
+    driverIds[d.licenseNumber] = p.id;
+  }
+
+  const TRUCKS_SEED = [
+    { plateNumber: 'أ ب ح 1234', type: 'LARGE_FLATBED' as const, capacity: 25, make: 'Mercedes', model: 'Actros', year: 2023, hasGPS: true,  ownership: 'OWNED' as const,      driver: 'DL-100201' },
+    { plateNumber: 'د هـ و 5678', type: 'BOX_TRUCK' as const,     capacity: 8,  make: 'Isuzu',    model: 'FVR',    year: 2024, hasGPS: true,  ownership: 'OWNED' as const,      driver: 'DL-100204' },
+    { plateNumber: 'ر ح ط 9012', type: 'REFRIGERATED' as const,  capacity: 15, make: 'Volvo',    model: 'FH16',   year: 2022, hasGPS: true, hasRefrigeration: true, ownership: 'OWNED' as const, driver: 'DL-100202' },
+    { plateNumber: 'ي ك ل 3456', type: 'MEDIUM_FLATBED' as const, capacity: 18, make: 'Scania',   model: 'R500',   year: 2021, hasGPS: true,  ownership: 'FREELANCER' as const, driver: 'DL-100205' },
+    { plateNumber: 'م ن س 7890', type: 'LOWBED' as const,        capacity: 50, make: 'MAN',      model: 'TGX',    year: 2023, hasGPS: true,  ownership: 'FREELANCER' as const, driver: 'DL-100203' },
+  ];
+  for (const t of TRUCKS_SEED) {
+    const { driver, ...data } = t;
+    await prisma.truck.upsert({
+      where: { plateNumber: t.plateNumber },
+      update: { ownership: t.ownership, currentDriverId: driverIds[driver] },
+      create: { ...data, companyId: carrierCo.id, currentDriverId: driverIds[driver] },
+    });
+  }
 
   // ─── Demo Order ──────────────────────────────────────────────
   const existing = await prisma.order.findFirst({ where: { clientId: clientCo.id } });

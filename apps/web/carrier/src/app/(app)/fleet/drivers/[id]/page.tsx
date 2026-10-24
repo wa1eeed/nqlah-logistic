@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import useSWR from 'swr';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowRight, Calendar, CheckCircle2, Fingerprint, Hash, History, Link2, Link2Off,
@@ -19,8 +20,11 @@ import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 import { StatusBadge } from '@/components/status-badge';
 import { useFleetStore } from '@/stores/fleet-store';
 import { notify } from '@/lib/notify';
+import { fetcher } from '@/lib/api';
 import {
-  DRIVERS, TRUCKS, auditForDriver, formatDate, tripsForDriver, type DriverStatus,
+  DRIVERS, TRUCKS, auditForDriver, formatDate, tripsForDriver,
+  normalizeDriverList, normalizeTruckList,
+  type Driver, type DriverStatus, type Truck,
 } from '@naqla/shared-utils';
 import {
   AuditTimeline, ConfirmDialog, DRIVER_STATUS_OPTIONS, DriverStatusBadge, ExpiryBadge, OwnershipBadge,
@@ -44,7 +48,19 @@ export default function DriverDetailPage() {
   const [confirmAssign, setConfirmAssign] = useState(false);
   const [pick, setPick] = useState('');
 
-  const driver = DRIVERS.find((d) => d.id === params.id);
+  // Live fleet from the API (mock fallback when the backend is down).
+  const { data: driversRaw } = useSWR<unknown>('/fleet/drivers', fetcher);
+  const { data: trucksRaw } = useSWR<unknown>('/fleet/trucks', fetcher);
+  const srcDrivers = useMemo<Driver[]>(() => {
+    const api = normalizeDriverList<Driver>(driversRaw);
+    return api.length ? api : DRIVERS;
+  }, [driversRaw]);
+  const srcTrucks = useMemo<Truck[]>(() => {
+    const api = normalizeTruckList<Truck>(trucksRaw);
+    return api.length ? api : TRUCKS;
+  }, [trucksRaw]);
+
+  const driver = srcDrivers.find((d) => d.id === params.id);
 
   if (!driver) {
     return (
@@ -59,12 +75,13 @@ export default function DriverDetailPage() {
   }
 
   const status: DriverStatus = driverStatusMap[driver.id] ?? driver.status;
-  const truckId = Object.keys(assignMap).find((tid) => assignMap[tid] === driver.id) ?? null;
-  const truck = TRUCKS.find((t) => t.id === truckId);
+  const overlaidTruckId = Object.keys(assignMap).find((tid) => assignMap[tid] === driver.id) ?? null;
+  const truck = srcTrucks.find((t) => t.id === overlaidTruckId)
+    ?? srcTrucks.find((t) => t.assignedDriverId === driver.id);
   const trips = tripsForDriver(driver.id);
   const audit = auditForDriver(driver.id, events);
   const initials = driver.fullName.split(' ').slice(0, 2).map((w) => w[0]).join('');
-  const pickTruck = TRUCKS.find((t) => t.id === pick);
+  const pickTruck = srcTrucks.find((t) => t.id === pick);
   const done = trips.filter((t) => t.status === 'COMPLETED' || t.status === 'DELIVERED');
   const totalKm = trips.reduce((s, t) => s + t.distanceKm, 0);
 
@@ -77,8 +94,8 @@ export default function DriverDetailPage() {
   };
 
   const doUnassign = () => {
-    if (!truckId) return;
-    unassignDriver(truckId);
+    if (!truck) return;
+    unassignDriver(truck.id);
     notify.success('تم فك الارتباط', `${driver.fullName} بدون شاحنة الآن`);
   };
 
@@ -219,9 +236,9 @@ export default function DriverDetailPage() {
             <Select value={pick} onValueChange={setPick}>
               <SelectTrigger><SelectValue placeholder="اختر شاحنة" /></SelectTrigger>
               <SelectContent>
-                {TRUCKS.map((t) => {
+                {srcTrucks.map((t) => {
                   const curDriverId = assignMap[t.id];
-                  const curDriver = curDriverId ? DRIVERS.find((d) => d.id === curDriverId)?.fullName : null;
+                  const curDriver = curDriverId ? srcDrivers.find((d) => d.id === curDriverId)?.fullName : null;
                   return (
                     <SelectItem key={t.id} value={t.id}>
                       {t.code} · {t.plateNumber}{curDriver && curDriverId !== driver.id ? ` (مع ${curDriver})` : ''}
@@ -243,7 +260,7 @@ export default function DriverDetailPage() {
         open={confirmAssign}
         onOpenChange={setConfirmAssign}
         title="تأكيد ربط الشاحنة"
-        description={pickTruck ? `سيتم ربط ${driver.fullName} بالشاحنة ${pickTruck.code}${assignMap[pickTruck.id] && assignMap[pickTruck.id] !== driver.id ? ` واستبدال سائقها الحالي (${DRIVERS.find((d) => d.id === assignMap[pickTruck.id])?.fullName})` : ''}.` : undefined}
+        description={pickTruck ? `سيتم ربط ${driver.fullName} بالشاحنة ${pickTruck.code}${assignMap[pickTruck.id] && assignMap[pickTruck.id] !== driver.id ? ` واستبدال سائقها الحالي (${srcDrivers.find((d) => d.id === assignMap[pickTruck.id])?.fullName})` : ''}.` : undefined}
         confirmLabel="تأكيد الربط"
         onConfirm={doAssign}
       />

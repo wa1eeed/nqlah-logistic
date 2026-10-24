@@ -123,6 +123,7 @@ export function normalizeTruck<T extends object>(input: T | null | undefined): T
     ?? ((t.capacityKg as number | undefined) ? ((t.capacityKg as number) / 1000) : undefined);
   const capacityKg = (t.capacityKg as number | undefined)
     ?? ((t.capacity as number | undefined) != null ? ((t.capacity as number) * 1000) : 0);
+  const id = String(t.id ?? '');
   return {
     ...t,
     truckType: (t.truckType as string | undefined) ?? (t.type as string | undefined) ?? '',
@@ -131,6 +132,12 @@ export function normalizeTruck<T extends object>(input: T | null | undefined): T
     modelYear: (t.modelYear as number | undefined) ?? (t.year as number | undefined) ?? 0,
     // Computed fields used by the table — preserve mock defaults when API omits.
     status: (t.status as string | undefined) ?? 'AVAILABLE',
+    // Short human code (mock has it; API doesn't) — derive from the id tail.
+    code: (t.code as string | undefined) ?? (id ? `TRK-${id.slice(-5).toUpperCase()}` : ''),
+    // Ownership: provider's own fleet vs freelancer. Default OWNED.
+    ownership: (t.ownership as string | undefined) ?? 'OWNED',
+    // Driver link: API uses currentDriverId; mock uses assignedDriverId.
+    assignedDriverId: (t.assignedDriverId as string | undefined) ?? (t.currentDriverId as string | undefined) ?? null,
   } as unknown as T;
 }
 
@@ -138,6 +145,37 @@ export function normalizeTruckList<T extends object>(input: unknown): T[] {
   return unwrapList(input)
     .map((t) => normalizeTruck(t as T))
     .filter((t): t is T => t !== null);
+}
+
+/**
+ * Normalize an API DriverProfile to the shape the fleet UI expects (mock
+ * `Driver`): `fullName` (from the related user), `code`, `licenseClass`
+ * (= licenseType), `ownership`, `status`, `totalTrips`. Idempotent.
+ */
+export function normalizeDriver<T extends object>(input: T | null | undefined): T | null {
+  if (!input) return null;
+  const d = input as Record<string, unknown>;
+  const user = (d.user as Record<string, unknown> | undefined) ?? undefined;
+  const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+  const fullName = (d.fullName as string | undefined) || userName || '';
+  const id = String(d.id ?? '');
+  return {
+    ...d,
+    fullName,
+    code: (d.code as string | undefined) ?? (id ? `DRV-${id.slice(-5).toUpperCase()}` : ''),
+    licenseClass: (d.licenseClass as string | undefined) ?? (d.licenseType as string | undefined) ?? '',
+    nationalId: (d.nationalId as string | undefined) ?? (user?.nationalId as string | undefined) ?? '',
+    phone: (d.phone as string | undefined) ?? (user?.phone as string | undefined) ?? '',
+    ownership: (d.ownership as string | undefined) ?? 'OWNED',
+    status: (d.status as string | undefined) ?? 'AVAILABLE',
+    totalTrips: (d.totalTrips as number | undefined) ?? 0,
+  } as unknown as T;
+}
+
+export function normalizeDriverList<T extends object>(input: unknown): T[] {
+  return unwrapList(input)
+    .map((d) => normalizeDriver(d as T))
+    .filter((d): d is T => d !== null);
 }
 
 /**
