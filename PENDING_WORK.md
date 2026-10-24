@@ -50,9 +50,9 @@ real NestJS + Prisma API (live-verified against a local backend, see
   (single + consolidated legs) wired to the API.
 - [x] **Stage 4 — Consolidated legs + status rollup** (v0.9.26): `Order.orderType`
   / `truckCount`; `OrderTruck` legs (sequence/status/driver); leg endpoints +
-  forward-only rollup; carrier distribution board wired to the API.
-  (Remaining: the client/admin consolidated **read-only** breakdown still reads
-  the mock `order.legs`; it can fetch `/orders/:id/legs` in a follow-up.)
+  forward-only rollup; carrier distribution board wired to the API. The
+  client/admin consolidated **read-only** breakdown is also wired to
+  `/orders/:id/legs` (enriched with plate + driver name) — v0.9.29.
 - [x] **Stage 5 — Client policies** (v0.9.27): `PolicyGroup` model + `policies`
   endpoints (admin CRUD + `GET /policies/mine` resolver); admin panel + client
   order form wired to the API (admin changes now reach the client server-side).

@@ -252,7 +252,7 @@ export default function AdminOrderDetail() {
           <Card>
             <CardHeader><CardTitle>تفاصيل الشحنة</CardTitle></CardHeader>
             <CardContent>
-              {showShipmentCard && order.orderType === 'CONSOLIDATED' && order.legs && order.legs.length > 0 && (
+              {showShipmentCard && order.orderType === 'CONSOLIDATED' && (
                 <ConsolidatedReadonly order={order} />
               )}
               {showShipmentCard && order.orderType !== 'CONSOLIDATED' && assignedPlate && (
@@ -558,11 +558,17 @@ const LEG_TONE: Record<ConsolidatedLeg['status'], string> = {
 };
 
 /** Read-only consolidated-order breakdown + invoice (client/admin view). */
+type ReadonlyLeg = ConsolidatedLeg & { plateNumber?: string; driverName?: string };
+
 function ConsolidatedReadonly({ order }: {
-  order: { orderNumber: string; truckCount?: number; legs?: ConsolidatedLeg[]; agreedPrice: number | null; commission?: number | null };
+  order: { id: string; orderNumber: string; truckCount?: number; legs?: ConsolidatedLeg[]; agreedPrice: number | null; commission?: number | null };
 }) {
-  const legs = order.legs ?? [];
-  const count = order.truckCount ?? legs.length;
+  // Live legs from the API (enriched with plate + driver name); fall back to the
+  // mock order legs.
+  const { data: legsData } = useSWR<{ truckCount: number; legs: ReadonlyLeg[] }>(`/orders/${order.id}/legs`, fetcher);
+  const apiLegs = Array.isArray(legsData?.legs) ? legsData!.legs : null;
+  const legs: ReadonlyLeg[] = apiLegs ?? (order.legs ?? []);
+  const count = (apiLegs ? legsData!.truckCount : order.truckCount) ?? legs.length;
   const distributed = legs.filter((l) => l.truckId).length;
   const perLeg = Math.round((order.agreedPrice ?? 0) / Math.max(1, count));
   const pct = count > 0 ? Math.round((distributed / count) * 100) : 0;
@@ -579,18 +585,19 @@ function ConsolidatedReadonly({ order }: {
       </div>
       <div className="space-y-2">
         {legs.map((leg) => {
-          const truck = TRUCKS.find((t) => t.id === leg.truckId);
-          const driver = DRIVERS.find((d) => d.id === leg.driverId);
-          const plate = truck ? parsePlateString(truck.plateNumber) : null;
+          const plateStr = leg.plateNumber ?? TRUCKS.find((t) => t.id === leg.truckId)?.plateNumber;
+          const driverName = leg.driverName ?? DRIVERS.find((d) => d.id === leg.driverId)?.fullName;
+          const plate = plateStr ? parsePlateString(plateStr) : null;
           return (
             <div key={leg.index} className="flex items-center gap-3 rounded-md border bg-background p-2.5">
               <span className="num flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold">{leg.index}</span>
-              {truck && plate ? (
+              {leg.truckId && plate ? (
                 <>
                   <div className="w-[100px] shrink-0"><SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="fill" /></div>
                   <div className="min-w-0 flex-1">
-                    <div className="num text-xs font-medium">{truck.code}</div>
-                    {driver && <div className="flex items-center gap-1 text-[11px] text-muted-foreground"><Users className="h-3 w-3" /> {driver.fullName}</div>}
+                    {driverName
+                      ? <div className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="h-3 w-3" /> {driverName}</div>
+                      : <div className="text-xs text-muted-foreground">بدون سائق</div>}
                   </div>
                 </>
               ) : (
