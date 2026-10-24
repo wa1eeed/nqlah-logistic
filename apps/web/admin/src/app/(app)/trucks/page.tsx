@@ -12,7 +12,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
-import { SaudiPlate, parsePlateString } from '@/components/saudi-plate';
+import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 import { StatusBadge } from '@/components/status-badge';
 import { StatsCard } from '@/components/stats-card';
 import { FadeIn } from '@/components/ui/fade-in';
@@ -125,7 +125,7 @@ export default function AdminTrucksPage() {
                   return (
                     <TableRow key={t.id}>
                       <TableCell>
-                        <SaudiPlate letters={plate.letters} numbers={plate.numbers} type="public" size="sm" />
+                        <SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="thumbnail" />
                       </TableCell>
                       <TableCell>
                         <Link href={`/companies/${t.carrierId}`} className="font-medium hover:text-primary">

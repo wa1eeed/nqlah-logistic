@@ -25,9 +25,13 @@ import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
 import { EscrowCountdown } from '@/components/escrow-countdown';
 import {
-  ORDERS, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
-  formatDate, formatDateTime, timelineFor, normalizeOrder,
+  ORDERS, TRUCKS, DRIVERS, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
+  formatDate, formatDateTime, timelineFor, normalizeOrder, type Order,
 } from '@naqla/shared-utils';
+import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
+import { ConsolidatedPanel } from '@/components/consolidated-panel';
+import { useFleetStore } from '@/stores/fleet-store';
+import { useConsolidatedStore } from '@/stores/consolidated-store';
 
 const TITLES: Record<string, string> = {
   CREATED: 'إنشاء الطلب', PUBLISHED: 'نشر الطلب', BID_ACCEPTED: 'قبول عرضك',
@@ -52,16 +56,13 @@ export default function CarrierOrderDetail() {
   const [location, setLocation] = useState('');
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [assignDriverOpen, setAssignDriverOpen] = useState(false);
-  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [pickTruck, setPickTruck] = useState('');
 
-  type AvailableDriver = {
-    id: string; rating: number; totalTrips: number;
-    user: { firstName: string; lastName: string; phone: string; avatar: string | null };
-  };
-  const { data: availableDrivers, isLoading: driversLoading } = useSWR<AvailableDriver[]>(
-    assignDriverOpen ? '/fleet/drivers/available' : null,
-    fetcher,
-  );
+  const fleetAssign = useFleetStore((s) => s.assign);
+  const singleAssign = useConsolidatedStore((s) => s.singleAssign);
+  const assignOrderTruck = useConsolidatedStore((s) => s.assignOrderTruck);
+  const driverForTruck = (truckId: string) =>
+    (truckId in fleetAssign ? fleetAssign[truckId] : TRUCKS.find((t) => t.id === truckId)?.assignedDriverId) ?? '';
 
   if (!order) {
     return (
@@ -91,6 +92,28 @@ export default function CarrierOrderDetail() {
     ?? (order as { deliveryDate?: string }).deliveryDate
     ?? null;
   const showShipmentCard = ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED'].includes(order.status);
+  // Assigned truck for this order: the carrier's explicit choice (stored),
+  // otherwise an auto-pick from the fleet (demo).
+  const autoTruck =
+    TRUCKS.find((t) => t.carrierId === order.carrierId && t.status === 'ON_TRIP') ??
+    TRUCKS.find((t) => t.carrierId === order.carrierId) ??
+    TRUCKS.find((t) => t.status === 'ON_TRIP') ??
+    TRUCKS[0];
+  const override = singleAssign[order.id];
+  const assignedTruck = override ? (TRUCKS.find((t) => t.id === override.truckId) ?? autoTruck) : autoTruck;
+  const assignedPlate = assignedTruck ? parsePlateString(assignedTruck.plateNumber) : null;
+  const assignedDriver = override
+    ? DRIVERS.find((d) => d.id === override.driverId)
+    : (assignedTruck ? DRIVERS.find((d) => d.id === (fleetAssign[assignedTruck.id] ?? assignedTruck.assignedDriverId)) : null);
+
+  const doAssignOrderTruck = () => {
+    if (!pickTruck) return;
+    const driverId = driverForTruck(pickTruck);
+    assignOrderTruck(order.id, pickTruck, driverId);
+    notify.success('تم إسناد الشاحنة للطلب', `${TRUCKS.find((t) => t.id === pickTruck)?.code ?? ''}`);
+    setAssignDriverOpen(false);
+    setPickTruck('');
+  };
 
   return (
     <>
@@ -110,6 +133,10 @@ export default function CarrierOrderDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <MapSection order={order} />
+
+          {order.orderType === 'CONSOLIDATED' && order.legs && order.legs.length > 0 && (
+            <ConsolidatedPanel order={order as Order} canDistribute={showShipmentCard} />
+          )}
 
           {showShipmentCard && (
             <ShipmentStatusCard
@@ -143,8 +170,8 @@ export default function CarrierOrderDetail() {
                       <Button onClick={() => setConfirmPickupOpen(true)} className="flex-1 sm:flex-none">
                         <CheckCircle2 className="h-4 w-4" /> تأكيد الاستلام
                       </Button>
-                      <Button variant="outline" onClick={() => setAssignDriverOpen(true)} className="flex-1 sm:flex-none">
-                        <Users className="h-4 w-4" /> إسناد لسائق
+                      <Button variant="outline" onClick={() => { setPickTruck(assignedTruck?.id ?? ''); setAssignDriverOpen(true); }} className="flex-1 sm:flex-none">
+                        <Truck className="h-4 w-4" /> إسناد شاحنة
                       </Button>
                       <Button variant="outline" onClick={() => setDisputeOpen(true)} className="text-destructive border-destructive/30">
                         <Shield className="h-4 w-4" /> فتح نزاع
@@ -301,6 +328,44 @@ export default function CarrierOrderDetail() {
           <Card>
             <CardHeader><CardTitle>تفاصيل الشحنة</CardTitle></CardHeader>
             <CardContent>
+              {order.orderType !== 'CONSOLIDATED' && showShipmentCard && assignedPlate && (
+                <div className="mb-4 rounded-lg border bg-muted/30 p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                      <Truck className="h-3.5 w-3.5" /> الشاحنة والسائق
+                    </div>
+                    {showActions && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setPickTruck(assignedTruck?.id ?? ''); setAssignDriverOpen(true); }}>
+                        تغيير
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <SaudiLicensePlate
+                      letters={assignedPlate.letters}
+                      numbers={assignedPlate.numbers}
+                      plateType="transport"
+                      plateFormat="standard"
+                      size="stage"
+                    />
+                    {assignedTruck && <div className="num text-xs text-muted-foreground">{assignedTruck.code}</div>}
+                  </div>
+                  {assignedDriver && (
+                    <div className="flex items-center gap-3 rounded-md border bg-background p-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]">
+                        <Users className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold">{assignedDriver.fullName}</div>
+                        <div className="text-xs text-muted-foreground"><span className="num">{assignedDriver.code}</span> · رخصة {assignedDriver.licenseClass}</div>
+                      </div>
+                      <a href={`tel:${assignedDriver.phone}`} dir="ltr" className="num inline-flex items-center gap-1 text-xs font-medium text-[hsl(var(--mint))]">
+                        <Phone className="h-3.5 w-3.5" /> {assignedDriver.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
               <dl className="divide-y">
                 <Row label="الوصف" value={order.cargoDescription} />
                 <Row label="الوزن" icon={Weight} value={<span className="num">{(order.weightKg ?? 0).toLocaleString('en-US')} كجم</span>} />
@@ -496,53 +561,37 @@ export default function CarrierOrderDetail() {
       <Dialog open={assignDriverOpen} onOpenChange={setAssignDriverOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>إسناد سائق للطلب</DialogTitle>
-            <DialogDescription>اختر أحد السائقين المتاحين في شركتك.</DialogDescription>
+            <DialogTitle>إسناد شاحنة للطلب</DialogTitle>
+            <DialogDescription>اختر شاحنة من أسطولك — السائق المربوط بها يُسنَد تلقائيا لهذا الطلب.</DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-2 max-h-64 overflow-y-auto">
-            {driversLoading && (
-              <p className="text-sm text-muted-foreground text-center py-4">جار التحميل…</p>
-            )}
-            {!driversLoading && (!availableDrivers || availableDrivers.length === 0) && (
-              <p className="text-sm text-muted-foreground text-center py-4">لا يوجد سائقون متاحون حاليا.</p>
-            )}
-            {availableDrivers?.map((driver) => (
-              <button
-                key={driver.id}
-                type="button"
-                onClick={() => setSelectedDriverId(driver.id)}
-                className={`w-full flex items-center gap-3 rounded-lg border p-3 text-start transition-colors
-                  ${selectedDriverId === driver.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
-              >
-                <div className="h-9 w-9 rounded-full bg-muted grid place-items-center shrink-0">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium text-sm truncate">{driver.user.firstName} {driver.user.lastName}</div>
-                  <div className="text-xs text-muted-foreground">{driver.user.phone} · {driver.totalTrips} رحلة</div>
-                </div>
-                {selectedDriverId === driver.id && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
-              </button>
-            ))}
+            {TRUCKS.map((t) => {
+              const drv = DRIVERS.find((d) => d.id === driverForTruck(t.id));
+              const parsed = parsePlateString(t.plateNumber);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setPickTruck(t.id)}
+                  className={`w-full flex items-center gap-3 rounded-lg border p-2.5 text-start transition-colors
+                    ${pickTruck === t.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                >
+                  <div className="w-[96px] shrink-0">
+                    <SaudiLicensePlate letters={parsed.letters} numbers={parsed.numbers} plateType="transport" size="fill" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="num text-sm font-medium">{t.code}</div>
+                    <div className="truncate text-xs text-muted-foreground">{drv ? drv.fullName : 'بدون سائق'}</div>
+                  </div>
+                  {pickTruck === t.id && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
+                </button>
+              );
+            })}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setAssignDriverOpen(false); setSelectedDriverId(null); }}>إلغاء</Button>
-            <Button
-              disabled={!selectedDriverId}
-              onClick={async () => {
-                if (!order || !selectedDriverId) return;
-                try {
-                  await api.post(`/orders/${order.id}/assign-driver`, { driverId: selectedDriverId });
-                  notify.success('تم إسناد السائق', 'السائق المختار مُكلَّف بهذا الطلب');
-                  await refetchOrder();
-                  setAssignDriverOpen(false);
-                  setSelectedDriverId(null);
-                } catch (err: unknown) {
-                  notify.error(err, 'فشل إسناد السائق');
-                }
-              }}
-            >
-              <Users className="h-4 w-4" /> إسناد
+            <Button variant="outline" onClick={() => { setAssignDriverOpen(false); setPickTruck(''); }}>إلغاء</Button>
+            <Button disabled={!pickTruck} onClick={doAssignOrderTruck}>
+              <CheckCircle2 className="h-4 w-4" /> إسناد
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -10,6 +10,24 @@
 
 ---
 
+## Recent demo / UX work (v0.9.17, 2026-10-24) — client-side, not API wiring
+
+> Written in English per `docs/DOCUMENTATION.md`. These are UI/demo features
+> built on `mock-data` + client stores; wiring them to the real API is future work.
+
+- **Done:** `SaudiLicensePlate` component; fleet management (truck↔driver linking,
+  status sync, audit log, ID codes, trips timeline, tabbed detail pages,
+  assign/unassign confirmations). See `CHANGELOG.md` v0.9.17 and `docs/FLEET.md`.
+- **Done — consolidated (multi-truck) orders:** order form offers *single* vs
+  *consolidated* with a truck-count stepper; consolidated lifecycle, per-leg
+  distribution, and a consolidated invoice. Carrier distributes each leg to a
+  fleet truck (driver attached automatically); client/admin see a read-only
+  breakdown + invoice. See `CHANGELOG.md` v0.9.18 and `docs/ORDERS.md`.
+  Backend wiring (persist legs/distribution server-side, roll-up statuses,
+  generate the consolidated invoice) is future work.
+
+---
+
 ## ✅ مربوط بالـ API (لا تبدأ من الصفر — لكن أعد الفتح إذا وجدت بق)
 
 > ⚠️ "مربوط" لا تعني "خالٍ من البق". هذه الأشياء استُدعي فيها endpoint حقيقي

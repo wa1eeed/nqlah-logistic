@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import {
-  Check, ChevronLeft, ChevronRight, Clock, Eye, MapPin, Package, Radio,
+  Check, ChevronLeft, ChevronRight, Clock, Eye, Layers, MapPin, Minus, Package, Plus, Radio,
   Search, Send, ShieldCheck, Snowflake, Truck, UserSearch, Wallet,
   Building2, Route,
 } from 'lucide-react';
@@ -39,8 +39,24 @@ export type PickupWindow = 'MORNING' | 'EVENING' | 'ALL_DAY';
  */
 export type TripType = 'SAME_CITY' | 'INTER_CITY';
 
+/**
+ * Order kind:
+ *   SINGLE       → one truck (the platform's current flow)
+ *   CONSOLIDATED → a bulk request for N trucks on the SAME route/cargo, billed
+ *                  as one order with one order number and one consolidated
+ *                  invoice. The awarded carrier then distributes the N legs
+ *                  across its own trucks/drivers.
+ */
+export type OrderKind = 'SINGLE' | 'CONSOLIDATED';
+
+/** Allowed truck count range for a consolidated order. */
+const CONSOLIDATED_MIN = 2;
+const CONSOLIDATED_MAX = 20;
+
 interface FormState {
   tripType: TripType;
+  orderType: OrderKind;
+  truckCount: number;
   cargoType: string;
   cargoDescription: string;
   weightKg: number;
@@ -108,6 +124,8 @@ export default function NewOrderWizard() {
   const [carrierSearch, setCarrierSearch] = useState('');
   const [form, setForm] = useState<FormState>({
     tripType: 'INTER_CITY',
+    orderType: 'SINGLE',
+    truckCount: 1,
     cargoType: 'GENERAL',
     cargoDescription: '',
     weightKg: 0,
@@ -149,7 +167,8 @@ export default function NewOrderWizard() {
 
   const canNext = useMemo(() => {
     switch (step) {
-      case 1: return !!form.cargoType && form.cargoDescription.length > 3 && form.weightKg > 0;
+      case 1: return !!form.cargoType && form.cargoDescription.length > 3 && form.weightKg > 0
+        && (form.orderType === 'SINGLE' || form.truckCount >= CONSOLIDATED_MIN);
       case 2: return !!form.originCity && !!form.destinationCity && !!form.pickupDate;
       case 3: return form.mode === 'OPEN' || (
         form.mode === 'DIRECT' && !!form.targetCarrierId &&
@@ -182,6 +201,8 @@ export default function NewOrderWizard() {
       const body = {
         mode: form.mode ?? 'OPEN',
         tripType: form.tripType,
+        orderType: form.orderType,
+        ...(form.orderType === 'CONSOLIDATED' ? { truckCount: form.truckCount } : {}),
         pickupWindow: form.pickupWindow,
         cargoType: form.cargoType,
         cargoDescription: form.cargoDescription,
@@ -288,6 +309,50 @@ export default function NewOrderWizard() {
         <CardContent className="p-6">
           {step === 1 && (
             <Step title="تفاصيل الشحنة" description="ما الذي تريد نقله؟">
+              {/* Order type: single truck vs consolidated (multi-truck) */}
+              <div className="space-y-2">
+                <Label>نوع الطلب</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <OrderTypeCard
+                    active={form.orderType === 'SINGLE'}
+                    icon={Truck}
+                    title="شاحنة واحدة"
+                    desc="شحنة واحدة على شاحنة واحدة"
+                    onClick={() => { set('orderType', 'SINGLE'); set('truckCount', 1); }}
+                  />
+                  <OrderTypeCard
+                    active={form.orderType === 'CONSOLIDATED'}
+                    icon={Layers}
+                    title="طلب مجمّع"
+                    desc="عدة شاحنات لنفس المسار بفاتورة واحدة"
+                    onClick={() => { set('orderType', 'CONSOLIDATED'); set('truckCount', Math.max(CONSOLIDATED_MIN, form.truckCount)); }}
+                  />
+                </div>
+                {form.orderType === 'CONSOLIDATED' && (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3 mt-1">
+                    <div>
+                      <div className="text-sm font-semibold">عدد الشاحنات المطلوبة</div>
+                      <div className="text-xs text-muted-foreground">نفس المسار والحمولة · فاتورة مجمّعة برقم طلب واحد</div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        type="button" variant="outline" size="icon" className="h-9 w-9"
+                        disabled={form.truckCount <= CONSOLIDATED_MIN}
+                        onClick={() => set('truckCount', Math.max(CONSOLIDATED_MIN, form.truckCount - 1))}
+                        aria-label="إنقاص"
+                      ><Minus className="h-4 w-4" /></Button>
+                      <span className="num w-10 text-center text-lg font-bold">{form.truckCount}</span>
+                      <Button
+                        type="button" variant="outline" size="icon" className="h-9 w-9"
+                        disabled={form.truckCount >= CONSOLIDATED_MAX}
+                        onClick={() => set('truckCount', Math.min(CONSOLIDATED_MAX, form.truckCount + 1))}
+                        aria-label="زيادة"
+                      ><Plus className="h-4 w-4" /></Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>نوع البضاعة</Label>
@@ -608,6 +673,12 @@ export default function NewOrderWizard() {
           {step === 5 && (
             <Step title="مراجعة وإرسال" description="تأكد من المعلومات قبل النشر">
               <Section title="الشحنة">
+                <Row
+                  label="نوع الطلب"
+                  value={form.orderType === 'CONSOLIDATED'
+                    ? <span className="num">طلب مجمّع · {form.truckCount} شاحنات</span>
+                    : 'شاحنة واحدة'}
+                />
                 <Row label="نوع البضاعة" value={CARGO_TYPES.find((c) => c.value === form.cargoType)?.label} />
                 <Row label="الوزن" value={<span className="num">{form.weightKg.toLocaleString('en-US')} كجم</span>} />
                 <Row label="الوصف" value={form.cargoDescription} />
@@ -686,6 +757,41 @@ function SummaryRow({ icon: Icon, label, value, muted }: { icon: React.ElementTy
   );
 }
 
+function OrderTypeCard({
+  active, icon: Icon, title, desc, onClick,
+}: {
+  active: boolean;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  desc: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex items-start gap-3 rounded-xl border p-3.5 text-start transition-colors',
+        active
+          ? 'border-[hsl(var(--mint))] bg-[hsl(var(--mint))]/[0.08] ring-1 ring-[hsl(var(--mint))]'
+          : 'hover:bg-muted/40',
+      )}
+    >
+      <span className={cn(
+        'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
+        active ? 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]' : 'bg-muted text-muted-foreground',
+      )}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-bold">{title}</div>
+        <div className="mt-0.5 text-xs leading-snug text-muted-foreground">{desc}</div>
+      </div>
+      {active && <Check className="ms-auto h-4 w-4 shrink-0 text-[hsl(var(--mint))]" />}
+    </button>
+  );
+}
+
 function OrderSummary({
   form, step, truckTypes, carriers,
 }: {
@@ -709,6 +815,13 @@ function OrderSummary({
         <p className="num mt-0.5 text-xs text-muted-foreground">الخطوة {nf.format(step)} من {nf.format(STEPS.length)}</p>
       </div>
       <div className="divide-y divide-border/50 px-5">
+        <SummaryRow
+          icon={form.orderType === 'CONSOLIDATED' ? Layers : Truck}
+          label="نوع الطلب"
+          value={form.orderType === 'CONSOLIDATED'
+            ? `طلب مجمّع · ${nf.format(form.truckCount)} شاحنات`
+            : 'شاحنة واحدة'}
+        />
         <SummaryRow
           icon={MapPin}
           label="المسار"

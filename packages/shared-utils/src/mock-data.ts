@@ -72,11 +72,34 @@ export type OrderMode = 'OPEN' | 'DIRECT';
  */
 export type PickupWindow = 'MORNING' | 'EVENING' | 'ALL_DAY';
 
+/** Single truck (current flow) vs a consolidated multi-truck request. */
+export type OrderType = 'SINGLE' | 'CONSOLIDATED';
+
+export type ConsolidatedLegStatus = 'PENDING' | 'ASSIGNED' | 'IN_TRANSIT' | 'DELIVERED';
+
+/**
+ * One truck's share of a CONSOLIDATED order. The awarded carrier distributes
+ * the N legs across its own trucks/drivers; each leg has its own status while
+ * the parent order rolls them up and carries one consolidated invoice.
+ */
+export interface ConsolidatedLeg {
+  index: number;
+  status: ConsolidatedLegStatus;
+  truckId?: string;
+  driverId?: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
   status: OrderStatus;
   mode: OrderMode;
+  /** Order kind: single truck (default when absent) or consolidated. */
+  orderType?: OrderType;
+  /** Number of trucks requested for a CONSOLIDATED order. */
+  truckCount?: number;
+  /** Per-truck legs for a CONSOLIDATED order (distribution + per-leg status). */
+  legs?: ConsolidatedLeg[];
   /** if mode === DIRECT, the targeted carrier id. */
   targetCarrierId?: string;
   clientId: string;
@@ -148,6 +171,8 @@ export interface Bid {
 export type DriverStatus = 'AVAILABLE' | 'ON_TRIP' | 'OFF_DUTY';
 export interface Driver {
   id: string;
+  /** Short human ID Code, e.g. "DRV-2001". */
+  code: string;
   carrierId: string;
   fullName: string;
   nationalId: string;
@@ -162,6 +187,8 @@ export interface Driver {
 export type TruckStatus = 'AVAILABLE' | 'ON_TRIP' | 'MAINTENANCE' | 'OFF_DUTY';
 export interface Truck {
   id: string;
+  /** Short human ID Code, e.g. "TRK-1001". */
+  code: string;
   carrierId: string;
   plateNumber: string;
   truckType: TruckType;
@@ -285,18 +312,19 @@ export const BIDS: Bid[] = [
 // ─── Fleet (Carrier-side) — sample for CR-2001 (logged-in carrier) ───
 
 export const TRUCKS: Truck[] = [
-  { id: 'TRK-001', carrierId: 'CR-2001', plateNumber: 'أ ب ج 1234', truckType: 'LARGE_FLATBED', capacityKg: 25000, modelYear: 2023, status: 'ON_TRIP',     lastInspection: '2026-03-15T00:00:00Z', assignedDriverId: 'DRV-001' },
-  { id: 'TRK-002', carrierId: 'CR-2001', plateNumber: 'د هـ و 5678', truckType: 'BOX_TRUCK',     capacityKg:  8000, modelYear: 2024, status: 'AVAILABLE',   lastInspection: '2026-04-02T00:00:00Z' },
-  { id: 'TRK-003', carrierId: 'CR-2001', plateNumber: 'ز ح ط 9012', truckType: 'REFRIGERATED',  capacityKg: 15000, modelYear: 2022, status: 'AVAILABLE',   lastInspection: '2026-02-20T00:00:00Z', assignedDriverId: 'DRV-002' },
-  { id: 'TRK-004', carrierId: 'CR-2001', plateNumber: 'ي ك ل 3456', truckType: 'MEDIUM_FLATBED', capacityKg: 18000, modelYear: 2021, status: 'MAINTENANCE', lastInspection: '2026-01-08T00:00:00Z' },
-  { id: 'TRK-005', carrierId: 'CR-2001', plateNumber: 'م ن س 7890', truckType: 'LOWBED',         capacityKg: 50000, modelYear: 2023, status: 'AVAILABLE',   lastInspection: '2026-04-30T00:00:00Z', assignedDriverId: 'DRV-003' },
+  { id: 'TRK-001', code: 'TRK-1001', carrierId: 'CR-2001', plateNumber: 'ا ب ح 1234', truckType: 'LARGE_FLATBED', capacityKg: 25000, modelYear: 2023, status: 'ON_TRIP',     lastInspection: '2026-03-15T00:00:00Z', assignedDriverId: 'DRV-001' },
+  { id: 'TRK-002', code: 'TRK-1002', carrierId: 'CR-2001', plateNumber: 'د هـ و 5678', truckType: 'BOX_TRUCK',     capacityKg:  8000, modelYear: 2024, status: 'AVAILABLE',   lastInspection: '2026-04-02T00:00:00Z', assignedDriverId: 'DRV-004' },
+  { id: 'TRK-003', code: 'TRK-1003', carrierId: 'CR-2001', plateNumber: 'ر ح ط 9012', truckType: 'REFRIGERATED',  capacityKg: 15000, modelYear: 2022, status: 'AVAILABLE',   lastInspection: '2026-02-20T00:00:00Z', assignedDriverId: 'DRV-002' },
+  { id: 'TRK-004', code: 'TRK-1004', carrierId: 'CR-2001', plateNumber: 'ي ك ل 3456', truckType: 'MEDIUM_FLATBED', capacityKg: 18000, modelYear: 2021, status: 'MAINTENANCE', lastInspection: '2026-01-08T00:00:00Z', assignedDriverId: 'DRV-005' },
+  { id: 'TRK-005', code: 'TRK-1005', carrierId: 'CR-2001', plateNumber: 'م ن س 7890', truckType: 'LOWBED',         capacityKg: 50000, modelYear: 2023, status: 'AVAILABLE',   lastInspection: '2026-04-30T00:00:00Z', assignedDriverId: 'DRV-003' },
 ];
 
 export const DRIVERS: Driver[] = [
-  { id: 'DRV-001', carrierId: 'CR-2001', fullName: 'أحمد بن سعد الغامدي',    nationalId: '1023456789', licenseClass: 'تركيب وقاطرة', licenseExpiry: '2027-06-12', phone: '+966550001122', status: 'ON_TRIP',   assignedTruckId: 'TRK-001', totalTrips: 312 },
-  { id: 'DRV-002', carrierId: 'CR-2001', fullName: 'خالد بن محمد العتيبي',    nationalId: '1029988776', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2028-02-25', phone: '+966550002233', status: 'AVAILABLE', assignedTruckId: 'TRK-003', totalTrips: 198 },
-  { id: 'DRV-003', carrierId: 'CR-2001', fullName: 'سلطان بن عبدالله القحطاني', nationalId: '1011223344', licenseClass: 'حمولة استثنائية', licenseExpiry: '2026-11-04', phone: '+966550003344', status: 'AVAILABLE', assignedTruckId: 'TRK-005', totalTrips: 145 },
-  { id: 'DRV-004', carrierId: 'CR-2001', fullName: 'فهد بن ناصر الدوسري',    nationalId: '1077889900', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2027-09-18', phone: '+966550004455', status: 'OFF_DUTY',                                totalTrips: 87 },
+  { id: 'DRV-001', code: 'DRV-2001', carrierId: 'CR-2001', fullName: 'أحمد بن سعد الغامدي',    nationalId: '1023456789', licenseClass: 'تركيب وقاطرة', licenseExpiry: '2027-06-12', phone: '+966550001122', status: 'ON_TRIP',   assignedTruckId: 'TRK-001', totalTrips: 312 },
+  { id: 'DRV-002', code: 'DRV-2002', carrierId: 'CR-2001', fullName: 'خالد بن محمد العتيبي',    nationalId: '1029988776', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2028-02-25', phone: '+966550002233', status: 'AVAILABLE', assignedTruckId: 'TRK-003', totalTrips: 198 },
+  { id: 'DRV-003', code: 'DRV-2003', carrierId: 'CR-2001', fullName: 'سلطان بن عبدالله القحطاني', nationalId: '1011223344', licenseClass: 'حمولة استثنائية', licenseExpiry: '2026-11-04', phone: '+966550003344', status: 'AVAILABLE', assignedTruckId: 'TRK-005', totalTrips: 145 },
+  { id: 'DRV-004', code: 'DRV-2004', carrierId: 'CR-2001', fullName: 'فهد بن ناصر الدوسري',    nationalId: '1077889900', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2027-09-18', phone: '+966550004455', status: 'AVAILABLE', assignedTruckId: 'TRK-002', totalTrips: 87 },
+  { id: 'DRV-005', code: 'DRV-2005', carrierId: 'CR-2001', fullName: 'ماجد بن علي الشهري',     nationalId: '1055667788', licenseClass: 'حمولة ثقيلة',  licenseExpiry: '2027-03-30', phone: '+966550005566', status: 'OFF_DUTY',  assignedTruckId: 'TRK-004', totalTrips: 64 },
 ];
 
 // ─── Payments ─────────────────────────────────────────────────────────
@@ -635,22 +663,96 @@ export interface TruckTrip {
 }
 
 const TRIP_BASE: Array<Omit<TruckTrip, 'distanceKm'>> = [
-  { orderId: 'ORD-2025-0150', truckId: 'TRK-001', driverId: 'DRV-001', clientName: 'شركة الجزيرة للطاقة',         originCity: 'الرياض', destinationCity: 'جدة',          startedAt: '2026-05-13T07:00:00Z',                                        amount: 80464, status: 'IN_TRANSIT' },
-  { orderId: 'ORD-2025-0142', truckId: 'TRK-001', driverId: 'DRV-001', clientName: 'شركة الجزيرة للطاقة',         originCity: 'الرياض', destinationCity: 'الدمام',       startedAt: '2026-04-10T08:00:00Z', finishedAt: '2026-04-12T16:30:00Z', amount: 105580, status: 'COMPLETED' },
-  { orderId: 'ORD-2025-0148', truckId: 'TRK-003', driverId: 'DRV-002', clientName: 'مؤسسة الواحة للمواد الغذائية',originCity: 'جدة',    destinationCity: 'الرياض',       startedAt: '2026-05-08T05:00:00Z', finishedAt: '2026-05-09T09:00:00Z', amount:  48784, status: 'DELIVERED' },
-  { orderId: 'ORD-2025-0170', truckId: 'TRK-005', driverId: 'DRV-003', clientName: 'شركة الجزيرة للطاقة',         originCity: 'الجبيل', destinationCity: 'الرياض',       startedAt: '2026-05-20T05:00:00Z',                                        amount: 162000, status: 'PUBLISHED' },
-  { orderId: 'ORD-2025-0098', truckId: 'TRK-001',                        clientName: 'شركة الفهد للمقاولات',       originCity: 'الدمام', destinationCity: 'الرياض',       startedAt: '2026-03-12T06:00:00Z', finishedAt: '2026-03-13T18:00:00Z', amount:  86200, status: 'COMPLETED' },
-  { orderId: 'ORD-2025-0102', truckId: 'TRK-003',                        clientName: 'مؤسسة الواحة للمواد الغذائية',originCity: 'الرياض', destinationCity: 'مكة المكرمة', startedAt: '2026-03-20T04:00:00Z', finishedAt: '2026-03-21T11:30:00Z', amount:  54300, status: 'COMPLETED' },
+  // ── TRK-001 · أحمد الغامدي (DRV-001) — نشطة الآن ──
+  { orderId: 'ORD-2025-0150', truckId: 'TRK-001', driverId: 'DRV-001', clientName: 'شركة الجزيرة للطاقة',          originCity: 'الرياض', destinationCity: 'جدة',          startedAt: '2026-05-13T07:00:00Z',                                        amount:  80464, status: 'IN_TRANSIT' },
+  { orderId: 'ORD-2025-0142', truckId: 'TRK-001', driverId: 'DRV-001', clientName: 'شركة الجزيرة للطاقة',          originCity: 'الرياض', destinationCity: 'الدمام',       startedAt: '2026-04-10T08:00:00Z', finishedAt: '2026-04-12T16:30:00Z', amount: 105580, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0131', truckId: 'TRK-001', driverId: 'DRV-001', clientName: 'مجموعة نجد الصناعية',          originCity: 'الدمام', destinationCity: 'المدينة المنورة', startedAt: '2026-03-28T05:30:00Z', finishedAt: '2026-03-30T12:00:00Z', amount: 132400, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0120', truckId: 'TRK-001', driverId: 'DRV-001', clientName: 'شركة ساحل للمقاولات',          originCity: 'جدة',    destinationCity: 'الرياض',       startedAt: '2026-03-14T06:00:00Z', finishedAt: '2026-03-15T19:00:00Z', amount:  78900, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0098', truckId: 'TRK-001',                      clientName: 'شركة الفهد للمقاولات',        originCity: 'الدمام', destinationCity: 'الرياض',       startedAt: '2026-02-18T06:00:00Z', finishedAt: '2026-02-19T18:00:00Z', amount:  86200, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0084', truckId: 'TRK-001', driverId: 'DRV-001', clientName: 'شركة الجزيرة للطاقة',          originCity: 'الرياض', destinationCity: 'تبوك',         startedAt: '2026-01-22T04:00:00Z', finishedAt: '2026-01-24T20:00:00Z', amount: 148600, status: 'COMPLETED' },
+
+  // ── TRK-002 · فهد الدوسري (DRV-004) ──
+  { orderId: 'ORD-2025-0205', truckId: 'TRK-002', driverId: 'DRV-004', clientName: 'مصنع الرواد للبلاستيك',         originCity: 'الرياض', destinationCity: 'القصيم',       startedAt: '2026-05-02T07:00:00Z', finishedAt: '2026-05-02T15:30:00Z', amount:  32400, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0191', truckId: 'TRK-002', driverId: 'DRV-004', clientName: 'مؤسسة الواحة للمواد الغذائية', originCity: 'جدة',    destinationCity: 'مكة المكرمة',  startedAt: '2026-04-18T05:00:00Z', finishedAt: '2026-04-18T10:00:00Z', amount:  21800, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0177', truckId: 'TRK-002', driverId: 'DRV-004', clientName: 'شركة ساحل للمقاولات',          originCity: 'الرياض', destinationCity: 'بريدة',        startedAt: '2026-03-30T06:30:00Z', finishedAt: '2026-03-30T13:00:00Z', amount:  28600, status: 'COMPLETED' },
+
+  // ── TRK-003 · خالد العتيبي (DRV-002) ──
+  { orderId: 'ORD-2025-0148', truckId: 'TRK-003', driverId: 'DRV-002', clientName: 'مؤسسة الواحة للمواد الغذائية', originCity: 'جدة',    destinationCity: 'الرياض',       startedAt: '2026-05-08T05:00:00Z', finishedAt: '2026-05-09T09:00:00Z', amount:  48784, status: 'DELIVERED' },
+  { orderId: 'ORD-2025-0133', truckId: 'TRK-003', driverId: 'DRV-002', clientName: 'شركة البحر الأحمر للتبريد',     originCity: 'الرياض', destinationCity: 'أبها',         startedAt: '2026-04-05T04:30:00Z', finishedAt: '2026-04-06T14:00:00Z', amount:  67200, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0102', truckId: 'TRK-003',                      clientName: 'مؤسسة الواحة للمواد الغذائية', originCity: 'الرياض', destinationCity: 'مكة المكرمة',  startedAt: '2026-03-20T04:00:00Z', finishedAt: '2026-03-21T11:30:00Z', amount:  54300, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0089', truckId: 'TRK-003', driverId: 'DRV-002', clientName: 'شركة البحر الأحمر للتبريد',     originCity: 'جدة',    destinationCity: 'المدينة المنورة', startedAt: '2026-02-11T05:00:00Z', finishedAt: '2026-02-11T18:30:00Z', amount:  41900, status: 'COMPLETED' },
+
+  // ── TRK-004 · ماجد الشهري (DRV-005) — الشاحنة في الصيانة ──
+  { orderId: 'ORD-2025-0071', truckId: 'TRK-004', driverId: 'DRV-005', clientName: 'مجموعة نجد الصناعية',          originCity: 'الرياض', destinationCity: 'حائل',         startedAt: '2026-02-02T06:00:00Z', finishedAt: '2026-02-03T12:00:00Z', amount:  59300, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0063', truckId: 'TRK-004', driverId: 'DRV-005', clientName: 'شركة الفهد للمقاولات',         originCity: 'الدمام', destinationCity: 'الخبر',        startedAt: '2026-01-19T07:00:00Z', finishedAt: '2026-01-19T11:00:00Z', amount:  18400, status: 'COMPLETED' },
+
+  // ── TRK-005 · سلطان القحطاني (DRV-003) — حمولات ثقيلة ──
+  { orderId: 'ORD-2025-0170', truckId: 'TRK-005', driverId: 'DRV-003', clientName: 'شركة الجزيرة للطاقة',          originCity: 'الجبيل', destinationCity: 'الرياض',       startedAt: '2026-05-18T05:00:00Z', finishedAt: '2026-05-19T22:00:00Z', amount: 162000, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0158', truckId: 'TRK-005', driverId: 'DRV-003', clientName: 'مجموعة نجد الصناعية',          originCity: 'الدمام', destinationCity: 'نجران',        startedAt: '2026-04-24T03:00:00Z', finishedAt: '2026-04-26T16:00:00Z', amount: 184500, status: 'COMPLETED' },
+  { orderId: 'ORD-2025-0144', truckId: 'TRK-005', driverId: 'DRV-003', clientName: 'شركة ساحل للمقاولات',          originCity: 'الرياض', destinationCity: 'ينبع',         startedAt: '2026-04-02T04:00:00Z', finishedAt: '2026-04-03T15:00:00Z', amount: 139800, status: 'COMPLETED' },
 ];
+
+function withDistance(t: Omit<TruckTrip, 'distanceKm'>): TruckTrip {
+  return { ...t, distanceKm: distanceKm(coordsFor(t.originCity), coordsFor(t.destinationCity)) };
+}
 
 export function tripsForTruck(truckId: string): TruckTrip[] {
   return TRIP_BASE
     .filter((t) => t.truckId === truckId)
-    .map((t) => ({
-      ...t,
-      distanceKm: distanceKm(coordsFor(t.originCity), coordsFor(t.destinationCity)),
-    }))
+    .map(withDistance)
     .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+}
+
+export function tripsForDriver(driverId: string): TruckTrip[] {
+  return TRIP_BASE
+    .filter((t) => t.driverId === driverId)
+    .map(withDistance)
+    .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+}
+
+// ─── Fleet activity / audit log ──────────────────────────────────────
+
+export type FleetEventType =
+  | 'ASSIGN' | 'UNASSIGN' | 'ONLINE' | 'OFFLINE' | 'TRIP_START' | 'TRIP_END' | 'MAINTENANCE' | 'STATUS';
+
+export interface FleetAuditEvent {
+  id: string;
+  /** ISO timestamp. */
+  at: string;
+  type: FleetEventType;
+  truckId?: string;
+  driverId?: string;
+  /** Who performed the action (operator / system). */
+  actor: string;
+  /** Human-readable Arabic description. */
+  message: string;
+}
+
+/** Seed activity, newest first is produced by the helpers below. */
+export const FLEET_AUDIT_SEED: FleetAuditEvent[] = [
+  { id: 'AE-021', at: '2026-05-13T07:00:00Z', type: 'TRIP_START', truckId: 'TRK-001', driverId: 'DRV-001', actor: 'النظام',       message: 'بدأت الرحلة ORD-2025-0150 من الرياض إلى جدة' },
+  { id: 'AE-020', at: '2026-05-13T06:40:00Z', type: 'ONLINE',     truckId: 'TRK-001', driverId: 'DRV-001', actor: 'أحمد الغامدي',  message: 'السائق سجّل دخوله وبدأ المناوبة' },
+  { id: 'AE-019', at: '2026-05-09T09:00:00Z', type: 'TRIP_END',   truckId: 'TRK-003', driverId: 'DRV-002', actor: 'النظام',       message: 'انتهت الرحلة ORD-2025-0148 عند جدة' },
+  { id: 'AE-018', at: '2026-05-08T05:00:00Z', type: 'TRIP_START', truckId: 'TRK-003', driverId: 'DRV-002', actor: 'النظام',       message: 'بدأت الرحلة ORD-2025-0148 من جدة إلى الرياض' },
+  { id: 'AE-017', at: '2026-05-02T14:10:00Z', type: 'ASSIGN',     truckId: 'TRK-002', driverId: 'DRV-004', actor: 'مشغّل الأسطول', message: 'تم إسناد السائق فهد الدوسري إلى الشاحنة TRK-1002' },
+  { id: 'AE-016', at: '2026-04-28T08:30:00Z', type: 'MAINTENANCE',truckId: 'TRK-004', driverId: 'DRV-005', actor: 'مشغّل الأسطول', message: 'دخلت الشاحنة TRK-1004 الصيانة الدورية' },
+  { id: 'AE-015', at: '2026-04-28T08:25:00Z', type: 'OFFLINE',    truckId: 'TRK-004', driverId: 'DRV-005', actor: 'النظام',       message: 'تحوّل السائق ماجد الشهري إلى خارج الخدمة (الشاحنة في الصيانة)' },
+  { id: 'AE-014', at: '2026-04-20T11:00:00Z', type: 'ASSIGN',     truckId: 'TRK-005', driverId: 'DRV-003', actor: 'مشغّل الأسطول', message: 'تم إسناد السائق سلطان القحطاني إلى الشاحنة TRK-1005' },
+  { id: 'AE-013', at: '2026-04-12T16:30:00Z', type: 'TRIP_END',   truckId: 'TRK-001', driverId: 'DRV-001', actor: 'النظام',       message: 'انتهت الرحلة ORD-2025-0142 عند الدمام' },
+  { id: 'AE-012', at: '2026-04-10T08:00:00Z', type: 'TRIP_START', truckId: 'TRK-001', driverId: 'DRV-001', actor: 'النظام',       message: 'بدأت الرحلة ORD-2025-0142 من الرياض إلى الدمام' },
+  { id: 'AE-011', at: '2026-03-18T09:15:00Z', type: 'ASSIGN',     truckId: 'TRK-003', driverId: 'DRV-002', actor: 'مشغّل الأسطول', message: 'تم إسناد السائق خالد العتيبي إلى الشاحنة TRK-1003' },
+  { id: 'AE-010', at: '2026-03-01T07:45:00Z', type: 'ASSIGN',     truckId: 'TRK-001', driverId: 'DRV-001', actor: 'مشغّل الأسطول', message: 'تم إسناد السائق أحمد الغامدي إلى الشاحنة TRK-1001' },
+];
+
+const byAtDesc = (a: FleetAuditEvent, b: FleetAuditEvent) =>
+  new Date(b.at).getTime() - new Date(a.at).getTime();
+
+export function auditForTruck(truckId: string, extra: FleetAuditEvent[] = []): FleetAuditEvent[] {
+  return [...extra, ...FLEET_AUDIT_SEED].filter((e) => e.truckId === truckId).sort(byAtDesc);
+}
+
+export function auditForDriver(driverId: string, extra: FleetAuditEvent[] = []): FleetAuditEvent[] {
+  return [...extra, ...FLEET_AUDIT_SEED].filter((e) => e.driverId === driverId).sort(byAtDesc);
 }
 
 // ─── Truck Brands & Models (admin-managed) ────────────────────────────
