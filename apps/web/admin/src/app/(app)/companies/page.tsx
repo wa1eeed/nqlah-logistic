@@ -18,20 +18,20 @@ import { MiniStat } from '@/components/ui/mini-stat';
 import { FadeIn } from '@/components/ui/fade-in';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
-import { COMPANIES, formatDate, type Company } from '@naqla/shared-utils';
+import { COMPANIES, formatDate, normalizeCompanyList, type Company } from '@naqla/shared-utils';
 
 export default function AdminCompaniesPage() {
   const [filter, setFilter] = useState<'ALL' | 'CLIENT' | 'CARRIER'>('ALL');
   const [search, setSearch] = useState('');
 
-  // GET /admin/companies — falls back to mock COMPANIES array if API is down.
+  // GET /admin/companies — the API returns Prisma-shaped rows (`type`,
+  // `createdAt`, `kycStatus: PENDING`); normalize them into the mock `Company`
+  // shape the UI reads (`kind`, `joinedAt`, `kycStatus: PENDING_VERIFICATION`),
+  // so the CLIENT/CARRIER tabs and counts work. Falls back to mock if API down.
   const { data } = useSWR<unknown>('/admin/companies', fetcher);
   const list: Company[] = useMemo(() => {
-    const arr =
-      Array.isArray(data) ? data :
-      Array.isArray((data as { items?: unknown[] })?.items) ? (data as { items: unknown[] }).items :
-      [];
-    return (arr.length > 0 ? arr : COMPANIES) as Company[];
+    const arr = normalizeCompanyList<Company>(data);
+    return arr.length > 0 ? arr : COMPANIES;
   }, [data]);
 
   const counts = {

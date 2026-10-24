@@ -19,15 +19,42 @@ import { Separator } from '@/components/ui/separator';
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
+import useSWR from 'swr';
+import { fetcher } from '@/lib/api';
 import {
   COMPANIES, ORDERS, formatDate, teamMembersFor, permissionsFor,
-  type CompanyRole, type TeamMember,
+  normalizeCompany, normalizeOrderList,
+  type Company, type CompanyRole, type Order, type TeamMember,
 } from '@naqla/shared-utils';
 
 export default function AdminCompanyDetail() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const company = COMPANIES.find((c) => c.id === params.id);
+
+  // Resolve the company from the API by id (admin can read GET /companies/:id).
+  // Real companies carry cuid ids that don't exist in the mock array, so the
+  // old `COMPANIES.find(...)` always failed → "الشركة غير موجودة". Fall back to
+  // the mock only when the API is unavailable (offline/demo).
+  const { data: companyData, isLoading } = useSWR<unknown>(
+    params.id ? `/companies/${params.id}` : null,
+    fetcher,
+  );
+  const company =
+    normalizeCompany<Company>(companyData as Company | null | undefined)
+    ?? COMPANIES.find((c) => c.id === params.id);
+
+  // This company's orders — the admin orders feed, filtered to this entity.
+  const { data: ordersData } = useSWR<unknown>('/admin/orders', fetcher);
+
+  if (!company && isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center text-muted-foreground">
+          <div className="h-6 w-40 mx-auto rounded bg-muted animate-pulse" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!company) {
     return (
@@ -41,7 +68,9 @@ export default function AdminCompanyDetail() {
     );
   }
 
-  const orders = ORDERS.filter((o) =>
+  const apiOrders = normalizeOrderList(ordersData);
+  const sourceOrders: Order[] = apiOrders.length > 0 ? apiOrders : ORDERS;
+  const orders = sourceOrders.filter((o) =>
     company.kind === 'CLIENT' ? o.clientId === company.id : o.carrierId === company.id,
   );
 
@@ -172,10 +201,10 @@ export default function AdminCompanyDetail() {
               <CardHeader><CardTitle>أداء الناقل</CardTitle></CardHeader>
               <CardContent>
                 <dl className="divide-y">
-                  <Row label="التقييم" icon={Star} value={<span className="num font-medium">{company.rating?.toFixed(1)}</span>} />
-                  <Row label="رحلات منجزة" icon={Truck} value={<span className="num font-medium">{(company.completedTrips ?? 0).toLocaleString('en-US')}</span>} />
-                  <Row label="حجم الأسطول" value={<span className="num font-medium">{company.fleetSize} شاحنة</span>} />
-                  <Row label="متوسط الاستجابة" value={<span className="num font-medium">{company.responseTimeMins} دقيقة</span>} />
+                  <Row label="التقييم" icon={Star} value={company.rating != null ? <span className="num font-medium">{company.rating.toFixed(1)}</span> : '—'} />
+                  <Row label="رحلات منجزة" icon={Truck} value={company.completedTrips != null ? <span className="num font-medium">{company.completedTrips.toLocaleString('en-US')}</span> : '—'} />
+                  <Row label="حجم الأسطول" value={company.fleetSize != null ? <span className="num font-medium">{company.fleetSize} شاحنة</span> : '—'} />
+                  <Row label="متوسط الاستجابة" value={company.responseTimeMins != null ? <span className="num font-medium">{company.responseTimeMins} دقيقة</span> : '—'} />
                   <Row label="تأمين شامل" value={<Badge variant={company.insurance ? 'success' : 'secondary'}>{company.insurance ? 'متوفر' : 'غير متوفر'}</Badge>} />
                 </dl>
               </CardContent>

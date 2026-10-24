@@ -6,6 +6,26 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.33 — Admin companies wired to the API (2026-10-24)
+
+> Pre-deploy fixes #4 + #5: the admin "Carriers & Clients" pages were still
+> reading the mock dataset.
+
+- **#4 — "0 clients":** the list page counted/filtered on `c.kind`, but the API
+  returns the company kind on `c.type` (enum `CompanyType`), so every count was
+  0 and the العملاء tab was empty. New `normalizeCompany` / `normalizeCompanyList`
+  adapters map the Prisma company row (`type` → `kind`, `createdAt` → `joinedAt`,
+  `kycStatus: PENDING` → `PENDING_VERIFICATION`, `_count.trucks` → `fleetSize`)
+  into the mock shape the UI reads. Verified live: API returns 1 CLIENT + 1
+  CARRIER and both tabs now count correctly.
+- **#5 — "company not found":** the company detail page resolved the entity only
+  from the static mock array (`COMPANIES.find(id)`), so real cuid ids never
+  matched → "الشركة غير موجودة". It now fetches `GET /companies/:id` (admin can
+  read it) and this company's orders from `/admin/orders`, with the mock kept as
+  an offline fallback. Carrier-performance rows that the DB doesn't store yet
+  (rating / response time) show "—" instead of `undefined`; fleet size comes
+  from the real truck count. Verified live: a real cuid resolves (HTTP 200).
+
 ### v0.9.32 — Fix forced logout after idle (2026-10-24)
 
 > Pre-deploy fix #2: the client dashboard logged users out after a short idle.
