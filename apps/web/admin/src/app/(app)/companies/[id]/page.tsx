@@ -1,11 +1,15 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowRight, Building2, Check, Clock, Crown, FileCheck, FileText, FileX, Mail,
-  MapPin, MoreVertical, Package, Phone, ShieldCheck, Star, Trash2, Truck, Upload,
-  Users, Wallet, X, type LucideIcon,
+  Activity, ArrowRight, BarChart2, Building2, Check, Crown, FileCheck, FileText, FileX,
+  Gauge, Mail, MapPin, MoreVertical, Package, Phone, ShieldCheck, Star, Trash2, TrendingUp,
+  Truck, Upload, Users, Wallet, X, type LucideIcon,
 } from 'lucide-react';
+import {
+  Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from 'recharts';
+import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -15,11 +19,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/page-header';
+import { StatsCard } from '@/components/stats-card';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
-import useSWR from 'swr';
+import { Skeleton } from '@/components/ui/skeleton';
 import { fetcher } from '@/lib/api';
 import {
   COMPANIES, ORDERS, formatDate, teamMembersFor, permissionsFor,
@@ -27,32 +32,69 @@ import {
   type Company, type CompanyRole, type Order, type TeamMember,
 } from '@naqla/shared-utils';
 
+interface CompanyStats {
+  type: 'CLIENT' | 'CARRIER';
+  totalOrders: number;
+  statusBreakdown: Record<string, number>;
+  completedOrders: number;
+  cancelledOrders: number;
+  disputedOrders: number;
+  completionRate: number;
+  gmv: number;
+  revenue: number;
+  commission: number;
+  avgOrderValue: number;
+  activeBids: number;
+  totalBids: number;
+  wonBids: number;
+  winRate: number;
+  rating: number | null;
+  reviewsCount: number;
+  fleetSize: number;
+  driversCount: number;
+  teamSize: number;
+  freelancerDue: number;
+  freelancerPaid: number;
+  freelancerCount: number;
+  trend: { month: string; orders: number; revenue: number }[];
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  DRAFT: 'مسودة', PUBLISHED: 'منشور', BIDDING: 'قيد العروض', ASSIGNED: 'مُسند',
+  CONFIRMED: 'مؤكد', IN_TRANSIT: 'في الطريق', DELIVERED: 'تم التسليم',
+  COMPLETED: 'مكتمل', CANCELLED: 'ملغى', DISPUTED: 'نزاع',
+};
+
 export default function AdminCompanyDetail() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
-  // Resolve the company from the API by id (admin can read GET /companies/:id).
-  // Real companies carry cuid ids that don't exist in the mock array, so the
-  // old `COMPANIES.find(...)` always failed → "الشركة غير موجودة". Fall back to
-  // the mock only when the API is unavailable (offline/demo).
   const { data: companyData, isLoading } = useSWR<unknown>(
-    params.id ? `/companies/${params.id}` : null,
-    fetcher,
-  );
+    params.id ? `/companies/${params.id}` : null, fetcher);
   const company =
     normalizeCompany<Company>(companyData as Company | null | undefined)
     ?? COMPANIES.find((c) => c.id === params.id);
 
-  // This company's orders — the admin orders feed, filtered to this entity.
+  const { data: statsData } = useSWR<CompanyStats>(
+    params.id ? `/companies/${params.id}/stats` : null, fetcher);
   const { data: ordersData } = useSWR<unknown>('/admin/orders', fetcher);
+
+  const isCarrier = company?.kind === 'CARRIER';
+  const apiOrders = normalizeOrderList(ordersData);
+  const sourceOrders: Order[] = apiOrders.length > 0 ? apiOrders : ORDERS;
+  const orders = company
+    ? sourceOrders.filter((o) => (isCarrier ? o.carrierId === company.id : o.clientId === company.id))
+    : [];
 
   if (!company && isLoading) {
     return (
-      <Card>
-        <CardContent className="py-16 text-center text-muted-foreground">
-          <div className="h-6 w-40 mx-auto rounded bg-muted animate-pulse" />
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-72" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+        </div>
+        <Skeleton className="h-64 rounded-2xl" />
+      </div>
     );
   }
 
@@ -68,16 +110,10 @@ export default function AdminCompanyDetail() {
     );
   }
 
-  const apiOrders = normalizeOrderList(ordersData);
-  const sourceOrders: Order[] = apiOrders.length > 0 ? apiOrders : ORDERS;
-  const orders = sourceOrders.filter((o) =>
-    company.kind === 'CLIENT' ? o.clientId === company.id : o.carrierId === company.id,
-  );
-
   return (
     <>
       <PageHeader
-        eyebrow="ملف الكيان"
+        eyebrow="ملف الكيان · 360°"
         title={
           <span className="flex items-center gap-3">
             <Avatar className="h-10 w-10 border border-border/70">
@@ -86,7 +122,7 @@ export default function AdminCompanyDetail() {
             {company.nameAr}
           </span>
         }
-        subtitle={`${company.kind === 'CLIENT' ? 'عميل' : 'ناقل'} · ${company.city}`}
+        subtitle={`${isCarrier ? 'ناقل' : 'عميل'} · ${company.city}`}
         actions={
           <>
             <StatusBadge status={company.kycStatus} />
@@ -97,75 +133,22 @@ export default function AdminCompanyDetail() {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: details + KYC + orders */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader><CardTitle>المعلومات الأساسية</CardTitle></CardHeader>
-            <CardContent>
-              <dl className="divide-y">
-                <Row label="الاسم (عربي)" value={company.nameAr} />
-                <Row label="Name (EN)" value={<span className="num">{company.nameEn}</span>} />
-                <Row label="السجل التجاري" value={<span className="num">{company.crNumber}</span>} />
-                <Row label="الرقم الضريبي" value={<span className="num">{company.vatNumber}</span>} />
-                <Row label="المدينة" icon={MapPin} value={`${company.city}، ${company.region}`} />
-                <Row label="البريد" icon={Mail} value={<span className="num">{company.contactEmail}</span>} />
-                <Row label="الهاتف" icon={Phone} value={<span className="num" dir="ltr">{company.contactPhone}</span>} />
-                <Row label="تاريخ التسجيل" value={formatDate(company.joinedAt, 'd MMMM yyyy')} />
-              </dl>
-            </CardContent>
-          </Card>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview"><Gauge className="h-4 w-4 me-1.5" /> نظرة عامة</TabsTrigger>
+          <TabsTrigger value="orders"><Package className="h-4 w-4 me-1.5" /> الطلبات</TabsTrigger>
+          <TabsTrigger value="financial"><Wallet className="h-4 w-4 me-1.5" /> المالية</TabsTrigger>
+          <TabsTrigger value="profile"><Building2 className="h-4 w-4 me-1.5" /> الملف والتحقق</TabsTrigger>
+          <TabsTrigger value="team"><Users className="h-4 w-4 me-1.5" /> الفريق</TabsTrigger>
+        </TabsList>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <CardTitle>مستندات التحقق (KYC)</CardTitle>
-                  <CardDescription className="mt-1">المستندات اللازمة لاعتماد الشركة</CardDescription>
-                </div>
-                {company.kycStatus === 'PENDING_VERIFICATION' && (
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <X className="h-4 w-4" />
-                      رفض
-                    </Button>
-                    <Button size="sm">
-                      <ShieldCheck className="h-4 w-4" />
-                      اعتماد
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <KycDocRow
-                label="السجل التجاري"
-                file={`CR-${company.crNumber}.pdf`}
-                state={company.kycStatus === 'APPROVED' ? 'approved' : 'pending'}
-              />
-              <KycDocRow
-                label="شهادة الزكاة والدخل"
-                file="ZTC-2026.pdf"
-                state={company.kycStatus === 'APPROVED' ? 'approved' : 'pending'}
-              />
-              <KycDocRow
-                label="شهادة الضريبة (VAT)"
-                file={`VAT-${company.vatNumber}.pdf`}
-                state={company.kycStatus === 'APPROVED' ? 'approved' : 'pending'}
-              />
-              {company.kind === 'CARRIER' && (
-                <KycDocRow
-                  label="بوليصة التأمين"
-                  file={company.insurance ? 'Insurance-2026.pdf' : undefined}
-                  state={company.insurance ? 'approved' : 'missing'}
-                />
-              )}
-            </CardContent>
-          </Card>
+        {/* ─── Overview: KPIs + charts ─── */}
+        <TabsContent value="overview">
+          <OverviewTab stats={statsData} isCarrier={isCarrier} />
+        </TabsContent>
 
-          {/* Team — read-only with suspend/remove actions only (admin can't add) */}
-          <AdminTeamSection companyId={company.id} companyKind={company.kind} />
-
+        {/* ─── Orders ─── */}
+        <TabsContent value="orders">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -177,11 +160,11 @@ export default function AdminCompanyDetail() {
               {orders.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">لا توجد طلبات</p>
               ) : (
-                orders.slice(0, 5).map((o) => (
+                orders.slice(0, 20).map((o) => (
                   <button
                     key={o.id}
                     onClick={() => router.push(`/orders/${o.id}`)}
-                    className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors text-start"
+                    className="w-full flex items-center gap-3 p-2.5 rounded-md hover:bg-muted transition-colors text-start"
                   >
                     <span className="font-mono text-xs text-muted-foreground shrink-0">{o.orderNumber}</span>
                     <span className="flex-1 text-sm truncate">{o.originCity} ← {o.destinationCity}</span>
@@ -192,59 +175,265 @@ export default function AdminCompanyDetail() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </TabsContent>
 
-        {/* Right: performance / actions */}
-        <div className="space-y-6">
-          {company.kind === 'CARRIER' && (
-            <Card>
-              <CardHeader><CardTitle>أداء الناقل</CardTitle></CardHeader>
-              <CardContent>
-                <dl className="divide-y">
-                  <Row label="التقييم" icon={Star} value={company.rating != null ? <span className="num font-medium">{company.rating.toFixed(1)}</span> : '—'} />
-                  <Row label="رحلات منجزة" icon={Truck} value={company.completedTrips != null ? <span className="num font-medium">{company.completedTrips.toLocaleString('en-US')}</span> : '—'} />
-                  <Row label="حجم الأسطول" value={company.fleetSize != null ? <span className="num font-medium">{company.fleetSize} شاحنة</span> : '—'} />
-                  <Row label="متوسط الاستجابة" value={company.responseTimeMins != null ? <span className="num font-medium">{company.responseTimeMins} دقيقة</span> : '—'} />
-                  <Row label="تأمين شامل" value={<Badge variant={company.insurance ? 'success' : 'secondary'}>{company.insurance ? 'متوفر' : 'غير متوفر'}</Badge>} />
-                </dl>
-              </CardContent>
-            </Card>
-          )}
+        {/* ─── Financial ─── */}
+        <TabsContent value="financial">
+          <FinancialTab stats={statsData} isCarrier={isCarrier} />
+        </TabsContent>
 
-          {company.kind === 'CLIENT' && (
-            <Card>
-              <CardHeader><CardTitle>ملف العميل</CardTitle></CardHeader>
-              <CardContent>
-                <dl className="divide-y">
-                  <Row label="حجم النقل الشهري" value={<Currency amount={company.monthlyVolume ?? 0} />} />
-                  <Row label="عدد الطلبات" value={<span className="num font-medium">{orders.length}</span>} />
-                  <Row label="حالة الحساب" value={<Badge variant="success">نشط</Badge>} />
-                </dl>
-              </CardContent>
-            </Card>
-          )}
+        {/* ─── Profile + KYC ─── */}
+        <TabsContent value="profile">
+          <ProfileTab company={company} isCarrier={isCarrier} />
+        </TabsContent>
 
-          <Card>
-            <CardHeader><CardTitle>إجراءات</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
-                <Upload className="h-4 w-4" />
-                طلب مستند إضافي
-              </Button>
-              <Button variant="outline" className="w-full justify-start">إرسال رسالة</Button>
-              <Separator />
-              <Button variant="destructive" className="w-full justify-start">إيقاف الحساب</Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+        {/* ─── Team ─── */}
+        <TabsContent value="team">
+          <AdminTeamSection companyId={company.id} companyKind={company.kind} />
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
 
+// ─── Overview tab ────────────────────────────────────────────────────
+function OverviewTab({ stats, isCarrier }: { stats?: CompanyStats; isCarrier: boolean }) {
+  if (!stats) {
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+      </div>
+    );
+  }
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatsCard label="إجمالي الطلبات" value={stats.totalOrders} hint="المسجّلة" icon={Package} index={0} />
+        <StatsCard label="نسبة الإكمال" value={pct(stats.completionRate)} hint={`${stats.completedOrders} مكتملة`} icon={Activity} tone="success" index={1} />
+        <StatsCard label="إجمالي المعاملات (GMV)" value={<Currency amount={stats.gmv} />} hint="للطلبات المنجزة" icon={TrendingUp} index={2} />
+        <StatsCard
+          label={isCarrier ? 'صافي إيراد الناقل' : 'إجمالي الإنفاق'}
+          value={<Currency amount={stats.revenue} />}
+          hint={isCarrier ? 'بعد العمولة' : 'على الطلبات المنجزة'}
+          icon={Wallet} tone="success" index={3}
+        />
+        {isCarrier ? (
+          <>
+            <StatsCard label="عروض نشطة" value={stats.activeBids} hint={`فوز ${pct(stats.winRate)}`} icon={BarChart2} tone="warning" index={4} />
+            <StatsCard label="حجم الأسطول" value={stats.fleetSize} hint={`${stats.driversCount} سائق`} icon={Truck} index={5} />
+            <StatsCard
+              label="التقييم"
+              value={stats.rating != null ? stats.rating.toFixed(1) : '—'}
+              hint={`${stats.reviewsCount} تقييم`} icon={Star} tone="success" index={6}
+            />
+            <StatsCard label="نزاعات" value={stats.disputedOrders} hint="تحتاج متابعة" icon={ShieldCheck} tone={stats.disputedOrders > 0 ? 'danger' : 'default'} index={7} />
+          </>
+        ) : (
+          <>
+            <StatsCard label="متوسط قيمة الطلب" value={<Currency amount={stats.avgOrderValue} />} hint="للمنجزة" icon={BarChart2} index={4} />
+            <StatsCard label="طلبات ملغاة" value={stats.cancelledOrders} hint="من الإجمالي" icon={X} tone={stats.cancelledOrders > 0 ? 'warning' : 'default'} index={5} />
+            <StatsCard label="نزاعات" value={stats.disputedOrders} hint="تحتاج متابعة" icon={ShieldCheck} tone={stats.disputedOrders > 0 ? 'danger' : 'default'} index={6} />
+            <StatsCard label="أعضاء الفريق" value={stats.teamSize} hint="مستخدمون" icon={Users} index={7} />
+          </>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">النشاط خلال 6 أشهر</CardTitle>
+            <CardDescription>عدد الطلبات والمعاملات الشهرية</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TrendChart trend={stats.trend} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">توزّع الطلبات حسب الحالة</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StatusDistribution breakdown={stats.statusBreakdown} total={stats.totalOrders} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function TrendChart({ trend }: { trend: CompanyStats['trend'] }) {
+  if (!trend.some((t) => t.orders > 0 || t.revenue > 0)) {
+    return <p className="text-sm text-muted-foreground py-12 text-center">لا يوجد نشاط في آخر 6 أشهر</p>;
+  }
+  return (
+    <div style={{ width: '100%', height: 260 }} dir="ltr">
+      <ResponsiveContainer>
+        <ComposedChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+          <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+          <YAxis yAxisId="left" tick={{ fontSize: 11 }} allowDecimals={false} />
+          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+          <Tooltip
+            formatter={(v) => Number(v ?? 0).toLocaleString('en-US')}
+            labelStyle={{ direction: 'ltr' }}
+          />
+          <Bar yAxisId="left" name="الطلبات" dataKey="orders" fill="hsl(var(--mint))" radius={[4, 4, 0, 0]} maxBarSize={32} />
+          <Line yAxisId="right" name="المعاملات" type="monotone" dataKey="revenue" stroke="#0A3D3A" strokeWidth={2} dot={{ r: 3 }} />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function StatusDistribution({ breakdown, total }: { breakdown: Record<string, number>; total: number }) {
+  const entries = Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0 || total === 0) {
+    return <p className="text-sm text-muted-foreground py-12 text-center">لا توجد طلبات</p>;
+  }
+  return (
+    <div className="space-y-3">
+      {entries.map(([status, count]) => {
+        const p = Math.round((count / total) * 100);
+        return (
+          <div key={status}>
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="text-muted-foreground">{STATUS_LABEL[status] ?? status}</span>
+              <span className="num font-medium">{count} · {p}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div className="h-full rounded-full bg-[hsl(var(--mint))]" style={{ width: `${p}%` }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Financial tab ───────────────────────────────────────────────────
+function FinancialTab({ stats, isCarrier }: { stats?: CompanyStats; isCarrier: boolean }) {
+  if (!stats) {
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        {[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+      </div>
+    );
+  }
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <StatsCard label="إجمالي المعاملات (GMV)" value={<Currency amount={stats.gmv} />} icon={TrendingUp} index={0} />
+        <StatsCard
+          label={isCarrier ? 'صافي إيراد الناقل' : 'إجمالي الإنفاق'}
+          value={<Currency amount={stats.revenue} />} icon={Wallet} tone="success" index={1}
+        />
+        <StatsCard label="عمولة المنصة" value={<Currency amount={stats.commission} />} hint="من طلبات هذه الشركة" icon={BarChart2} index={2} />
+        <StatsCard label="متوسط قيمة الطلب" value={<Currency amount={stats.avgOrderValue} />} icon={Package} index={3} />
+        {isCarrier && (
+          <>
+            <StatsCard label="نسبة الفوز بالعروض" value={pct(stats.winRate)} hint={`${stats.wonBids} من ${stats.totalBids}`} icon={Activity} index={4} />
+            <StatsCard label="عروض نشطة" value={stats.activeBids} icon={BarChart2} tone="warning" index={5} />
+          </>
+        )}
+      </div>
+
+      {isCarrier && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">مستحقّات الأسطول المستقل (فريلانس)</CardTitle>
+            <CardDescription>فواتير السائقين/الشاحنات المستقلّة لهذا الناقل</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <FinRow label="مستحق (غير مدفوع)" value={stats.freelancerDue} tone="warning" />
+              <FinRow label="مدفوع" value={stats.freelancerPaid} tone="success" />
+              <FinRow label="عدد الفواتير" value={stats.freelancerCount} count />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function FinRow({ label, value, tone, count }: { label: string; value: number; tone?: 'success' | 'warning'; count?: boolean }) {
+  const color = tone === 'success' ? 'text-success' : tone === 'warning' ? 'text-warning' : 'text-foreground';
+  return (
+    <div className="rounded-xl border p-4">
+      <div className="text-xs text-muted-foreground mb-1">{label}</div>
+      <div className={`text-lg font-bold ${color}`}>
+        {count ? <span className="num">{value.toLocaleString('en-US')}</span> : <Currency amount={value} />}
+      </div>
+    </div>
+  );
+}
+
+// ─── Profile + KYC tab ───────────────────────────────────────────────
+function ProfileTab({ company, isCarrier }: { company: Company; isCarrier: boolean }) {
+  const { data: kycDocs } = useSWR<{ id: string; type: string; status: string; fileUrl: string; createdAt: string }[]>(
+    `/companies/${company.id}/kyc`, fetcher);
+  const docs = Array.isArray(kycDocs) ? kycDocs : [];
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader><CardTitle>المعلومات الأساسية</CardTitle></CardHeader>
+        <CardContent>
+          <dl className="divide-y">
+            <Row label="الاسم (عربي)" value={company.nameAr} />
+            <Row label="Name (EN)" value={<span className="num">{company.nameEn || '—'}</span>} />
+            <Row label="السجل التجاري" value={<span className="num">{company.crNumber || '—'}</span>} />
+            <Row label="الرقم الضريبي" value={<span className="num">{company.vatNumber || '—'}</span>} />
+            <Row label="المدينة" icon={MapPin} value={`${company.city}، ${company.region}`} />
+            <Row label="البريد" icon={Mail} value={<span className="num">{company.contactEmail}</span>} />
+            <Row label="الهاتف" icon={Phone} value={<span className="num" dir="ltr">{company.contactPhone}</span>} />
+            <Row label="تاريخ التسجيل" value={formatDate(company.joinedAt, 'd MMMM yyyy')} />
+          </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>مستندات التحقق (KYC)</CardTitle>
+          <CardDescription className="mt-1">حالة اعتماد الكيان: {company.kycStatus === 'APPROVED' ? 'معتمد' : company.kycStatus === 'REJECTED' ? 'مرفوض' : 'قيد المراجعة'}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {docs.length === 0 ? (
+            <KycDocRow label="لم تُرفع مستندات بعد" state="missing" />
+          ) : (
+            docs.map((d) => (
+              <KycDocRow
+                key={d.id}
+                label={KYC_TYPE_LABEL[d.type] ?? d.type}
+                file={d.fileUrl}
+                state={d.status === 'APPROVED' ? 'approved' : d.status === 'REJECTED' ? 'rejected' : 'pending'}
+              />
+            ))
+          )}
+          {isCarrier && docs.length > 0 && (
+            <p className="text-[11px] text-muted-foreground pt-1">تشمل رخصة النقل وبوليصة التأمين عند توفرها.</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+const KYC_TYPE_LABEL: Record<string, string> = {
+  COMMERCIAL_REGISTER: 'السجل التجاري',
+  VAT_CERTIFICATE: 'شهادة الزكاة والدخل',
+  TAX_CERTIFICATE: 'شهادة الضريبة (VAT)',
+  FREIGHT_LICENSE: 'رخصة نقل البضائع',
+  INSURANCE_POLICY: 'بوليصة التأمين',
+  ARTICLES_OF_ASSOCIATION: 'عقد التأسيس',
+  BANK_LETTER: 'خطاب البنك (IBAN)',
+  OTHER: 'وثيقة أخرى',
+};
+
 function Row({
   label, value, icon: Icon,
-}: { label: string; value: React.ReactNode; icon?: any }) {
+}: { label: string; value: React.ReactNode; icon?: LucideIcon }) {
   return (
     <div className="flex items-start justify-between gap-4 py-3">
       <dt className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
@@ -260,7 +449,7 @@ function KycDocRow({
   label, file, state,
 }: { label: string; file?: string; state: 'pending' | 'approved' | 'rejected' | 'missing' }) {
   const META = {
-    pending:  { bg: 'bg-warning/15 text-warning',         label: 'بانتظار', icon: Clock },
+    pending:  { bg: 'bg-warning/15 text-warning',         label: 'بانتظار', icon: FileText },
     approved: { bg: 'bg-success/15 text-success',         label: 'معتمد',   icon: FileCheck },
     rejected: { bg: 'bg-destructive/15 text-destructive', label: 'مرفوض',  icon: FileX },
     missing:  { bg: 'bg-muted text-muted-foreground',     label: 'لم يُرفع', icon: FileText },
@@ -280,18 +469,17 @@ function KycDocRow({
             {m.label}
           </span>
         </div>
-        {file && <p className="text-xs text-muted-foreground font-mono truncate">{file}</p>}
       </div>
-      {state !== 'missing' && (
-        <Button variant="ghost" size="sm">عرض</Button>
+      {state !== 'missing' && file && (
+        <Button variant="ghost" size="sm" asChild>
+          <a href={file} target="_blank" rel="noopener noreferrer">عرض</a>
+        </Button>
       )}
     </div>
   );
 }
 
 // ─── Admin Team section ──────────────────────────────────────────────
-// Admin can VIEW the company's team and suspend/remove members, but cannot
-// add new ones (per spec: that's the company's right).
 function AdminTeamSection({ companyId, companyKind }: { companyId: string; companyKind: 'CLIENT' | 'CARRIER' }) {
   const [members, setMembers] = useState<TeamMember[]>(() => teamMembersFor(companyId));
 

@@ -6,6 +6,24 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.37 — 360° provider/company page (2026-10-24)
+
+> Feature #6. The admin company-detail page now rivals the Reports page.
+
+- **API:** `GET /companies/:id/stats` was expanded from 3 fields into a full
+  360° payload, scoped to the company's role (a carrier's carried orders vs a
+  client's placed orders): status breakdown, completion rate, GMV, net
+  revenue/spend, commission, average order value, active bids + win rate,
+  rating + reviews, fleet/drivers/team counts, freelancer-invoice totals
+  (carrier), and a 6-month orders/GMV trend. Backward-compatible keys kept.
+- **Admin company page** rebuilt into a tabbed 360° view: Overview (KPI cards +
+  a 6-month Recharts trend + status distribution), Orders, Financial (GMV /
+  revenue / commission / win rate + carrier freelancer dues), Profile & KYC
+  (real `/companies/:id/kyc`), and Team. Carrier vs client show the metrics
+  that fit each. Loads with skeletons.
+- Verified live: the stats endpoint returns the rich payload (fleet 5, drivers
+  5, freelancer due/paid), and the page renders the tabs, KPI cards and chart.
+
 ### v0.9.36 — Consolidated tracking shows every truck (2026-10-24)
 
 > Feature #3. The map used to show a single truck for a consolidated order.

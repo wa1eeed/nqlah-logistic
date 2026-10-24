@@ -85,19 +85,108 @@ export class CompaniesService {
     return doc;
   }
 
+  /**
+   * A 360° stats payload for one company (admin provider/client view). Scoped
+   * to the company's role: a CARRIER's orders are the ones it carries, a
+   * CLIENT's are the ones it places. Returns a superset so either UI can read
+   * what it needs. Backward-compatible keys `totalRevenue` / `activeBids` kept.
+   */
   async stats(id: string) {
-    const [orders, completedRevenue, activeBids] = await Promise.all([
-      this.prisma.order.count({ where: { OR: [{ clientId: id }, { carrierId: id }] } }),
+    const company = await this.prisma.company.findUnique({ where: { id }, select: { type: true } });
+    const isCarrier = company?.type === 'CARRIER';
+    const own: Prisma.OrderWhereInput = isCarrier ? { carrierId: id } : { clientId: id };
+
+    const since = new Date();
+    since.setMonth(since.getMonth() - 5);
+    since.setDate(1);
+    since.setHours(0, 0, 0, 0);
+
+    const [
+      totalOrders, byStatus, finishedAgg, activeBids, totalBids, wonBids,
+      ratingAgg, counts, freelancerByStatus, recentOrders,
+    ] = await Promise.all([
+      this.prisma.order.count({ where: own }),
+      this.prisma.order.groupBy({ by: ['status'], where: own, _count: true }),
       this.prisma.order.aggregate({
-        where: { status: 'COMPLETED', OR: [{ clientId: id }, { carrierId: id }] },
-        _sum: { agreedPrice: true },
+        where: { ...own, status: { in: ['DELIVERED', 'COMPLETED'] } },
+        _sum: { agreedPrice: true, carrierAmount: true, commissionAmount: true },
       }),
       this.prisma.bid.count({ where: { carrierId: id, status: 'PENDING' } }),
+      this.prisma.bid.count({ where: { carrierId: id } }),
+      this.prisma.bid.count({ where: { carrierId: id, status: 'ACCEPTED' } }),
+      this.prisma.review.aggregate({ where: { reviewedId: id }, _avg: { rating: true }, _count: true }),
+      this.prisma.company.findUnique({
+        where: { id },
+        select: { _count: { select: { trucks: true, users: true, drivers: true } } },
+      }),
+      isCarrier
+        ? this.prisma.freelancerInvoice.groupBy({ by: ['status'], where: { carrierId: id }, _sum: { amount: true }, _count: true })
+        : Promise.resolve([] as { status: string; _sum: { amount: number | null }; _count: number }[]),
+      this.prisma.order.findMany({
+        where: { ...own, createdAt: { gte: since } },
+        select: { createdAt: true, status: true, agreedPrice: true },
+      }),
     ]);
+
+    const statusBreakdown: Record<string, number> = {};
+    for (const g of byStatus) statusBreakdown[g.status] = (g as { _count: number })._count;
+    const countOf = (...s: string[]) => s.reduce((n, k) => n + (statusBreakdown[k] ?? 0), 0);
+    const completedOrders = countOf('DELIVERED', 'COMPLETED');
+    const cancelledOrders = countOf('CANCELLED');
+    const disputedOrders = countOf('DISPUTED');
+
+    const gmv = finishedAgg._sum.agreedPrice ?? 0;
+    const carrierRevenue = finishedAgg._sum.carrierAmount ?? 0;
+    const commission = finishedAgg._sum.commissionAmount ?? 0;
+
+    // 6-month trend (orders + GMV), bucketed by YYYY-MM.
+    const months: { key: string; label: string; orders: number; revenue: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const dt = new Date();
+      dt.setMonth(dt.getMonth() - i);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+      months.push({ key, label: key, orders: 0, revenue: 0 });
+    }
+    const idxByKey = new Map(months.map((m, i) => [m.key, i]));
+    for (const o of recentOrders) {
+      const k = `${o.createdAt.getFullYear()}-${String(o.createdAt.getMonth() + 1).padStart(2, '0')}`;
+      const i = idxByKey.get(k);
+      if (i == null) continue;
+      months[i].orders += 1;
+      if (o.status === 'DELIVERED' || o.status === 'COMPLETED') months[i].revenue += o.agreedPrice ?? 0;
+    }
+
+    const freelancerDue = freelancerByStatus.find((f) => f.status === 'DUE')?._sum.amount ?? 0;
+    const freelancerPaid = freelancerByStatus.find((f) => f.status === 'PAID')?._sum.amount ?? 0;
+    const freelancerCount = freelancerByStatus.reduce((n, f) => n + f._count, 0);
+
     return {
-      totalOrders: orders,
-      totalRevenue: completedRevenue._sum.agreedPrice ?? 0,
+      type: isCarrier ? 'CARRIER' : 'CLIENT',
+      totalOrders,
+      statusBreakdown,
+      completedOrders,
+      cancelledOrders,
+      disputedOrders,
+      completionRate: totalOrders > 0 ? completedOrders / totalOrders : 0,
+      gmv,
+      revenue: isCarrier ? carrierRevenue : gmv,
+      commission,
+      avgOrderValue: completedOrders > 0 ? gmv / completedOrders : 0,
       activeBids,
+      totalBids,
+      wonBids,
+      winRate: totalBids > 0 ? wonBids / totalBids : 0,
+      rating: ratingAgg._avg.rating ?? null,
+      reviewsCount: ratingAgg._count,
+      fleetSize: counts?._count.trucks ?? 0,
+      driversCount: counts?._count.drivers ?? 0,
+      teamSize: counts?._count.users ?? 0,
+      freelancerDue,
+      freelancerPaid,
+      freelancerCount,
+      trend: months.map((m) => ({ month: m.label, orders: m.orders, revenue: m.revenue })),
+      // Backward-compatible keys.
+      totalRevenue: gmv,
     };
   }
 
