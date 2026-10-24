@@ -1,6 +1,6 @@
 # Pending Work — حالة الربط الحالية
 
-> آخر تحديث: 2026-10-23 (بعد v0.9.16 — Premium Mint Redesign)
+> آخر تحديث: 2026-10-24 (بعد v0.9.22 — Provider dispatcher / freelancers)
 >
 > الهدف من هذا الملف: نقطة استئناف واضحة. يلخّص ما تبقّى من الربط/الإصلاحات قبل
 > أن نعتبر النظام جاهزاً لـ release v1.0.
@@ -31,8 +31,6 @@
 - **Admin per-client/group policy** (v0.9.21) — customization groups gating
   distribution/pricing/payment; client form respects the policy.
   → `docs/POLICIES.md`
-
-**Open as a PR (pending merge):**
 - **Provider dispatcher / freelancers** (v0.9.22) — owned vs freelancer fleet
   (`ownership` + `OwnershipBadge`), per-trip freelancer invoices issued on
   assignment (single + consolidated legs), and a carrier **profitability** page
