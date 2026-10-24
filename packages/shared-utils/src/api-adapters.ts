@@ -209,3 +209,40 @@ export function normalizePaymentList<T extends object>(input: unknown): T[] {
     .map((p) => normalizePayment(p as T))
     .filter((p): p is T => p !== null);
 }
+
+/**
+ * Maps an API Company (Prisma fields: `type`, `createdAt`, `kycStatus` with the
+ * API's `PENDING` value, plus a `_count` of trucks/users) into the mock
+ * `Company` shape the admin UI was written against (`kind`, `joinedAt`,
+ * `kycStatus` with `PENDING_VERIFICATION`, `fleetSize`). Carrier performance
+ * fields (rating / completedTrips / responseTimeMins / insurance / monthlyVolume)
+ * don't exist on the DB Company and stay undefined — the UI must guard them.
+ *
+ * Idempotent — an already-mock-shaped company (has `kind`) passes through.
+ */
+export function normalizeCompany<T extends object>(input: T | null | undefined): T | null {
+  if (!input) return null;
+  const c = input as Record<string, unknown>;
+  const rawKyc = (c.kycStatus as string | undefined) ?? 'NOT_SUBMITTED';
+  // The API enum uses PENDING; the mock/UI + StatusBadge use PENDING_VERIFICATION.
+  const kycStatus = rawKyc === 'PENDING' ? 'PENDING_VERIFICATION' : rawKyc;
+  const count = (c._count as { trucks?: number; users?: number } | undefined) ?? undefined;
+  return {
+    ...c,
+    kind: (c.kind as string | undefined) ?? (c.type as string | undefined) ?? 'CLIENT',
+    joinedAt: (c.joinedAt as string | undefined) ?? (c.createdAt as string | undefined) ?? '',
+    kycStatus,
+    accountType: (c.accountType as string | undefined) ?? 'COMPANY',
+    nameEn: (c.nameEn as string | undefined) ?? '',
+    crNumber: (c.crNumber as string | undefined) ?? '',
+    vatNumber: (c.vatNumber as string | undefined) ?? '',
+    // Fleet size: the API exposes it only via findById's `_count.trucks`.
+    fleetSize: (c.fleetSize as number | undefined) ?? count?.trucks,
+  } as unknown as T;
+}
+
+export function normalizeCompanyList<T extends object>(input: unknown): T[] {
+  return unwrapList(input)
+    .map((c) => normalizeCompany(c as T))
+    .filter((c): c is T => c !== null);
+}
