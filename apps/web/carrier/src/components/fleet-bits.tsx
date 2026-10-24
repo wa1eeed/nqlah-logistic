@@ -9,7 +9,53 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
+import { cn } from '@/lib/utils';
 import { formatDate, formatDateTime, type FleetAuditEvent, type FleetEventType, type TruckTrip } from '@naqla/shared-utils';
+
+/** Driver-worded status labels (StatusBadge's defaults are truck-worded). */
+const DRIVER_STATUS_LABEL: Record<string, string> = {
+  AVAILABLE: 'متاح',
+  ON_TRIP: 'في رحلة',
+  OFF_DUTY: 'خارج الخدمة',
+};
+
+export function DriverStatusBadge({ status }: { status: string }) {
+  return <StatusBadge status={status} label={DRIVER_STATUS_LABEL[status]} />;
+}
+
+/** Days until `dateStr` and a severity bucket (soon = within `soonDays`). */
+export function expiryState(dateStr?: string, soonDays = 60): { days: number; state: 'expired' | 'soon' | 'ok' } | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
+  const days = Math.ceil((d.getTime() - Date.now()) / 86_400_000);
+  return { days, state: days < 0 ? 'expired' : days <= soonDays ? 'soon' : 'ok' };
+}
+
+/** Small amber/red chip shown when a licence or inspection is near/past expiry. */
+export function ExpiryBadge({ date, soonDays = 60, className }: { date?: string; soonDays?: number; className?: string }) {
+  const e = expiryState(date, soonDays);
+  if (!e || e.state === 'ok') return null;
+  return (
+    <span className={cn(
+      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+      e.state === 'expired' ? 'bg-destructive/10 text-destructive' : 'bg-warning/15 text-warning',
+      className,
+    )}>
+      <AlertTriangle className="h-3 w-3" />
+      {e.state === 'expired' ? 'منتهية' : `تنتهي خلال ${e.days} يوم`}
+    </span>
+  );
+}
+
+/** +1 year from the last inspection = the next inspection due date. */
+export function nextInspection(lastInspection?: string): string | undefined {
+  if (!lastInspection) return undefined;
+  const d = new Date(lastInspection);
+  if (Number.isNaN(d.getTime())) return undefined;
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString();
+}
 
 export function ConfirmDialog({
   open, onOpenChange, title, description, confirmLabel = 'تأكيد', destructive, onConfirm,

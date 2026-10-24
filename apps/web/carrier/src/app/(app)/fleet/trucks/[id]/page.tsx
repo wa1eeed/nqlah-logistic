@@ -25,7 +25,8 @@ import {
   DRIVERS, TRUCKS, auditForTruck, formatDate, tripsForTruck, type TruckStatus,
 } from '@naqla/shared-utils';
 import {
-  AuditTimeline, ConfirmDialog, FleetStatusSelect, TripsTimeline, TRUCK_STATUS_OPTIONS,
+  AuditTimeline, ConfirmDialog, DriverStatusBadge, ExpiryBadge, expiryState,
+  FleetStatusSelect, TripsTimeline, TRUCK_STATUS_OPTIONS,
 } from '@/components/fleet-bits';
 
 export default function TruckDetailPage() {
@@ -178,7 +179,7 @@ export default function TruckDetailPage() {
                     <div className="font-semibold truncate">{driver.fullName}</div>
                     <div className="text-xs text-muted-foreground"><span className="num">{driver.code}</span> · {driver.licenseClass}</div>
                   </div>
-                  <StatusBadge status={driverStatusMap[driver.id] ?? driver.status} />
+                  <DriverStatusBadge status={driverStatusMap[driver.id] ?? driver.status} />
                 </div>
                 <Button variant="outline" size="sm" className="w-full" onClick={() => { setPick(driver.id); setAssignOpen(true); }}>
                   <Link2 className="h-4 w-4" /> تغيير السائق
@@ -276,7 +277,12 @@ export default function TruckDetailPage() {
                       <div className="text-sm font-medium">{doc.label}</div>
                       <div className="text-xs text-muted-foreground">تنتهي: {doc.expiry !== '—' ? formatDate(doc.expiry, 'd MMM yyyy') : '—'}</div>
                     </div>
-                    <Badge variant="success">سارية</Badge>
+                    {(() => {
+                      const e = expiryState(doc.expiry);
+                      return e && e.state !== 'ok'
+                        ? <ExpiryBadge date={doc.expiry} />
+                        : <Badge variant="success">سارية</Badge>;
+                    })()}
                   </div>
                 ))}
               </CardContent>

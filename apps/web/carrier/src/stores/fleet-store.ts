@@ -63,6 +63,8 @@ interface FleetState {
   unassignDriver: (truckId: TruckId) => void;
   setTruckStatus: (truckId: TruckId, status: TruckStatus) => void;
   setDriverStatus: (driverId: DriverId, status: DriverStatus) => void;
+  /** Restore the fleet to its seeded state (demo convenience). */
+  resetFleet: () => void;
 }
 
 const seedAssign: Record<TruckId, DriverId | null> =
@@ -144,6 +146,14 @@ export const useFleetStore = create<FleetState>()(
             ...s.events,
           ];
           return { driverStatus, truckStatus, events };
+        }),
+
+      resetFleet: () =>
+        set({
+          assign: { ...seedAssign },
+          truckStatus: { ...seedTruckStatus },
+          driverStatus: { ...seedDriverStatus },
+          events: [],
         }),
     }),
     {

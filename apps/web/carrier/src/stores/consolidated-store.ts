@@ -10,6 +10,8 @@ interface ConsolidatedState {
   overrides: Record<string, Record<number, LegAssignment>>;
   distribute: (orderId: string, index: number, truckId: string, driverId: string) => void;
   clearLeg: (orderId: string, index: number) => void;
+  /** Clear all consolidated-order distributions (demo convenience). */
+  resetAll: () => void;
 }
 
 export const useConsolidatedStore = create<ConsolidatedState>()(
@@ -29,6 +31,7 @@ export const useConsolidatedStore = create<ConsolidatedState>()(
           delete forOrder[index];
           return { overrides: { ...s.overrides, [orderId]: forOrder } };
         }),
+      resetAll: () => set({ overrides: {} }),
     }),
     { name: 'naqla:consolidated', version: 1 },
   ),

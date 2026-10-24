@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Hash, Loader2, Plus, Truck as TruckIcon, Users } from 'lucide-react';
+import { AlertTriangle, Hash, Loader2, Plus, Truck as TruckIcon, Users } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
-import { StatusBadge } from '@/components/status-badge';
+import { DriverStatusBadge, ExpiryBadge, expiryState } from '@/components/fleet-bits';
 import { useFleetStore } from '@/stores/fleet-store';
 import { api } from '@/lib/api';
 import { notify } from '@/lib/notify';
@@ -48,6 +48,10 @@ export default function CarrierFleetDrivers() {
   }), [all]);
 
   const rows = useMemo(() => (tab === 'ALL' ? all : all.filter((d) => d.status === tab)), [tab, all]);
+  const licenseAlerts = useMemo(
+    () => all.filter((d) => { const e = expiryState(d.licenseExpiry); return e && e.state !== 'ok'; }).length,
+    [all],
+  );
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -76,7 +80,16 @@ export default function CarrierFleetDrivers() {
       <PageHeader
         title="السائقون"
         subtitle={`${counts.all} سائق مسجّل`}
-        actions={<Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> إضافة سائق</Button>}
+        actions={
+          <>
+            {licenseAlerts > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2.5 py-1 text-xs font-semibold text-warning">
+                <AlertTriangle className="h-3.5 w-3.5" /> <span className="num">{licenseAlerts}</span> رخصة تنتهي قريبا
+              </span>
+            )}
+            <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> إضافة سائق</Button>
+          </>
+        }
       />
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -120,6 +133,7 @@ export default function CarrierFleetDrivers() {
                       <div className="flex items-center gap-2.5">
                         <Avatar className="h-8 w-8"><AvatarFallback>{d.fullName.split(' ').slice(0, 2).map((w) => w[0]).join('')}</AvatarFallback></Avatar>
                         <span className="font-medium whitespace-nowrap">{d.fullName}</span>
+                        <ExpiryBadge date={d.licenseExpiry} />
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground num">{d.nationalId}</TableCell>
@@ -130,7 +144,7 @@ export default function CarrierFleetDrivers() {
                         : <span className="text-muted-foreground">بدون</span>}
                     </TableCell>
                     <TableCell className="text-center num">{d.totalTrips ?? 0}</TableCell>
-                    <TableCell><StatusBadge status={d.status} /></TableCell>
+                    <TableCell><DriverStatusBadge status={d.status} /></TableCell>
                   </TableRow>
                 ))
               )}

@@ -74,6 +74,9 @@
   (`packages/shared-utils/src/mock-data.ts`).
 - Order detail (all parties) now shows the assigned truck's plate **and the
   driver** (name, code, licence, phone).
+- Polish: driver-worded status labels (متاح / خارج الخدمة), **licence &
+  inspection expiry alerts** (per-row chips + a header count), and an
+  «إعادة ضبط الديمو» action to restore the seeded fleet/distribution state.
 
 ### 🎨 v0.9.16 — Premium "Mint" Design System عبر كل الواجهات (2026-10-23)
 

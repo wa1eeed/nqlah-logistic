@@ -23,7 +23,8 @@ import {
   DRIVERS, TRUCKS, auditForDriver, formatDate, tripsForDriver, type DriverStatus,
 } from '@naqla/shared-utils';
 import {
-  AuditTimeline, ConfirmDialog, DRIVER_STATUS_OPTIONS, FleetStatusSelect, TripsTimeline,
+  AuditTimeline, ConfirmDialog, DRIVER_STATUS_OPTIONS, DriverStatusBadge, ExpiryBadge,
+  FleetStatusSelect, TripsTimeline,
 } from '@/components/fleet-bits';
 
 export default function DriverDetailPage() {
@@ -113,7 +114,7 @@ export default function DriverDetailPage() {
                 <h2 className="text-xl font-semibold">{driver.fullName}</h2>
                 <div className="flex items-center justify-center gap-2">
                   <Badge variant="outline" className="num gap-1"><Hash className="h-3 w-3" />{driver.code}</Badge>
-                  <StatusBadge status={status} />
+                  <DriverStatusBadge status={status} />
                 </div>
               </div>
             </div>
@@ -123,7 +124,12 @@ export default function DriverDetailPage() {
               <InfoRow icon={Phone} label="الهاتف" value={<span className="num" dir="ltr">{driver.phone}</span>} />
               <InfoRow icon={Fingerprint} label="رقم الهوية" value={<span className="num">{driver.nationalId}</span>} />
               <InfoRow icon={UserCog} label="فئة الرخصة" value={driver.licenseClass} />
-              <InfoRow icon={Calendar} label="انتهاء الرخصة" value={formatDate(driver.licenseExpiry)} />
+              <InfoRow icon={Calendar} label="انتهاء الرخصة" value={
+                <span className="inline-flex items-center gap-2">
+                  {formatDate(driver.licenseExpiry)}
+                  <ExpiryBadge date={driver.licenseExpiry} />
+                </span>
+              } />
               <InfoRow icon={TruckIcon} label="إجمالي الرحلات" value={<span className="num">{driver.totalTrips}</span>} />
             </dl>
           </CardContent>
