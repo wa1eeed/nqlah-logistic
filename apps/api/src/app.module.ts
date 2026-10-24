@@ -18,6 +18,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { BidsModule } from './modules/bids/bids.module';
 import { FleetModule } from './modules/fleet/fleet.module';
 import { FreelancerInvoicesModule } from './modules/freelancer-invoices/freelancer-invoices.module';
+import { PoliciesModule } from './modules/policies/policies.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -68,6 +69,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     BidsModule,
     FleetModule,
     FreelancerInvoicesModule,
+    PoliciesModule,
     PaymentsModule,
     InvoicesModule,
     NotificationsModule,

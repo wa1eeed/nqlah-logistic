@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import {
@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { Currency } from '@/components/currency';
 import { playSoundIfEnabled } from '@/lib/sound';
-import { DEFAULT_CITIES, CURRENT_CLIENT_ID, companyById, policyForClient } from '@naqla/shared-utils';
+import { DEFAULT_CITIES, CURRENT_CLIENT_ID, companyById, policyForClient, type ClientPolicy } from '@naqla/shared-utils';
 import { MapAddressPicker, type MapPoint } from '@/components/map-address-picker';
 import { api, fetcher } from '@/lib/api';
 
@@ -120,8 +120,11 @@ type ApiCarrier = { id: string; nameAr: string; nameEn: string | null; city: str
 
 export default function NewOrderWizard() {
   const router = useRouter();
-  // Admin-configurable policy for this client (gates the available options).
-  const policy = policyForClient(CURRENT_CLIENT_ID);
+  // Admin-configurable policy for this client (gates the available options),
+  // resolved server-side so admin changes apply immediately. Falls back to the
+  // mock resolver when the API is unavailable.
+  const { data: apiPolicy } = useSWR<ClientPolicy>('/policies/mine', fetcher);
+  const policy = apiPolicy ?? policyForClient(CURRENT_CLIENT_ID);
   const { data: catalog } = useSWR<CatalogData>('/settings/catalogs', fetcher);
   const { data: carriersRaw, isLoading: carriersLoading } =
     useSWR<ApiCarrier[]>('/companies?type=CARRIER&status=ACTIVE&limit=100', fetcher);
@@ -156,6 +159,28 @@ export default function NewOrderWizard() {
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
+
+  // When the policy loads (or an admin changes it), clamp any now-disallowed
+  // selections to a valid option so the form always matches the live policy.
+  useEffect(() => {
+    if (!apiPolicy) return;
+    setForm((s) => {
+      const next = { ...s };
+      if (policy.forcedCarrierId) {
+        next.mode = 'DIRECT';
+        next.targetCarrierId = policy.forcedCarrierId;
+      } else {
+        if (s.mode === null && !policy.allowMarket) next.mode = policy.allowDirect ? 'DIRECT' : null;
+        if (s.mode === 'DIRECT' && !policy.allowDirect) next.mode = policy.allowMarket ? null : null;
+      }
+      if (s.pricingMode === 'MARKET' && !policy.allowMarketPricing) next.pricingMode = 'FIXED';
+      if (s.pricingMode === 'FIXED' && !policy.allowFixedPricing) next.pricingMode = 'MARKET';
+      if (s.paymentMethod === 'PREPAID' && !policy.allowPrepaid) next.paymentMethod = 'COD';
+      if (s.paymentMethod === 'COD' && !policy.allowCOD) next.paymentMethod = 'PREPAID';
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiPolicy]);
 
   const carriers: ApiCarrier[] = useMemo(
     () => (carriersRaw ?? []).filter(
