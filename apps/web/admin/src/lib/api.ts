@@ -33,6 +33,38 @@ function clearAuthAndRedirect() {
   }
 }
 
+// Single-flight token refresh. When several requests 401 at once — e.g. SWR
+// revalidates every mounted key on window refocus after the 15-minute access
+// token has expired — they must share ONE refresh call. Otherwise each sends
+// the same refresh token, the first rotates it, and the rest look like token
+// reuse, which makes the API revoke the whole session and force a logout.
+let refreshInFlight: Promise<string | null> | null = null;
+
+function refreshAccessToken(): Promise<string | null> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    const refreshToken = typeof window !== 'undefined'
+      ? localStorage.getItem('naqla_refresh_token')
+      : null;
+    if (!refreshToken || refreshToken === DEV_BYPASS_TOKEN) return null;
+    try {
+      const r = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken });
+      const data = r.data?.data;
+      if (data?.accessToken) {
+        localStorage.setItem('naqla_access_token', data.accessToken);
+        localStorage.setItem('naqla_refresh_token', data.refreshToken);
+        return data.accessToken as string;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
 // ⚠️ TEMP DEV INTERCEPTOR — falls back to mock data when API is unreachable
 // or returns an error, so every dashboard stays browsable while real auth
 // is being fixed. Normal 401 → refresh flow is preserved for real tokens.
@@ -44,31 +76,19 @@ api.interceptors.response.use(
     const token =
       typeof window !== 'undefined' ? localStorage.getItem('naqla_access_token') : null;
     const isDevToken = token === DEV_BYPASS_TOKEN;
+    const isAuthEndpoint = url.includes('/auth/');
 
-    // Normal 401 → try refresh (skip for dev-bypass tokens to avoid loops)
-    if (!isDevToken && err.response?.status === 401 && typeof window !== 'undefined') {
-      const refreshToken = localStorage.getItem('naqla_refresh_token');
-      if (refreshToken && refreshToken !== DEV_BYPASS_TOKEN && !config._retry) {
+    // 401 on a non-auth endpoint — try a single-flight refresh before giving
+    // up (skip for dev-bypass tokens to avoid loops).
+    if (!isDevToken && err.response?.status === 401 && !isAuthEndpoint) {
+      if (!config._retry) {
         config._retry = true;
-        try {
-          const r = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken });
-          const data = r.data?.data;
-          if (data?.accessToken) {
-            localStorage.setItem('naqla_access_token', data.accessToken);
-            localStorage.setItem('naqla_refresh_token', data.refreshToken);
-            config.headers.Authorization = `Bearer ${data.accessToken}`;
-            return api(config);
-          }
-        } catch {
-          /* fall through to mock fallback */
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          config.headers.Authorization = `Bearer ${newToken}`;
+          return api(config);
         }
       }
-    }
-
-    // If refresh failed (or wasn't possible) and we're still hitting 401 on a
-    // non-auth endpoint, the token is stale — bounce the user to /login.
-    const isAuthEndpoint = url.includes('/auth/');
-    if (err.response?.status === 401 && !isAuthEndpoint) {
       clearAuthAndRedirect();
       return Promise.reject(new Error('الجلسة منتهية — يُعاد توجيهك لصفحة الدخول'));
     }

@@ -754,6 +754,7 @@ model RefreshToken {
 
   token     String   @unique
   isRevoked Boolean  @default(false)
+  revokedAt DateTime?
 
   expiresAt DateTime
   createdAt DateTime @default(now())

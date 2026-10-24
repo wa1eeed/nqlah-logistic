@@ -30,6 +30,38 @@ function clearAuthAndRedirect() {
   }
 }
 
+// Single-flight token refresh. When several requests 401 at once — e.g. SWR
+// revalidates every mounted key on window refocus after the 15-minute access
+// token has expired — they must share ONE refresh call. Otherwise each sends
+// the same refresh token, the first rotates it, and the rest look like token
+// reuse, which makes the API revoke the whole session and force a logout.
+let refreshInFlight: Promise<string | null> | null = null;
+
+function refreshAccessToken(): Promise<string | null> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    const refreshToken = typeof window !== 'undefined'
+      ? localStorage.getItem('naqla_carrier_refresh')
+      : null;
+    if (!refreshToken || refreshToken === DEV_BYPASS_TOKEN) return null;
+    try {
+      const r = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken });
+      const data = r.data?.data;
+      if (data?.accessToken) {
+        localStorage.setItem('naqla_carrier_token', data.accessToken);
+        localStorage.setItem('naqla_carrier_refresh', data.refreshToken);
+        return data.accessToken as string;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
 // Mock fallback — GETs only. Mutations must surface real errors so a
 // failed bid/order creation doesn't pretend to succeed via mock data.
 api.interceptors.response.use(
@@ -41,23 +73,15 @@ api.interceptors.response.use(
     const isMutation = method !== 'get';
     const isAuthEndpoint = url.includes('/auth/');
 
-    // 401 on a non-auth endpoint — try refresh before giving up.
+    // 401 on a non-auth endpoint — try a single-flight refresh before giving up.
     if (err.response?.status === 401 && !isAuthEndpoint) {
-      const refreshToken = typeof window !== 'undefined'
-        ? localStorage.getItem('naqla_carrier_refresh')
-        : null;
-      if (refreshToken && refreshToken !== DEV_BYPASS_TOKEN && !config._retry) {
+      if (!config._retry) {
         config._retry = true;
-        try {
-          const r = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken });
-          const data = r.data?.data;
-          if (data?.accessToken) {
-            localStorage.setItem('naqla_carrier_token', data.accessToken);
-            localStorage.setItem('naqla_carrier_refresh', data.refreshToken);
-            config.headers.Authorization = `Bearer ${data.accessToken}`;
-            return api(config);
-          }
-        } catch { /* fall through to clearAuthAndRedirect */ }
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          config.headers.Authorization = `Bearer ${newToken}`;
+          return api(config);
+        }
       }
       clearAuthAndRedirect();
       return Promise.reject(new Error('الجلسة منتهية — يُعاد توجيهك لصفحة الدخول'));
