@@ -121,7 +121,7 @@ function fmtDuration(sec: number): string {
   return `${m} د`;
 }
 
-export function RouteMapImpl({ origin, destination, progress, live = false, height = 300 }: RouteMapImplProps) {
+export function RouteMapImpl({ origin, destination, progress, height = 300 }: RouteMapImplProps) {
   const o: LatLngTuple = [origin.lat, origin.lng];
   const d: LatLngTuple = [destination.lat, destination.lng];
 
@@ -149,26 +149,31 @@ export function RouteMapImpl({ origin, destination, progress, live = false, heig
 
   const line = route ?? [o, d];
 
-  // Animate the truck: reveal to `progress`, then (if live) keep crawling.
+  // The truck reflects the LAST REPORTED position. When a new `progress` fix
+  // arrives it smoothly tweens from the current point to the new one (like a
+  // ride-hailing app between GPS fixes) — no fake continuous crawl.
   const target = progress == null ? null : Math.max(0, Math.min(1, progress));
+  const animRef = React.useRef(0);
   const [anim, setAnim] = React.useState(0);
   React.useEffect(() => {
     if (target == null) return;
+    const from = animRef.current;
+    const to = target;
+    if (Math.abs(to - from) < 1e-6) { animRef.current = to; setAnim(to); return; }
     let raf = 0;
     const start = performance.now();
-    const revealMs = 2600;
-    // live crawl: cover the rest of the trip over ~4 minutes
-    const crawlPerMs = live ? (1 - target) / 240_000 : 0;
+    const dur = 1200;
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / revealMs);
-      const base = target * t;
-      const extra = live && t >= 1 ? crawlPerMs * (now - start - revealMs) : 0;
-      setAnim(Math.min(1, base + extra));
-      if (t < 1 || (live && base + extra < 1)) raf = requestAnimationFrame(tick);
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const v = from + (to - from) * eased;
+      animRef.current = v;
+      setAnim(v);
+      if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [target, live, route]);
+  }, [target]);
 
   const { traveled, at: truckPos } = target == null
     ? { traveled: [] as LatLngTuple[], at: null as LatLngTuple | null }
