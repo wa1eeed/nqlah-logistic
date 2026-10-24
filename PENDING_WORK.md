@@ -10,21 +10,37 @@
 
 ---
 
-## Recent demo / UX work (v0.9.17, 2026-10-24) — client-side, not API wiring
+## Recent demo / UX work (v0.9.17–v0.9.21, 2026-10-24) — status
 
 > Written in English per `docs/DOCUMENTATION.md`. These are UI/demo features
-> built on `mock-data` + client stores; wiring them to the real API is future work.
+> built on `mock-data` + client stores; wiring them to the real API is future
+> work. Full details live in `CHANGELOG.md` and the `docs/` references
+> (`docs/README.md` indexes them).
 
-- **Done:** `SaudiLicensePlate` component; fleet management (truck↔driver linking,
-  status sync, audit log, ID codes, trips timeline, tabbed detail pages,
-  assign/unassign confirmations). See `CHANGELOG.md` v0.9.17 and `docs/FLEET.md`.
-- **Done — consolidated (multi-truck) orders:** order form offers *single* vs
-  *consolidated* with a truck-count stepper; consolidated lifecycle, per-leg
-  distribution, and a consolidated invoice. Carrier distributes each leg to a
-  fleet truck (driver attached automatically); client/admin see a read-only
-  breakdown + invoice. See `CHANGELOG.md` v0.9.18 and `docs/ORDERS.md`.
-  Backend wiring (persist legs/distribution server-side, roll-up statuses,
-  generate the consolidated invoice) is future work.
+**Done (merged to `main`):**
+- **Saudi plate + Fleet management** (v0.9.17) — `SaudiLicensePlate`;
+  truck↔driver linking, status sync, audit log, ID codes, trips timeline,
+  tabbed detail pages, confirmations. → `docs/FLEET.md`
+- **Order types: single & consolidated** (v0.9.18) — truck-count, per-leg
+  carrier distribution, consolidated invoice; read-only breakdown for all
+  parties. → `docs/ORDERS.md`
+- **Order pricing** (v0.9.20) — fixed-price mode + payment method (prepaid/COD)
+  in the order form. → `docs/ORDERS.md`
+- **Live tracking** (v0.9.19) — real OSRM road routes, mock realtime
+  (WebSocket-style) channel, events timeline. → `docs/TRACKING.md`
+- **Admin per-client/group policy** (v0.9.21) — customization groups gating
+  distribution/pricing/payment; client form respects the policy.
+  → `docs/POLICIES.md`
+
+**In progress — provider dispatcher / freelancers (Stage 3):**
+- Distinguish a provider's **owned** trucks/drivers from **freelancers** working
+  for a fee. When a provider assigns an order to a freelancer, set the trip price
+  and issue a **per-trip invoice** to that freelancer. Add a provider
+  **profitability** page (order revenue vs freelancer invoices paid/due).
+
+**Cross-cutting backend wiring (future):** persist fleet / legs / policies /
+invoices server-side; roll leg statuses up to the parent order; resolve client
+policy per request; replace the mock tracking socket with a real WebSocket.
 
 ---
 
