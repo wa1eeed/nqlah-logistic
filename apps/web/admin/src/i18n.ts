@@ -2,7 +2,7 @@ import { cookies, headers } from 'next/headers';
 import { getRequestConfig } from 'next-intl/server';
 
 export const SUPPORTED_LOCALES = ['ar', 'en'] as const;
-export const DEFAULT_LOCALE = 'ar';
+export const DEFAULT_LOCALE = 'en';
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 // Cookies are scoped by hostname only, not port. On localhost all three
 // portals would share `naqla-locale` and flip each other's language. Use
@@ -11,7 +11,7 @@ export const LOCALE_COOKIE = 'naqla-locale-admin';
 
 /**
  * Cookie-based locale resolution for the internal apps (admin/client/carrier).
- * The user can change the locale only from /settings → "تفضيلات العرض".
+ * Default is English; there is no in-dashboard language switcher.
  * No URL prefix — language preference lives in a cookie + (in production) in
  * `User.preferredLanguage`.
  */
