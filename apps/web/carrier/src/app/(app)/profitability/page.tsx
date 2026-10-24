@@ -58,11 +58,14 @@ export default function CarrierProfitabilityPage() {
   const resetInvoices = useFreelancerStore((s) => s.resetInvoices);
 
   // Live data from the API.
-  const { data: invRaw } = useSWR<unknown>('/freelancer-invoices', fetcher);
+  const { data: invRaw, error: invError } = useSWR<unknown>('/freelancer-invoices', fetcher);
   const { data: trucksRaw } = useSWR<unknown>('/fleet/trucks', fetcher);
   const { data: driversRaw } = useSWR<unknown>('/fleet/drivers', fetcher);
   const { mutate } = useSWRConfig();
   const apiMode = Array.isArray(invRaw);
+  // Only treat the page as offline (and offer the local-reset) once the fetch
+  // has actually failed — avoids a flash of the fallback UI while it loads.
+  const offline = !apiMode && !!invError;
 
   const [payTarget, setPayTarget] = useState<Row | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -135,7 +138,7 @@ export default function CarrierProfitabilityPage() {
             title="الربحية"
             subtitle="ربح المزوّد على الطلبات المُسندة للفري‑لانسر = إيراد العميل ناقص أجرة الرحلة"
           />
-          {!apiMode && (
+          {offline && (
             <Button variant="outline" size="sm" className="shrink-0 gap-2" onClick={() => setConfirmReset(true)}>
               <RotateCcw className="h-4 w-4" />
               إعادة الضبط
@@ -164,10 +167,11 @@ export default function CarrierProfitabilityPage() {
           <CardContent>
             {rows.length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
-                لا توجد فواتير فري‑لانسر بعد. أسند طلباً لشاحنة فري‑لانسر لإنشاء فاتورة.
+                لا توجد فواتير فري‑لانسر بعد. أسند طلبا لشاحنة فري‑لانسر لإنشاء فاتورة.
               </div>
             ) : (
-              <Table>
+              <div className="-mx-6 overflow-x-auto px-6">
+              <Table className="min-w-[640px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-start">الطلب</TableHead>
@@ -245,6 +249,7 @@ export default function CarrierProfitabilityPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>

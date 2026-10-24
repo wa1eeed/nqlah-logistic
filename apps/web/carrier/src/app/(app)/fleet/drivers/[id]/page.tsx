@@ -242,7 +242,7 @@ export default function DriverDetailPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>ربط شاحنة بالسائق {driver.fullName}</DialogTitle>
-            <DialogDescription>اختر شاحنة. إذا كان لها سائق آخر سيُستبدل تلقائيًا.</DialogDescription>
+            <DialogDescription>اختر شاحنة. إذا كان لها سائق آخر سيُستبدل تلقائيا.</DialogDescription>
           </DialogHeader>
           <div className="py-2">
             <Select value={pick} onValueChange={setPick}>

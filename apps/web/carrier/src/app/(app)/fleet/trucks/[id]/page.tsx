@@ -325,11 +325,11 @@ export default function TruckDetailPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>إسناد سائق للشاحنة {truck.code}</DialogTitle>
-            <DialogDescription>اختر سائقًا. إذا كان مرتبطًا بشاحنة أخرى سيُنقل تلقائيًا.</DialogDescription>
+            <DialogDescription>اختر سائقا. إذا كان مرتبطا بشاحنة أخرى سيُنقل تلقائيا.</DialogDescription>
           </DialogHeader>
           <div className="py-2">
             <Select value={pick} onValueChange={setPick}>
-              <SelectTrigger><SelectValue placeholder="اختر سائقًا" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="اختر سائقا" /></SelectTrigger>
               <SelectContent>
                 {srcDrivers.map((d) => {
                   const on = takenBy(d.id);

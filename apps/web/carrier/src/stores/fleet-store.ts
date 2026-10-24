@@ -154,7 +154,7 @@ export const useFleetStore = create<FleetState>()(
               status === 'ON_TRIP' ? 'TRIP_START' : status === 'AVAILABLE' ? 'ONLINE' : 'OFFLINE',
               truckId ?? undefined,
               driverId,
-              `السائق ${nameD(driverId)} ${status === 'ON_TRIP' ? 'بدأ رحلة' : status === 'AVAILABLE' ? 'أصبح متاحًا' : 'أصبح خارج الخدمة'}${synced ? ` · الشاحنة ${codeT(truckId)} ${statusVerb(synced)}` : ''}`,
+              `السائق ${nameD(driverId)} ${status === 'ON_TRIP' ? 'بدأ رحلة' : status === 'AVAILABLE' ? 'أصبح متاحا' : 'أصبح خارج الخدمة'}${synced ? ` · الشاحنة ${codeT(truckId)} ${statusVerb(synced)}` : ''}`,
             ),
             ...s.events,
           ];

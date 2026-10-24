@@ -160,7 +160,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
         </CardHeader>
         <CardContent className="space-y-3">
           {canDistribute && distributed < count && (
-            <p className="text-xs text-muted-foreground">وزّع كل رِجل على شاحنة من أسطولك — السائق المربوط بها يُضاف تلقائيًا.</p>
+            <p className="text-xs text-muted-foreground">وزّع كل رِجل على شاحنة من أسطولك — السائق المربوط بها يُضاف تلقائيا.</p>
           )}
           {legs.map((leg) => {
             const truck = srcTrucks.find((t) => t.id === leg.truckId);
@@ -237,7 +237,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>توزيع الشاحنة رقم {openLeg}</DialogTitle>
-            <DialogDescription>اختر شاحنة من أسطولك — السائق المربوط بها يُسنَد تلقائيًا.</DialogDescription>
+            <DialogDescription>اختر شاحنة من أسطولك — السائق المربوط بها يُسنَد تلقائيا.</DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-3">
             <Select value={pick} onValueChange={setPick}>
