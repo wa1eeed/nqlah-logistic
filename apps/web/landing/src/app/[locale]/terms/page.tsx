@@ -1,4 +1,5 @@
 import { DEFAULT_LEGAL_DOCS } from '@naqla/shared-utils';
+import { unstable_setRequestLocale } from 'next-intl/server';
 import { FileText, Lock, ScrollText } from 'lucide-react';
 import { Link } from '@/navigation';
 import { PageShell } from '@/components/page-shell';
@@ -15,7 +16,8 @@ const LEGAL_NAV = [
   { href: '/transport', label: 'شروط النقل', icon: ScrollText },
 ] as const;
 
-export default function TermsPage() {
+export default function TermsPage({ params: { locale } }: { params: { locale: string } }) {
+  unstable_setRequestLocale(locale);
   const doc = DEFAULT_LEGAL_DOCS.terms;
   return (
     <PageShell>
