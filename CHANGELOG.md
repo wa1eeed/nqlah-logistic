@@ -6,6 +6,21 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.20 — Order pricing: fixed price + payment method (2026-10-24)
+
+- The new-order form (client) adds a **pricing mode** that works with either
+  distribution (publish to market or direct-assign):
+  - **عروض الناقلين** — carriers bid (the existing flow); or
+  - **سعر ثابت** — the client sets a fixed price the carrier accepts as-is.
+- A **payment method** choice: **دفع مسبق** (held in Escrow, released on
+  delivery) or **دفع عند التسليم** (cash/transfer on delivery).
+- `pricingMode`, `fixedPrice`, and `paymentMethod` flow into the live summary,
+  the review step, and the submit payload (a fixed price is sent as
+  `agreedPriceUpfront` for OPEN or DIRECT). Replaces the old DIRECT-only
+  "pre-agreed price" toggle.
+- Next: admin per-client/group dynamic config to enable/disable these pricing
+  and assignment options; provider owned-vs-freelancer fleet + per-trip invoices.
+
 ### v0.9.19 — Live shipment tracking + real road routes (2026-10-24)
 
 > See `docs/TRACKING.md`.
