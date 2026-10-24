@@ -1134,6 +1134,7 @@ function MapSection({ order }: { order: any }) {
         origin={{ ...o, label: order.originCity }}
         destination={{ ...d, label: order.destinationCity }}
         progress={progress}
+        live={order.status === 'IN_TRANSIT'}
         height={300}
         className="rounded-b-none border-b"
       />

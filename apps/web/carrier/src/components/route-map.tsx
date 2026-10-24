@@ -22,14 +22,16 @@ export interface RouteMapProps {
   origin: RoutePoint;
   destination: RoutePoint;
   progress?: number;
+  /** When true, the truck keeps crawling toward the destination (live tracking). */
+  live?: boolean;
   height?: number;
   className?: string;
 }
 
-export function RouteMap({ origin, destination, progress, height = 300, className }: RouteMapProps) {
+export function RouteMap({ origin, destination, progress, live, height = 300, className }: RouteMapProps) {
   return (
     <div className={cn('overflow-hidden rounded-xl border bg-card', className)}>
-      <RouteMapImpl origin={origin} destination={destination} progress={progress} height={height} />
+      <RouteMapImpl origin={origin} destination={destination} progress={progress} live={live} height={height} />
     </div>
   );
 }

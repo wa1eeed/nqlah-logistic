@@ -6,6 +6,22 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.19 — Live shipment tracking + real road routes (2026-10-24)
+
+> See `docs/TRACKING.md`.
+
+- The map now draws a **real driving route** fetched from **OSRM** (free,
+  OSM-based, no API key) instead of a straight A→B line: a Google-like path
+  (white casing + grey road) with a **traveled / remaining** overlay. Falls back
+  to the straight line if OSRM is unavailable.
+- **Live tracking**: the truck marker sits **on the route** (positioned by road
+  distance) and animates — a reveal to the current progress, then a slow crawl
+  toward the destination for `IN_TRANSIT` orders — with a pulsing halo. A chip
+  shows OSRM's **real road distance and ETA**.
+- Applied to the order detail map (client / carrier / admin) and the client
+  tracking page; in-transit orders pass `live`. `RouteMapImpl` + `RouteMap`
+  (`live` prop) updated across all three apps.
+
 ### v0.9.18 — Order types: single & consolidated (multi-truck) (2026-10-24)
 
 > See `docs/ORDERS.md` for the full lifecycle and data model.
