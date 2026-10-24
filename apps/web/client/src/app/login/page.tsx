@@ -13,8 +13,8 @@ import { useAuthStore } from '@/lib/auth-store';
 
 export default function ClientLoginPage() {
   const router = useRouter();
-  const [identifier, setIdentifier] = useState('client@naqla.sa');
-  const [password, setPassword] = useState('Client@1234');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -131,7 +131,7 @@ export default function ClientLoginPage() {
                     className="text-end"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="client@naqla.sa"
+                    placeholder="name@example.com"
                     required
                   />
                 </div>

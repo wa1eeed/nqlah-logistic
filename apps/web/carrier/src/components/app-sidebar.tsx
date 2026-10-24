@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import {
-  AlertCircle, BarChart3, Bell, Compass, FileCheck2, Gavel, LayoutDashboard,
+  BarChart3, Bell, Compass, FileCheck2, Gavel, LayoutDashboard,
   LifeBuoy, Package, Settings, Shield, TrendingUp, Truck, Users, Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -147,16 +147,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         ))}
       </nav>
-
-      <div className="border-t p-3">
-        <div className="flex items-center gap-3 rounded-lg bg-muted/40 p-3">
-          <AlertCircle className="h-5 w-5 text-warning shrink-0" />
-          <div className="flex flex-col text-xs leading-snug">
-            <span className="font-medium">Demo Mode</span>
-            <span className="text-muted-foreground">UI-First prototype — mock data only</span>
-          </div>
-        </div>
-      </div>
     </>
   );
 }

@@ -11,8 +11,8 @@ import { useAuthStore } from '@/lib/auth-store';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [identifier, setIdentifier] = useState('admin@naqla.sa');
-  const [password, setPassword] = useState('Admin@1234');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -126,7 +126,7 @@ export default function AdminLoginPage() {
                 className="text-end h-11"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="admin@naqla.sa"
+                placeholder="name@example.com"
                 autoComplete="username"
                 required
               />
