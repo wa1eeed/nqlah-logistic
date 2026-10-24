@@ -6,6 +6,26 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.27 — Backend wiring (5): client policies server-side (2026-10-24)
+
+> Fifth stage of backend wiring (see `PENDING_WORK.md`, `docs/POLICIES.md`),
+> verified live. This removes the localStorage-per-origin limitation: an admin
+> policy change now reaches the client's order form through the API.
+
+- **`PolicyGroup` persisted** (migration `add_policy_groups`): the 7 policy flags
+  + `forcedCarrierId` + `clientIds` (a client belongs to at most one group).
+  Seed ships two example groups (a contracted/forced-provider group and a
+  market-only group).
+- **New `policies` module**: `GET /policies/mine` (the effective policy for the
+  acting client — its group's, else all-enabled defaults); admin-guarded
+  `GET/POST/PUT/DELETE /policies/groups` and `POST /policies/assign`.
+- **Admin policies panel wired to the API**: groups list + create / rename /
+  delete / toggle / forced-carrier / client assignment persist server-side
+  (clients & carriers resolved from `/companies`). Mock store kept as fallback.
+- **Client new-order form reads `/policies/mine`**: the available distribution /
+  pricing / payment options are gated by the live policy, and a clamp keeps the
+  current selections valid when the policy loads or an admin changes it.
+
 ### v0.9.26 — Backend wiring (4): consolidated legs + status rollup (2026-10-24)
 
 > Fourth stage of backend wiring (see `PENDING_WORK.md`, `docs/ORDERS.md`),

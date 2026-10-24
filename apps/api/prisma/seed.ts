@@ -335,6 +335,25 @@ async function main() {
     });
   }
 
+  // ─── Policy groups (admin per-client config) ─────────────────
+  // Two example groups; no client assigned by default (clients use defaults).
+  const POLICY_GROUPS_SEED = [
+    {
+      name: 'عملاء العقود', description: 'إسناد مباشر لمزوّد متعاقد، بلا سوق مفتوح',
+      allowMarket: false, allowDirect: true, forcedCarrierId: carrierCo.id,
+      allowMarketPricing: false, allowFixedPricing: true, allowPrepaid: true, allowCOD: false,
+    },
+    {
+      name: 'السوق فقط', description: 'نشر في السوق المفتوح مع مزايدة الناقلين',
+      allowMarket: true, allowDirect: false, forcedCarrierId: null,
+      allowMarketPricing: true, allowFixedPricing: false, allowPrepaid: true, allowCOD: true,
+    },
+  ];
+  for (const g of POLICY_GROUPS_SEED) {
+    const found = await prisma.policyGroup.findFirst({ where: { name: g.name } });
+    if (!found) await prisma.policyGroup.create({ data: { ...g, clientIds: [] } });
+  }
+
   console.log('');
   console.log('✅ Seed complete. Demo accounts (email or phone both work):');
   console.log('');

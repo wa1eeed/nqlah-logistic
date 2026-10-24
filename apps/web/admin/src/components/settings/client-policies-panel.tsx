@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import useSWR, { useSWRConfig } from 'swr';
 import { Building2, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,13 +13,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePolicyStore } from '@/stores/policy-store';
+import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
 import { COMPANIES, type ClientPolicy, type PolicyGroup } from '@naqla/shared-utils';
 
-const CLIENTS = COMPANIES.filter((c) => c.kind === 'CLIENT');
-const CARRIERS = COMPANIES.filter((c) => c.kind === 'CARRIER');
-const clientName = (id: string) => CLIENTS.find((c) => c.id === id)?.nameAr ?? id;
-const carrierName = (id?: string) => CARRIERS.find((c) => c.id === id)?.nameAr ?? id ?? '';
+type Co = { id: string; nameAr: string };
+type ApiCompany = { id: string; nameAr: string };
 
 const POLICY_KEYS: { key: keyof ClientPolicy; label: string; hint: string }[] = [
   { key: 'allowMarket',        label: 'النشر في السوق',   hint: 'عرض الطلب لكل الناقلين' },
@@ -30,13 +30,54 @@ const POLICY_KEYS: { key: keyof ClientPolicy; label: string; hint: string }[] = 
 ];
 
 export function ClientPoliciesPanel() {
-  const groups = usePolicyStore((s) => s.groups);
+  // Live from the API (admin changes are shared server-side with clients); the
+  // Zustand store is a fallback for offline/design runs.
+  const { data: groupsData } = useSWR<unknown>('/policies/groups', fetcher);
+  const { data: clientsData } = useSWR<ApiCompany[]>('/companies?type=CLIENT&limit=200', fetcher);
+  const { data: carriersData } = useSWR<ApiCompany[]>('/companies?type=CARRIER&status=ACTIVE&limit=200', fetcher);
+  const { mutate } = useSWRConfig();
+  const apiMode = Array.isArray(groupsData);
+
+  const storeGroups = usePolicyStore((s) => s.groups);
   const addGroup = usePolicyStore((s) => s.addGroup);
   const removeGroup = usePolicyStore((s) => s.removeGroup);
   const renameGroup = usePolicyStore((s) => s.renameGroup);
 
+  const groups: PolicyGroup[] = apiMode ? (groupsData as PolicyGroup[]) : storeGroups;
+
+  const clients: Co[] = Array.isArray(clientsData)
+    ? clientsData.map((c) => ({ id: c.id, nameAr: c.nameAr }))
+    : COMPANIES.filter((c) => c.kind === 'CLIENT').map((c) => ({ id: c.id, nameAr: c.nameAr }));
+  const carriers: Co[] = Array.isArray(carriersData)
+    ? carriersData.map((c) => ({ id: c.id, nameAr: c.nameAr }))
+    : COMPANIES.filter((c) => c.kind === 'CARRIER').map((c) => ({ id: c.id, nameAr: c.nameAr }));
+  const clientName = (id: string) => clients.find((c) => c.id === id)?.nameAr ?? id;
+
+  const revalidate = () => mutate('/policies/groups');
+
+  const doAdd = async (name: string, description?: string) => {
+    if (apiMode) { try { await api.post('/policies/groups', { name, description }); revalidate(); } catch (e) { notify.error(e); } }
+    else addGroup(name, description);
+  };
+  const doRename = async (id: string, name: string, description?: string) => {
+    if (apiMode) { try { await api.put(`/policies/groups/${id}`, { name, description }); revalidate(); } catch (e) { notify.error(e); } }
+    else renameGroup(id, name, description);
+  };
+  const doRemove = async (id: string) => {
+    if (apiMode) { try { await api.delete(`/policies/groups/${id}`); revalidate(); } catch (e) { notify.error(e); } }
+    else removeGroup(id);
+  };
+  const doSetPolicy = async (id: string, policy: ClientPolicy) => {
+    if (apiMode) { try { await api.put(`/policies/groups/${id}`, { policy }); revalidate(); } catch (e) { notify.error(e); } }
+    else usePolicyStore.getState().setGroupPolicy(id, policy);
+  };
+  const doAssign = async (clientId: string, groupId: string | null) => {
+    if (apiMode) { try { await api.post('/policies/assign', { clientId, groupId }); revalidate(); } catch (e) { notify.error(e); } }
+    else usePolicyStore.getState().setClientGroup(clientId, groupId);
+  };
+
   const assigned = new Set(groups.flatMap((g) => g.clientIds));
-  const defaultClients = CLIENTS.filter((c) => !assigned.has(c.id));
+  const defaultClients = clients.filter((c) => !assigned.has(c.id));
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -48,10 +89,10 @@ export function ClientPoliciesPanel() {
   const save = () => {
     if (!form.name.trim()) return;
     if (editId) {
-      renameGroup(editId, form.name.trim(), form.description.trim() || undefined);
+      doRename(editId, form.name.trim(), form.description.trim() || undefined);
       notify.success('تم تحديث القروب', form.name);
     } else {
-      addGroup(form.name.trim(), form.description.trim() || undefined);
+      doAdd(form.name.trim(), form.description.trim() || undefined);
       notify.success('تم إنشاء القروب', form.name);
     }
     setCreateOpen(false);
@@ -72,7 +113,17 @@ export function ClientPoliciesPanel() {
       </CardHeader>
       <CardContent className="space-y-4">
         {groups.map((g) => (
-          <GroupCard key={g.id} group={g} onEdit={() => openEdit(g)} onDelete={() => { removeGroup(g.id); notify.success('تم حذف القروب', g.name); }} />
+          <GroupCard
+            key={g.id}
+            group={g}
+            clients={clients}
+            carriers={carriers}
+            clientName={clientName}
+            onEdit={() => openEdit(g)}
+            onDelete={() => { doRemove(g.id); notify.success('تم حذف القروب', g.name); }}
+            onPolicyChange={(policy) => doSetPolicy(g.id, policy)}
+            onAssign={(clientId, groupId) => doAssign(clientId, groupId)}
+          />
         ))}
 
         {/* Default clients */}
@@ -117,13 +168,22 @@ export function ClientPoliciesPanel() {
   );
 }
 
-function GroupCard({ group, onEdit, onDelete }: { group: PolicyGroup; onEdit: () => void; onDelete: () => void }) {
-  const setGroupPolicy = usePolicyStore((s) => s.setGroupPolicy);
-  const setClientGroup = usePolicyStore((s) => s.setClientGroup);
+function GroupCard({
+  group, clients, carriers, clientName, onEdit, onDelete, onPolicyChange, onAssign,
+}: {
+  group: PolicyGroup;
+  clients: Co[];
+  carriers: Co[];
+  clientName: (id: string) => string;
+  onEdit: () => void;
+  onDelete: () => void;
+  onPolicyChange: (policy: ClientPolicy) => void;
+  onAssign: (clientId: string, groupId: string | null) => void;
+}) {
   const p = group.policy;
-  const toggle = (key: keyof ClientPolicy, val: boolean) => setGroupPolicy(group.id, { ...p, [key]: val });
-  const setForcedCarrier = (id: string | undefined) => setGroupPolicy(group.id, { ...p, forcedCarrierId: id });
-  const unassigned = CLIENTS.filter((c) => !group.clientIds.includes(c.id));
+  const toggle = (key: keyof ClientPolicy, val: boolean) => onPolicyChange({ ...p, [key]: val });
+  const setForcedCarrier = (id: string | undefined) => onPolicyChange({ ...p, forcedCarrierId: id });
+  const unassigned = clients.filter((c) => !group.clientIds.includes(c.id));
 
   return (
     <div className="rounded-lg border p-4 space-y-4">
@@ -162,7 +222,7 @@ function GroupCard({ group, onEdit, onDelete }: { group: PolicyGroup; onEdit: ()
             <SelectTrigger className="w-[180px] shrink-0"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none">بدون إلزام</SelectItem>
-              {CARRIERS.map((c) => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
+              {carriers.map((c) => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -175,7 +235,7 @@ function GroupCard({ group, onEdit, onDelete }: { group: PolicyGroup; onEdit: ()
           {group.clientIds.map((id) => (
             <Badge key={id} variant="outline" className="gap-1">
               <Building2 className="h-3 w-3" />{clientName(id)}
-              <button type="button" onClick={() => setClientGroup(id, null)} className="ms-1 text-muted-foreground hover:text-destructive" aria-label="إزالة">
+              <button type="button" onClick={() => onAssign(id, null)} className="ms-1 text-muted-foreground hover:text-destructive" aria-label="إزالة">
                 <X className="h-3 w-3" />
               </button>
             </Badge>
@@ -183,7 +243,7 @@ function GroupCard({ group, onEdit, onDelete }: { group: PolicyGroup; onEdit: ()
           {group.clientIds.length === 0 && <span className="text-xs text-muted-foreground">لا يوجد عملاء بعد</span>}
         </div>
         {unassigned.length > 0 && (
-          <Select value="" onValueChange={(v) => v && setClientGroup(v, group.id)}>
+          <Select value="" onValueChange={(v) => v && onAssign(v, group.id)}>
             <SelectTrigger className="w-full sm:w-[260px]"><SelectValue placeholder="+ ربط عميل بهذا القروب" /></SelectTrigger>
             <SelectContent>
               {unassigned.map((c) => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}

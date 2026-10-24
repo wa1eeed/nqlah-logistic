@@ -53,8 +53,9 @@ real NestJS + Prisma API (live-verified against a local backend, see
   forward-only rollup; carrier distribution board wired to the API.
   (Remaining: the client/admin consolidated **read-only** breakdown still reads
   the mock `order.legs`; it can fetch `/orders/:id/legs` in a follow-up.)
-- [ ] **Stage 5 — Client policies**: Policy/PolicyGroup models + guarded
-  endpoints; resolve per request; admin + client form → API.
+- [x] **Stage 5 — Client policies** (v0.9.27): `PolicyGroup` model + `policies`
+  endpoints (admin CRUD + `GET /policies/mine` resolver); admin panel + client
+  order form wired to the API (admin changes now reach the client server-side).
 - [ ] **Stage 6 — Real WebSocket tracking**: emit from the (existing but unused)
   RealtimeGateway on location/status writes; client `socket.io-client` replaces
   the mock `tracking-socket.ts`.

@@ -50,10 +50,24 @@ The new-order form (`apps/web/client/.../orders/new/page.tsx`) computes
 - when `forcedCarrierId` is set, locks the order to direct-assign to that
   provider and shows a notice.
 
-## 4. Demo note & future
+## 4. Backend (v0.9.27)
 
-In demo mode the admin store (localStorage, admin origin) and the client form
-read independently, so the client form reflects the **seeded** policy, not live
-admin edits. With a real backend the policy is stored server-side and resolved
-per request, so admin changes apply to the client immediately. The resolver and
-UI are already shaped for that.
+Policies are now persisted by the API (see `docs/LOCAL_BACKEND.md`), so an admin
+change reaches the client's order form — the localStorage-per-origin limitation
+is gone.
+
+- Prisma model `PolicyGroup` (the 7 flags + `forcedCarrierId` + `clientIds`),
+  migration `add_policy_groups`. A client belongs to at most one group.
+- Module `apps/api/src/modules/policies/`:
+  `GET /policies/mine` (effective policy for the acting client — its group's,
+  else all-enabled defaults); admin-guarded `GET/POST/PUT/DELETE
+  /policies/groups` and `POST /policies/assign`.
+- The admin panel and the client new-order form call these endpoints; both keep
+  a mock fallback for offline/design runs. The client form **clamps** its
+  current selections to valid options when the policy loads or changes.
+
+## 5. Demo note
+
+With the backend running, admin edits apply to the client immediately. Without
+it, each app falls back to the seeded policy in its own origin (the original
+demo behavior).

@@ -783,6 +783,29 @@ model Setting {
   updatedAt DateTime @updatedAt
 }
 
+/// Admin per-client / per-group platform policy. A client company belongs to at
+/// most one group (via `clientIds`); clients in no group use the defaults
+/// (everything enabled). `forcedCarrierId` locks direct-assign to one carrier.
+model PolicyGroup {
+  id                 String   @id @default(cuid())
+  name               String
+  description        String?
+
+  allowMarket        Boolean  @default(true)
+  allowDirect        Boolean  @default(true)
+  forcedCarrierId    String?
+  allowMarketPricing Boolean  @default(true)
+  allowFixedPricing  Boolean  @default(true)
+  allowPrepaid       Boolean  @default(true)
+  allowCOD           Boolean  @default(true)
+
+  /// Client company ids governed by this group.
+  clientIds          String[]
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
 model SupportTicket {
   id          String                @id @default(cuid())
   subject     String
