@@ -218,17 +218,17 @@ async function main() {
   }
 
   const TRUCKS_SEED = [
-    { plateNumber: 'أ ب ح 1234', type: 'LARGE_FLATBED' as const, capacity: 25, make: 'Mercedes', model: 'Actros', year: 2023, hasGPS: true,  ownership: 'OWNED' as const,      driver: 'DL-100201' },
-    { plateNumber: 'د هـ و 5678', type: 'BOX_TRUCK' as const,     capacity: 8,  make: 'Isuzu',    model: 'FVR',    year: 2024, hasGPS: true,  ownership: 'OWNED' as const,      driver: 'DL-100204' },
-    { plateNumber: 'ر ح ط 9012', type: 'REFRIGERATED' as const,  capacity: 15, make: 'Volvo',    model: 'FH16',   year: 2022, hasGPS: true, hasRefrigeration: true, ownership: 'OWNED' as const, driver: 'DL-100202' },
-    { plateNumber: 'ي ك ل 3456', type: 'MEDIUM_FLATBED' as const, capacity: 18, make: 'Scania',   model: 'R500',   year: 2021, hasGPS: true,  ownership: 'FREELANCER' as const, driver: 'DL-100205' },
-    { plateNumber: 'م ن س 7890', type: 'LOWBED' as const,        capacity: 50, make: 'MAN',      model: 'TGX',    year: 2023, hasGPS: true,  ownership: 'FREELANCER' as const, driver: 'DL-100203' },
+    { plateNumber: 'أ ب ح 1234', type: 'LARGE_FLATBED' as const, capacity: 25, make: 'Mercedes', model: 'Actros', year: 2023, hasGPS: true,  ownership: 'OWNED' as const,      status: 'ON_TRIP' as const,     driver: 'DL-100201' },
+    { plateNumber: 'د هـ و 5678', type: 'BOX_TRUCK' as const,     capacity: 8,  make: 'Isuzu',    model: 'FVR',    year: 2024, hasGPS: true,  ownership: 'OWNED' as const,      status: 'AVAILABLE' as const,   driver: 'DL-100204' },
+    { plateNumber: 'ر ح ط 9012', type: 'REFRIGERATED' as const,  capacity: 15, make: 'Volvo',    model: 'FH16',   year: 2022, hasGPS: true, hasRefrigeration: true, ownership: 'OWNED' as const, status: 'AVAILABLE' as const, driver: 'DL-100202' },
+    { plateNumber: 'ي ك ل 3456', type: 'MEDIUM_FLATBED' as const, capacity: 18, make: 'Scania',   model: 'R500',   year: 2021, hasGPS: true,  ownership: 'FREELANCER' as const, status: 'MAINTENANCE' as const, driver: 'DL-100205' },
+    { plateNumber: 'م ن س 7890', type: 'LOWBED' as const,        capacity: 50, make: 'MAN',      model: 'TGX',    year: 2023, hasGPS: true,  ownership: 'FREELANCER' as const, status: 'AVAILABLE' as const,   driver: 'DL-100203' },
   ];
   for (const t of TRUCKS_SEED) {
     const { driver, ...data } = t;
     await prisma.truck.upsert({
       where: { plateNumber: t.plateNumber },
-      update: { ownership: t.ownership, currentDriverId: driverIds[driver] },
+      update: { ownership: t.ownership, status: t.status, currentDriverId: driverIds[driver] },
       create: { ...data, companyId: carrierCo.id, currentDriverId: driverIds[driver] },
     });
   }

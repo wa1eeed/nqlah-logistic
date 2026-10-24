@@ -170,6 +170,13 @@ enum DriverStatus {
   OFF_DUTY
 }
 
+enum TruckStatus {
+  AVAILABLE
+  ON_TRIP
+  MAINTENANCE
+  OFF_DUTY
+}
+
 /// Whether a truck/driver is part of the provider's OWN fleet or a FREELANCER
 /// contracted and paid per delivery. Freelancer trips are billed via
 /// per-trip invoices (see provider profitability).
@@ -307,6 +314,7 @@ model Truck {
   isActive         Boolean   @default(true)
 
   ownership        FleetOwnership @default(OWNED)
+  status           TruckStatus    @default(AVAILABLE)
 
   photos           String[]
   documents        String[]

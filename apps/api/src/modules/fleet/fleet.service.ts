@@ -4,6 +4,24 @@ import { CreateDriverDto, CreateTruckDto, InviteDriverDto, LocationDto, UpdateTr
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
+type TruckStatusValue = 'AVAILABLE' | 'ON_TRIP' | 'MAINTENANCE' | 'OFF_DUTY';
+type DriverStatusValue = 'AVAILABLE' | 'ON_TRIP' | 'OFF_DUTY';
+
+/** Truck status → the status its linked driver should take. */
+function truckStatusToDriver(status: TruckStatusValue): DriverStatusValue {
+  if (status === 'ON_TRIP') return 'ON_TRIP';
+  if (status === 'AVAILABLE') return 'AVAILABLE';
+  return 'OFF_DUTY'; // MAINTENANCE | OFF_DUTY → driver off duty
+}
+
+/** Driver status → the status its linked truck should take (maintenance wins). */
+function driverStatusToTruck(status: DriverStatusValue, current: TruckStatusValue): TruckStatusValue {
+  if (current === 'MAINTENANCE') return 'MAINTENANCE';
+  if (status === 'ON_TRIP') return 'ON_TRIP';
+  if (status === 'AVAILABLE') return 'AVAILABLE';
+  return 'OFF_DUTY';
+}
+
 @Injectable()
 export class FleetService {
   constructor(private prisma: PrismaService) {}
@@ -43,6 +61,74 @@ export class FleetService {
     return this.prisma.truck.update({
       where: { id },
       data: { ...dto, photos: dto.photos ?? undefined, documents: dto.documents ?? undefined },
+    });
+  }
+
+  /** Link a driver to a truck. The driver is freed from any other truck, the
+   *  truck's previous driver goes off-duty, and the new driver inherits the
+   *  truck's status (same rules as the carrier fleet UI). */
+  async assignDriverToTruck(truckId: string, driverId: string, actor: AuthUser) {
+    const truck = await this.getTruck(truckId, actor);
+    const driver = await this.getDriver(driverId, actor);
+    return this.prisma.$transaction(async (tx) => {
+      // Free the driver from any other truck of this company.
+      await tx.truck.updateMany({
+        where: { currentDriverId: driverId, companyId: truck.companyId, id: { not: truckId } },
+        data: { currentDriverId: null },
+      });
+      // The truck's previous driver (if different) becomes free → off duty.
+      if (truck.currentDriverId && truck.currentDriverId !== driverId) {
+        await tx.driverProfile.update({ where: { id: truck.currentDriverId }, data: { status: 'OFF_DUTY' } });
+      }
+      await tx.driverProfile.update({
+        where: { id: driverId },
+        data: { status: truckStatusToDriver(truck.status) },
+      });
+      return tx.truck.update({
+        where: { id: truckId },
+        data: { currentDriverId: driverId },
+        include: { currentDriver: { include: { user: true } } },
+      });
+    });
+  }
+
+  /** Unlink the truck's current driver (driver goes off-duty). */
+  async unassignTruck(truckId: string, actor: AuthUser) {
+    const truck = await this.getTruck(truckId, actor);
+    return this.prisma.$transaction(async (tx) => {
+      if (truck.currentDriverId) {
+        await tx.driverProfile.update({ where: { id: truck.currentDriverId }, data: { status: 'OFF_DUTY' } });
+      }
+      return tx.truck.update({ where: { id: truckId }, data: { currentDriverId: null } });
+    });
+  }
+
+  /** Set a truck's status and sync its linked driver. */
+  async setTruckStatus(truckId: string, status: TruckStatusValue, actor: AuthUser) {
+    const truck = await this.getTruck(truckId, actor);
+    return this.prisma.$transaction(async (tx) => {
+      if (truck.currentDriverId) {
+        await tx.driverProfile.update({
+          where: { id: truck.currentDriverId },
+          data: { status: truckStatusToDriver(status) },
+        });
+      }
+      return tx.truck.update({ where: { id: truckId }, data: { status } });
+    });
+  }
+
+  /** Set a driver's status and sync its linked truck (maintenance wins). */
+  async setDriverStatus(driverId: string, status: DriverStatusValue, actor: AuthUser) {
+    await this.getDriver(driverId, actor);
+    return this.prisma.$transaction(async (tx) => {
+      const truck = await tx.truck.findFirst({ where: { currentDriverId: driverId } });
+      if (truck) {
+        await tx.truck.update({
+          where: { id: truck.id },
+          data: { status: driverStatusToTruck(status, truck.status) },
+        });
+      }
+      return tx.driverProfile.update({ where: { id: driverId }, data: { status } });
     });
   }
 

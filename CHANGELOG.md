@@ -6,6 +6,25 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.24 — Backend wiring (2): fleet assignment + status persisted (2026-10-24)
+
+> Second stage of backend wiring (see `PENDING_WORK.md`), verified live.
+
+- **Truck status persisted server-side**: new Prisma enum `TruckStatus`
+  (`AVAILABLE` | `ON_TRIP` | `MAINTENANCE` | `OFF_DUTY`) + `status` on `Truck`
+  (migration `add_truck_status`); seed sets per-truck statuses.
+- **Assignment + status endpoints** on the fleet module, company-scoped, with
+  the same owned-fleet sync rules the UI used:
+  `POST /fleet/trucks/:id/assign` (frees the driver from any other truck, the
+  previous driver goes off-duty, the new driver inherits the truck status),
+  `POST /fleet/trucks/:id/unassign`, `PATCH /fleet/trucks/:id/status`,
+  `PATCH /fleet/drivers/:id/status` (both sync the linked party; maintenance
+  wins).
+- **Carrier truck/driver detail pages wired to those endpoints**: assign /
+  unassign / change-status now persist to the DB and revalidate via SWR; the
+  activity timeline keeps a local event per action (`makeFleetEvent` /
+  `logEvent`). Status and links are read from the API, not the local overlay.
+
 ### v0.9.23 — Backend wiring (1): local backend + fleet ownership end-to-end (2026-10-24)
 
 > See `docs/LOCAL_BACKEND.md` and `docs/FREELANCERS.md`. First stage of wiring

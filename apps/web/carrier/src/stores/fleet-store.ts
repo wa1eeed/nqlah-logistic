@@ -63,8 +63,21 @@ interface FleetState {
   unassignDriver: (truckId: TruckId) => void;
   setTruckStatus: (truckId: TruckId, status: TruckStatus) => void;
   setDriverStatus: (driverId: DriverId, status: DriverStatus) => void;
+  /** Append a pre-built activity event (used after an API-backed action so the
+   *  message can carry real names resolved from live data). */
+  logEvent: (event: FleetAuditEvent) => void;
   /** Restore the fleet to its seeded state (demo convenience). */
   resetFleet: () => void;
+}
+
+/** Build an activity event for the local log (names resolved by the caller). */
+export function makeFleetEvent(
+  type: FleetEventType,
+  truckId: string | undefined,
+  driverId: string | undefined,
+  message: string,
+): FleetAuditEvent {
+  return { id: `AE-U-${Date.now().toString(36)}-${seq++}`, at: new Date().toISOString(), type, truckId, driverId, actor: 'مشغّل الأسطول', message };
 }
 
 const seedAssign: Record<TruckId, DriverId | null> =
@@ -147,6 +160,9 @@ export const useFleetStore = create<FleetState>()(
           ];
           return { driverStatus, truckStatus, events };
         }),
+
+      logEvent: (event) =>
+        set((s) => ({ events: [event, ...s.events].slice(0, 200) })),
 
       resetFleet: () =>
         set({

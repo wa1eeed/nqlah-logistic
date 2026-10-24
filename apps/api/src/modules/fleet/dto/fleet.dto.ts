@@ -55,3 +55,18 @@ export class LocationDto {
   @IsNumber() lng!: number;
   @IsOptional() @IsNumber() speed?: number;
 }
+
+const TRUCK_STATUSES = ['AVAILABLE', 'ON_TRIP', 'MAINTENANCE', 'OFF_DUTY'] as const;
+const DRIVER_STATUSES = ['AVAILABLE', 'ON_TRIP', 'OFF_DUTY'] as const;
+
+export class AssignDriverDto {
+  @IsString() driverId!: string;
+}
+
+export class TruckStatusDto {
+  @IsEnum(TRUCK_STATUSES) status!: (typeof TRUCK_STATUSES)[number];
+}
+
+export class DriverStatusDto {
+  @IsEnum(DRIVER_STATUSES) status!: (typeof DRIVER_STATUSES)[number];
+}
