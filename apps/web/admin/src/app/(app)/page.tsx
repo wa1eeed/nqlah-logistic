@@ -17,6 +17,7 @@ import { PageHeader } from '@/components/page-header';
 import { StatsCard } from '@/components/stats-card';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
+import { Skeleton, SkeletonStatCards, SkeletonRows } from '@/components/ui/skeleton';
 import { fetcher } from '@/lib/api';
 import { ORDERS, COMPANIES, DISPUTES, PAYMENTS, companyById, formatRelative } from '@naqla/shared-utils';
 
@@ -68,7 +69,21 @@ export default function AdminDashboard() {
   }, [statsData]);
 
   const { totalOrders, gmv, commission, activeCompanies, pendingKyc, openDisputes, activeDrivers } = stats;
-  void isLoading; // future: skeleton state on first load
+
+  // First load with nothing from the API yet: show the dashboard's shape as a
+  // skeleton instead of flashing fallback numbers that then jump to real ones.
+  if (isLoading && !statsData) {
+    return (
+      <>
+        <PageHeader title="لوحة التحكم" subtitle="نظرة شاملة على نشاط منصة نقلة" />
+        <SkeletonStatCards count={5} />
+        <div className="mt-6">
+          <Skeleton className="h-6 w-40 mb-3" />
+          <SkeletonRows rows={6} />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { Toaster } from 'sonner';
 import { OnlineStatusBar } from '@/components/online-status-bar';
+import { SWRProvider } from '@/components/swr-provider';
 import './globals.css';
 
 const tajawal = Tajawal({ subsets: ['arabic'], weight: ['400', '500', '700'], variable: '--font-tajawal' });
@@ -35,8 +36,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <OnlineStatusBar />
-          {children}
+          <SWRProvider>
+            <OnlineStatusBar />
+            {children}
+          </SWRProvider>
           <Toaster
             position="top-center"
             richColors

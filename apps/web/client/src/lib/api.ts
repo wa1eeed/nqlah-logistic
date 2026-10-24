@@ -3,7 +3,7 @@ import { getMockResponse, DEV_BYPASS_TOKEN } from '@naqla/shared-utils';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
-export const api = axios.create({ baseURL: `${API_URL}/api`, withCredentials: true });
+export const api = axios.create({ baseURL: `${API_URL}/api`, withCredentials: true, timeout: 20000 });
 
 api.interceptors.request.use((c) => {
   if (typeof window !== 'undefined') {
