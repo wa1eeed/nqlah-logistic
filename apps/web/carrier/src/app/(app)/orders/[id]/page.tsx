@@ -171,7 +171,7 @@ export default function CarrierOrderDetail() {
         <div className="lg:col-span-2 space-y-6">
           <MapSection order={order} />
 
-          {order.orderType === 'CONSOLIDATED' && order.legs && order.legs.length > 0 && (
+          {order.orderType === 'CONSOLIDATED' && (
             <ConsolidatedPanel order={order as Order} canDistribute={showShipmentCard} />
           )}
 

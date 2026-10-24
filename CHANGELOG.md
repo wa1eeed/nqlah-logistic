@@ -6,6 +6,27 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.26 — Backend wiring (4): consolidated legs + status rollup (2026-10-24)
+
+> Fourth stage of backend wiring (see `PENDING_WORK.md`, `docs/ORDERS.md`),
+> verified live.
+
+- **Consolidated orders persisted**: `Order.orderType` (`SINGLE` |
+  `CONSOLIDATED`) + `truckCount`; `OrderTruck` becomes a leg with `sequence`,
+  `status`, and `driverId` (migration `add_consolidated_legs`). One row per
+  distributed leg; undistributed legs are implicit (PENDING). Seed ships a
+  5-truck consolidated order with 2 legs pre-distributed.
+- **Leg endpoints** (carrier scoped): `GET /orders/:id/legs` (full 1..N list),
+  `POST /orders/:id/legs/:index/distribute`, `DELETE /orders/:id/legs/:index`,
+  `PATCH /orders/:id/legs/:index/status`. A truck serves at most one leg.
+- **Status rollup**: a consolidated order's status is derived forward-only from
+  its legs (all delivered → DELIVERED, any in transit → IN_TRANSIT, all
+  distributed → ASSIGNED).
+- **Distribution board wired to the API**: the `ConsolidatedPanel` reads
+  `/orders/:id/legs`, and distribute / clear persist to the DB and revalidate
+  (plate/driver resolved from the live fleet; truck picker lists live trucks and
+  disables ones already on a leg). Mock fallback kept for offline runs.
+
 ### v0.9.25 — Backend wiring (3): freelancer invoices + profitability (2026-10-24)
 
 > Third stage of backend wiring (see `PENDING_WORK.md`, `docs/FREELANCERS.md`),

@@ -77,6 +77,20 @@ interface Order {
   the baseline (seeded) distribution is what client/admin display. With a real
   backend the legs and their assignments are server-side and shared across all
   parties in real time.
-- Backend work: persist `orderType` / `truckCount` / `legs`; expose leg
-  distribution + status endpoints; roll leg statuses up to the parent order;
-  generate the consolidated invoice from the legs.
+## Backend (v0.9.26)
+
+Consolidated orders and their legs are persisted by the API (see
+`docs/LOCAL_BACKEND.md`).
+
+- `Order.orderType` (`SINGLE` | `CONSOLIDATED`) + `truckCount`. `OrderTruck` is a
+  leg with `sequence`, `status`, and `driverId` — one row per **distributed**
+  leg; undistributed legs are implicit (`PENDING`).
+- Carrier-scoped endpoints: `GET /orders/:id/legs` (full 1..N list),
+  `POST /orders/:id/legs/:index/distribute`, `DELETE /orders/:id/legs/:index`,
+  `PATCH /orders/:id/legs/:index/status`. A truck serves at most one leg.
+- The parent order's status is **rolled up** (forward-only) from its legs: all
+  delivered → DELIVERED, any in transit → IN_TRANSIT, all distributed →
+  ASSIGNED.
+- The carrier `ConsolidatedPanel` reads `/orders/:id/legs` and distribute/clear
+  persist to the DB (mock fallback kept). The client/admin **read-only**
+  breakdown still reads `order.legs` and can move to `/orders/:id/legs` later.

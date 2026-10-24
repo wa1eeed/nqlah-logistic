@@ -409,4 +409,75 @@ export class OrdersService {
   private isAdmin(actor: AuthUser): boolean {
     return actor.role === 'ADMIN' || actor.role === 'SUPER_ADMIN';
   }
+
+  // ─── Consolidated legs ───────────────────────────────────────
+
+  private async carrierOrder(id: string, actor: AuthUser) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { orderTrucks: { orderBy: { sequence: 'asc' } } },
+    });
+    if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
+    if (order.carrierId !== actor.companyId && !this.isAdmin(actor)) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
+    }
+    return order;
+  }
+
+  /** The full leg list (1..truckCount); undistributed legs are PENDING. */
+  async getLegs(id: string, actor: AuthUser) {
+    const order = await this.carrierOrder(id, actor);
+    const count = order.truckCount ?? order.orderTrucks.length;
+    const bySeq = new Map(order.orderTrucks.map((l) => [l.sequence, l]));
+    const legs = Array.from({ length: count }, (_, i) => {
+      const index = i + 1;
+      const row = bySeq.get(index);
+      return row
+        ? { index, truckId: row.truckId, driverId: row.driverId ?? undefined, status: row.status }
+        : { index, status: 'PENDING' };
+    });
+    return { orderId: order.id, orderNumber: order.orderNumber, truckCount: count, status: order.status, legs };
+  }
+
+  async distributeLeg(id: string, index: number, truckId: string, driverId: string | undefined, actor: AuthUser) {
+    const order = await this.carrierOrder(id, actor);
+    // A truck serves at most one leg of the order — free it from any other leg.
+    await this.prisma.orderTruck.deleteMany({ where: { orderId: order.id, truckId, sequence: { not: index } } });
+    await this.prisma.orderTruck.upsert({
+      where: { orderId_sequence: { orderId: order.id, sequence: index } },
+      update: { truckId, driverId: driverId ?? null, status: 'ASSIGNED' },
+      create: { orderId: order.id, sequence: index, truckId, driverId: driverId ?? null, status: 'ASSIGNED' },
+    });
+    await this.rollup(order.id);
+    return this.getLegs(id, actor);
+  }
+
+  async clearLeg(id: string, index: number, actor: AuthUser) {
+    const order = await this.carrierOrder(id, actor);
+    await this.prisma.orderTruck.deleteMany({ where: { orderId: order.id, sequence: index } });
+    await this.rollup(order.id);
+    return this.getLegs(id, actor);
+  }
+
+  async setLegStatus(id: string, index: number, status: string, actor: AuthUser) {
+    const order = await this.carrierOrder(id, actor);
+    await this.prisma.orderTruck.updateMany({ where: { orderId: order.id, sequence: index }, data: { status } });
+    await this.rollup(order.id);
+    return this.getLegs(id, actor);
+  }
+
+  /** Derive a consolidated order's status from its legs (forward-only). */
+  private async rollup(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { orderTrucks: true } });
+    if (!order || order.orderType !== 'CONSOLIDATED') return;
+    const legs = order.orderTrucks;
+    const n = order.truckCount ?? legs.length;
+    let status = order.status;
+    if (legs.length > 0 && legs.every((l) => l.status === 'DELIVERED')) status = 'DELIVERED';
+    else if (legs.some((l) => l.status === 'IN_TRANSIT')) status = 'IN_TRANSIT';
+    else if (n > 0 && legs.length >= n) status = 'ASSIGNED';
+    if (status !== order.status) {
+      await this.prisma.order.update({ where: { id: orderId }, data: { status } });
+    }
+  }
 }

@@ -288,6 +288,53 @@ async function main() {
     });
   }
 
+  // ─── Consolidated order (multi-truck, same route) ────────────
+  // 5 trucks along Riyadh -> Dammam; 2 legs pre-distributed to the carrier's
+  // own trucks so the distribution board + status rollup have live data.
+  const consolidated = await prisma.order.upsert({
+    where: { orderNumber: 'ORD-2025-0180' },
+    update: { orderType: 'CONSOLIDATED', truckCount: 5, carrierId: carrierCo.id },
+    create: {
+      orderNumber: 'ORD-2025-0180',
+      status: 'ASSIGNED',
+      orderType: 'CONSOLIDATED',
+      truckCount: 5,
+      clientId: clientCo.id,
+      carrierId: carrierCo.id,
+      mode: 'DIRECT',
+      cargoType: 'CONSTRUCTION',
+      cargoDescription: 'مواد بناء - شحنة مجمّعة',
+      weight: 120000,
+      originCity: 'الرياض',
+      originRegion: 'الرياض',
+      originAddress: 'مستودعات الصناعية',
+      destinationCity: 'الدمام',
+      destinationRegion: 'الشرقية',
+      destinationAddress: 'ميناء الملك عبدالعزيز',
+      requiredTruckType: 'LARGE_FLATBED',
+      pickupDate: new Date(Date.now() + 86400000 * 2),
+      agreedPrice: 190000,
+      carrierAmount: 190000,
+    },
+  });
+  const LEGS_SEED = [
+    { sequence: 1, plate: 'أ ب ح 1234', license: 'DL-100201', status: 'IN_TRANSIT' },
+    { sequence: 2, plate: 'ر ح ط 9012', license: 'DL-100202', status: 'ASSIGNED' },
+  ];
+  for (const leg of LEGS_SEED) {
+    await prisma.orderTruck.upsert({
+      where: { orderId_sequence: { orderId: consolidated.id, sequence: leg.sequence } },
+      update: { truckId: truckIds[leg.plate], driverId: driverIds[leg.license], status: leg.status },
+      create: {
+        orderId: consolidated.id,
+        sequence: leg.sequence,
+        truckId: truckIds[leg.plate],
+        driverId: driverIds[leg.license],
+        status: leg.status,
+      },
+    });
+  }
+
   console.log('');
   console.log('✅ Seed complete. Demo accounts (email or phone both work):');
   console.log('');

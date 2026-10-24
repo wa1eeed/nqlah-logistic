@@ -384,6 +384,12 @@ model Order {
   /// "MORNING" (8-12) | "EVENING" (12-18) | "ALL_DAY" (8-18) — client's preferred pickup band.
   pickupWindow          String      @default("ALL_DAY")
 
+  /// "SINGLE" | "CONSOLIDATED" — a consolidated order ships `truckCount` trucks
+  /// along the same route; its legs are OrderTruck rows (String, no migration to
+  /// add a type). truckCount is null for single orders.
+  orderType             String      @default("SINGLE")
+  truckCount            Int?
+
   clientId              String
   client                Company     @relation("ClientOrders", fields: [clientId], references: [id])
   carrierId             String?
@@ -485,6 +491,11 @@ model Bid {
   @@index([orderId, status])
 }
 
+/// A leg of an order. For a CONSOLIDATED order there is one row per DISTRIBUTED
+/// leg (undistributed legs have no row; truckCount is the total). `sequence` is
+/// the 1-based leg index; `status` tracks the leg lifecycle
+/// ("ASSIGNED" | "IN_TRANSIT" | "DELIVERED") as a String (no migration to add a
+/// status). `driverId` is the leg's driver (resolved against the fleet).
 model OrderTruck {
   id        String   @id @default(cuid())
   orderId   String
@@ -492,9 +503,15 @@ model OrderTruck {
   truckId   String
   truck     Truck    @relation(fields: [truckId], references: [id])
 
+  driverId  String?
+  sequence  Int      @default(0)
+  status    String   @default("ASSIGNED")
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([orderId, truckId])
+  @@unique([orderId, sequence])
 }
 
 model OrderDriver {

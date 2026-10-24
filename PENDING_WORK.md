@@ -48,8 +48,11 @@ real NestJS + Prisma API (live-verified against a local backend, see
 - [x] **Stage 3 — Freelancer invoices** (v0.9.25): `FreelancerInvoice` model +
   `freelancer-invoices` endpoints; profitability page + assign-to-freelancer
   (single + consolidated legs) wired to the API.
-- [ ] **Stage 4 — Consolidated legs + status rollup**: per-leg status on
-  OrderTruck, distribution endpoints, roll leg statuses up to the parent order.
+- [x] **Stage 4 — Consolidated legs + status rollup** (v0.9.26): `Order.orderType`
+  / `truckCount`; `OrderTruck` legs (sequence/status/driver); leg endpoints +
+  forward-only rollup; carrier distribution board wired to the API.
+  (Remaining: the client/admin consolidated **read-only** breakdown still reads
+  the mock `order.legs`; it can fetch `/orders/:id/legs` in a follow-up.)
 - [ ] **Stage 5 — Client policies**: Policy/PolicyGroup models + guarded
   endpoints; resolve per request; admin + client form → API.
 - [ ] **Stage 6 — Real WebSocket tracking**: emit from the (existing but unused)

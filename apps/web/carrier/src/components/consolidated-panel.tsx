@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import useSWR, { useSWRConfig } from 'swr';
 import { CheckCircle2, Layers, Link2Off, MapPin, Truck as TruckIcon, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,9 +16,14 @@ import { Currency } from '@/components/currency';
 import { useFleetStore } from '@/stores/fleet-store';
 import { useConsolidatedStore, effectiveLegs } from '@/stores/consolidated-store';
 import { useFreelancerStore } from '@/stores/freelancer-store';
-import { api } from '@/lib/api';
+import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
-import { CURRENT_CARRIER_ID, DRIVERS, TRUCKS, type ConsolidatedLeg, type ConsolidatedLegStatus, type Order } from '@naqla/shared-utils';
+import {
+  CURRENT_CARRIER_ID, DRIVERS, TRUCKS, normalizeTruckList, normalizeDriverList,
+  type ConsolidatedLeg, type ConsolidatedLegStatus, type Driver, type Order, type Truck,
+} from '@naqla/shared-utils';
+
+type LegsResponse = { truckCount: number; status: string; legs: ConsolidatedLeg[] };
 
 const LEG_LABEL: Record<ConsolidatedLegStatus, string> = {
   PENDING: 'لم تُوزَّع',
@@ -44,19 +50,37 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
   const [pick, setPick] = useState('');
   const [tripFee, setTripFee] = useState('');
 
-  const legs = effectiveLegs(order.legs ?? [], overrides);
-  const count = order.truckCount ?? legs.length;
+  // Live legs + fleet from the API (mock fallback when the backend is down).
+  const { data: legsData } = useSWR<LegsResponse>(`/orders/${order.id}/legs`, fetcher);
+  const { data: trucksRaw } = useSWR<unknown>('/fleet/trucks', fetcher);
+  const { data: driversRaw } = useSWR<unknown>('/fleet/drivers', fetcher);
+  const { mutate } = useSWRConfig();
+  const apiMode = !!legsData && Array.isArray(legsData.legs);
+
+  const srcTrucks = useMemo<Truck[]>(() => {
+    const api2 = normalizeTruckList<Truck>(trucksRaw);
+    return api2.length ? api2 : TRUCKS;
+  }, [trucksRaw]);
+  const srcDrivers = useMemo<Driver[]>(() => {
+    const api2 = normalizeDriverList<Driver>(driversRaw);
+    return api2.length ? api2 : DRIVERS;
+  }, [driversRaw]);
+
+  const legs = apiMode ? legsData!.legs : effectiveLegs(order.legs ?? [], overrides);
+  const count = apiMode ? legsData!.truckCount : (order.truckCount ?? legs.length);
   const distributed = legs.filter((l) => l.truckId).length;
   const perLeg = Math.round((order.agreedPrice ?? 0) / Math.max(1, count));
   const pct = count > 0 ? Math.round((distributed / count) * 100) : 0;
+
+  const revalidate = () => { mutate(`/orders/${order.id}/legs`); mutate(`/orders/${order.id}`); };
 
   // trucks already used by other legs of THIS order
   const usedTrucks = new Set(legs.filter((l) => l.truckId).map((l) => l.truckId));
 
   const driverForTruck = (truckId: string) =>
-    (truckId in assignMap ? assignMap[truckId] : TRUCKS.find((t) => t.id === truckId)?.assignedDriverId) ?? '';
+    (truckId in assignMap ? assignMap[truckId] : srcTrucks.find((t) => t.id === truckId)?.assignedDriverId) ?? '';
 
-  const pickedTruck = TRUCKS.find((t) => t.id === pick);
+  const pickedTruck = srcTrucks.find((t) => t.id === pick);
   const isFreelancerPick = pickedTruck?.ownership === 'FREELANCER';
   const feeNum = Number(tripFee);
   const feeValid = Number.isFinite(feeNum) && feeNum > 0;
@@ -65,7 +89,14 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
   const doDistribute = async () => {
     if (distributeBlocked || !pickedTruck) return;
     const driverId = driverForTruck(pick);
-    distribute(order.id, openLeg!, pick, driverId);
+    if (apiMode) {
+      try {
+        await api.post(`/orders/${order.id}/legs/${openLeg}/distribute`, { truckId: pick, driverId: driverId || undefined });
+        revalidate();
+      } catch (e) { notify.error(e); return; }
+    } else {
+      distribute(order.id, openLeg!, pick, driverId);
+    }
     const legOrderId = `${order.orderNumber ?? order.id}-L${openLeg}`;
     if (isFreelancerPick) {
       // Per-leg freelancer invoice — orderRevenue snapshots the leg's share.
@@ -91,6 +122,17 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
     setOpenLeg(null);
     setPick('');
     setTripFee('');
+  };
+
+  const doClearLeg = async (index: number) => {
+    if (apiMode) {
+      try {
+        await api.delete(`/orders/${order.id}/legs/${index}`);
+        revalidate();
+      } catch (e) { notify.error(e); }
+    } else {
+      clearLeg(order.id, index);
+    }
   };
 
   return (
@@ -121,8 +163,8 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
             <p className="text-xs text-muted-foreground">وزّع كل رِجل على شاحنة من أسطولك — السائق المربوط بها يُضاف تلقائيًا.</p>
           )}
           {legs.map((leg) => {
-            const truck = TRUCKS.find((t) => t.id === leg.truckId);
-            const driver = DRIVERS.find((d) => d.id === leg.driverId);
+            const truck = srcTrucks.find((t) => t.id === leg.truckId);
+            const driver = srcDrivers.find((d) => d.id === leg.driverId);
             const plate = truck ? parsePlateString(truck.plateNumber) : null;
             return (
               <div key={leg.index} className="flex items-center gap-3 rounded-lg border p-3">
@@ -152,7 +194,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                 {canDistribute && (
                   leg.truckId ? (
                     leg.status === 'PENDING' || leg.status === 'ASSIGNED' ? (
-                      <Button variant="ghost" size="sm" className="shrink-0" onClick={() => clearLeg(order.id, leg.index)}>
+                      <Button variant="ghost" size="sm" className="shrink-0" onClick={() => doClearLeg(leg.index)}>
                         <Link2Off className="h-4 w-4" />
                       </Button>
                     ) : null
@@ -201,9 +243,9 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
             <Select value={pick} onValueChange={setPick}>
               <SelectTrigger><SelectValue placeholder="اختر شاحنة" /></SelectTrigger>
               <SelectContent>
-                {TRUCKS.map((t) => {
+                {srcTrucks.map((t) => {
                   const used = usedTrucks.has(t.id);
-                  const drv = DRIVERS.find((d) => d.id === driverForTruck(t.id))?.fullName;
+                  const drv = srcDrivers.find((d) => d.id === driverForTruck(t.id))?.fullName;
                   const tag = t.ownership === 'FREELANCER' ? ' · فري‑لانسر' : '';
                   return (
                     <SelectItem key={t.id} value={t.id} disabled={used}>
