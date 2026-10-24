@@ -13,8 +13,8 @@ import { useAuthStore } from '@/lib/auth-store';
 
 export default function CarrierLoginPage() {
   const router = useRouter();
-  const [identifier, setIdentifier] = useState('carrier@naqla.sa');
-  const [password, setPassword] = useState('Carrier@1234');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -128,7 +128,7 @@ export default function CarrierLoginPage() {
                     className="text-end"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="carrier@naqla.sa"
+                    placeholder="name@example.com"
                     required
                   />
                 </div>
