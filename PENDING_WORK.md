@@ -1,6 +1,6 @@
 # Pending Work — حالة الربط الحالية
 
-> آخر تحديث: 2026-10-24 (بعد v0.9.22 — Provider dispatcher / freelancers)
+> آخر تحديث: 2026-10-24 (بعد v0.9.29 — Consolidated read-only wired to the API)
 >
 > الهدف من هذا الملف: نقطة استئناف واضحة. يلخّص ما تبقّى من الربط/الإصلاحات قبل
 > أن نعتبر النظام جاهزاً لـ release v1.0.
@@ -10,11 +10,32 @@
 
 ---
 
-## Recent demo / UX work (v0.9.17–v0.9.22, 2026-10-24) — status
+## 🏁 Project status (v0.9.29)
 
-> Written in English per `docs/DOCUMENTATION.md`. These are UI/demo features
-> built on `mock-data` + client stores; wiring them to the real API is future
-> work. Full details live in `CHANGELOG.md` and the `docs/` references
+- **All demo/UX features are built AND wired to the real NestJS + Prisma API**,
+  each live-verified against a local backend (`docs/LOCAL_BACKEND.md`). The old
+  localStorage/mock-only caveat for these features is resolved; every feature
+  keeps a mock fallback so the frontends still run without the backend.
+- **Backend wiring — complete (6 stages, v0.9.23–v0.9.28):** fleet ownership →
+  fleet assignment → freelancer invoices → consolidated legs + rollup → client
+  policies → realtime WebSocket tracking. Plus the client/admin consolidated
+  read-only breakdown (v0.9.29).
+- **UI/UX polish pass done (v0.9.x):** copy cleanup (no tanwīn) on the new
+  surfaces, profitability load/overflow fixes, admin panel loading/empty states,
+  a forced-carrier name-resolution fix; desktop layouts verified (sidebars,
+  multi-column grids, no overflow).
+- **Not yet done (deliberate / future):** the external integrations below (SMS /
+  email / payment gateway), the remaining static pages below, and a production
+  deploy of the backend (local dev only so far).
+
+---
+
+## Recent demo / UX work (v0.9.17–v0.9.29, 2026-10-24) — status
+
+> Written in English per `docs/DOCUMENTATION.md`. These features were built on
+> `mock-data` + client stores and are now **wired to the real API** (see the
+> backend-wiring tracker below), with a mock fallback kept for offline/design
+> runs. Full details live in `CHANGELOG.md` and the `docs/` references
 > (`docs/README.md` indexes them).
 
 **Done (merged to `main`):**
@@ -35,6 +56,10 @@
   (`ownership` + `OwnershipBadge`), per-trip freelancer invoices issued on
   assignment (single + consolidated legs), and a carrier **profitability** page
   (revenue vs freelancer cost, mark paid/reopen). → `docs/FREELANCERS.md`
+- **UI/UX polish pass** — copy cleanup (no tanwīn) on the new surfaces;
+  profitability load-flash + table-overflow fixes; admin policy panel
+  loading/empty states; forced-carrier name resolution fix; desktop layouts
+  verified across the new surfaces.
 
 **Backend wiring — switching the demo features from localStorage/mock to the
 real NestJS + Prisma API (live-verified against a local backend, see
@@ -103,7 +128,16 @@ real NestJS + Prisma API (live-verified against a local backend, see
 
 ## 🟡 ناقص أو يحتاج عمل
 
-لا يوجد بنود مفتوحة بعد v0.9.9 — جميع الوظائف الجوهرية مربوطة.
+لا توجد بنود جوهرية مفتوحة. كل ميزات الديمو مبنية ومربوطة بالـ API (انظر
+«Project status» أعلاه). المتبقّي عمداً للمستقبل:
+
+- **Production deploy** للـ backend: حتى الآن dev محلي فقط (`docs/LOCAL_BACKEND.md`).
+  النشر على staging/prod يستخدم `prisma migrate deploy` فقط (انظر `docs/DEPLOYMENT.md`).
+- **External integrations** (SMS / Email / Payment gateway) — القسم أدناه.
+- **صفحات بواجهة ثابتة** متبقّية (finance / documents / reports carrier، audit/promotions admin) — الجدول أدناه.
+- **تحسينات محتملة**: استبدال محاكاة نبضات GPS على الخادم بـ GPS حقيقي من جهاز
+  السائق (نقطة الدفع `POST /orders/:id/tracking` تبثّ أصلاً)، واستضافة OSRM ذاتياً
+  لحدود الطلبات في الإنتاج.
 
 ---
 
@@ -120,7 +154,7 @@ real NestJS + Prisma API (live-verified against a local backend, see
 | `/reports` | carrier | Static charts — لا endpoint بعد |
 | `/finance` | carrier | Static UI — يحتاج ربط Wallet API |
 | `/documents` | carrier | Static UI — يحتاج ربط KYC/uploads |
-| `/tracking` | client | Static map — يحتاج GPS live feed |
+| `/tracking` | client | ✅ مربوط (v0.9.28) — مسار OSRM حقيقي + نبضات GPS عبر WebSocket حقيقي (RealtimeGateway)، على طلبات API حيّة |
 | `/finance` | client | Static charts — يحتاج ربط Wallet API |
 
 ---
@@ -187,8 +221,31 @@ real NestJS + Prisma API (live-verified against a local backend, see
 - لا تكسر الـ stability constraints أعلاه.
 - في حال شك حول backend endpoint: `grep -E "@(Get|Post|Put|Delete|Patch)\(" apps/api/src/modules/*/`.
 
-### آخر ما أُنجز (v0.9.13 → v0.9.15):
+### تشغيل الـ backend محلياً (مهم — الديمو صار يعتمد عليه)
 
-- **v0.9.13**: Premium UI/UX — framer-motion على client/carrier portals + driver app (dashboard hero، animated sidebar، EmptyState، PageTransition، split login)
-- **v0.9.14**: Executive KPI Dashboard — 6 analytics endpoints في admin + Bloomberg Terminal dark theme + PDF export (jspdf)
-- **v0.9.15**: Landing page إعادة كتابة كاملة (animated hero, stats counters, testimonials slider, mobile hamburger) + تغيير اسم تبويب التقارير إلى "الملخص الاستراتيجي"
+الدليل الكامل في `docs/LOCAL_BACKEND.md`. نقاط حرجة اكتُشفت أثناء الربط:
+
+- الـ API على `http://localhost:4000` ببادئة `/api`، والغلاف `{ success, data }`؛
+  تسجيل الدخول `POST /api/auth/login` بـ `{ phoneOrEmail, password }`، والأدمن
+  `POST /api/admin/auth/login` بـ `{ email, password }` (حسابات: carrier@naqla.sa
+  / Carrier@1234، admin@naqla.sa / Admin@1234، client@naqla.sa / Client@1234).
+- **نسخ الـ Prisma client إلى dist**: `nest build` يُخرج `dist/src/main.js` ولا
+  ينسخ العميل المولَّد، فبعد كل build:
+  `cp -R src/generated/prisma dist/src/generated/prisma` ثم `node dist/src/main.js`.
+- **Migrations بلا TTY**: `prisma migrate dev` يفشل في بيئة غير تفاعلية؛ اكتب ملف
+  الـ migration يدوياً تحت `prisma/migrations/<ts>_<name>/migration.sql` ثم
+  `prisma migrate deploy` (طابِق تنسيق Prisma لتفادي drift).
+- **Rate-limit**: `POST /api/*/auth/login` عليه throttle صارم؛ أعد استخدام التوكن
+  بدل تكرار الدخول.
+- بعد كل تعديل schema: migrate + `prisma generate` + نسخ الـ client إلى dist +
+  إعادة تشغيل الـ API. وبعد تعديل shared-utils: `pnpm exec tsc` بداخلها.
+
+### آخر ما أُنجز (v0.9.23 → v0.9.29) — ربط الـ backend + الصقل:
+
+- **v0.9.23–v0.9.28**: ربط الميزات بالـ API على 6 مراحل (الملكية → الإسناد →
+  فواتير الفري‑لانسر → الأرجل المجمّعة + الترحيل → سياسات العملاء → تتبّع WebSocket
+  حقيقي) — انظر المتتبّع أعلاه.
+- **v0.9.29**: عرض الطلب المجمّع للقراءة فقط (عميل/أدمن) مربوط بـ `/orders/:id/legs`
+  (مُثرى بلوحة الشاحنة واسم السائق).
+- **UI/UX polish**: تنظيف النسخ (بلا تنوين)، إصلاحات الربحية، حالات تحميل/فراغ في
+  لوحة الأدمن، إصلاح اسم المزوّد المُلزَم، ومراجعة سطح المكتب.
