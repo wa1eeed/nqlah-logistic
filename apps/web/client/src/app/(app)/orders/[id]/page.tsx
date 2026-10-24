@@ -1128,12 +1128,27 @@ function MapSection({ order }: { order: any }) {
   const duration = estimatedDurationLabel(km);
   const road = primaryRoadFor(order.originCity, order.destinationCity);
   const progress = order.status === 'IN_TRANSIT' ? 0.55 : order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 1 : undefined;
+
+  // Consolidated orders show every truck on the map, each positioned by its
+  // leg status. (The dedicated Tracking page moves them live.)
+  const isConsolidated = order.orderType === 'CONSOLIDATED';
+  const { data: legsResp } = useSWR<{ legs?: { index: number; status: string; reference?: string }[] }>(
+    isConsolidated ? `/orders/${order.id}/legs` : null, fetcher);
+  const trucks = useMemo(() => {
+    const arr = legsResp?.legs ?? (order.legs ?? []);
+    const seed = (s: string) =>
+      s === 'DELIVERED' ? 1 : s === 'IN_TRANSIT' ? 0.5 : s === 'ASSIGNED' ? 0.1 : 0;
+    return (arr as { index: number; status: string; reference?: string }[])
+      .map((l) => ({ index: l.index, reference: l.reference, progress: seed(l.status) }));
+  }, [legsResp, order.legs]);
+
   return (
     <Card>
       <RouteMap
         origin={{ ...o, label: order.originCity }}
         destination={{ ...d, label: order.destinationCity }}
-        progress={progress}
+        progress={isConsolidated ? undefined : progress}
+        trucks={isConsolidated ? trucks : undefined}
         live={order.status === 'IN_TRANSIT'}
         height={300}
         className="rounded-b-none border-b"

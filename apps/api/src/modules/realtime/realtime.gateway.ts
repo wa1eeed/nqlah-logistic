@@ -10,6 +10,9 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 /** Per-order live-tracking state for the server-side GPS ping stream. */
 interface OrderTrack {
   progress: number;
+  /** Consolidated orders: one progress per leg (index 0..count-1). */
+  legs?: number[];
+  consolidated?: boolean;
   subscribers: number;
   timer?: NodeJS.Timeout;
 }
@@ -76,6 +79,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     (client.data.orders as Set<string>)?.add(orderId);
 
     let track = this.tracks.get(orderId);
+    const isNew = !track;
     if (!track) {
       track = { progress: clamp(data.startProgress ?? 0.1), subscribers: 0 };
       this.tracks.set(orderId, track);
@@ -83,9 +87,28 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     track.subscribers += 1;
 
     // Start the GPS ping stream once per order, only while it is IN_TRANSIT.
-    if (!track.timer) {
-      const order = await this.prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
-      if (order?.status === 'IN_TRANSIT') this.startPingStream(orderId);
+    // Consolidated orders track one progress per leg, seeded from leg status.
+    if (isNew || !track.timer) {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        select: {
+          status: true, orderType: true, truckCount: true,
+          orderTrucks: { select: { sequence: true, status: true } },
+        },
+      });
+      if (isNew && order?.orderType === 'CONSOLIDATED') {
+        const count = order.truckCount ?? order.orderTrucks.length;
+        const bySeq = new Map(order.orderTrucks.map((l) => [l.sequence, l.status]));
+        track.consolidated = true;
+        track.legs = Array.from({ length: count }, (_, i) => {
+          const st = bySeq.get(i + 1);
+          if (st === 'DELIVERED') return 1;       // arrived
+          if (st === 'IN_TRANSIT') return 0.15;   // on the road
+          if (st === 'ASSIGNED') return 0.06;     // dispatched, just starting
+          return 0;                               // undistributed → still at origin
+        });
+      }
+      if (!track.timer && order?.status === 'IN_TRANSIT') this.startPingStream(orderId);
     }
   }
 
@@ -104,19 +127,32 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     const emit = () => {
       const t = this.tracks.get(orderId);
       if (!t) return;
-      this.server.to(`order:${orderId}`).emit('tracking:location_update', {
-        progress: t.progress,
-        speedKmh: Math.max(0, Math.round(80 + (Math.random() - 0.5) * 16)),
-        at: Date.now(),
-      });
+      const base = { speedKmh: Math.max(0, Math.round(80 + (Math.random() - 0.5) * 16)), at: Date.now() };
+      if (t.consolidated && t.legs) {
+        this.server.to(`order:${orderId}`).emit('tracking:location_update', {
+          ...base,
+          legs: t.legs.map((p, i) => ({ index: i + 1, progress: p })),
+        });
+      } else {
+        this.server.to(`order:${orderId}`).emit('tracking:location_update', { ...base, progress: t.progress });
+      }
     };
     emit(); // immediate first fix on subscribe
     track.timer = setInterval(() => {
       const t = this.tracks.get(orderId);
       if (!t) return;
-      t.progress = Math.min(PING_CAP, t.progress + PING_STEP);
-      emit();
-      if (t.progress >= PING_CAP && t.timer) { clearInterval(t.timer); t.timer = undefined; }
+      if (t.consolidated && t.legs) {
+        // Advance only legs that are en route (0 < p < cap). Undistributed legs
+        // stay at the origin (0); delivered legs stay at the destination (1).
+        t.legs = t.legs.map((p) => (p > 0 && p < PING_CAP ? Math.min(PING_CAP, p + PING_STEP) : p));
+        emit();
+        const moving = t.legs.some((p) => p > 0 && p < PING_CAP);
+        if (!moving && t.timer) { clearInterval(t.timer); t.timer = undefined; }
+      } else {
+        t.progress = Math.min(PING_CAP, t.progress + PING_STEP);
+        emit();
+        if (t.progress >= PING_CAP && t.timer) { clearInterval(t.timer); t.timer = undefined; }
+      }
     }, PING_MS);
   }
 
