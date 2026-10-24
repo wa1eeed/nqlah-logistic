@@ -25,6 +25,9 @@
   (pickup → departure → mid-route → approaching → delivery) with times derived
   from the pickup time and distance, the **current position marked live**
   («الآن», pulsing), done/upcoming states, and a progress bar.
+- **Auto-updating tracking**: for in-transit shipments the progress advances on a
+  timer, the remaining distance and the timeline states update with it, and an
+  «آخر تحديث: قبل N ثانية» ticker simulates live GPS pings.
 
 ### v0.9.18 — Order types: single & consolidated (multi-truck) (2026-10-24)
 

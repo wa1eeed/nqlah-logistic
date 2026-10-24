@@ -61,7 +61,11 @@ distance (average speed). The current position is inserted at the live progress
 point and marked «الآن» with a pulsing node; past milestones are "done" and
 future ones "upcoming". A progress bar and a «مباشر» badge accompany it.
 
-With a real backend, replace the derived milestones with actual tracking events.
+For in-transit shipments the page also **auto-updates**: a timer advances the
+progress (and the remaining distance + timeline states follow it), with an
+«آخر تحديث: قبل N ثانية» ticker simulating live GPS pings. With a real backend,
+replace the derived milestones and simulated progress with actual tracking
+events / GPS positions.
 
 ## 5. Future (real API)
 

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   CheckCircle2, Clock, Flag, MapPin, Navigation, Package, Phone, Star, Truck,
@@ -95,8 +95,26 @@ function TrackingDetail({ order }: { order: any }) {
   const km = distanceKm(o, d);
   const duration = estimatedDurationLabel(km);
   const road = primaryRoadFor(order.originCity, order.destinationCity);
-  const progress = order.status === 'IN_TRANSIT' ? 0.55 : order.status === 'CONFIRMED' ? 0.1 : 0;
+  const base = order.status === 'IN_TRANSIT' ? 0.55 : order.status === 'CONFIRMED' ? 0.1 : 0;
+
+  // Live simulation: advance the shipment and refresh "last update" on a timer.
+  const [progress, setProgress] = useState(base);
+  const [sinceUpdate, setSinceUpdate] = useState(0);
+  useEffect(() => {
+    setProgress(base);
+    setSinceUpdate(0);
+    if (order.status !== 'IN_TRANSIT') return;
+    const advance = setInterval(() => {
+      setProgress((p) => Math.min(0.985, p + 0.0045));
+      setSinceUpdate(0);
+    }, 5000);
+    const ticker = setInterval(() => setSinceUpdate((s) => s + 1), 1000);
+    return () => { clearInterval(advance); clearInterval(ticker); };
+  }, [order.id, order.status, base]);
+
   const remaining = Math.round(km * (1 - progress));
+  const isLive = order.status === 'IN_TRANSIT';
+  const lastUpdate = sinceUpdate <= 1 ? 'الآن' : `قبل ${sinceUpdate} ثانية`;
   const carrier = companyById(order.carrierId);
   const initials = carrier?.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('') ?? '';
 
@@ -106,7 +124,7 @@ function TrackingDetail({ order }: { order: any }) {
         <RouteMap
           origin={{ ...o, label: order.originCity }}
           destination={{ ...d, label: order.destinationCity }}
-          progress={progress}
+          progress={base}
           live={order.status === 'IN_TRANSIT'}
           height={420}
           className="rounded-b-none border-b"
@@ -174,10 +192,17 @@ function TrackingDetail({ order }: { order: any }) {
             <CardTitle className="text-base flex items-center gap-2">
               <Navigation className="h-4 w-4" /> خط أحداث التتبّع
             </CardTitle>
-            <Badge variant="success" className="flex items-center gap-1">
-              <span className="inline-block h-1.5 w-1.5 bg-success rounded-full animate-pulse" />
-              مباشر
-            </Badge>
+            <div className="flex items-center gap-2">
+              {isLive && (
+                <span className="text-xs text-muted-foreground">
+                  آخر تحديث: <span className={sinceUpdate <= 1 ? 'num font-medium text-[hsl(var(--mint))]' : 'num'}>{lastUpdate}</span>
+                </span>
+              )}
+              <Badge variant="success" className="flex items-center gap-1">
+                <span className="inline-block h-1.5 w-1.5 bg-success rounded-full animate-pulse" />
+                مباشر
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
