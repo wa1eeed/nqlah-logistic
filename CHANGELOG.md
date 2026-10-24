@@ -6,6 +6,22 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.30 — Super-admin credentials from env (2026-10-24)
+
+> Launch prep: the admin login is no longer hardcoded.
+
+- The seed reads the super-admin email + password from `SEED_ADMIN_EMAIL` /
+  `SEED_ADMIN_PASSWORD` (env / Coolify variables), defaulting to the demo values
+  locally. The record is keyed by a fixed phone, so changing the email and/or
+  password updates the same admin in place.
+- New `apps/api/prisma/ensure-admin.ts` + `db:ensure-admin` script: creates /
+  updates **only** the super-admin from env (no demo data) — the production way
+  to bootstrap and rotate the admin. The Dockerfile compiles it into
+  `dist/prisma/`. Verified: a custom email/password logs in as SUPER_ADMIN and
+  rotating back works, with no duplicate admin created.
+- Env templates document `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`; the deploy
+  checklist (`docs/DEPLOYMENT.md`) uses `db:ensure-admin` for production.
+
 ### v0.9.29 — Consolidated read-only (client/admin) wired to the API (2026-10-24)
 
 > Follow-up to the Stage 4 backend wiring (`docs/ORDERS.md`), verified live.

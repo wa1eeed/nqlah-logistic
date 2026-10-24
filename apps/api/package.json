@@ -14,7 +14,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "node dist/prisma/seed.js",
     "db:studio": "prisma studio",
-    "clean": "rm -rf dist node_modules/.prisma"
+    "clean": "rm -rf dist node_modules/.prisma",
+    "db:ensure-admin": "node dist/prisma/ensure-admin.js"
   },
   "dependencies": {
     "@naqla/shared-types": "workspace:*",

@@ -81,9 +81,14 @@
 4. تأكد أن `DATABASE_URL` يشير لـ DB منفصلة (لا `naqla_dev` في staging أبداً)
 5. تأكد من `MINIO_BUCKET` المناسب (`naqla-staging` / `naqla-prod`)
 6. اضبط `CORS_ORIGINS` بدقّة (subdomains الفعلية فقط، لا wildcards)
-7. شغّل: `NODE_ENV={env} pnpm --filter @naqla/api start` — الـ validation يجب أن يمرّ
-8. طبّق migrations: `npx prisma migrate deploy` (لا `migrate dev` في staging/prod)
-9. شغّل seed لو أوّل deploy: `NODE_ENV={env} pnpm db:seed`
+7. اضبط `SEED_ADMIN_EMAIL` و `SEED_ADMIN_PASSWORD` (في Coolify) — كلمة مرور قوية،
+   خاصّةً في production. هي مصدر بيانات دخول الأدمن.
+8. شغّل: `NODE_ENV={env} pnpm --filter @naqla/api start` — الـ validation يجب أن يمرّ
+9. طبّق migrations: `npx prisma migrate deploy` (لا `migrate dev` في staging/prod)
+10. أنشئ الأدمن:
+    - **production:** `node dist/prisma/ensure-admin.js` (أو `pnpm --filter @naqla/api db:ensure-admin`) — ينشئ/يحدّث الأدمن فقط من الـ env، بلا بيانات تجريبية.
+    - **staging / تجربة:** `node dist/prisma/seed.js` (أو `pnpm db:seed`) — يضيف الأدمن + كل البيانات التجريبية.
+    - **تغيير بيانات الأدمن لاحقاً:** حدّث `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` في Coolify ثم أعد تشغيل `db:ensure-admin` (يحدّث نفس السجل في مكانه).
 
 ---
 

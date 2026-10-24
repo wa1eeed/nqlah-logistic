@@ -7,9 +7,14 @@ const prisma = new PrismaClient();
 // Run: cd apps/api && pnpm db:seed
 const ACCOUNTS = {
   admin: {
-    email: 'admin@naqla.sa',
+    // Super-admin email + password are configurable via env (set them in
+    // Coolify) so they can be changed without touching the code; defaults are
+    // for local dev. The record is keyed by the (fixed) phone, so changing the
+    // email and/or password in the env and re-running the seed — or
+    // `db:ensure-admin` — updates the same admin in place.
+    email: process.env.SEED_ADMIN_EMAIL ?? 'admin@naqla.sa',
     phone: '+966500000001',
-    password: 'Admin@1234',
+    password: process.env.SEED_ADMIN_PASSWORD ?? 'Admin@1234',
     firstName: 'وليد',
     lastName: 'الحربي',
     role: 'SUPER_ADMIN' as const,
