@@ -21,6 +21,10 @@
 - Applied to the order detail map (client / carrier / admin) and the client
   tracking page; in-transit orders pass `live`. `RouteMapImpl` + `RouteMap`
   (`live` prop) updated across all three apps.
+- **Live events timeline** on the client tracking page: journey milestones
+  (pickup → departure → mid-route → approaching → delivery) with times derived
+  from the pickup time and distance, the **current position marked live**
+  («الآن», pulsing), done/upcoming states, and a progress bar.
 
 ### v0.9.18 — Order types: single & consolidated (multi-truck) (2026-10-24)
 

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  Clock, MapPin, Navigation, Package, Phone, Truck,
+  CheckCircle2, Clock, Flag, MapPin, Navigation, Package, Phone, Star, Truck,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -133,7 +133,11 @@ function TrackingDetail({ order }: { order: any }) {
               </Avatar>
               <div className="min-w-0 flex-1">
                 <div className="font-semibold truncate">{carrier?.nameAr ?? '—'}</div>
-                <div className="text-xs text-muted-foreground">{carrier?.completedTrips} رحلة · ⭐ {carrier?.rating?.toFixed(1)}</div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span className="num">{carrier?.completedTrips}</span> رحلة ·
+                  <Star className="h-3 w-3 fill-[hsl(var(--mint))] text-[hsl(var(--mint))]" />
+                  <span className="num">{carrier?.rating?.toFixed(1)}</span>
+                </div>
               </div>
               <Button size="sm" variant="outline"><Phone className="h-3.5 w-3.5" /></Button>
             </div>
@@ -163,43 +167,104 @@ function TrackingDetail({ order }: { order: any }) {
         </Card>
       </div>
 
-      {/* Live position indicator */}
+      {/* Live events timeline */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-full bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))] grid place-items-center shrink-0 animate-pulse">
-              <Navigation className="h-5 w-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-sm font-semibold">الموقع الحالي للشاحنة</span>
-                <Badge variant="success" className="flex items-center gap-1">
-                  <span className="inline-block h-1.5 w-1.5 bg-success rounded-full animate-pulse" />
-                  مباشر
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                <MapPin className="h-3.5 w-3.5 inline me-1" />
-                على الطريق الرئيسي بين <strong>{order.originCity}</strong> و <strong>{order.destinationCity}</strong>
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                <Clock className="h-3.5 w-3.5 inline me-1" />
-                آخر تحديث: قبل دقائق
-              </p>
-            </div>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Navigation className="h-4 w-4" /> خط أحداث التتبّع
+            </CardTitle>
+            <Badge variant="success" className="flex items-center gap-1">
+              <span className="inline-block h-1.5 w-1.5 bg-success rounded-full animate-pulse" />
+              مباشر
+            </Badge>
           </div>
-          <div className="mt-4">
+        </CardHeader>
+        <CardContent>
+          <div className="mb-5">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
               <span>التقدّم</span>
               <span className="num font-medium">{Math.round(progress * 100)}%</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div className="h-full bg-success" style={{ width: `${progress * 100}%` }} />
+              <div className="h-full bg-[hsl(var(--mint))] transition-all" style={{ width: `${progress * 100}%` }} />
             </div>
           </div>
+          <TrackingTimeline order={order} km={km} progress={progress} road={road} />
         </CardContent>
       </Card>
     </>
+  );
+}
+
+type TimelineEvent = {
+  title: string;
+  place: string;
+  time: string;
+  icon: React.ElementType;
+  state: 'done' | 'current' | 'upcoming';
+};
+
+function TrackingTimeline({ order, km, progress, road }: { order: any; km: number; progress: number; road: string }) {
+  // Estimate each milestone's time from the pickup time + an average speed.
+  const totalMs = (km / 75) * 3_600_000;
+  const t0 = new Date(order.pickupDate).getTime();
+  const at = (f: number) => formatDateTime(new Date(t0 + totalMs * f).toISOString());
+
+  const milestones = [
+    { f: 0,    title: 'تم استلام الشحنة',   place: order.originCity,      icon: Package },
+    { f: 0.05, title: 'انطلقت الرحلة',       place: order.originCity,      icon: Truck },
+    { f: 0.5,  title: 'في منتصف الطريق',     place: road,                  icon: Navigation },
+    { f: 0.85, title: 'الاقتراب من الوجهة',  place: order.destinationCity, icon: MapPin },
+    { f: 1,    title: 'التسليم المتوقّع',    place: order.destinationCity, icon: Flag },
+  ];
+
+  const events: TimelineEvent[] = [];
+  milestones.filter((m) => m.f <= progress + 1e-9).forEach((m) =>
+    events.push({ title: m.title, place: m.place, time: at(m.f), icon: m.icon, state: 'done' }));
+  if (progress > 0 && progress < 1) {
+    events.push({ title: 'الموقع الحالي للشاحنة', place: `على ${road}`, time: 'الآن', icon: Navigation, state: 'current' });
+  }
+  milestones.filter((m) => m.f > progress + 1e-9).forEach((m) =>
+    events.push({ title: m.title, place: m.place, time: at(m.f), icon: m.icon, state: 'upcoming' }));
+
+  return (
+    <ol className="relative space-y-5 before:absolute before:top-3 before:bottom-3 before:start-[15px] before:w-px before:bg-border">
+      {events.map((e, i) => {
+        const Icon = e.state === 'done' ? CheckCircle2 : e.icon;
+        return (
+          <li key={i} className="relative flex items-start gap-3 ps-0">
+            <span
+              className={`relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full ${
+                e.state === 'done'
+                  ? 'bg-[hsl(var(--mint))] text-primary'
+                  : e.state === 'current'
+                    ? 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))] ring-2 ring-[hsl(var(--mint))]'
+                    : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              {e.state === 'current' && (
+                <span className="absolute inset-0 rounded-full bg-[hsl(var(--mint))]/30 animate-ping" />
+              )}
+              <Icon className="relative h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className={`text-sm font-semibold ${e.state === 'upcoming' ? 'text-muted-foreground' : ''}`}>
+                  {e.title}
+                </span>
+                <span className={`shrink-0 text-xs ${e.state === 'current' ? 'font-semibold text-[hsl(var(--mint))]' : 'text-muted-foreground'} ${e.time !== 'الآن' ? 'num' : ''}`}>
+                  {e.time}
+                </span>
+              </div>
+              <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                <MapPin className="h-3 w-3 shrink-0" /> {e.place}
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
