@@ -1,8 +1,8 @@
 import {
-  Body, Controller, Delete, Get, Param, Post, Put, Query,
+  Body, Controller, Delete, Get, Param, Patch, Post, Put, Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 import { Audit } from '../../common/audit/audit.decorator';
@@ -22,6 +22,15 @@ const ORDER_STATUS = [
 class OrdersQueryDto extends PaginationDto {
   @IsOptional() @IsEnum(ORDER_STATUS) status?: OrderStatus;
   @IsOptional() @Transform(({ value }) => value === 'true' || value === true) @IsBoolean() mine?: boolean;
+}
+
+const LEG_STATUSES = ['ASSIGNED', 'IN_TRANSIT', 'DELIVERED'] as const;
+class DistributeLegDto {
+  @IsString() truckId!: string;
+  @IsOptional() @IsString() driverId?: string;
+}
+class LegStatusDto {
+  @IsEnum(LEG_STATUSES) status!: (typeof LEG_STATUSES)[number];
 }
 
 @ApiTags('orders')
@@ -102,6 +111,34 @@ export class OrdersController {
   @Audit({ action: 'order.assignDriver', resourceType: 'Order', idFrom: 'param', idKey: 'id' })
   assignDriver(@Param('id') id: string, @Body() dto: AssignDriverDto, @CurrentUser() actor: AuthUser) {
     return this.orders.assignDriver(id, dto, actor);
+  }
+
+  // ─── Consolidated legs ───────────────────────────────────────
+  @Get(':id/legs')
+  getLegs(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
+    return this.orders.getLegs(id, actor);
+  }
+  @Post(':id/legs/:index/distribute')
+  distributeLeg(
+    @Param('id') id: string,
+    @Param('index') index: string,
+    @Body() dto: DistributeLegDto,
+    @CurrentUser() actor: AuthUser,
+  ) {
+    return this.orders.distributeLeg(id, Number(index), dto.truckId, dto.driverId, actor);
+  }
+  @Delete(':id/legs/:index')
+  clearLeg(@Param('id') id: string, @Param('index') index: string, @CurrentUser() actor: AuthUser) {
+    return this.orders.clearLeg(id, Number(index), actor);
+  }
+  @Patch(':id/legs/:index/status')
+  setLegStatus(
+    @Param('id') id: string,
+    @Param('index') index: string,
+    @Body() dto: LegStatusDto,
+    @CurrentUser() actor: AuthUser,
+  ) {
+    return this.orders.setLegStatus(id, Number(index), dto.status, actor);
   }
 
   @Get(':id/tracking')
