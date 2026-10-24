@@ -6,7 +6,6 @@ import { AlertCircle, Eye, EyeOff, Truck, ShieldCheck, Lock, Activity } from 'lu
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DEV_USERS, DEV_BYPASS_TOKEN } from '@naqla/shared-utils';
 import { useAuthStore } from '@/lib/auth-store';
 
 export default function AdminLoginPage() {
@@ -27,15 +26,11 @@ export default function AdminLoginPage() {
       router.push('/');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: { message?: string }, message?: string } }, message?: string };
-      // API unreachable → dev-bypass fallback (UI demo only, no persistence).
-      if (!e.response) {
-        localStorage.setItem('naqla_access_token', DEV_BYPASS_TOKEN);
-        localStorage.setItem('naqla_refresh_token', DEV_BYPASS_TOKEN);
-        useAuthStore.setState({ user: { ...DEV_USERS.admin, avatar: null } as never });
-        router.push('/');
-        return;
-      }
-      setError(e.response?.data?.error?.message ?? e.response?.data?.message ?? e.message ?? 'حدث خطأ');
+      setError(
+        !e.response
+          ? 'تعذّر الوصول إلى الخادم. تأكّد من اتصالك وحاول مجددا.'
+          : (e.response?.data?.error?.message ?? e.response?.data?.message ?? e.message ?? 'حدث خطأ'),
+      );
     } finally {
       setLoading(false);
     }
