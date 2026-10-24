@@ -25,9 +25,14 @@
   (pickup → departure → mid-route → approaching → delivery) with times derived
   from the pickup time and distance, the **current position marked live**
   («الآن», pulsing), done/upcoming states, and a progress bar.
-- **Auto-updating tracking**: for in-transit shipments the progress advances on a
-  timer, the remaining distance and the timeline states update with it, and an
-  «آخر تحديث: قبل N ثانية» ticker simulates live GPS pings.
+- **Realtime tracking channel**: live data is **pushed** from a mock tracking
+  socket (`apps/web/client/src/lib/tracking-socket.ts`, a WebSocket stand-in) as
+  GPS fixes carrying progress, speed, and a timestamp. The page reflects the last
+  reported fix — «آخر تحديث HH:MM:SS» + current speed, remaining distance, and
+  the timeline states — updating only when a fix arrives (no page timer). The map
+  truck shows the **last reported position** and tweens between fixes
+  (ride-hailing style); the previous continuous auto-crawl was removed as
+  unrealistic (`RouteMapImpl` now follows the reported `progress`).
 
 ### v0.9.18 — Order types: single & consolidated (multi-truck) (2026-10-24)
 

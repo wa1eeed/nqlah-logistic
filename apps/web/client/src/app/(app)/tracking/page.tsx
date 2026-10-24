@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/page-header';
 import { RouteMap } from '@/components/route-map';
 import { StatusBadge } from '@/components/status-badge';
+import { openTrackingSocket } from '@/lib/tracking-socket';
 import {
   CURRENT_CLIENT_ID, activeOrdersForClient, companyById, coordsFor, distanceKm,
   estimatedDurationLabel, formatDateTime, primaryRoadFor,
@@ -97,24 +98,26 @@ function TrackingDetail({ order }: { order: any }) {
   const road = primaryRoadFor(order.originCity, order.destinationCity);
   const base = order.status === 'IN_TRANSIT' ? 0.55 : order.status === 'CONFIRMED' ? 0.1 : 0;
 
-  // Live simulation: advance the shipment and refresh "last update" on a timer.
+  // Live data is PUSHED from a (mock) tracking socket — GPS fixes, not a page
+  // timer. The UI simply reflects the last reported fix.
   const [progress, setProgress] = useState(base);
-  const [sinceUpdate, setSinceUpdate] = useState(0);
+  const [speed, setSpeed] = useState<number | null>(null);
+  const [lastAt, setLastAt] = useState<number | null>(null);
   useEffect(() => {
     setProgress(base);
-    setSinceUpdate(0);
+    setSpeed(null);
+    setLastAt(null);
     if (order.status !== 'IN_TRANSIT') return;
-    const advance = setInterval(() => {
-      setProgress((p) => Math.min(0.985, p + 0.0045));
-      setSinceUpdate(0);
-    }, 5000);
-    const ticker = setInterval(() => setSinceUpdate((s) => s + 1), 1000);
-    return () => { clearInterval(advance); clearInterval(ticker); };
+    const socket = openTrackingSocket({
+      startProgress: base,
+      onPing: (p) => { setProgress(p.progress); setSpeed(p.speedKmh); setLastAt(p.at); },
+    });
+    return () => socket.close();
   }, [order.id, order.status, base]);
 
   const remaining = Math.round(km * (1 - progress));
   const isLive = order.status === 'IN_TRANSIT';
-  const lastUpdate = sinceUpdate <= 1 ? 'الآن' : `قبل ${sinceUpdate} ثانية`;
+  const lastUpdate = lastAt ? new Date(lastAt).toLocaleTimeString('en-GB') : '—';
   const carrier = companyById(order.carrierId);
   const initials = carrier?.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('') ?? '';
 
@@ -124,8 +127,7 @@ function TrackingDetail({ order }: { order: any }) {
         <RouteMap
           origin={{ ...o, label: order.originCity }}
           destination={{ ...d, label: order.destinationCity }}
-          progress={base}
-          live={order.status === 'IN_TRANSIT'}
+          progress={progress}
           height={420}
           className="rounded-b-none border-b"
         />
@@ -193,9 +195,12 @@ function TrackingDetail({ order }: { order: any }) {
               <Navigation className="h-4 w-4" /> خط أحداث التتبّع
             </CardTitle>
             <div className="flex items-center gap-2">
-              {isLive && (
-                <span className="text-xs text-muted-foreground">
-                  آخر تحديث: <span className={sinceUpdate <= 1 ? 'num font-medium text-[hsl(var(--mint))]' : 'num'}>{lastUpdate}</span>
+              {isLive && lastAt && (
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>آخر تحديث <span className="num">{lastUpdate}</span></span>
+                  {speed != null && (
+                    <span className="num font-medium text-[hsl(var(--mint))]">{speed} كم/س</span>
+                  )}
                 </span>
               )}
               <Badge variant="success" className="flex items-center gap-1">

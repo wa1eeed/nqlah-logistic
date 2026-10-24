@@ -33,11 +33,11 @@ GET https://router.project-osrm.org/route/v1/driving/
   interpolation.
 - The `traveled` sub-path (origin → truck) is drawn in the brand teal; the rest
   stays grey — a clear "how far along" indicator.
-- Animation (`progress` + `live` props):
-  - a reveal from 0 to the current `progress` over ~2.6s;
-  - when `live` is true (`IN_TRANSIT` orders), the truck then **crawls** slowly
-    toward the destination, simulating real-time movement;
-  - a pulsing halo marks the live position.
+- Animation: the truck shows the **last reported position** and **tweens**
+  smoothly from its current point to each new `progress` value (like a
+  ride-hailing app between GPS fixes). There is no continuous auto-crawl — the
+  marker only moves when a new fix changes `progress`. A pulsing halo marks the
+  live position.
 
 ## 3. Props
 
@@ -61,11 +61,13 @@ distance (average speed). The current position is inserted at the live progress
 point and marked «الآن» with a pulsing node; past milestones are "done" and
 future ones "upcoming". A progress bar and a «مباشر» badge accompany it.
 
-For in-transit shipments the page also **auto-updates**: a timer advances the
-progress (and the remaining distance + timeline states follow it), with an
-«آخر تحديث: قبل N ثانية» ticker simulating live GPS pings. With a real backend,
-replace the derived milestones and simulated progress with actual tracking
-events / GPS positions.
+For in-transit shipments the live data is **pushed** from a mock tracking socket
+(`apps/web/client/src/lib/tracking-socket.ts`) — a WebSocket stand-in that emits
+`TrackingPing` messages (progress, speed, timestamp) at a realistic cadence. The
+page subscribes once and reflects the last fix: «آخر تحديث HH:MM:SS», the current
+speed, the remaining distance, the progress bar, and the timeline states — it
+updates only when a fix arrives, not on a page timer. Swap `openTrackingSocket`
+for a real `new WebSocket(url)` + `onmessage` without touching the consumers.
 
 ## 5. Future (real API)
 
