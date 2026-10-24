@@ -56,9 +56,10 @@ real NestJS + Prisma API (live-verified against a local backend, see
 - [x] **Stage 5 — Client policies** (v0.9.27): `PolicyGroup` model + `policies`
   endpoints (admin CRUD + `GET /policies/mine` resolver); admin panel + client
   order form wired to the API (admin changes now reach the client server-side).
-- [ ] **Stage 6 — Real WebSocket tracking**: emit from the (existing but unused)
-  RealtimeGateway on location/status writes; client `socket.io-client` replaces
-  the mock `tracking-socket.ts`.
+- [x] **Stage 6 — Real WebSocket tracking** (v0.9.28): `RealtimeGateway` now
+  emits status + location events and streams server-side GPS pings over
+  Socket.IO; the client tracking page uses a real `socket.io-client` (mock
+  fallback) on live API orders. **Backend wiring complete.**
 
 ---
 
