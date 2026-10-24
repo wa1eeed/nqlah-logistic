@@ -6,6 +6,38 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.32 — Fix forced logout after idle (2026-10-24)
+
+> Pre-deploy fix #2: the client dashboard logged users out after a short idle.
+
+- **Root cause:** a refresh-token-rotation race. After the 15-minute access
+  token expires, SWR's default focus-revalidation fires every mounted key at
+  once; each 401 independently POSTed `/auth/refresh` with the same refresh
+  token. The first rotated it, the rest looked like token reuse, and the API's
+  replay detection revoked the whole session → forced logout.
+- **Client (admin + client + carrier):** the response interceptor now shares a
+  single-flight refresh — concurrent 401s await one refresh call instead of
+  each firing its own (`apps/web/*/src/lib/api.ts`).
+- **API:** refresh-token rotation now records `revokedAt`, and reuse of a
+  just-rotated token within a 60s grace window is treated as a benign client
+  race (reject that one request) rather than theft; reuse outside the window
+  still revokes every token for the user (`auth.service.ts`, new
+  `RefreshToken.revokedAt` column + migration).
+- **Config:** access/refresh TTLs now read the documented `JWT_EXPIRES_IN` /
+  `JWT_REFRESH_EXPIRES_IN` env names (legacy `JWT_ACCESS_TTL` kept as fallback),
+  so the lifetime set in the env is finally honored.
+- Verified live: 5 concurrent refreshes with the same token no longer revoke
+  the session — the minted access tokens stay valid (HTTP 200).
+
+### v0.9.31 — English-default dashboards, no language switcher (2026-10-24)
+
+> The internal portals are English-first now.
+
+- `DEFAULT_LOCALE` is `en` for admin/client/carrier; the in-dashboard language
+  setting and the register-page language picker were removed, along with the
+  now-unused `LanguageSelector`, `OnboardingLanguagePicker`, and
+  `setLocaleAction`.
+
 ### v0.9.30 — Super-admin credentials from env (2026-10-24)
 
 > Launch prep: the admin login is no longer hardcoded.

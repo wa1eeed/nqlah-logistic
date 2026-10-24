@@ -180,12 +180,26 @@ export class AuthService {
 
   // ─── Refresh (rotation — old token invalidated) ─────────────────
 
+  // A just-rotated refresh token may legitimately be presented again within a
+  // few seconds by a second browser tab that refreshed in parallel (each tab
+  // has its own in-memory refresh lock, but they share one stored token). That
+  // benign race must NOT be treated as theft. Only reuse OUTSIDE this window
+  // revokes the whole session.
+  private static readonly ROTATION_GRACE_MS = 60_000;
+
   async refresh(refreshToken: string, meta: { ip?: string; userAgent?: string } = {}) {
     const record = await this.prisma.refreshToken.findUnique({ where: { token: refreshToken } });
-    if (!record || record.isRevoked || record.expiresAt < new Date()) {
-      // If this is a re-use of a revoked token, that may indicate theft —
-      // best practice: revoke ALL of the user's tokens.
-      if (record?.isRevoked && record.userId) {
+    const now = new Date();
+
+    if (record?.isRevoked) {
+      // Reuse of an already-rotated token. Inside the grace window it's a
+      // benign client/tab race — reject just this request (the winning refresh
+      // already minted a valid session). Outside it, treat as theft and revoke
+      // every token for the user.
+      const revokedAt = record.revokedAt?.getTime();
+      const withinGrace =
+        revokedAt != null && now.getTime() - revokedAt <= AuthService.ROTATION_GRACE_MS;
+      if (!withinGrace && record.userId) {
         await this.blacklist.revokeAllForUser(record.userId);
         await this.audit.record({
           userId: record.userId,
@@ -201,6 +215,13 @@ export class AuthService {
         message: 'رمز التجديد غير صالح',
       });
     }
+
+    if (!record || record.expiresAt < now) {
+      throw new UnauthorizedException({
+        code: 'INVALID_REFRESH_TOKEN',
+        message: 'رمز التجديد غير صالح',
+      });
+    }
     const user = await this.prisma.user.findUnique({ where: { id: record.userId } });
     if (!user || !user.isActive) {
       throw new UnauthorizedException({ code: 'ACCOUNT_INACTIVE', message: 'الحساب غير نشط' });
@@ -208,7 +229,7 @@ export class AuthService {
 
     await this.prisma.refreshToken.update({
       where: { id: record.id },
-      data: { isRevoked: true },
+      data: { isRevoked: true, revokedAt: now },
     });
     return this.issueTokens(user, meta);
   }
@@ -218,7 +239,7 @@ export class AuthService {
   async logout(refreshToken: string, accessTokenJti?: string, accessTokenExp?: number, meta: { ip?: string; userAgent?: string; userId?: string } = {}) {
     await this.prisma.refreshToken.updateMany({
       where: { token: refreshToken },
-      data: { isRevoked: true },
+      data: { isRevoked: true, revokedAt: new Date() },
     });
     if (accessTokenJti && accessTokenExp) {
       await this.blacklist.revoke(accessTokenJti, accessTokenExp);
@@ -271,8 +292,10 @@ export class AuthService {
     _meta: { ip?: string; userAgent?: string } = {},
   ) {
     const jti = randomUUID();
-    const accessTTL = process.env.JWT_ACCESS_TTL ?? '15m';
-    const refreshTTL = process.env.JWT_REFRESH_TTL ?? '7d';
+    // Prefer the documented env names (JWT_EXPIRES_IN / JWT_REFRESH_EXPIRES_IN,
+    // set in every .env template); keep the legacy *_TTL names as a fallback.
+    const accessTTL = process.env.JWT_EXPIRES_IN ?? process.env.JWT_ACCESS_TTL ?? '15m';
+    const refreshTTL = process.env.JWT_REFRESH_EXPIRES_IN ?? process.env.JWT_REFRESH_TTL ?? '7d';
 
     const accessToken = await this.jwt.signAsync(
       {
