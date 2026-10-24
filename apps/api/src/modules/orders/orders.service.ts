@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { DriverStatus } from '../../generated/prisma';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import {
   AssignDriverDto,
@@ -23,7 +24,7 @@ const orderNumberGen = customAlphabet('0123456789', 6);
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private realtime: RealtimeGateway) {}
 
   async list(query: PaginationDto & { status?: OrderStatus; mine?: boolean }, actor: AuthUser) {
     const { page = 1, limit = 20, sort = 'createdAt', order = 'desc', search, status, mine } = query;
@@ -373,16 +374,23 @@ export class OrdersService {
       data: { orderId: id, createdBy: actor.id, ...dto, photos: dto.photos ?? [] },
     });
 
+    // Push the tracking event live to anyone watching this order.
+    this.realtime.emitLocationUpdate(id, {
+      status: dto.status, lat: dto.lat, lng: dto.lng, city: dto.city, at: Date.now(),
+    });
+
     if (dto.status === 'PICKED_UP') {
       await this.prisma.order.update({
         where: { id },
         data: { status: 'IN_TRANSIT', actualPickupAt: new Date() },
       });
+      this.realtime.emitOrderStatus(id, { status: 'IN_TRANSIT' });
     } else if (dto.status === 'DELIVERED') {
       await this.prisma.order.update({
         where: { id },
         data: { status: 'DELIVERED', actualDeliveryAt: new Date() },
       });
+      this.realtime.emitOrderStatus(id, { status: 'DELIVERED' });
     }
     return event;
   }
@@ -478,6 +486,7 @@ export class OrdersService {
     else if (n > 0 && legs.length >= n) status = 'ASSIGNED';
     if (status !== order.status) {
       await this.prisma.order.update({ where: { id: orderId }, data: { status } });
+      this.realtime.emitOrderStatus(orderId, { status });
     }
   }
 }

@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import useSWR from 'swr';
 import Link from 'next/link';
 import {
   CheckCircle2, Clock, Flag, MapPin, Navigation, Package, Phone, Star, Truck,
@@ -12,14 +13,20 @@ import { PageHeader } from '@/components/page-header';
 import { RouteMap } from '@/components/route-map';
 import { StatusBadge } from '@/components/status-badge';
 import { openTrackingSocket } from '@/lib/tracking-socket';
+import { fetcher } from '@/lib/api';
 import {
   CURRENT_CLIENT_ID, activeOrdersForClient, companyById, coordsFor, distanceKm,
-  estimatedDurationLabel, formatDateTime, primaryRoadFor,
+  estimatedDurationLabel, formatDateTime, primaryRoadFor, normalizeOrderList, type Order,
 } from '@naqla/shared-utils';
 
 export default function TrackingPage() {
-  const active = activeOrdersForClient(CURRENT_CLIENT_ID);
-  const inTransit = active.filter((o) => o.status === 'IN_TRANSIT' || o.status === 'CONFIRMED');
+  // Live orders from the API (mock fallback when the backend is down).
+  const { data: ordersRaw } = useSWR<unknown>('/orders?mine=true&limit=100', fetcher);
+  const inTransit = useMemo(() => {
+    const api = normalizeOrderList(ordersRaw).filter((o) => o.status === 'IN_TRANSIT' || o.status === 'CONFIRMED');
+    if (api.length) return api;
+    return activeOrdersForClient(CURRENT_CLIENT_ID).filter((o) => o.status === 'IN_TRANSIT' || o.status === 'CONFIRMED');
+  }, [ordersRaw]);
   const [selectedId, setSelectedId] = useState<string | null>(inTransit[0]?.id ?? null);
   const selected = inTransit.find((o) => o.id === selectedId) ?? inTransit[0];
 
@@ -98,8 +105,8 @@ function TrackingDetail({ order }: { order: any }) {
   const road = primaryRoadFor(order.originCity, order.destinationCity);
   const base = order.status === 'IN_TRANSIT' ? 0.55 : order.status === 'CONFIRMED' ? 0.1 : 0;
 
-  // Live data is PUSHED from a (mock) tracking socket — GPS fixes, not a page
-  // timer. The UI simply reflects the last reported fix.
+  // Live data is PUSHED from the tracking socket — GPS fixes, not a page timer.
+  // A real WebSocket to the API when available, else a local simulation.
   const [progress, setProgress] = useState(base);
   const [speed, setSpeed] = useState<number | null>(null);
   const [lastAt, setLastAt] = useState<number | null>(null);
@@ -108,8 +115,11 @@ function TrackingDetail({ order }: { order: any }) {
     setSpeed(null);
     setLastAt(null);
     if (order.status !== 'IN_TRANSIT') return;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('naqla_client_token') ?? undefined : undefined;
     const socket = openTrackingSocket({
       startProgress: base,
+      orderId: order.id,
+      token,
       onPing: (p) => { setProgress(p.progress); setSpeed(p.speedKmh); setLastAt(p.at); },
     });
     return () => socket.close();

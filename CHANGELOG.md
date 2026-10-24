@@ -6,6 +6,29 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.28 — Backend wiring (6): real WebSocket tracking (2026-10-24)
+
+> Final stage of backend wiring (see `PENDING_WORK.md`, `docs/TRACKING.md`),
+> verified live. Replaces the in-browser mock with a real server→client push.
+
+- **The `RealtimeGateway` is now used** (it was defined but never invoked):
+  `OrdersService` emits `order:status_changed` on status transitions and the
+  consolidated rollup, and `tracking:location_update` when a tracking event is
+  posted (`OrdersModule` imports `RealtimeModule`).
+- **Server-side GPS ping stream**: on `order:subscribe` for an `IN_TRANSIT`
+  order, the gateway pushes discrete `tracking:location_update` fixes (progress +
+  speed) to the order's room every 4s, advancing to ~0.97. Ref-counted by
+  subscribers (stream stops when the last watcher leaves); JWT-authenticated
+  handshake, per-order rooms.
+- **Client tracking uses a real socket**: `lib/tracking-socket.ts` connects with
+  `socket.io-client`, subscribes to the order, and renders the pushed fixes;
+  it transparently falls back to the local simulation if it can't connect. The
+  tracking page now lists **live API orders** (mock fallback) and passes the
+  order id + token to the socket. The seed's consolidated order ships
+  `IN_TRANSIT` so there's always a live shipment to watch.
+- This completes the six-stage backend wiring (fleet ownership → assignment →
+  freelancer invoices → consolidated legs → client policies → realtime).
+
 ### v0.9.27 — Backend wiring (5): client policies server-side (2026-10-24)
 
 > Fifth stage of backend wiring (see `PENDING_WORK.md`, `docs/POLICIES.md`),

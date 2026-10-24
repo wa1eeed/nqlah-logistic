@@ -69,8 +69,28 @@ speed, the remaining distance, the progress bar, and the timeline states — it
 updates only when a fix arrives, not on a page timer. Swap `openTrackingSocket`
 for a real `new WebSocket(url)` + `onmessage` without touching the consumers.
 
-## 5. Future (real API)
+## 5. Backend (v0.9.28) — real WebSocket
 
-Replace the simulated progress with the vehicle's actual GPS position from
-tracking events / a realtime channel; keep the same OSRM route and animation.
-Consider self-hosting OSRM (or a keyed router) for production rate limits.
+The mock channel is now backed by a real Socket.IO connection (see
+`docs/LOCAL_BACKEND.md`).
+
+- **Server**: the `RealtimeGateway`
+  (`apps/api/src/modules/realtime/realtime.gateway.ts`) authenticates the
+  handshake with the JWT, joins `user:`/`company:`/`order:` rooms, and on
+  `order:subscribe` for an `IN_TRANSIT` order streams discrete
+  `tracking:location_update` fixes (progress + speed) to that order's room every
+  4s, advancing to ~0.97. The stream is ref-counted by subscribers. `OrdersService`
+  also emits `order:status_changed` on status transitions / the consolidated
+  rollup, and `tracking:location_update` when a tracking event is posted.
+- **Client**: `lib/tracking-socket.ts` connects with `socket.io-client`,
+  `emit('order:subscribe', { orderId, startProgress })`, and forwards
+  `tracking:location_update` fixes to the page — the same `TrackingPing`
+  interface, so the UI is unchanged. If it can't connect it falls back to the
+  local simulation. The tracking page lists live API orders (mock fallback).
+
+## 6. Future
+
+Replace the server's simulated progress with real device GPS (posted via
+`POST /orders/:id/tracking`, already emitted live); keep the same OSRM route and
+animation. Consider self-hosting OSRM (or a keyed router) for production rate
+limits.

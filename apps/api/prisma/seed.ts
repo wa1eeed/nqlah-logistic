@@ -293,10 +293,10 @@ async function main() {
   // own trucks so the distribution board + status rollup have live data.
   const consolidated = await prisma.order.upsert({
     where: { orderNumber: 'ORD-2025-0180' },
-    update: { orderType: 'CONSOLIDATED', truckCount: 5, carrierId: carrierCo.id },
+    update: { orderType: 'CONSOLIDATED', truckCount: 5, carrierId: carrierCo.id, status: 'IN_TRANSIT' },
     create: {
       orderNumber: 'ORD-2025-0180',
-      status: 'ASSIGNED',
+      status: 'IN_TRANSIT',
       orderType: 'CONSOLIDATED',
       truckCount: 5,
       clientId: clientCo.id,
