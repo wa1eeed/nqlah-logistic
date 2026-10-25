@@ -128,11 +128,17 @@ export class OrdersService {
         where.carrierId = myId;
       } else {
         // Carriers see three buckets simultaneously:
-        //   1. OPEN marketplace orders (PUBLISHED/BIDDING + mode=OPEN)
+        //   1. OPEN marketplace orders (PUBLISHED/BIDDING + mode=OPEN), minus any
+        //      whose client's policy restricts this carrier out of its market.
         //   2. DIRECT orders targeted at them (any status pre-assignment)
         //   3. Orders already assigned to them (any status)
+        const restricted = await this.policies.restrictedClientIdsForCarrier(myId);
         where.OR = [
-          { AND: [{ mode: 'OPEN' }, { status: { in: ['PUBLISHED', 'BIDDING'] } }] },
+          { AND: [
+            { mode: 'OPEN' },
+            { status: { in: ['PUBLISHED', 'BIDDING'] } },
+            ...(restricted.length ? [{ clientId: { notIn: restricted } }] : []),
+          ] },
           { AND: [{ mode: 'DIRECT' }, { targetCarrierId: myId }] },
           { carrierId: myId },
         ];
@@ -563,6 +569,14 @@ export class OrdersService {
     }
     if (mode === 'DIRECT' && !policy.allowDirect) {
       throw new ForbiddenException({ code: 'POLICY_DIRECT_DISABLED', message: 'الإسناد المباشر غير مسموح لهذا العميل' });
+    }
+    // A direct target must be a provider this client is allowed to see. A forced
+    // carrier is always allowed; otherwise it must fall within the visible set.
+    if (mode === 'DIRECT' && targetCarrierId && targetCarrierId !== policy.forcedCarrierId) {
+      const visible = await this.policies.visibleCarrierIds(companyId);
+      if (visible !== null && !visible.includes(targetCarrierId)) {
+        throw new ForbiddenException({ code: 'POLICY_CARRIER_NOT_VISIBLE', message: 'المزوّد غير متاح لهذا العميل' });
+      }
     }
     const fixedPrice = mode === 'DIRECT' && dto.agreedPriceUpfront != null ? dto.agreedPriceUpfront : null;
     if (fixedPrice != null && !policy.allowFixedPricing) {

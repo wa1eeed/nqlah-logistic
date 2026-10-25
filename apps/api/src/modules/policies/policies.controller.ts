@@ -4,7 +4,9 @@ import { CurrentUser, AuthUser } from '../../common/decorators/current-user.deco
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PoliciesService } from './policies.service';
-import { AssignClientDto, CreateGroupDto, UpdateGroupDto } from './dto/policy.dto';
+import {
+  AssignClientDto, CreateCarrierGroupDto, CreateGroupDto, UpdateCarrierGroupDto, UpdateGroupDto,
+} from './dto/policy.dto';
 
 @ApiTags('policies')
 @ApiBearerAuth()
@@ -52,5 +54,34 @@ export class PoliciesController {
   @UseGuards(RolesGuard)
   assign(@Body() dto: AssignClientDto) {
     return this.policies.assignClient(dto.clientId, dto.groupId ?? null);
+  }
+
+  // ─── Admin: provider (carrier) groups ────────────────────────
+  @Get('carrier-groups')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  listCarrierGroups() {
+    return this.policies.listCarrierGroups();
+  }
+
+  @Post('carrier-groups')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  createCarrierGroup(@Body() dto: CreateCarrierGroupDto) {
+    return this.policies.createCarrierGroup(dto);
+  }
+
+  @Put('carrier-groups/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  updateCarrierGroup(@Param('id') id: string, @Body() dto: UpdateCarrierGroupDto) {
+    return this.policies.updateCarrierGroup(id, dto);
+  }
+
+  @Delete('carrier-groups/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  deleteCarrierGroup(@Param('id') id: string) {
+    return this.policies.deleteCarrierGroup(id);
   }
 }

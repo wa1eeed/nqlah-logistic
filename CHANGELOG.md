@@ -6,6 +6,21 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.49 — Provider groups + visibility scope (2026-10-25)
+
+- Admins can now **scope which providers a client group can see**, so the market
+  can be organized per client. `PolicyGroup` gains `visibilityScope`
+  (`ALL` | `GROUP` | `CARRIER`) + `visibleCarrierGroupId`, and a new
+  **`CarrierGroup`** (named set of provider companies) with admin CRUD under
+  `/policies/carrier-groups`.
+- Enforcement (default `ALL` = today's open market, nothing changes):
+  - a carrier's **market listing** hides orders of clients whose group restricts
+    it (`restrictedClientIdsForCarrier`);
+  - **bidding** is blocked for a carrier outside a client's visible set
+    (`POLICY_CARRIER_NOT_VISIBLE`);
+  - a client's **direct target** must be a provider it is allowed to see.
+- Tests: `policies.visibility.spec.ts` (scope resolution + restriction). 17 specs total.
+
 ### v0.9.48 — Collection (payment) modules (2026-10-25)
 
 - Orders now carry a **collection method**, chosen at creation and gated by the
