@@ -6,6 +6,18 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.56 — Fix: open collection on DIRECT-upfront publish (2026-10-25)
+
+- A DIRECT order with an upfront price auto-assigns on publish; that branch
+  **skipped `collection.initiate`**, so the order got no Payment (no escrow
+  hold, no COD due, no prepaid charge). `publish()` now opens the collection in
+  the same transaction, matching `assign()` / bid-accept.
+- Found by a full end-to-end workflow smoke against a live API (register/login →
+  multi-stop order → publish → market → bid → accept → escrow → stop execution →
+  DELIVERED → complete → RELEASED; COD due + collect; sub-tenancy auto-routing;
+  branding gate; driver API guard) — now **24/24 green**. Regression covered by
+  `orders.publish.spec.ts` (28 unit specs total).
+
 ### v0.9.55 — Driver API (portal/app backbone) (2026-10-25)
 
 - New `/driver` API — the surface the drivers portal and the unified driver app
