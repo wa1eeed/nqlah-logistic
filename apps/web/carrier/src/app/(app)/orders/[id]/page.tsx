@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowRight, Building2, Calendar, CheckCircle2, Mail, MapPin, Navigation, Package,
@@ -35,14 +36,16 @@ import { useFleetStore } from '@/stores/fleet-store';
 import { useConsolidatedStore } from '@/stores/consolidated-store';
 import { useFreelancerStore } from '@/stores/freelancer-store';
 
-const TITLES: Record<string, string> = {
-  CREATED: 'إنشاء الطلب', PUBLISHED: 'نشر الطلب', BID_ACCEPTED: 'قبول عرضك',
-  CONFIRMED: 'تأكيد التحميل', PICKED_UP: 'تم الاستلام', IN_TRANSIT: 'في الطريق',
-  DELIVERED: 'تم التسليم', PAYMENT_RELEASED: 'الإفراج عن المبلغ',
-  COMPLETED: 'إغلاق الطلب', CANCELLED: 'إلغاء',
-};
+const TITLE_KEYS = [
+  'CREATED', 'PUBLISHED', 'BID_ACCEPTED', 'CONFIRMED', 'PICKED_UP', 'IN_TRANSIT',
+  'DELIVERED', 'PAYMENT_RELEASED', 'COMPLETED', 'CANCELLED',
+] as const;
 
 export default function CarrierOrderDetail() {
+  const t = useTranslations('orders');
+  const TITLES: Record<string, string> = Object.fromEntries(
+    TITLE_KEYS.map((k) => [k, t(`detail.events.${k}`)]),
+  );
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { data: orderData, mutate: refetchOrder } = useSWR<typeof ORDERS[number]>(
@@ -74,8 +77,8 @@ export default function CarrierOrderDetail() {
       <Card>
         <CardContent className="py-16 text-center">
           <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-semibold">الطلب غير موجود</h3>
-          <Button onClick={() => router.push('/orders')} className="mt-4">عودة</Button>
+          <h3 className="font-semibold">{t('detail.notFoundTitle')}</h3>
+          <Button onClick={() => router.push('/orders')} className="mt-4">{t('detail.notFoundBack')}</Button>
         </CardContent>
       </Card>
     );
@@ -143,9 +146,9 @@ export default function CarrierOrderDetail() {
           addFreelancerInvoice((order as { carrierId?: string }).carrierId ?? CURRENT_CARRIER_ID, payload);
         }
       }
-      notify.success('تم إسناد الطلب للفري‑لانسر', `أُنشئت فاتورة رحلة بمبلغ ${feeNum.toLocaleString('en-US')} ر.س.`);
+      notify.success(t('detail.toast.assignedFreelancer'), t('detail.toast.freelancerInvoice', { amount: feeNum.toLocaleString('en-US') }));
     } else {
-      notify.success('تم إسناد الشاحنة للطلب', `${pickedTruck.code ?? ''}`);
+      notify.success(t('detail.toast.assignedTruck'), `${pickedTruck.code ?? ''}`);
     }
     setAssignDriverOpen(false);
     setPickTruck('');
@@ -161,7 +164,7 @@ export default function CarrierOrderDetail() {
           <>
             <StatusBadge status={order.status} />
             <Button variant="outline" onClick={() => router.push('/orders')}>
-              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('detail.back')}
             </Button>
           </>
         }
@@ -192,7 +195,7 @@ export default function CarrierOrderDetail() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <Navigation className="h-5 w-5 text-primary" />
-                    إجراءات الرحلة
+                    {t('detail.tripActions')}
                   </CardTitle>
                   <StatusBadge status={order.status} />
                 </div>
@@ -201,17 +204,17 @@ export default function CarrierOrderDetail() {
                 {order.status === 'ASSIGNED' && (
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                      الطلب أُسند إليك. أكّد الاستلام عند الوصول لنقطة التحميل.
+                      {t('detail.assignedNote')}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Button onClick={() => setConfirmPickupOpen(true)} className="flex-1 sm:flex-none">
-                        <CheckCircle2 className="h-4 w-4" /> تأكيد الاستلام
+                        <CheckCircle2 className="h-4 w-4" /> {t('detail.confirmPickup')}
                       </Button>
                       <Button variant="outline" onClick={() => { setPickTruck(assignedTruck?.id ?? ''); setAssignDriverOpen(true); }} className="flex-1 sm:flex-none">
-                        <Truck className="h-4 w-4" /> إسناد شاحنة
+                        <Truck className="h-4 w-4" /> {t('detail.assignTruck')}
                       </Button>
                       <Button variant="outline" onClick={() => setDisputeOpen(true)} className="text-destructive border-destructive/30">
-                        <Shield className="h-4 w-4" /> فتح نزاع
+                        <Shield className="h-4 w-4" /> {t('detail.openDispute')}
                       </Button>
                     </div>
                   </div>
@@ -219,14 +222,14 @@ export default function CarrierOrderDetail() {
                 {order.status === 'CONFIRMED' && (
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                      التحميل مؤكَّد. ابدأ الرحلة عند مغادرة نقطة الاستلام.
+                      {t('detail.confirmedNote')}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Button onClick={() => setStartTripOpen(true)} className="flex-1 sm:flex-none">
-                        <Truck className="h-4 w-4" /> بدأت الرحلة
+                        <Truck className="h-4 w-4" /> {t('detail.startedTrip')}
                       </Button>
                       <Button variant="outline" onClick={() => setDisputeOpen(true)} className="text-destructive border-destructive/30">
-                        <Shield className="h-4 w-4" /> فتح نزاع
+                        <Shield className="h-4 w-4" /> {t('detail.openDispute')}
                       </Button>
                     </div>
                   </div>
@@ -235,18 +238,18 @@ export default function CarrierOrderDetail() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm">
                       <span className="inline-block h-2 w-2 bg-info rounded-full animate-pulse" />
-                      <span className="text-muted-foreground">الشحنة في الطريق إلى</span>
+                      <span className="text-muted-foreground">{t('detail.inTransitTo')}</span>
                       <span className="font-semibold">{order.destinationCity}</span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Button onClick={() => setMarkDeliveredOpen(true)} className="flex-1 sm:flex-none">
-                        <CheckCircle2 className="h-4 w-4" /> تأكيد التسليم
+                        <CheckCircle2 className="h-4 w-4" /> {t('detail.confirmDelivery')}
                       </Button>
                       <Button variant="outline" onClick={() => setUpdateLocOpen(true)}>
-                        <MapPin className="h-4 w-4" /> تحديث الموقع
+                        <MapPin className="h-4 w-4" /> {t('detail.updateLocation')}
                       </Button>
                       <Button variant="outline" onClick={() => setDisputeOpen(true)} className="text-destructive border-destructive/30">
-                        <Shield className="h-4 w-4" /> فتح نزاع
+                        <Shield className="h-4 w-4" /> {t('detail.openDispute')}
                       </Button>
                     </div>
                   </div>
@@ -261,9 +264,9 @@ export default function CarrierOrderDetail() {
                   <div className="rounded-md bg-success/10 border border-success/30 p-3 flex items-start gap-2 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-semibold">الرحلة مكتملة وتم تحويل المبلغ</p>
+                      <p className="font-semibold">{t('detail.completedTitle')}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        صافي المستلم: <Currency amount={order.carrierAmount ?? 0} />
+                        {t('detail.completedNet')} <Currency amount={order.carrierAmount ?? 0} />
                       </p>
                     </div>
                   </div>
@@ -282,23 +285,23 @@ export default function CarrierOrderDetail() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="font-semibold text-sm">مبلغ Escrow محتجز</span>
-                      <Badge variant="warning">محجوز</Badge>
+                      <span className="font-semibold text-sm">{t('detail.escrow.held')}</span>
+                      <Badge variant="warning">{t('detail.escrow.heldBadge')}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      سيُفرَج تلقائيا بعد تأكيد العميل لاستلام الشحنة
+                      {t('detail.escrow.releaseNote')}
                     </p>
                     <dl className="mt-3 pt-3 border-t space-y-1 text-xs">
                       <div className="flex justify-between">
-                        <dt className="text-muted-foreground">المبلغ المتّفق</dt>
+                        <dt className="text-muted-foreground">{t('detail.escrow.agreedAmount')}</dt>
                         <dd className="font-medium"><Currency amount={order.agreedPrice} /></dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-muted-foreground">عمولة المنصة (8%)</dt>
+                        <dt className="text-muted-foreground">{t('detail.escrow.commission')}</dt>
                         <dd className="text-destructive">−<Currency amount={(order.commission ?? order.agreedPrice * 0.08)} /></dd>
                       </div>
                       <div className="flex justify-between pt-1 border-t font-semibold">
-                        <dt>صافي مستحقّك</dt>
+                        <dt>{t('detail.escrow.netDue')}</dt>
                         <dd className="text-success"><Currency amount={order.carrierAmount ?? (order.agreedPrice * 0.92)} /></dd>
                       </div>
                     </dl>
@@ -314,7 +317,7 @@ export default function CarrierOrderDetail() {
               get the shipment card (DRAFT / PUBLISHED / BIDDING / CANCELLED). */}
           {!showShipmentCard && (
             <Card>
-              <CardHeader><CardTitle>سجل الأحداث</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t('detail.timelineTitle')}</CardTitle></CardHeader>
               <CardContent>
                 <ol className="relative">
                   {timeline.map((ev, i) => (
@@ -341,7 +344,7 @@ export default function CarrierOrderDetail() {
         <div className="space-y-6">
           {client && (
             <Card>
-              <CardHeader><CardTitle>العميل</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t('detail.client')}</CardTitle></CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3 mb-4">
                   <Avatar className="h-12 w-12">
@@ -355,25 +358,25 @@ export default function CarrierOrderDetail() {
                   </div>
                 </div>
                 <dl className="divide-y">
-                  <Row label="رقم التواصل" icon={Phone} value={<span className="num" dir="ltr">{client.contactPhone}</span>} />
-                  <Row label="البريد" icon={Mail} value={<span className="num text-xs">{client.contactEmail}</span>} />
+                  <Row label={t('detail.clientPhone')} icon={Phone} value={<span className="num" dir="ltr">{client.contactPhone}</span>} />
+                  <Row label={t('detail.clientEmail')} icon={Mail} value={<span className="num text-xs">{client.contactEmail}</span>} />
                 </dl>
               </CardContent>
             </Card>
           )}
 
           <Card>
-            <CardHeader><CardTitle>تفاصيل الشحنة</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('detail.shipmentDetails')}</CardTitle></CardHeader>
             <CardContent>
               {order.orderType !== 'CONSOLIDATED' && showShipmentCard && assignedPlate && (
                 <div className="mb-4 rounded-lg border bg-muted/30 p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-                      <Truck className="h-3.5 w-3.5" /> الشاحنة والسائق
+                      <Truck className="h-3.5 w-3.5" /> {t('detail.truckAndDriver')}
                     </div>
                     {showActions && (
                       <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setPickTruck(assignedTruck?.id ?? ''); setAssignDriverOpen(true); }}>
-                        تغيير
+                        {t('detail.change')}
                       </Button>
                     )}
                   </div>
@@ -394,7 +397,7 @@ export default function CarrierOrderDetail() {
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-semibold">{assignedDriver.fullName}</div>
-                        <div className="text-xs text-muted-foreground"><span className="num">{assignedDriver.code}</span> · رخصة {assignedDriver.licenseClass}</div>
+                        <div className="text-xs text-muted-foreground"><span className="num">{assignedDriver.code}</span> · {t('detail.driverLicense', { class: assignedDriver.licenseClass })}</div>
                       </div>
                       <a href={`tel:${assignedDriver.phone}`} dir="ltr" className="num inline-flex items-center gap-1 text-xs font-medium text-[hsl(var(--mint))]">
                         <Phone className="h-3.5 w-3.5" /> {assignedDriver.phone}
@@ -404,33 +407,33 @@ export default function CarrierOrderDetail() {
                 </div>
               )}
               <dl className="divide-y">
-                <Row label="الوصف" value={order.cargoDescription} />
-                <Row label="الوزن" icon={Weight} value={<span className="num">{(order.weightKg ?? 0).toLocaleString('en-US')} كجم</span>} />
-                <Row label="نوع الشاحنة" icon={Truck} value={order.truckType} />
-                <Row label="تأمين" icon={ShieldCheck} value={order.requiresInsurance ? 'مطلوب' : '—'} />
-                <Row label="تبريد" icon={Snowflake} value={order.requiresRefrigeration ? 'مطلوب' : '—'} />
+                <Row label={t('detail.description')} value={order.cargoDescription} />
+                <Row label={t('detail.weight')} icon={Weight} value={<span className="num">{(order.weightKg ?? 0).toLocaleString('en-US')} {t('units.kg')}</span>} />
+                <Row label={t('detail.truckType')} icon={Truck} value={order.truckType} />
+                <Row label={t('detail.insurance')} icon={ShieldCheck} value={order.requiresInsurance ? t('detail.required') : '—'} />
+                <Row label={t('detail.refrigeration')} icon={Snowflake} value={order.requiresRefrigeration ? t('detail.required') : '—'} />
               </dl>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>المسار</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('detail.route')}</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
-                <Row label="من" icon={MapPin} value={`${order.originCity}، ${order.originAddress}`} />
-                <Row label="إلى" icon={MapPin} value={`${order.destinationCity}، ${order.destinationAddress}`} />
-                <Row label="الاستلام" icon={Calendar} value={formatDate(order.pickupDate, 'EEEE d MMM · HH:mm')} />
+                <Row label={t('detail.from')} icon={MapPin} value={`${order.originCity}، ${order.originAddress}`} />
+                <Row label={t('detail.to')} icon={MapPin} value={`${order.destinationCity}، ${order.destinationAddress}`} />
+                <Row label={t('detail.pickup')} icon={Calendar} value={formatDate(order.pickupDate, 'EEEE d MMM · HH:mm')} />
               </dl>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>المالية</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('detail.financial')}</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
-                <Row label="السعر المتفق" value={<Currency amount={order.agreedPrice} />} />
-                <Row label="العمولة" value={<Currency amount={order.commission ?? 0} />} />
-                <Row label="صافي إلى حسابك" value={<Currency amount={order.carrierAmount} />} />
+                <Row label={t('detail.agreedPrice')} value={<Currency amount={order.agreedPrice} />} />
+                <Row label={t('detail.commission')} value={<Currency amount={order.commission ?? 0} />} />
+                <Row label={t('detail.netToAccount')} value={<Currency amount={order.carrierAmount} />} />
               </dl>
             </CardContent>
           </Card>
@@ -441,32 +444,32 @@ export default function CarrierOrderDetail() {
       <Dialog open={confirmPickupOpen} onOpenChange={setConfirmPickupOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد الاستلام</DialogTitle>
-            <DialogDescription>سيتحوّل الطلب إلى "مؤكَّد" ويصل إشعار للعميل.</DialogDescription>
+            <DialogTitle>{t('detail.confirmPickupDialog.title')}</DialogTitle>
+            <DialogDescription>{t('detail.confirmPickupDialog.desc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <p className="text-sm">هل أنت متأكد أنك وصلت لنقطة التحميل وجاهز للاستلام؟</p>
+            <p className="text-sm">{t('detail.confirmPickupDialog.question')}</p>
             <div className="rounded-md bg-info/10 border border-info/30 p-3 text-xs flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-info shrink-0 mt-0.5" />
-              <span className="text-muted-foreground">بعد التأكيد انقر "بدأت الرحلة" عند مغادرة نقطة الاستلام.</span>
+              <span className="text-muted-foreground">{t('detail.confirmPickupDialog.hint')}</span>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmPickupOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setConfirmPickupOpen(false)}>{t('detail.cancel')}</Button>
             <Button
               onClick={async () => {
                 if (!order) return;
                 try {
                   await api.post(`/orders/${order.id}/confirm`, {});
-                  notify.success('تم تأكيد الاستلام', 'الطلب أصبح مؤكَّدا');
+                  notify.success(t('detail.toast.pickupConfirmed'), t('detail.toast.pickupConfirmedDesc'));
                   await refetchOrder();
                   setConfirmPickupOpen(false);
                 } catch (err: unknown) {
-                  notify.error(err, 'فشل تأكيد الاستلام');
+                  notify.error(err, t('detail.toast.pickupFailed'));
                 }
               }}
             >
-              <CheckCircle2 className="h-4 w-4" /> تأكيد
+              <CheckCircle2 className="h-4 w-4" /> {t('detail.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -476,31 +479,31 @@ export default function CarrierOrderDetail() {
       <Dialog open={startTripOpen} onOpenChange={setStartTripOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>بدء الرحلة</DialogTitle>
-            <DialogDescription>سيتحوّل الطلب إلى "في الطريق" وتُفعَّل خريطة التتبع للعميل.</DialogDescription>
+            <DialogTitle>{t('detail.startTripDialog.title')}</DialogTitle>
+            <DialogDescription>{t('detail.startTripDialog.desc')}</DialogDescription>
           </DialogHeader>
           <div className="py-2">
-            <p className="text-sm">هل غادرت نقطة الاستلام وتوجّهت للوجهة؟</p>
+            <p className="text-sm">{t('detail.startTripDialog.question')}</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setStartTripOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setStartTripOpen(false)}>{t('detail.cancel')}</Button>
             <Button
               onClick={async () => {
                 if (!order) return;
                 try {
                   await api.post(`/orders/${order.id}/tracking`, {
                     status: 'PICKED_UP',
-                    description: 'بدأت الرحلة، الشحنة في الطريق',
+                    description: t('detail.toast.trackingStartDesc'),
                   });
-                  notify.success('بدأت الرحلة', 'العميل يتابع الشحنة الآن');
+                  notify.success(t('detail.toast.tripStarted'), t('detail.toast.tripStartedDesc'));
                   await refetchOrder();
                   setStartTripOpen(false);
                 } catch (err: unknown) {
-                  notify.error(err, 'فشل تحديث الحالة');
+                  notify.error(err, t('detail.toast.statusUpdateFailed'));
                 }
               }}
             >
-              <Truck className="h-4 w-4" /> بدأت الرحلة
+              <Truck className="h-4 w-4" /> {t('detail.startedTrip')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -510,40 +513,40 @@ export default function CarrierOrderDetail() {
       <Dialog open={markDeliveredOpen} onOpenChange={setMarkDeliveredOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد التسليم</DialogTitle>
-            <DialogDescription>سيُرسل إشعار للعميل ليؤكد الاستلام ويُفرَج المبلغ.</DialogDescription>
+            <DialogTitle>{t('detail.deliverDialog.title')}</DialogTitle>
+            <DialogDescription>{t('detail.deliverDialog.desc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <p className="text-sm">تأكّد قبل التسليم من:</p>
+            <p className="text-sm">{t('detail.deliverDialog.checkTitle')}</p>
             <ul className="list-disc ps-6 space-y-1 text-sm text-muted-foreground">
-              <li>توقيع المستلم على بوليصة التسليم</li>
-              <li>التقاط صورة للبضاعة بعد التفريغ</li>
-              <li>لا يوجد ضرر ظاهر على الشحنة</li>
+              <li>{t('detail.deliverDialog.check1')}</li>
+              <li>{t('detail.deliverDialog.check2')}</li>
+              <li>{t('detail.deliverDialog.check3')}</li>
             </ul>
             <div className="rounded-md bg-success/10 border border-success/30 p-3 text-xs flex items-start gap-2 mt-3">
               <ShieldCheck className="h-4 w-4 text-success shrink-0 mt-0.5" />
               <span className="text-muted-foreground">
-                سيُحوَّل مبلغك تلقائيا من Escrow بعد تأكيد العميل أو خلال 72 ساعة.
+                {t('detail.deliverDialog.hint')}
               </span>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMarkDeliveredOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setMarkDeliveredOpen(false)}>{t('detail.cancel')}</Button>
             <Button
               onClick={async () => {
                 if (!order) return;
                 try {
                   await api.post(`/orders/${order.id}/deliver`, {});
                   playSoundIfEnabled('orderCompleted');
-                  notify.success('تم تأكيد التسليم', 'سيُفرَج المبلغ بعد تأكيد العميل أو خلال 72 ساعة');
+                  notify.success(t('detail.toast.deliveryConfirmed'), t('detail.toast.deliveryConfirmedDesc'));
                   await refetchOrder();
                   setMarkDeliveredOpen(false);
                 } catch (err: unknown) {
-                  notify.error(err, 'فشل تأكيد التسليم');
+                  notify.error(err, t('detail.toast.deliveryFailed'));
                 }
               }}
             >
-              <CheckCircle2 className="h-4 w-4" /> تأكيد التسليم
+              <CheckCircle2 className="h-4 w-4" /> {t('detail.confirmDelivery')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -553,20 +556,20 @@ export default function CarrierOrderDetail() {
       <Dialog open={updateLocOpen} onOpenChange={setUpdateLocOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تحديث موقع الشاحنة</DialogTitle>
-            <DialogDescription>سيُحدَّث الموقع لحظيا للعميل والأدمن.</DialogDescription>
+            <DialogTitle>{t('detail.updateLocationDialog.title')}</DialogTitle>
+            <DialogDescription>{t('detail.updateLocationDialog.desc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-2">
-              <Label>الموقع الحالي</Label>
-              <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="مثال: عند مفرق الزلفي على طريق الرياض-القصيم" />
+              <Label>{t('detail.updateLocationDialog.label')}</Label>
+              <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('detail.updateLocationDialog.placeholder')} />
             </div>
-            <Button variant="outline" className="w-full" onClick={() => setLocation('استخدام موقع GPS الحالي للسائق')}>
-              <Navigation className="h-4 w-4" /> استخدام GPS الحالي
+            <Button variant="outline" className="w-full" onClick={() => setLocation(t('detail.updateLocationDialog.gpsValue'))}>
+              <Navigation className="h-4 w-4" /> {t('detail.updateLocationDialog.useGps')}
             </Button>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUpdateLocOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setUpdateLocOpen(false)}>{t('detail.cancel')}</Button>
             <Button
               onClick={async () => {
                 // POST /orders/:id/tracking — adds a TrackingEvent with the
@@ -579,16 +582,16 @@ export default function CarrierOrderDetail() {
                     description: location,
                   });
                   await refetchOrder();
-                  notify.success('تم تحديث الموقع', 'سيظهر للعميل لحظيا');
+                  notify.success(t('detail.toast.locationUpdated'), t('detail.toast.locationUpdatedDesc'));
                   setUpdateLocOpen(false);
                   setLocation('');
                 } catch (err) {
-                  notify.error(err, 'فشل تحديث الموقع');
+                  notify.error(err, t('detail.toast.locationFailed'));
                 }
               }}
               disabled={!location}
             >
-              <MapPin className="h-4 w-4" /> تحديث
+              <MapPin className="h-4 w-4" /> {t('detail.updateLocationDialog.submit')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -598,32 +601,32 @@ export default function CarrierOrderDetail() {
       <Dialog open={assignDriverOpen} onOpenChange={(o) => { setAssignDriverOpen(o); if (!o) { setPickTruck(''); setTripFee(''); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>إسناد شاحنة للطلب</DialogTitle>
-            <DialogDescription>اختر شاحنة من أسطولك — السائق المربوط بها يُسنَد تلقائيا لهذا الطلب.</DialogDescription>
+            <DialogTitle>{t('detail.assignDialog.title')}</DialogTitle>
+            <DialogDescription>{t('detail.assignDialog.desc')}</DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-2 max-h-64 overflow-y-auto">
-            {TRUCKS.map((t) => {
-              const drv = DRIVERS.find((d) => d.id === driverForTruck(t.id));
-              const parsed = parsePlateString(t.plateNumber);
+            {TRUCKS.map((tr) => {
+              const drv = DRIVERS.find((d) => d.id === driverForTruck(tr.id));
+              const parsed = parsePlateString(tr.plateNumber);
               return (
                 <button
-                  key={t.id}
+                  key={tr.id}
                   type="button"
-                  onClick={() => setPickTruck(t.id)}
+                  onClick={() => setPickTruck(tr.id)}
                   className={`w-full flex items-center gap-3 rounded-lg border p-2.5 text-start transition-colors
-                    ${pickTruck === t.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                    ${pickTruck === tr.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
                 >
                   <div className="w-[96px] shrink-0">
                     <SaudiLicensePlate letters={parsed.letters} numbers={parsed.numbers} plateType="transport" size="fill" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="num text-sm font-medium">{t.code}</span>
-                      <OwnershipBadge ownership={t.ownership} />
+                      <span className="num text-sm font-medium">{tr.code}</span>
+                      <OwnershipBadge ownership={tr.ownership} />
                     </div>
-                    <div className="truncate text-xs text-muted-foreground">{drv ? drv.fullName : 'بدون سائق'}</div>
+                    <div className="truncate text-xs text-muted-foreground">{drv ? drv.fullName : t('detail.assignDialog.noDriver')}</div>
                   </div>
-                  {pickTruck === t.id && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
+                  {pickTruck === tr.id && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
                 </button>
               );
             })}
@@ -631,7 +634,7 @@ export default function CarrierOrderDetail() {
 
           {isFreelancerPick && (
             <div className="space-y-2 rounded-lg border border-[hsl(var(--mint))]/30 bg-[hsl(var(--mint))]/5 p-3">
-              <Label htmlFor="tripFee" className="text-sm font-medium">أجرة الرحلة للفري‑لانسر</Label>
+              <Label htmlFor="tripFee" className="text-sm font-medium">{t('detail.assignDialog.freelancerFee')}</Label>
               <div className="relative">
                 <Input
                   id="tripFee"
@@ -643,16 +646,16 @@ export default function CarrierOrderDetail() {
                   placeholder="0"
                   className="num pe-12"
                 />
-                <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-xs text-muted-foreground">ر.س.</span>
+                <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-xs text-muted-foreground">{t('units.sar')}</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                تُنشأ فاتورة رحلة بهذا المبلغ تُستحقّ للفري‑لانسر.
+                {t('detail.assignDialog.freelancerNote')}
                 {orderRevenue !== null && feeValid && (
                   <>
-                    {' '}ربحك المتوقّع{' '}
+                    {' '}{t('detail.assignDialog.expectedProfit')}{' '}
                     <span className="num font-medium text-foreground" dir="ltr">
                       {(orderRevenue - feeNum).toLocaleString('en-US')}
-                    </span>{' '}ر.س.
+                    </span>{' '}{t('units.sar')}
                   </>
                 )}
               </p>
@@ -660,9 +663,9 @@ export default function CarrierOrderDetail() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setAssignDriverOpen(false); setPickTruck(''); setTripFee(''); }}>إلغاء</Button>
+            <Button variant="outline" onClick={() => { setAssignDriverOpen(false); setPickTruck(''); setTripFee(''); }}>{t('detail.cancel')}</Button>
             <Button disabled={assignBlocked} onClick={doAssignOrderTruck}>
-              <CheckCircle2 className="h-4 w-4" /> إسناد
+              <CheckCircle2 className="h-4 w-4" /> {t('detail.assignDialog.assign')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -672,16 +675,16 @@ export default function CarrierOrderDetail() {
       <Dialog open={disputeOpen} onOpenChange={setDisputeOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>فتح نزاع</DialogTitle>
-            <DialogDescription>سيراجع فريق الدعم النزاع خلال 24 ساعة.</DialogDescription>
+            <DialogTitle>{t('detail.disputeDialog.title')}</DialogTitle>
+            <DialogDescription>{t('detail.disputeDialog.desc')}</DialogDescription>
           </DialogHeader>
           <div className="py-2">
-            <p className="text-sm text-muted-foreground">سيتم نقلك لصفحة النزاعات لإكمال البيانات.</p>
+            <p className="text-sm text-muted-foreground">{t('detail.disputeDialog.body')}</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDisputeOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setDisputeOpen(false)}>{t('detail.cancel')}</Button>
             <Button onClick={() => { router.push('/disputes'); }}>
-              <Shield className="h-4 w-4" /> الانتقال لصفحة النزاعات
+              <Shield className="h-4 w-4" /> {t('detail.disputeDialog.go')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -706,12 +709,13 @@ function ShipmentStatusCard({
   events: Array<{ kind: string; at: string | Date; note?: string; by?: string }>;
   titles: Record<string, string>;
 }) {
+  const t = useTranslations('orders');
   const meta: Record<string, { text: string; step: 1 | 2 | 3; tone: 'info' | 'warning' | 'success' }> = {
-    ASSIGNED:   { text: 'الطلب أُسند إليك، توجّه لنقطة الاستلام في الموعد المتفق', step: 1, tone: 'info' },
-    CONFIRMED:  { text: 'أكّدت الموعد، توجّه إلى نقطة الاستلام',                  step: 1, tone: 'info' },
-    IN_TRANSIT: { text: 'الشحنة في طريقها إلى الوجهة',                              step: 2, tone: 'warning' },
-    DELIVERED:  { text: 'تم تسليم الشحنة، بانتظار تأكيد العميل',                    step: 3, tone: 'warning' },
-    COMPLETED:  { text: 'مكتمل، تم الإفراج عن المبلغ',                              step: 3, tone: 'success' },
+    ASSIGNED:   { text: t('detail.shipment.meta.assigned'),  step: 1, tone: 'info' },
+    CONFIRMED:  { text: t('detail.shipment.meta.confirmed'), step: 1, tone: 'info' },
+    IN_TRANSIT: { text: t('detail.shipment.meta.inTransit'), step: 2, tone: 'warning' },
+    DELIVERED:  { text: t('detail.shipment.meta.delivered'), step: 3, tone: 'warning' },
+    COMPLETED:  { text: t('detail.shipment.meta.completed'), step: 3, tone: 'success' },
   };
   const m = meta[order.status] ?? meta.ASSIGNED;
   const stepClass = (s: 1 | 2 | 3) =>
@@ -723,7 +727,7 @@ function ShipmentStatusCard({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <CardTitle className="flex items-center gap-2">حالة الشحنة <StatusBadge status={order.status} /></CardTitle>
+            <CardTitle className="flex items-center gap-2">{t('detail.shipment.title')} <StatusBadge status={order.status} /></CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">{m.text}</p>
           </div>
         </div>
@@ -731,9 +735,9 @@ function ShipmentStatusCard({
       <CardContent className="space-y-5">
         <div className="flex items-center gap-2">
           {[
-            { s: 1 as const, label: 'الاستلام',  icon: MapPin },
-            { s: 2 as const, label: 'في الطريق', icon: Truck },
-            { s: 3 as const, label: 'التسليم',  icon: CheckCircle2 },
+            { s: 1 as const, label: t('detail.shipment.stepPickup'),   icon: MapPin },
+            { s: 2 as const, label: t('detail.shipment.stepTransit'),  icon: Truck },
+            { s: 3 as const, label: t('detail.shipment.stepDelivery'), icon: CheckCircle2 },
           ].map((step, i, arr) => (
             <div key={step.s} className="flex items-center gap-2 flex-1">
               <div className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${stepClass(step.s)}`}>
@@ -747,18 +751,18 @@ function ShipmentStatusCard({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Calendar className="h-3.5 w-3.5" /> موعد الاستلام</div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Calendar className="h-3.5 w-3.5" /> {t('detail.shipment.pickupDate')}</div>
             <div className="mt-0.5 font-medium">
               {effectivePickup ? formatDate(effectivePickup, 'EEEE d MMM') : '—'}
             </div>
           </div>
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Package className="h-3.5 w-3.5" /> موعد التسليم</div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Package className="h-3.5 w-3.5" /> {t('detail.shipment.deliveryDate')}</div>
             <div className="mt-0.5 font-medium">
-              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : 'سيُحدَّد لاحقا'}
+              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : t('detail.shipment.deliveryTbd')}
             </div>
             {fromCarrierBid && (
-              <Badge variant="outline" className="mt-1 h-4 text-[10px]">حسب عرضك</Badge>
+              <Badge variant="outline" className="mt-1 h-4 text-[10px]">{t('detail.shipment.perYourBid')}</Badge>
             )}
           </div>
         </div>
@@ -767,7 +771,7 @@ function ShipmentStatusCard({
             layout so both sides see the same visual treatment after acceptance. */}
         {events && events.length > 0 && (
           <div>
-            <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">تتبّع الشحنة</div>
+            <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">{t('detail.shipment.tracking')}</div>
             <ol className="relative space-y-3">
               {events.map((ev, i) => (
                 <li key={i} className="relative ps-7">
@@ -805,6 +809,7 @@ function Row({ label, value, icon: Icon }: { label: string; value: React.ReactNo
 }
 
 function MapSection({ order }: { order: any }) {
+  const t = useTranslations('orders');
   const o = coordsFor(order.originCity);
   const d = coordsFor(order.destinationCity);
   const km = distanceKm(o, d);
@@ -837,9 +842,9 @@ function MapSection({ order }: { order: any }) {
         className="rounded-b-none border-b"
       />
       <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
-        <RouteStat icon={MapPin} label="المسافة" value={<span className="num">{(km ?? 0).toLocaleString('en-US')} كم</span>} />
-        <RouteStat icon={Timer} label="المدة المتوقعة" value={duration} />
-        <RouteStat icon={Navigation} label="الطريق" value={road} />
+        <RouteStat icon={MapPin} label={t('detail.map.distance')} value={<span className="num">{(km ?? 0).toLocaleString('en-US')} {t('detail.map.km')}</span>} />
+        <RouteStat icon={Timer} label={t('detail.map.duration')} value={duration} />
+        <RouteStat icon={Navigation} label={t('detail.map.road')} value={road} />
       </CardContent>
     </Card>
   );

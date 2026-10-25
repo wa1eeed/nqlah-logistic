@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Check, Clock, Gavel, Search, TrendingUp, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -20,16 +21,17 @@ import {
   type Bid,
 } from '@naqla/shared-utils';
 
-const STATUS_LABELS: Record<Bid['status'], string> = {
-  PENDING: 'في الانتظار', ACCEPTED: 'مقبول', REJECTED: 'مرفوض',
-  WITHDRAWN: 'مسحوب', EXPIRED: 'منته',
-};
 const STATUS_BADGE: Record<Bid['status'], 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
   PENDING: 'warning', ACCEPTED: 'success', REJECTED: 'destructive',
   WITHDRAWN: 'outline', EXPIRED: 'outline',
 };
 
 export default function CarrierBidsPage() {
+  const t = useTranslations('orders');
+  const STATUS_LABELS: Record<Bid['status'], string> = {
+    PENDING: t('bids.status.PENDING'), ACCEPTED: t('bids.status.ACCEPTED'), REJECTED: t('bids.status.REJECTED'),
+    WITHDRAWN: t('bids.status.WITHDRAWN'), EXPIRED: t('bids.status.EXPIRED'),
+  };
   const bids = bidsForCarrier(CURRENT_CARRIER_ID);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string>('ALL');
@@ -55,17 +57,17 @@ export default function CarrierBidsPage() {
     <PageTransition>
       <FadeItem>
         <PageHeader
-          title="سجل العروض"
-          subtitle="كل العروض التي قدّمتها على فرص النقل، مقبولة أو معلّقة أو مرفوضة"
+          title={t('bids.title')}
+          subtitle={t('bids.subtitle')}
         />
       </FadeItem>
 
       <FadeItem>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatsCard label="إجمالي العروض" value={total.toLocaleString('en-US')} icon={Gavel} />
-          <StatsCard label="مقبولة"        value={accepted.toLocaleString('en-US')} icon={Check} tone="success" />
-          <StatsCard label="بانتظار الرد"  value={pending.toLocaleString('en-US')} icon={Clock} tone="warning" />
-          <StatsCard label="نسبة الفوز"    value={`${winRate.toFixed(0)}%`}        icon={TrendingUp} hint="من إجمالي العروض" />
+          <StatsCard label={t('bids.statTotal')} value={total.toLocaleString('en-US')} icon={Gavel} />
+          <StatsCard label={t('bids.statAccepted')} value={accepted.toLocaleString('en-US')} icon={Check} tone="success" />
+          <StatsCard label={t('bids.statPending')}  value={pending.toLocaleString('en-US')} icon={Clock} tone="warning" />
+          <StatsCard label={t('bids.statWinRate')}  value={`${winRate.toFixed(0)}%`}        icon={TrendingUp} hint={t('bids.winRateHint')} />
         </div>
       </FadeItem>
 
@@ -75,12 +77,12 @@ export default function CarrierBidsPage() {
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث برقم العرض، الطلب، أو المسار..." className="pe-10" />
+                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('bids.searchPlaceholder')} className="pe-10" />
               </div>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">كل الحالات</SelectItem>
+                  <SelectItem value="ALL">{t('bids.allStatuses')}</SelectItem>
                   {Object.entries(STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -89,14 +91,14 @@ export default function CarrierBidsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>رقم العرض</TableHead>
-                  <TableHead>الطلب</TableHead>
-                  <TableHead>المسار</TableHead>
-                  <TableHead className="text-end">السعر</TableHead>
-                  <TableHead>المدة</TableHead>
-                  <TableHead>الملاحظات</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>الحالة</TableHead>
+                  <TableHead>{t('bids.colBidNumber')}</TableHead>
+                  <TableHead>{t('bids.colOrder')}</TableHead>
+                  <TableHead>{t('bids.colRoute')}</TableHead>
+                  <TableHead className="text-end">{t('bids.colPrice')}</TableHead>
+                  <TableHead>{t('bids.colDuration')}</TableHead>
+                  <TableHead>{t('bids.colNotes')}</TableHead>
+                  <TableHead>{t('bids.colDate')}</TableHead>
+                  <TableHead>{t('bids.colStatus')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -104,7 +106,7 @@ export default function CarrierBidsPage() {
                   <TableRow>
                     <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
                       <X className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                      لا توجد عروض مطابقة
+                      {t('bids.noMatches')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -120,7 +122,7 @@ export default function CarrierBidsPage() {
                           {order ? `${order.originCity} ← ${order.destinationCity}` : '—'}
                         </TableCell>
                         <TableCell className="text-end font-medium"><Currency amount={b.price} /></TableCell>
-                        <TableCell className="num text-sm">{b.estimatedDays} {b.estimatedDays === 1 ? 'يوم' : 'أيام'}</TableCell>
+                        <TableCell className="num text-sm">{b.estimatedDays} {b.estimatedDays === 1 ? t('bids.day') : t('bids.days')}</TableCell>
                         <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{b.notes ?? '—'}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{formatRelative(b.createdAt)}</TableCell>
                         <TableCell>

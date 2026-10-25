@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR, { useSWRConfig } from 'swr';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -34,6 +35,7 @@ import {
 } from '@/components/fleet-bits';
 
 export default function TruckDetailPage() {
+  const t = useTranslations('fleet');
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const truckTypes = useTruckTypesStore((s) => s.types);
@@ -67,8 +69,8 @@ export default function TruckDetailPage() {
       <Card>
         <CardContent className="py-16 text-center">
           <Truck className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-semibold">الشاحنة غير موجودة</h3>
-          <Button onClick={() => router.push('/fleet/trucks')} className="mt-4">عودة للأسطول</Button>
+          <h3 className="font-semibold">{t('truckDetail.notFound')}</h3>
+          <Button onClick={() => router.push('/fleet/trucks')} className="mt-4">{t('truckDetail.backToFleet')}</Button>
         </CardContent>
       </Card>
     );
@@ -99,9 +101,9 @@ export default function TruckDetailPage() {
     try {
       await api.post(`/fleet/trucks/${truck.id}/assign`, { driverId: pick });
       logEvent(makeFleetEvent('ASSIGN', truck.id, pick,
-        `تم إسناد السائق ${pickDriver?.fullName ?? ''} (${pickDriver?.code ?? ''}) إلى الشاحنة ${truck.code}`));
+        t('truckDetail.eventAssign', { name: pickDriver?.fullName ?? '', code: pickDriver?.code ?? '', truck: truck.code })));
       revalidateFleet();
-      notify.success('تم إسناد السائق', `${pickDriver?.fullName ?? ''} → ${truck.code}`);
+      notify.success(t('truckDetail.assignedTitle'), `${pickDriver?.fullName ?? ''} → ${truck.code}`);
     } catch (e) { notify.error(e); }
     setAssignOpen(false);
     setPick('');
@@ -111,17 +113,17 @@ export default function TruckDetailPage() {
     try {
       await api.post(`/fleet/trucks/${truck.id}/unassign`);
       logEvent(makeFleetEvent('UNASSIGN', truck.id, driverId ?? undefined,
-        `تم فك ارتباط السائق ${driver?.fullName ?? ''} عن الشاحنة ${truck.code}`));
+        t('eventUnassignDriver', { name: driver?.fullName ?? '', truck: truck.code })));
       revalidateFleet();
-      notify.success('تم فك الارتباط', `الشاحنة ${truck.code} بدون سائق الآن`);
+      notify.success(t('unassignedTitle'), t('truckDetail.unassignedDesc', { truck: truck.code }));
     } catch (e) { notify.error(e); }
   };
 
   return (
     <>
       <PageHeader
-        title={`الشاحنة ${truck.code}`}
-        subtitle={`${meta.label}${truck.modelYear ? ` · موديل ${truck.modelYear}` : ''} · ${((truck.capacityKg ?? 0) / 1000).toFixed(0)} طن`}
+        title={t('truckDetail.title', { code: truck.code })}
+        subtitle={`${meta.label}${truck.modelYear ? ` · ${t('modelYearShort', { year: truck.modelYear })}` : ''} · ${((truck.capacityKg ?? 0) / 1000).toFixed(0)} ${t('tons')}`}
         actions={
           <>
             <FleetStatusSelect
@@ -131,14 +133,14 @@ export default function TruckDetailPage() {
                 try {
                   await api.patch(`/fleet/trucks/${truck.id}/status`, { status: v });
                   logEvent(makeFleetEvent('STATUS', truck.id, driverId ?? undefined,
-                    `الشاحنة ${truck.code} → ${TRUCK_STATUS_OPTIONS.find((o) => o.value === v)?.label ?? v}`));
+                    t('truckDetail.eventStatus', { truck: truck.code, status: TRUCK_STATUS_OPTIONS.find((o) => o.value === v)?.label ?? v })));
                   revalidateFleet();
-                  notify.success('تم تحديث حالة الشاحنة', TRUCK_STATUS_OPTIONS.find((o) => o.value === v)?.label);
+                  notify.success(t('truckDetail.statusUpdated'), TRUCK_STATUS_OPTIONS.find((o) => o.value === v)?.label);
                 } catch (e) { notify.error(e); }
               }}
             />
             <Button variant="outline" onClick={() => router.push('/fleet/trucks')}>
-              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('back')}
             </Button>
           </>
         }
@@ -177,7 +179,7 @@ export default function TruckDetailPage() {
                 <OwnershipBadge ownership={truck.ownership} />
               </div>
               <SaudiLicensePlate letters={parsedPlate.letters} numbers={parsedPlate.numbers} plateType="transport" size="stage" />
-              <div className="text-sm text-muted-foreground">لوحة سعودية رسمية · مسجّلة لدى المرور</div>
+              <div className="text-sm text-muted-foreground">{t('truckDetail.plateCaption')}</div>
             </div>
           </CardContent>
         </Card>
@@ -186,10 +188,10 @@ export default function TruckDetailPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>السائق المربوط</CardTitle>
+              <CardTitle>{t('truckDetail.assignedDriver')}</CardTitle>
               {driver ? (
                 <Button variant="ghost" size="sm" onClick={() => setConfirmUnassign(true)}>
-                  <Link2Off className="h-4 w-4" /> فك
+                  <Link2Off className="h-4 w-4" /> {t('unlink')}
                 </Button>
               ) : null}
             </div>
@@ -211,17 +213,17 @@ export default function TruckDetailPage() {
                   <DriverStatusBadge status={driver.status} />
                 </div>
                 <Button variant="outline" size="sm" className="w-full" onClick={() => { setPick(driver.id); setAssignOpen(true); }}>
-                  <Link2 className="h-4 w-4" /> تغيير السائق
+                  <Link2 className="h-4 w-4" /> {t('truckDetail.changeDriver')}
                 </Button>
               </div>
             ) : (
               <div className="text-center py-4 space-y-3">
                 <div className="text-sm text-muted-foreground">
                   <User className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                  لا يوجد سائق مربوط
+                  {t('truckDetail.noDriverLinked')}
                 </div>
                 <Button size="sm" className="w-full" onClick={() => { setPick(''); setAssignOpen(true); }}>
-                  <UserPlus className="h-4 w-4" /> إسناد سائق
+                  <UserPlus className="h-4 w-4" /> {t('truckDetail.assignDriver')}
                 </Button>
               </div>
             )}
@@ -232,9 +234,9 @@ export default function TruckDetailPage() {
       {/* Tabs: trips / audit / specs */}
       <Tabs defaultValue="trips" className="mt-2">
         <TabsList className="overflow-x-auto">
-          <TabsTrigger value="trips"><Route className="h-4 w-4 me-1.5" /> الرحلات <Badge variant="secondary" className="ms-1.5">{trips.length}</Badge></TabsTrigger>
-          <TabsTrigger value="audit"><History className="h-4 w-4 me-1.5" /> سجل النشاط <Badge variant="secondary" className="ms-1.5">{audit.length}</Badge></TabsTrigger>
-          <TabsTrigger value="specs"><FileText className="h-4 w-4 me-1.5" /> المواصفات والوثائق</TabsTrigger>
+          <TabsTrigger value="trips"><Route className="h-4 w-4 me-1.5" /> {t('tripsTab')} <Badge variant="secondary" className="ms-1.5">{trips.length}</Badge></TabsTrigger>
+          <TabsTrigger value="audit"><History className="h-4 w-4 me-1.5" /> {t('activityTab')} <Badge variant="secondary" className="ms-1.5">{audit.length}</Badge></TabsTrigger>
+          <TabsTrigger value="specs"><FileText className="h-4 w-4 me-1.5" /> {t('truckDetail.specsTab')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="trips">
@@ -242,14 +244,14 @@ export default function TruckDetailPage() {
             <CardHeader>
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                  <CardTitle>تايم‑لاين الرحلات</CardTitle>
+                  <CardTitle>{t('tripsTimeline')}</CardTitle>
                   <CardDescription className="mt-1">
-                    {trips.length} رحلة · <span className="num">{done.length}</span> منجزة · إجمالي مسافة <span className="num">{totalKm.toLocaleString('en-US')}</span> كم
+                    {trips.length} {t('tripsWord')} · <span className="num">{done.length}</span> {t('completedWord')} · {t('totalDistanceInline')} <span className="num">{totalKm.toLocaleString('en-US')}</span> {t('km')}
                   </CardDescription>
                 </div>
                 <div className="text-end">
                   <Currency amount={totalAmount} />
-                  <div className="text-xs text-muted-foreground">إجمالي إيراد الرحلات المنجزة</div>
+                  <div className="text-xs text-muted-foreground">{t('truckDetail.totalRevenue')}</div>
                 </div>
               </div>
             </CardHeader>
@@ -260,8 +262,8 @@ export default function TruckDetailPage() {
         <TabsContent value="audit">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><History className="h-4 w-4" /> سجل النشاط</CardTitle>
-              <CardDescription className="mt-1">الإسناد وتغيّر الحالة والرحلات</CardDescription>
+              <CardTitle className="flex items-center gap-2"><History className="h-4 w-4" /> {t('activityTab')}</CardTitle>
+              <CardDescription className="mt-1">{t('activityLogDesc')}</CardDescription>
             </CardHeader>
             <CardContent><AuditTimeline events={audit} max={30} /></CardContent>
           </Card>
@@ -270,29 +272,29 @@ export default function TruckDetailPage() {
         <TabsContent value="specs">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
-              <CardHeader><CardTitle>المواصفات</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t('specifications')}</CardTitle></CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  <Spec icon={Hash}   label="الرقم التعريفي" value={truck.code} mono />
-                  <Spec icon={Truck}  label="النوع"          value={meta.label} />
-                  <Spec icon={Gauge}  label="الحمولة"        value={`${((truck.capacityKg ?? 0) / 1000).toFixed(0)} طن`} />
-                  <Spec icon={Calendar} label="موديل السنة"  value={truck.modelYear ? String(truck.modelYear) : '—'} />
-                  <Spec icon={Fuel}   label="الوقود"         value="ديزل" />
-                  <Spec icon={Wrench} label="آخر فحص"        value={truck.lastInspection ? formatDate(truck.lastInspection) : '—'} />
+                  <Spec icon={Hash}   label={t('truckDetail.specId')} value={truck.code} mono />
+                  <Spec icon={Truck}  label={t('truckDetail.specType')}          value={meta.label} />
+                  <Spec icon={Gauge}  label={t('truckDetail.specLoad')}        value={`${((truck.capacityKg ?? 0) / 1000).toFixed(0)} ${t('tons')}`} />
+                  <Spec icon={Calendar} label={t('truckDetail.specModelYear')}  value={truck.modelYear ? String(truck.modelYear) : '—'} />
+                  <Spec icon={Fuel}   label={t('truckDetail.specFuel')}         value={t('truckDetail.diesel')} />
+                  <Spec icon={Wrench} label={t('truckDetail.specLastInspection')}        value={truck.lastInspection ? formatDate(truck.lastInspection) : '—'} />
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>الوثائق</CardTitle>
-                <CardDescription className="mt-1">تواريخ صلاحية رخص الشاحنة</CardDescription>
+                <CardTitle>{t('documents')}</CardTitle>
+                <CardDescription className="mt-1">{t('truckDetail.docsDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {[
-                  { label: 'الاستمارة', expiry: '2027-04-15' },
-                  { label: 'التأمين الشامل', expiry: '2026-12-01' },
+                  { label: t('truckDetail.docRegistration'), expiry: '2027-04-15' },
+                  { label: t('truckDetail.docInsurance'), expiry: '2026-12-01' },
                   {
-                    label: 'الفحص الدوري',
+                    label: t('truckDetail.docInspection'),
                     expiry: truck.lastInspection
                       ? truck.lastInspection.slice(0, 10).split('-').map((p: string, i: number) => i === 0 ? String(Number(p) + 1) : p).join('-')
                       : '—',
@@ -304,13 +306,13 @@ export default function TruckDetailPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium">{doc.label}</div>
-                      <div className="text-xs text-muted-foreground">تنتهي: {doc.expiry !== '—' ? formatDate(doc.expiry, 'd MMM yyyy') : '—'}</div>
+                      <div className="text-xs text-muted-foreground">{t('truckDetail.expiresPrefix')} {doc.expiry !== '—' ? formatDate(doc.expiry, 'd MMM yyyy') : '—'}</div>
                     </div>
                     {(() => {
                       const e = expiryState(doc.expiry);
                       return e && e.state !== 'ok'
                         ? <ExpiryBadge date={doc.expiry} />
-                        : <Badge variant="success">سارية</Badge>;
+                        : <Badge variant="success">{t('truckDetail.valid')}</Badge>;
                     })()}
                   </div>
                 ))}
@@ -324,19 +326,19 @@ export default function TruckDetailPage() {
       <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>إسناد سائق للشاحنة {truck.code}</DialogTitle>
-            <DialogDescription>اختر سائقا. إذا كان مرتبطا بشاحنة أخرى سيُنقل تلقائيا.</DialogDescription>
+            <DialogTitle>{t('truckDetail.assignDialogTitle', { code: truck.code })}</DialogTitle>
+            <DialogDescription>{t('truckDetail.assignDialogDesc')}</DialogDescription>
           </DialogHeader>
           <div className="py-2">
             <Select value={pick} onValueChange={setPick}>
-              <SelectTrigger><SelectValue placeholder="اختر سائقا" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('truckDetail.selectDriver')} /></SelectTrigger>
               <SelectContent>
                 {srcDrivers.map((d) => {
                   const on = takenBy(d.id);
-                  const onTruck = on ? srcTrucks.find((t) => t.id === on)?.code : null;
+                  const onTruck = on ? srcTrucks.find((tr) => tr.id === on)?.code : null;
                   return (
                     <SelectItem key={d.id} value={d.id}>
-                      {d.fullName} · {d.code}{onTruck ? ` (على ${onTruck})` : ''}
+                      {d.fullName} · {d.code}{onTruck ? t('truckDetail.onTruckSuffix', { code: onTruck }) : ''}
                     </SelectItem>
                   );
                 })}
@@ -344,9 +346,9 @@ export default function TruckDetailPage() {
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setAssignOpen(false)}>{t('cancel')}</Button>
             <Button onClick={() => { if (pick) setConfirmAssign(true); }} disabled={!pick}>
-              <CheckCircle2 className="h-4 w-4" /> إسناد
+              <CheckCircle2 className="h-4 w-4" /> {t('truckDetail.assignBtn')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -356,9 +358,9 @@ export default function TruckDetailPage() {
       <ConfirmDialog
         open={confirmAssign}
         onOpenChange={setConfirmAssign}
-        title="تأكيد إسناد السائق"
-        description={pickDriver ? `سيتم ربط ${pickDriver.fullName} بالشاحنة ${truck.code}${takenBy(pick) ? ` ونقله من شاحنته الحالية (${srcTrucks.find((t) => t.id === takenBy(pick))?.code})` : ''}.` : undefined}
-        confirmLabel="تأكيد الإسناد"
+        title={t('truckDetail.confirmAssignTitle')}
+        description={pickDriver ? t('truckDetail.confirmAssignDesc', { name: pickDriver.fullName, truck: truck.code, extra: takenBy(pick) ? t('truckDetail.confirmAssignMove', { code: srcTrucks.find((tr) => tr.id === takenBy(pick))?.code ?? '' }) : '' }) : undefined}
+        confirmLabel={t('truckDetail.confirmAssignBtn')}
         onConfirm={doAssign}
       />
 
@@ -366,9 +368,9 @@ export default function TruckDetailPage() {
       <ConfirmDialog
         open={confirmUnassign}
         onOpenChange={setConfirmUnassign}
-        title="فك ارتباط السائق"
-        description={driver ? `سيتم فك ارتباط ${driver.fullName} عن الشاحنة ${truck.code} وتحويله إلى خارج الخدمة.` : undefined}
-        confirmLabel="فك الارتباط"
+        title={t('truckDetail.confirmUnassignTitle')}
+        description={driver ? t('confirmUnassignDesc', { name: driver.fullName, truck: truck.code }) : undefined}
+        confirmLabel={t('unlinkConfirm')}
         destructive
         onConfirm={doUnassign}
       />

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { AlertTriangle, CheckCircle, Clock, Hash, Plus, RotateCcw, Truck, Wrench } from 'lucide-react';
@@ -22,13 +23,13 @@ import {
   type Driver, type Truck as TruckModel, type TruckStatus,
 } from '@naqla/shared-utils';
 
-const TRUCK_LABELS: Record<string, string> = {
-  SMALL_VAN: 'فان صغير', BOX_TRUCK: 'صندوق مغلق', MEDIUM_FLATBED: 'مسطح متوسط',
-  LARGE_FLATBED: 'مسطح كبير', REFRIGERATED: 'مبرّد', TANKER: 'صهريج',
-  LOWBED: 'لوبد', CONTAINER_TRAILER: 'حاوية',
-};
-
 export default function CarrierFleetTrucks() {
+  const t = useTranslations('fleet');
+  const TRUCK_LABELS: Record<string, string> = {
+    SMALL_VAN: t('truckTypeLabels.SMALL_VAN'), BOX_TRUCK: t('truckTypeLabels.BOX_TRUCK'), MEDIUM_FLATBED: t('truckTypeLabels.MEDIUM_FLATBED'),
+    LARGE_FLATBED: t('truckTypeLabels.LARGE_FLATBED'), REFRIGERATED: t('truckTypeLabels.REFRIGERATED'), TANKER: t('truckTypeLabels.TANKER'),
+    LOWBED: t('truckTypeLabels.LOWBED'), CONTAINER_TRAILER: t('truckTypeLabels.CONTAINER_TRAILER'),
+  };
   const [tab, setTab] = useState('ALL');
   const [confirmReset, setConfirmReset] = useState(false);
   const assignMap = useFleetStore((s) => s.assign);
@@ -68,22 +69,22 @@ export default function CarrierFleetTrucks() {
   return (
     <>
       <PageHeader
-        title="الأسطول"
-        subtitle={`${total} شاحنة مسجّلة`}
+        title={t('title')}
+        subtitle={t('trucksList.registeredCount', { count: total })}
         actions={
           <>
             {inspectionAlerts > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2.5 py-1 text-xs font-semibold text-warning">
-                <AlertTriangle className="h-3.5 w-3.5" /> <span className="num">{inspectionAlerts}</span> فحص يقترب
+                <AlertTriangle className="h-3.5 w-3.5" /> <span className="num">{inspectionAlerts}</span> {t('trucksList.inspectionsDueSoon')}
               </span>
             )}
             <Button variant="outline" onClick={() => setConfirmReset(true)}>
-              <RotateCcw className="h-4 w-4" /> إعادة ضبط الديمو
+              <RotateCcw className="h-4 w-4" /> {t('trucksList.resetDemo')}
             </Button>
             <Link href="/fleet/trucks/new">
               <Button>
                 <Plus className="h-4 w-4" />
-                إضافة شاحنة
+                {t('addTruck')}
               </Button>
             </Link>
           </>
@@ -93,26 +94,26 @@ export default function CarrierFleetTrucks() {
       <ConfirmDialog
         open={confirmReset}
         onOpenChange={setConfirmReset}
-        title="إعادة ضبط بيانات الديمو"
-        description="سيُعاد الأسطول وتوزيع الطلبات المجمّعة إلى الحالة الأصلية، وتُمحى تعديلاتك في هذا المتصفح."
-        confirmLabel="إعادة الضبط"
+        title={t('trucksList.resetTitle')}
+        description={t('trucksList.resetDesc')}
+        confirmLabel={t('trucksList.resetConfirm')}
         destructive
-        onConfirm={() => { resetFleet(); resetConsolidated(); notify.success('تمت إعادة الضبط', 'عادت بيانات الأسطول للحالة الأصلية'); }}
+        onConfirm={() => { resetFleet(); resetConsolidated(); notify.success(t('trucksList.resetDoneTitle'), t('trucksList.resetDoneDesc')); }}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatsCard label="إجمالي الأسطول" value={total} hint="شاحنة" icon={Truck} tone="default" />
-        <StatsCard label="متاحة" value={available} hint="جاهزة الآن" icon={CheckCircle} tone="success" />
-        <StatsCard label="في رحلة" value={onTrip} hint="حاليا" icon={Clock} tone="default" />
-        <StatsCard label="صيانة" value={maintenance} hint="غير متاحة" icon={Wrench} tone="warning" />
+        <StatsCard label={t('trucksList.stats.total')} value={total} hint={t('trucksList.stats.totalHint')} icon={Truck} tone="default" />
+        <StatsCard label={t('truckStatus.available')} value={available} hint={t('trucksList.stats.availableHint')} icon={CheckCircle} tone="success" />
+        <StatsCard label={t('truckStatus.onTrip')} value={onTrip} hint={t('trucksList.stats.onTripHint')} icon={Clock} tone="default" />
+        <StatsCard label={t('truckStatus.maintenance')} value={maintenance} hint={t('trucksList.stats.maintenanceHint')} icon={Wrench} tone="warning" />
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="overflow-x-auto">
-          <TabsTrigger value="ALL">الكل <Badge variant="secondary" className="ms-1">{total}</Badge></TabsTrigger>
-          <TabsTrigger value="AVAILABLE">متاحة <Badge variant="secondary" className="ms-1">{available}</Badge></TabsTrigger>
-          <TabsTrigger value="ON_TRIP">في رحلة <Badge variant="secondary" className="ms-1">{onTrip}</Badge></TabsTrigger>
-          <TabsTrigger value="MAINTENANCE">صيانة <Badge variant="secondary" className="ms-1">{maintenance}</Badge></TabsTrigger>
+          <TabsTrigger value="ALL">{t('all')} <Badge variant="secondary" className="ms-1">{total}</Badge></TabsTrigger>
+          <TabsTrigger value="AVAILABLE">{t('truckStatus.available')} <Badge variant="secondary" className="ms-1">{available}</Badge></TabsTrigger>
+          <TabsTrigger value="ON_TRIP">{t('truckStatus.onTrip')} <Badge variant="secondary" className="ms-1">{onTrip}</Badge></TabsTrigger>
+          <TabsTrigger value="MAINTENANCE">{t('truckStatus.maintenance')} <Badge variant="secondary" className="ms-1">{maintenance}</Badge></TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -121,42 +122,42 @@ export default function CarrierFleetTrucks() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>الرقم</TableHead>
-                <TableHead>لوحة</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>الملكية</TableHead>
-                <TableHead className="text-end">الحمولة</TableHead>
-                <TableHead>السائق</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>آخر فحص</TableHead>
+                <TableHead>{t('trucksList.table.code')}</TableHead>
+                <TableHead>{t('trucksList.table.plate')}</TableHead>
+                <TableHead>{t('trucksList.table.type')}</TableHead>
+                <TableHead>{t('ownership.label')}</TableHead>
+                <TableHead className="text-end">{t('trucksList.table.load')}</TableHead>
+                <TableHead>{t('trucksList.table.driver')}</TableHead>
+                <TableHead>{t('trucksList.table.status')}</TableHead>
+                <TableHead>{t('trucksList.table.lastInspection')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((t) => {
-                const drv = srcDrivers.find((d) => d.id === t.driverId);
-                const parsed = parsePlateString(t.plateNumber ?? '');
-                const tons = (t.capacityKg ?? 0) / 1000;
+              {rows.map((row) => {
+                const drv = srcDrivers.find((d) => d.id === row.driverId);
+                const parsed = parsePlateString(row.plateNumber ?? '');
+                const tons = (row.capacityKg ?? 0) / 1000;
                 return (
-                  <TableRow key={t.id} className="cursor-pointer" onClick={() => (window.location.href = `/fleet/trucks/${t.id}`)}>
+                  <TableRow key={row.id} className="cursor-pointer" onClick={() => (window.location.href = `/fleet/trucks/${row.id}`)}>
                     <TableCell>
-                      <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><Hash className="h-3 w-3" />{t.code}</span>
+                      <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><Hash className="h-3 w-3" />{row.code}</span>
                     </TableCell>
                     <TableCell>
                       <SaudiLicensePlate letters={parsed.letters} numbers={parsed.numbers} plateType="transport" size="thumbnail" />
                     </TableCell>
-                    <TableCell>{TRUCK_LABELS[t.truckType] ?? t.truckType ?? '—'}</TableCell>
-                    <TableCell><OwnershipBadge ownership={t.ownership} /></TableCell>
-                    <TableCell className="text-end num">{tons.toFixed(0)} طن</TableCell>
+                    <TableCell>{TRUCK_LABELS[row.truckType] ?? row.truckType ?? '—'}</TableCell>
+                    <TableCell><OwnershipBadge ownership={row.ownership} /></TableCell>
+                    <TableCell className="text-end num">{tons.toFixed(0)} {t('tons')}</TableCell>
                     <TableCell>
                       {drv
                         ? <span className="whitespace-nowrap">{drv.fullName}</span>
-                        : <span className="text-muted-foreground">بدون سائق</span>}
+                        : <span className="text-muted-foreground">{t('trucksList.noDriver')}</span>}
                     </TableCell>
-                    <TableCell><StatusBadge status={t.status} /></TableCell>
+                    <TableCell><StatusBadge status={row.status} /></TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                       <span className="inline-flex items-center gap-2">
-                        {t.lastInspection ? formatDate(t.lastInspection) : '—'}
-                        <ExpiryBadge date={nextInspection(t.lastInspection)} />
+                        {row.lastInspection ? formatDate(row.lastInspection) : '—'}
+                        <ExpiryBadge date={nextInspection(row.lastInspection)} />
                       </span>
                     </TableCell>
                   </TableRow>

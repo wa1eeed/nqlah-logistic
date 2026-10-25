@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,6 +20,7 @@ import {
 } from '@naqla/shared-utils';
 
 export default function CarrierOrdersPage() {
+  const t = useTranslations('orders');
   const [tab, setTab] = useState('ALL');
   // GET /orders?mine=true → only orders assigned to this carrier.
   // Mock fallback when API is down: `ordersForCarrier(CURRENT_CARRIER_ID)`.
@@ -35,17 +37,17 @@ export default function CarrierOrdersPage() {
   }, [tab, all]);
 
   const TABS = [
-    { key: 'ALL',        label: 'الكل',        count: all.length },
-    { key: 'ACTIVE',     label: 'نشطة',         count: all.filter((o) => ['CONFIRMED', 'IN_TRANSIT'].includes(o.status)).length },
-    { key: 'IN_TRANSIT', label: 'في الطريق',    count: all.filter((o) => o.status === 'IN_TRANSIT').length },
-    { key: 'DELIVERED',  label: 'تم التسليم',   count: all.filter((o) => o.status === 'DELIVERED').length },
-    { key: 'COMPLETED',  label: 'مكتملة',       count: all.filter((o) => o.status === 'COMPLETED').length },
+    { key: 'ALL',        label: t('list.tabs.all'),        count: all.length },
+    { key: 'ACTIVE',     label: t('list.tabs.active'),      count: all.filter((o) => ['CONFIRMED', 'IN_TRANSIT'].includes(o.status)).length },
+    { key: 'IN_TRANSIT', label: t('list.tabs.inTransit'),   count: all.filter((o) => o.status === 'IN_TRANSIT').length },
+    { key: 'DELIVERED',  label: t('list.tabs.delivered'),   count: all.filter((o) => o.status === 'DELIVERED').length },
+    { key: 'COMPLETED',  label: t('list.tabs.completed'),   count: all.filter((o) => o.status === 'COMPLETED').length },
   ];
 
   return (
     <PageTransition>
       <FadeItem>
-        <PageHeader title="طلباتي" subtitle="جميع الطلبات التي قبلت عرضك عليها" />
+        <PageHeader title={t('list.title')} subtitle={t('list.subtitle')} />
       </FadeItem>
 
       <FadeItem>
@@ -67,18 +69,18 @@ export default function CarrierOrdersPage() {
             {rows.length === 0 && !isLoading ? (
               <EmptyState
                 icon={Package}
-                title="لا توجد طلبات"
-                description="لم تُعيَّن لك أي طلبات نقل بعد في هذه الفئة"
+                title={t('list.emptyTitle')}
+                description={t('list.emptyDesc')}
               />
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>رقم</TableHead>
-                    <TableHead>المسار</TableHead>
-                    <TableHead>الاستلام</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead className="text-end">صافي الأجرة</TableHead>
+                    <TableHead>{t('list.colNumber')}</TableHead>
+                    <TableHead>{t('list.colRoute')}</TableHead>
+                    <TableHead>{t('list.colPickup')}</TableHead>
+                    <TableHead>{t('list.colStatus')}</TableHead>
+                    <TableHead className="text-end">{t('list.colNetFare')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

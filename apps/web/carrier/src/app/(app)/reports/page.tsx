@@ -1,5 +1,6 @@
 'use client';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   CheckCircle2, Gauge, Package, Star, TrendingUp, Truck, Wallet, X,
 } from 'lucide-react';
@@ -14,6 +15,7 @@ import {
 } from '@naqla/shared-utils';
 
 export default function CarrierReportsPage() {
+  const t = useTranslations('payments');
   const carrier = carrierById(CURRENT_CARRIER_ID);
   const orders = ordersForCarrier(CURRENT_CARRIER_ID);
   const bids = bidsForCarrier(CURRENT_CARRIER_ID);
@@ -34,11 +36,11 @@ export default function CarrierReportsPage() {
 
   // Monthly revenue trend (mock)
   const monthly = [
-    { month: 'يناير', rev: 184000 },
-    { month: 'فبراير', rev: 211000 },
-    { month: 'مارس', rev: 197000 },
-    { month: 'أبريل', rev: 248000 },
-    { month: 'مايو', rev: 285000 },
+    { month: 'jan', rev: 184000 },
+    { month: 'feb', rev: 211000 },
+    { month: 'mar', rev: 197000 },
+    { month: 'apr', rev: 248000 },
+    { month: 'may', rev: 285000 },
   ];
   const maxRev = Math.max(...monthly.map((m) => m.rev));
 
@@ -66,34 +68,34 @@ export default function CarrierReportsPage() {
   return (
     <>
       <PageHeader
-        title="التقارير والإحصاءات"
-        subtitle="مؤشّرات أداء أسطولك وإيراداتك"
+        title={t('reports.title')}
+        subtitle={t('reports.subtitle')}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatsCard
-          label="إيراد إجمالي"
+          label={t('reports.totalRevenue')}
           value={<Currency amount={stats.totalRevenue} />}
           icon={Wallet}
           tone="success"
         />
         <StatsCard
-          label="رحلات مكتملة"
+          label={t('reports.completedTrips')}
           value={stats.completed.toLocaleString('en-US')}
           icon={CheckCircle2}
         />
         <StatsCard
-          label="نسبة الفوز بالعروض"
+          label={t('reports.bidWinRate')}
           value={`${stats.winRate.toFixed(0)}%`}
           icon={TrendingUp}
           tone="success"
-          hint={`${stats.acceptedBids} من ${stats.totalBids}`}
+          hint={t('reports.winRateHint', { accepted: stats.acceptedBids, total: stats.totalBids })}
         />
         <StatsCard
-          label="استخدام الأسطول"
+          label={t('reports.fleetUtilization')}
           value={`${stats.utilization.toFixed(0)}%`}
           icon={Gauge}
-          hint={`${trucks.length} شاحنة`}
+          hint={t('reports.trucksCount', { count: trucks.length })}
         />
       </div>
 
@@ -101,8 +103,8 @@ export default function CarrierReportsPage() {
         {/* Revenue trend */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>الإيراد الشهري</CardTitle>
-            <CardDescription>آخر 5 أشهر</CardDescription>
+            <CardTitle>{t('reports.monthlyRevenue')}</CardTitle>
+            <CardDescription>{t('reports.last5Months')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-end gap-3 sm:gap-4">
@@ -113,14 +115,14 @@ export default function CarrierReportsPage() {
                     className="w-full rounded-t-lg bg-[hsl(var(--mint))]/85 transition-all hover:bg-[hsl(var(--mint))]"
                     style={{ height: `${Math.round((m.rev / maxRev) * 150) + 8}px` }}
                   />
-                  <div className="text-xs text-muted-foreground">{m.month}</div>
+                  <div className="text-xs text-muted-foreground">{t(`reports.months.${m.month}`)}</div>
                 </div>
               ))}
             </div>
             <div className="mt-4 flex items-center gap-2 text-sm">
               <TrendingUp className="h-4 w-4 text-success" />
               <span className="text-success font-medium">+15%</span>
-              <span className="text-muted-foreground">مقارنة بالشهر السابق</span>
+              <span className="text-muted-foreground">{t('reports.vsPrevMonth')}</span>
             </div>
           </CardContent>
         </Card>
@@ -128,34 +130,34 @@ export default function CarrierReportsPage() {
         {/* Profile snapshot */}
         <Card>
           <CardHeader>
-            <CardTitle>أداء الشركة</CardTitle>
+            <CardTitle>{t('reports.companyPerformance')}</CardTitle>
             <CardDescription>{carrier?.nameAr}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm flex items-center gap-2">
                 <Star className="h-4 w-4 fill-warning text-warning" />
-                التقييم
+                {t('reports.rating')}
               </span>
               <span className="font-bold num">{carrier?.rating?.toFixed(1)} / 5.0</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm flex items-center gap-2">
                 <Truck className="h-4 w-4 text-muted-foreground" />
-                حجم الأسطول
+                {t('reports.fleetSize')}
               </span>
-              <span className="font-bold num">{trucks.length} شاحنة</span>
+              <span className="font-bold num">{t('reports.trucksCount', { count: trucks.length })}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm flex items-center gap-2">
                 <Package className="h-4 w-4 text-muted-foreground" />
-                إجمالي الرحلات
+                {t('reports.totalTrips')}
               </span>
               <span className="font-bold num">{carrier?.completedTrips?.toLocaleString('en-US')}</span>
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
-              <span className="text-sm text-muted-foreground">وقت الاستجابة</span>
-              <span className="font-bold num">{carrier?.responseTimeMins} د</span>
+              <span className="text-sm text-muted-foreground">{t('reports.responseTime')}</span>
+              <span className="font-bold num">{carrier?.responseTimeMins} {t('reports.minutesShort')}</span>
             </div>
           </CardContent>
         </Card>
@@ -164,11 +166,11 @@ export default function CarrierReportsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>أعلى المسارات إيرادا</CardTitle>
+            <CardTitle>{t('reports.topRoutes')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {topRoutes.length === 0 ? (
-              <div className="text-sm text-muted-foreground text-center py-6">لا توجد بيانات بعد</div>
+              <div className="text-sm text-muted-foreground text-center py-6">{t('reports.noDataYet')}</div>
             ) : (
               topRoutes.map((r, i) => (
                 <div key={r.route} className="flex items-center justify-between gap-3">
@@ -190,7 +192,7 @@ export default function CarrierReportsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>أفضل السائقين</CardTitle>
+            <CardTitle>{t('reports.topDrivers')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {topDrivers.map((d, i) => (
@@ -204,7 +206,7 @@ export default function CarrierReportsPage() {
                     <div className="text-xs text-muted-foreground">{d.licenseClass}</div>
                   </div>
                 </div>
-                <Badge variant="outline" className="num">{d.totalTrips} رحلة</Badge>
+                <Badge variant="outline" className="num">{t('reports.tripsCount', { count: d.totalTrips })}</Badge>
               </div>
             ))}
           </CardContent>

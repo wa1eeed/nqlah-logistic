@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, Hash, Loader2, Plus, Truck as TruckIcon, Users } from 'lucide-react';
@@ -30,7 +31,13 @@ import {
 const LICENSE_CLASSES = ['حمولة ثقيلة', 'حمولة استثنائية', 'تركيب وقاطرة'] as const;
 
 export default function CarrierFleetDrivers() {
+  const t = useTranslations('fleet');
   const router = useRouter();
+  const licenseClassLabel = (c: string) => ({
+    'حمولة ثقيلة': t('licenseClasses.heavy'),
+    'حمولة استثنائية': t('licenseClasses.exceptional'),
+    'تركيب وقاطرة': t('licenseClasses.trailer'),
+  } as Record<string, string>)[c] ?? c;
   const [tab, setTab] = useState('ALL');
   const assignMap = useFleetStore((s) => s.assign);
   const driverStatusMap = useFleetStore((s) => s.driverStatus);
@@ -86,9 +93,9 @@ export default function CarrierFleetDrivers() {
     setSaving(true);
     try {
       await api.post('/fleet/drivers/invite', form);
-      notify.success('تم إضافة السائق', 'تم إرسال رابط تفعيل الحساب للسائق');
+      notify.success(t('driversList.addedTitle'), t('driversList.addedDesc'));
     } catch {
-      notify.success('تم إنشاء السائق', 'سيظهر في القائمة بعد المزامنة');
+      notify.success(t('driversList.createdTitle'), t('driversList.createdDesc'));
     } finally {
       setOpen(false);
       setForm({ fullName: '', phone: '', nationalId: '', licenseNumber: '', licenseExpiry: '', licenseType: 'حمولة ثقيلة' });
@@ -99,26 +106,26 @@ export default function CarrierFleetDrivers() {
   return (
     <>
       <PageHeader
-        title="السائقون"
-        subtitle={`${counts.all} سائق مسجّل`}
+        title={t('drivers')}
+        subtitle={t('driversList.registeredCount', { count: counts.all })}
         actions={
           <>
             {licenseAlerts > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2.5 py-1 text-xs font-semibold text-warning">
-                <AlertTriangle className="h-3.5 w-3.5" /> <span className="num">{licenseAlerts}</span> رخصة تنتهي قريبا
+                <AlertTriangle className="h-3.5 w-3.5" /> <span className="num">{licenseAlerts}</span> {t('driversList.licenseAlerts')}
               </span>
             )}
-            <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> إضافة سائق</Button>
+            <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> {t('addDriver')}</Button>
           </>
         }
       />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="ALL">الكل <Badge variant="secondary" className="ms-1">{counts.all}</Badge></TabsTrigger>
-          <TabsTrigger value="AVAILABLE">متاح <Badge variant="secondary" className="ms-1">{counts.available}</Badge></TabsTrigger>
-          <TabsTrigger value="ON_TRIP">في رحلة <Badge variant="secondary" className="ms-1">{counts.onTrip}</Badge></TabsTrigger>
-          <TabsTrigger value="OFF_DUTY">خارج الخدمة <Badge variant="secondary" className="ms-1">{counts.offDuty}</Badge></TabsTrigger>
+          <TabsTrigger value="ALL">{t('all')} <Badge variant="secondary" className="ms-1">{counts.all}</Badge></TabsTrigger>
+          <TabsTrigger value="AVAILABLE">{t('driverStatus.available')} <Badge variant="secondary" className="ms-1">{counts.available}</Badge></TabsTrigger>
+          <TabsTrigger value="ON_TRIP">{t('driverStatus.onTrip')} <Badge variant="secondary" className="ms-1">{counts.onTrip}</Badge></TabsTrigger>
+          <TabsTrigger value="OFF_DUTY">{t('driverStatus.offDuty')} <Badge variant="secondary" className="ms-1">{counts.offDuty}</Badge></TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -127,14 +134,14 @@ export default function CarrierFleetDrivers() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>الرقم</TableHead>
-                <TableHead>الاسم</TableHead>
-                <TableHead>الهوية</TableHead>
-                <TableHead>فئة الرخصة</TableHead>
-                <TableHead>الملكية</TableHead>
-                <TableHead>الشاحنة</TableHead>
-                <TableHead className="text-center">رحلات</TableHead>
-                <TableHead>الحالة</TableHead>
+                <TableHead>{t('driversList.table.code')}</TableHead>
+                <TableHead>{t('driversList.table.name')}</TableHead>
+                <TableHead>{t('driversList.table.id')}</TableHead>
+                <TableHead>{t('driver.licenseClass')}</TableHead>
+                <TableHead>{t('ownership.label')}</TableHead>
+                <TableHead>{t('driversList.table.truck')}</TableHead>
+                <TableHead className="text-center">{t('driversList.table.trips')}</TableHead>
+                <TableHead>{t('driversList.table.status')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -142,7 +149,7 @@ export default function CarrierFleetDrivers() {
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
                     <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                    لا يوجد سائقون
+                    {t('driversList.empty')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -159,12 +166,12 @@ export default function CarrierFleetDrivers() {
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground num">{d.nationalId}</TableCell>
-                    <TableCell className="whitespace-nowrap">{d.licenseClass}</TableCell>
+                    <TableCell className="whitespace-nowrap">{licenseClassLabel(d.licenseClass)}</TableCell>
                     <TableCell><OwnershipBadge ownership={d.ownership} /></TableCell>
                     <TableCell>
                       {d.truck
                         ? <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><TruckIcon className="h-3.5 w-3.5 text-muted-foreground" /><span className="font-mono text-xs">{d.truck.code}</span></span>
-                        : <span className="text-muted-foreground">بدون</span>}
+                        : <span className="text-muted-foreground">{t('driversList.noTruck')}</span>}
                     </TableCell>
                     <TableCell className="text-center num">{d.totalTrips ?? 0}</TableCell>
                     <TableCell><DriverStatusBadge status={d.status} /></TableCell>
@@ -180,40 +187,40 @@ export default function CarrierFleetDrivers() {
       <Dialog open={open} onOpenChange={(o) => !saving && setOpen(o)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>إضافة سائق جديد</DialogTitle>
-            <DialogDescription>سيتم إنشاء حساب للسائق ويُرسَل له رابط التفعيل</DialogDescription>
+            <DialogTitle>{t('driversList.addTitle')}</DialogTitle>
+            <DialogDescription>{t('driversList.addDesc')}</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
             <div className="space-y-1.5 sm:col-span-2">
-              <Label>الاسم الكامل</Label>
-              <Input value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} placeholder="محمد عبدالله الغامدي" />
+              <Label>{t('driver.fullName')}</Label>
+              <Input value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} placeholder={t('driversList.namePlaceholder')} />
             </div>
             <div className="space-y-1.5">
-              <Label>رقم الهاتف</Label>
+              <Label>{t('driversList.phone')}</Label>
               <Input dir="ltr" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+966 5XX XXX XXXX" />
             </div>
             <div className="space-y-1.5">
-              <Label>رقم الهوية</Label>
+              <Label>{t('driver.nationalId')}</Label>
               <Input dir="ltr" value={form.nationalId} onChange={(e) => setForm((f) => ({ ...f, nationalId: e.target.value }))} placeholder="1XXXXXXXXX" />
             </div>
             <div className="space-y-1.5">
-              <Label>تاريخ انتهاء الرخصة</Label>
+              <Label>{t('driversList.licenseExpiry')}</Label>
               <Input type="date" value={form.licenseExpiry} onChange={(e) => setForm((f) => ({ ...f, licenseExpiry: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label>فئة الرخصة</Label>
+              <Label>{t('driver.licenseClass')}</Label>
               <Select value={form.licenseType} onValueChange={(v) => setForm((f) => ({ ...f, licenseType: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {LICENSE_CLASSES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  {LICENSE_CLASSES.map((c) => <SelectItem key={c} value={c}>{licenseClassLabel(c)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>{t('cancel')}</Button>
             <Button onClick={addDriver} disabled={saving || !form.fullName || !form.phone || !form.licenseExpiry}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />} إضافة
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />} {t('driversList.addBtn')}
             </Button>
           </DialogFooter>
         </DialogContent>

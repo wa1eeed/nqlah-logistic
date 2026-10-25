@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR, { useSWRConfig } from 'swr';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -32,6 +33,7 @@ import {
 } from '@/components/fleet-bits';
 
 export default function DriverDetailPage() {
+  const t = useTranslations('fleet');
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
@@ -64,8 +66,8 @@ export default function DriverDetailPage() {
       <Card>
         <CardContent className="py-16 text-center">
           <User className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-semibold">السائق غير موجود</h3>
-          <Button onClick={() => router.push('/fleet/drivers')} className="mt-4">عودة للسائقين</Button>
+          <h3 className="font-semibold">{t('driverDetail.notFound')}</h3>
+          <Button onClick={() => router.push('/fleet/drivers')} className="mt-4">{t('driverDetail.backToDrivers')}</Button>
         </CardContent>
       </Card>
     );
@@ -85,9 +87,9 @@ export default function DriverDetailPage() {
     try {
       await api.post(`/fleet/trucks/${pick}/assign`, { driverId: driver.id });
       logEvent(makeFleetEvent('ASSIGN', pick, driver.id,
-        `تم ربط السائق ${driver.fullName} (${driver.code}) بالشاحنة ${pickTruck?.code ?? ''}`));
+        t('driverDetail.eventAssign', { name: driver.fullName, code: driver.code, truck: pickTruck?.code ?? '' })));
       revalidateFleet();
-      notify.success('تم ربط الشاحنة', `${driver.fullName} → ${pickTruck?.code ?? ''}`);
+      notify.success(t('driverDetail.linkedTitle'), `${driver.fullName} → ${pickTruck?.code ?? ''}`);
     } catch (e) { notify.error(e); }
     setAssignOpen(false);
     setPick('');
@@ -98,9 +100,9 @@ export default function DriverDetailPage() {
     try {
       await api.post(`/fleet/trucks/${truck.id}/unassign`);
       logEvent(makeFleetEvent('UNASSIGN', truck.id, driver.id,
-        `تم فك ارتباط السائق ${driver.fullName} عن الشاحنة ${truck.code}`));
+        t('eventUnassignDriver', { name: driver.fullName, truck: truck.code })));
       revalidateFleet();
-      notify.success('تم فك الارتباط', `${driver.fullName} بدون شاحنة الآن`);
+      notify.success(t('unassignedTitle'), t('driverDetail.unassignedDesc', { name: driver.fullName }));
     } catch (e) { notify.error(e); }
   };
 
@@ -108,7 +110,7 @@ export default function DriverDetailPage() {
     <>
       <PageHeader
         title={driver.fullName}
-        subtitle={`سائق · ${driver.code} · رخصة ${driver.licenseClass}`}
+        subtitle={t('driverDetail.subtitle', { code: driver.code, class: driver.licenseClass })}
         actions={
           <>
             <FleetStatusSelect
@@ -120,14 +122,14 @@ export default function DriverDetailPage() {
                   logEvent(makeFleetEvent(
                     v === 'ON_TRIP' ? 'TRIP_START' : v === 'AVAILABLE' ? 'ONLINE' : 'OFFLINE',
                     truck?.id, driver.id,
-                    `السائق ${driver.fullName} → ${DRIVER_STATUS_OPTIONS.find((o) => o.value === v)?.label ?? v}`));
+                    t('driverDetail.eventStatus', { name: driver.fullName, status: DRIVER_STATUS_OPTIONS.find((o) => o.value === v)?.label ?? v })));
                   revalidateFleet();
-                  notify.success('تم تحديث حالة السائق', DRIVER_STATUS_OPTIONS.find((o) => o.value === v)?.label);
+                  notify.success(t('driverDetail.statusUpdated'), DRIVER_STATUS_OPTIONS.find((o) => o.value === v)?.label);
                 } catch (e) { notify.error(e); }
               }}
             />
             <Button variant="outline" onClick={() => router.push('/fleet/drivers')}>
-              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('back')}
             </Button>
           </>
         }
@@ -151,16 +153,16 @@ export default function DriverDetailPage() {
           </CardHeader>
           <CardContent>
             <dl className="divide-y">
-              <InfoRow icon={Phone} label="الهاتف" value={<span className="num" dir="ltr">{driver.phone}</span>} />
-              <InfoRow icon={Fingerprint} label="رقم الهوية" value={<span className="num">{driver.nationalId}</span>} />
-              <InfoRow icon={UserCog} label="فئة الرخصة" value={driver.licenseClass} />
-              <InfoRow icon={Calendar} label="انتهاء الرخصة" value={
+              <InfoRow icon={Phone} label={t('driverDetail.phone')} value={<span className="num" dir="ltr">{driver.phone}</span>} />
+              <InfoRow icon={Fingerprint} label={t('driver.nationalId')} value={<span className="num">{driver.nationalId}</span>} />
+              <InfoRow icon={UserCog} label={t('driver.licenseClass')} value={driver.licenseClass} />
+              <InfoRow icon={Calendar} label={t('driverDetail.licenseExpiry')} value={
                 <span className="inline-flex items-center gap-2">
                   {formatDate(driver.licenseExpiry)}
                   <ExpiryBadge date={driver.licenseExpiry} />
                 </span>
               } />
-              <InfoRow icon={TruckIcon} label="إجمالي الرحلات" value={<span className="num">{driver.totalTrips}</span>} />
+              <InfoRow icon={TruckIcon} label={t('totalTrips')} value={<span className="num">{driver.totalTrips}</span>} />
             </dl>
           </CardContent>
         </Card>
@@ -169,9 +171,9 @@ export default function DriverDetailPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>الشاحنة المربوطة</CardTitle>
+              <CardTitle>{t('driverDetail.linkedTruck')}</CardTitle>
               {truck ? (
-                <Button variant="ghost" size="sm" onClick={() => setConfirmUnassign(true)}><Link2Off className="h-4 w-4" /> فك</Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmUnassign(true)}><Link2Off className="h-4 w-4" /> {t('unlink')}</Button>
               ) : null}
             </div>
           </CardHeader>
@@ -186,9 +188,9 @@ export default function DriverDetailPage() {
                     <span className="font-semibold">{truck.code}</span>
                     <StatusBadge status={truck.status} />
                   </div>
-                  <div className="text-sm text-muted-foreground num">{((truck.capacityKg ?? 0) / 1000).toFixed(0)} طن · موديل {truck.modelYear}</div>
+                  <div className="text-sm text-muted-foreground num">{((truck.capacityKg ?? 0) / 1000).toFixed(0)} {t('tons')} · {t('modelYearShort', { year: truck.modelYear })}</div>
                   <Button variant="outline" size="sm" className="mt-2" onClick={() => { setPick(truck.id); setAssignOpen(true); }}>
-                    <Link2 className="h-4 w-4" /> تغيير الشاحنة
+                    <Link2 className="h-4 w-4" /> {t('driverDetail.changeTruck')}
                   </Button>
                 </div>
               </div>
@@ -196,10 +198,10 @@ export default function DriverDetailPage() {
               <div className="text-center py-4 space-y-3">
                 <div className="text-sm text-muted-foreground">
                   <TruckIcon className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                  لا توجد شاحنة مربوطة
+                  {t('driverDetail.noTruckLinked')}
                 </div>
                 <Button size="sm" onClick={() => { setPick(''); setAssignOpen(true); }}>
-                  <Link2 className="h-4 w-4" /> ربط شاحنة
+                  <Link2 className="h-4 w-4" /> {t('driverDetail.linkTruck')}
                 </Button>
               </div>
             )}
@@ -210,16 +212,16 @@ export default function DriverDetailPage() {
       {/* Tabs */}
       <Tabs defaultValue="trips" className="mt-2">
         <TabsList>
-          <TabsTrigger value="trips"><Route className="h-4 w-4 me-1.5" /> الرحلات <Badge variant="secondary" className="ms-1.5">{trips.length}</Badge></TabsTrigger>
-          <TabsTrigger value="audit"><History className="h-4 w-4 me-1.5" /> سجل النشاط <Badge variant="secondary" className="ms-1.5">{audit.length}</Badge></TabsTrigger>
+          <TabsTrigger value="trips"><Route className="h-4 w-4 me-1.5" /> {t('tripsTab')} <Badge variant="secondary" className="ms-1.5">{trips.length}</Badge></TabsTrigger>
+          <TabsTrigger value="audit"><History className="h-4 w-4 me-1.5" /> {t('activityTab')} <Badge variant="secondary" className="ms-1.5">{audit.length}</Badge></TabsTrigger>
         </TabsList>
 
         <TabsContent value="trips">
           <Card>
             <CardHeader>
-              <CardTitle>تايم‑لاين الرحلات</CardTitle>
+              <CardTitle>{t('tripsTimeline')}</CardTitle>
               <CardDescription className="mt-1">
-                {trips.length} رحلة · <span className="num">{done.length}</span> منجزة · إجمالي مسافة <span className="num">{totalKm.toLocaleString('en-US')}</span> كم
+                {trips.length} {t('tripsWord')} · <span className="num">{done.length}</span> {t('completedWord')} · {t('totalDistanceInline')} <span className="num">{totalKm.toLocaleString('en-US')}</span> {t('km')}
               </CardDescription>
             </CardHeader>
             <CardContent><TripsTimeline trips={trips} /></CardContent>
@@ -229,8 +231,8 @@ export default function DriverDetailPage() {
         <TabsContent value="audit">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><History className="h-4 w-4" /> سجل النشاط</CardTitle>
-              <CardDescription className="mt-1">الإسناد وتغيّر الحالة والرحلات</CardDescription>
+              <CardTitle className="flex items-center gap-2"><History className="h-4 w-4" /> {t('activityTab')}</CardTitle>
+              <CardDescription className="mt-1">{t('activityLogDesc')}</CardDescription>
             </CardHeader>
             <CardContent><AuditTimeline events={audit} max={30} /></CardContent>
           </Card>
@@ -241,19 +243,19 @@ export default function DriverDetailPage() {
       <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>ربط شاحنة بالسائق {driver.fullName}</DialogTitle>
-            <DialogDescription>اختر شاحنة. إذا كان لها سائق آخر سيُستبدل تلقائيا.</DialogDescription>
+            <DialogTitle>{t('driverDetail.assignDialogTitle', { name: driver.fullName })}</DialogTitle>
+            <DialogDescription>{t('driverDetail.assignDialogDesc')}</DialogDescription>
           </DialogHeader>
           <div className="py-2">
             <Select value={pick} onValueChange={setPick}>
-              <SelectTrigger><SelectValue placeholder="اختر شاحنة" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('driverDetail.selectTruck')} /></SelectTrigger>
               <SelectContent>
-                {srcTrucks.map((t) => {
-                  const curDriverId = t.assignedDriverId;
+                {srcTrucks.map((tr) => {
+                  const curDriverId = tr.assignedDriverId;
                   const curDriver = curDriverId ? srcDrivers.find((d) => d.id === curDriverId)?.fullName : null;
                   return (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.code} · {t.plateNumber}{curDriver && curDriverId !== driver.id ? ` (مع ${curDriver})` : ''}
+                    <SelectItem key={tr.id} value={tr.id}>
+                      {tr.code} · {tr.plateNumber}{curDriver && curDriverId !== driver.id ? t('driverDetail.withDriverSuffix', { name: curDriver }) : ''}
                     </SelectItem>
                   );
                 })}
@@ -261,8 +263,8 @@ export default function DriverDetailPage() {
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignOpen(false)}>إلغاء</Button>
-            <Button onClick={() => { if (pick) setConfirmAssign(true); }} disabled={!pick}><CheckCircle2 className="h-4 w-4" /> ربط</Button>
+            <Button variant="outline" onClick={() => setAssignOpen(false)}>{t('cancel')}</Button>
+            <Button onClick={() => { if (pick) setConfirmAssign(true); }} disabled={!pick}><CheckCircle2 className="h-4 w-4" /> {t('driverDetail.linkBtn')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -271,9 +273,9 @@ export default function DriverDetailPage() {
       <ConfirmDialog
         open={confirmAssign}
         onOpenChange={setConfirmAssign}
-        title="تأكيد ربط الشاحنة"
-        description={pickTruck ? `سيتم ربط ${driver.fullName} بالشاحنة ${pickTruck.code}${pickTruck.assignedDriverId && pickTruck.assignedDriverId !== driver.id ? ` واستبدال سائقها الحالي (${srcDrivers.find((d) => d.id === pickTruck.assignedDriverId)?.fullName})` : ''}.` : undefined}
-        confirmLabel="تأكيد الربط"
+        title={t('driverDetail.confirmAssignTitle')}
+        description={pickTruck ? t('driverDetail.confirmAssignDesc', { name: driver.fullName, truck: pickTruck.code, extra: pickTruck.assignedDriverId && pickTruck.assignedDriverId !== driver.id ? t('driverDetail.confirmAssignReplace', { name: srcDrivers.find((d) => d.id === pickTruck.assignedDriverId)?.fullName ?? '' }) : '' }) : undefined}
+        confirmLabel={t('driverDetail.confirmAssignBtn')}
         onConfirm={doAssign}
       />
 
@@ -281,9 +283,9 @@ export default function DriverDetailPage() {
       <ConfirmDialog
         open={confirmUnassign}
         onOpenChange={setConfirmUnassign}
-        title="فك ارتباط الشاحنة"
-        description={truck ? `سيتم فك ارتباط ${driver.fullName} عن الشاحنة ${truck.code} وتحويله إلى خارج الخدمة.` : undefined}
-        confirmLabel="فك الارتباط"
+        title={t('driverDetail.confirmUnassignTitle')}
+        description={truck ? t('confirmUnassignDesc', { name: driver.fullName, truck: truck.code }) : undefined}
+        confirmLabel={t('unlinkConfirm')}
         destructive
         onConfirm={doUnassign}
       />

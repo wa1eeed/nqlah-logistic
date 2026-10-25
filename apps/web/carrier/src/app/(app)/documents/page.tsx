@@ -1,4 +1,5 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle, AlertTriangle, CheckCircle2, FileCheck2, FileText, Upload,
 } from 'lucide-react';
@@ -12,23 +13,24 @@ import {
   type CarrierDoc, type DocStatus,
 } from '@naqla/shared-utils';
 
-const DOC_LABELS: Record<CarrierDoc['type'], string> = {
-  COMMERCIAL_REGISTER: 'السجل التجاري',
-  VAT:                 'شهادة الضريبة (VAT)',
-  ZAKAT:               'شهادة الزكاة والدخل',
-  TRANSPORT_LICENSE:   'رخصة نقل البضائع',
-  INSURANCE:           'بوليصة التأمين',
-  BANK_LETTER:         'خطاب البنك (IBAN)',
+const DOC_LABEL_KEYS: Record<CarrierDoc['type'], string> = {
+  COMMERCIAL_REGISTER: 'documents.docType.COMMERCIAL_REGISTER',
+  VAT:                 'documents.docType.VAT',
+  ZAKAT:               'documents.docType.ZAKAT',
+  TRANSPORT_LICENSE:   'documents.docType.TRANSPORT_LICENSE',
+  INSURANCE:           'documents.docType.INSURANCE',
+  BANK_LETTER:         'documents.docType.BANK_LETTER',
 };
 
-const STATUS_META: Record<DocStatus, { label: string; tone: 'success' | 'warning' | 'destructive'; icon: any; bg: string; iconColor: string }> = {
-  VALID:          { label: 'سارية',           tone: 'success',     icon: CheckCircle2,  bg: 'bg-success/10',     iconColor: 'text-success' },
-  EXPIRING_SOON:  { label: 'تنتهي قريبا',    tone: 'warning',     icon: AlertTriangle, bg: 'bg-warning/10',     iconColor: 'text-warning' },
-  EXPIRED:        { label: 'منتهية',           tone: 'destructive', icon: AlertCircle,   bg: 'bg-destructive/10', iconColor: 'text-destructive' },
-  MISSING:        { label: 'غير مرفقة',       tone: 'destructive', icon: AlertCircle,   bg: 'bg-destructive/10', iconColor: 'text-destructive' },
+const STATUS_META: Record<DocStatus, { labelKey: string; tone: 'success' | 'warning' | 'destructive'; icon: any; bg: string; iconColor: string }> = {
+  VALID:          { labelKey: 'documents.status.VALID',          tone: 'success',     icon: CheckCircle2,  bg: 'bg-success/10',     iconColor: 'text-success' },
+  EXPIRING_SOON:  { labelKey: 'documents.status.EXPIRING_SOON',  tone: 'warning',     icon: AlertTriangle, bg: 'bg-warning/10',     iconColor: 'text-warning' },
+  EXPIRED:        { labelKey: 'documents.status.EXPIRED',        tone: 'destructive', icon: AlertCircle,   bg: 'bg-destructive/10', iconColor: 'text-destructive' },
+  MISSING:        { labelKey: 'documents.status.MISSING',        tone: 'destructive', icon: AlertCircle,   bg: 'bg-destructive/10', iconColor: 'text-destructive' },
 };
 
 export default function CarrierDocumentsPage() {
+  const t = useTranslations('carrier');
   const docs = carrierDocsFor(CURRENT_CARRIER_ID);
   const docsByType = new Map(docs.map((d) => [d.type, d]));
 
@@ -51,20 +53,20 @@ export default function CarrierDocumentsPage() {
   return (
     <>
       <PageHeader
-        title="الوثائق والامتثال"
-        subtitle="إدارة المستندات الرسمية المطلوبة لاستمرار النشاط على المنصة"
+        title={t('documents.title')}
+        subtitle={t('documents.subtitle')}
         actions={
           <Button>
-            <Upload className="h-4 w-4" /> رفع وثيقة
+            <Upload className="h-4 w-4" /> {t('documents.uploadDoc')}
           </Button>
         }
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatsCard label="إجمالي الوثائق" value={stats.total} icon={FileCheck2} />
-        <StatsCard label="سارية" value={stats.valid} icon={CheckCircle2} tone="success" />
-        <StatsCard label="تنتهي قريبا" value={stats.expiring} icon={AlertTriangle} tone="warning" />
-        <StatsCard label="مفقودة/منتهية" value={stats.missing} icon={AlertCircle} tone={stats.missing > 0 ? 'danger' : 'success'} />
+        <StatsCard label={t('documents.statTotal')} value={stats.total} icon={FileCheck2} />
+        <StatsCard label={t('documents.statValid')} value={stats.valid} icon={CheckCircle2} tone="success" />
+        <StatsCard label={t('documents.statExpiring')} value={stats.expiring} icon={AlertTriangle} tone="warning" />
+        <StatsCard label={t('documents.statMissing')} value={stats.missing} icon={AlertCircle} tone={stats.missing > 0 ? 'danger' : 'success'} />
       </div>
 
       {stats.missing > 0 && (
@@ -72,9 +74,9 @@ export default function CarrierDocumentsPage() {
           <CardContent className="pt-6 flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-semibold text-destructive">يلزمك إكمال {stats.missing} مستند(ات)</h3>
+              <h3 className="font-semibold text-destructive">{t('documents.completeWarningTitle', { count: stats.missing })}</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                قد يتم تقييد قدرتك على قبول طلبات جديدة حتى استكمال جميع المستندات الإلزامية.
+                {t('documents.completeWarningBody')}
               </p>
             </div>
           </CardContent>
@@ -94,32 +96,32 @@ export default function CarrierDocumentsPage() {
                       <Icon className={`h-5 w-5 ${meta.iconColor}`} />
                     </div>
                     <div className="min-w-0">
-                      <CardTitle className="text-base truncate">{DOC_LABELS[d.type]}</CardTitle>
+                      <CardTitle className="text-base truncate">{t(DOC_LABEL_KEYS[d.type])}</CardTitle>
                       {d.number && (
                         <div className="text-xs text-muted-foreground font-mono mt-0.5" dir="ltr">{d.number}</div>
                       )}
                     </div>
                   </div>
-                  <Badge variant={meta.tone}>{meta.label}</Badge>
+                  <Badge variant={meta.tone}>{t(meta.labelKey)}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {d.status === 'MISSING' ? (
                   <div className="text-sm text-muted-foreground py-2">
-                    لم تُرفع هذه الوثيقة بعد.
+                    {t('documents.notUploadedYet')}
                   </div>
                 ) : (
                   <>
                     <dl className="space-y-1.5 text-xs">
                       {d.issuedAt && (
                         <div className="flex justify-between">
-                          <dt className="text-muted-foreground">تاريخ الإصدار</dt>
+                          <dt className="text-muted-foreground">{t('documents.issueDate')}</dt>
                           <dd className="font-medium">{formatDate(d.issuedAt)}</dd>
                         </div>
                       )}
                       {d.expiresAt && (
                         <div className="flex justify-between">
-                          <dt className="text-muted-foreground">تاريخ الانتهاء</dt>
+                          <dt className="text-muted-foreground">{t('documents.expiryDate')}</dt>
                           <dd className={`font-medium ${d.status === 'EXPIRING_SOON' ? 'text-warning' : ''}`}>
                             {formatDate(d.expiresAt)}
                           </dd>
@@ -128,7 +130,7 @@ export default function CarrierDocumentsPage() {
                       {d.fileName && (
                         <div className="flex justify-between items-center pt-2 border-t">
                           <dt className="text-muted-foreground inline-flex items-center gap-1">
-                            <FileText className="h-3.5 w-3.5" /> الملف
+                            <FileText className="h-3.5 w-3.5" /> {t('documents.file')}
                           </dt>
                           <dd className="text-xs font-mono truncate max-w-[180px]" dir="ltr">{d.fileName}</dd>
                         </div>
@@ -138,11 +140,11 @@ export default function CarrierDocumentsPage() {
                 )}
                 <div className="flex items-center gap-2 pt-2 border-t">
                   <Button size="sm" variant="outline" className="flex-1">
-                    {d.status === 'MISSING' ? 'رفع الآن' : 'استبدال'}
+                    {d.status === 'MISSING' ? t('documents.uploadNow') : t('documents.replace')}
                   </Button>
                   {d.fileName && (
                     <Button size="sm" variant="ghost">
-                      <FileText className="h-3.5 w-3.5" /> عرض
+                      <FileText className="h-3.5 w-3.5" /> {t('documents.view')}
                     </Button>
                   )}
                 </div>
