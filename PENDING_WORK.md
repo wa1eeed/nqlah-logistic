@@ -45,7 +45,8 @@ with today's behavior as the first registered strategies (no behavior change):
 7. ✅ Provider-owned clients (sub-tenancy) — `Company.ownerCarrierId`; carrier "My Clients" page (create/list); owned clients forced private to their owner (off-market, owner-only). (PR #55.)
 8. ⏳ Individual-driver portal + unified driver app (consumes stop execution).
 9. 🟡 White-label — branding **foundation** done: `Company.whiteLabelEnabled` + brand fields; admin enable toggle; carrier Settings → Branding tab. (PR #56.) Remaining: apply the brand to the provider-owned-client experience + the (future) driver app.
-8. ⏳ Driver portal (individual drivers) — NEXT · then the unified **driver app** as the final step.
+8. 🟡 Driver portal — **API backbone done** (`/driver/me`, `/driver/jobs` with stops, `/driver/location`; stop execution via the shared stops endpoint). (PR #57.) Remaining: the driver-facing **web portal UI** + enabling fully independent (no-carrier) drivers.
+10. ⏳ Unified **driver app** (mobile) — the FINAL step.
 
 Tests and an extracted order state-machine are woven into the phases that touch
 transitions (from phase 3), not deferred to a single pass. Payment gateway: a

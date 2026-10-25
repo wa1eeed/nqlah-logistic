@@ -6,6 +6,20 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.55 — Driver API (portal/app backbone) (2026-10-25)
+
+- New `/driver` API — the surface the drivers portal and the unified driver app
+  consume: `GET /driver/me` (the acting driver's profile), `GET /driver/jobs`
+  (active orders assigned to the driver — single via `OrderDriver` or
+  consolidated legs via `OrderTruck.driverId` — each with its route stops), and
+  `POST /driver/location` (location reporting). DRIVER-role-guarded.
+- Stop execution reuses the existing `PATCH /orders/:id/stops/:stopId` (already
+  open to the DRIVER role), so a driver advances their stops through the same
+  endpoint the carrier/admin panels use.
+- Tests: `driver.service.spec.ts`; 27 specs total.
+- This is the backend backbone; the driver-facing UI (web portal) builds on it,
+  and the unified mobile **driver app** is the final step.
+
 ### v0.9.54 — White-label branding (2026-10-25)
 
 - Carriers can run their own client area (and later driver app) under their own

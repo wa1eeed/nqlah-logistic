@@ -21,6 +21,7 @@ import { FreelancerInvoicesModule } from './modules/freelancer-invoices/freelanc
 import { PoliciesModule } from './modules/policies/policies.module';
 import { OwnedClientsModule } from './modules/owned-clients/owned-clients.module';
 import { WhiteLabelModule } from './modules/white-label/white-label.module';
+import { DriverModule } from './modules/driver/driver.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -74,6 +75,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     PoliciesModule,
     OwnedClientsModule,
     WhiteLabelModule,
+    DriverModule,
     PaymentsModule,
     InvoicesModule,
     NotificationsModule,
