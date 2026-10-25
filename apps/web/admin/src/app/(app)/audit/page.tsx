@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Building2, Cog, CreditCard, FileText, History, Key, Package, Search,
   Settings, Shield, ShieldCheck, User, Wallet,
@@ -16,26 +17,24 @@ import {
   type AuditCategory, type AuditActor,
 } from '@naqla/shared-utils';
 
-const CATEGORY_META: Record<AuditCategory, { label: string; icon: any; tone: string }> = {
-  AUTH:     { label: 'حساب',      icon: Key,        tone: 'bg-muted text-muted-foreground' },
-  COMPANY:  { label: 'شركة',      icon: Building2,  tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
-  KYC:      { label: 'KYC',       icon: ShieldCheck,tone: 'bg-success/15 text-success' },
-  ORDER:    { label: 'طلب',       icon: Package,    tone: 'bg-primary/10 text-primary' },
-  PAYMENT:  { label: 'دفع',       icon: CreditCard, tone: 'bg-success/15 text-success' },
-  DISPUTE:  { label: 'نزاع',      icon: Shield,     tone: 'bg-warning/15 text-warning' },
-  SETTINGS: { label: 'إعدادات',  icon: Settings,   tone: 'bg-muted text-muted-foreground' },
-  WALLET:   { label: 'محفظة',     icon: Wallet,     tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
-  TICKET:   { label: 'تذكرة',    icon: FileText,   tone: 'bg-muted text-muted-foreground' },
+const CATEGORY_META: Record<AuditCategory, { icon: any; tone: string }> = {
+  AUTH:     { icon: Key,        tone: 'bg-muted text-muted-foreground' },
+  COMPANY:  { icon: Building2,  tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
+  KYC:      { icon: ShieldCheck,tone: 'bg-success/15 text-success' },
+  ORDER:    { icon: Package,    tone: 'bg-primary/10 text-primary' },
+  PAYMENT:  { icon: CreditCard, tone: 'bg-success/15 text-success' },
+  DISPUTE:  { icon: Shield,     tone: 'bg-warning/15 text-warning' },
+  SETTINGS: { icon: Settings,   tone: 'bg-muted text-muted-foreground' },
+  WALLET:   { icon: Wallet,     tone: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
+  TICKET:   { icon: FileText,   tone: 'bg-muted text-muted-foreground' },
 };
 
-const ACTOR_LABEL: Record<AuditActor, string> = {
-  ADMIN: 'أدمن', SYSTEM: 'النظام', CLIENT: 'عميل', CARRIER: 'ناقل',
-};
 const ACTOR_BADGE: Record<AuditActor, 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
   ADMIN: 'default', SYSTEM: 'outline', CLIENT: 'success', CARRIER: 'warning',
 };
 
 export default function AuditLogPage() {
+  const t = useTranslations('admin');
   const [q, setQ] = useState('');
   const [category, setCategory] = useState<string>('ALL');
   const [actor, setActor] = useState<string>('ALL');
@@ -57,9 +56,9 @@ export default function AuditLogPage() {
   return (
     <>
       <PageHeader
-        eyebrow="النظام"
-        title="سجل التدقيق"
-        subtitle="سجل غير قابل للتعديل لكل الإجراءات الحساسة على المنصة"
+        eyebrow={t('audit.eyebrow')}
+        title={t('audit.title')}
+        subtitle={t('audit.subtitle')}
       />
 
       <Card>
@@ -67,23 +66,23 @@ export default function AuditLogPage() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث في السجل..." className="pe-10" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('audit.searchPlaceholder')} className="pe-10" />
             </div>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">كل الفئات</SelectItem>
-                {Object.entries(CATEGORY_META).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                <SelectItem value="ALL">{t('audit.allCategories')}</SelectItem>
+                {Object.keys(CATEGORY_META).map((k) => (
+                  <SelectItem key={k} value={k}>{t(`audit.category.${k}`)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select value={actor} onValueChange={setActor}>
               <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">كل الأدوار</SelectItem>
-                {Object.entries(ACTOR_LABEL).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                <SelectItem value="ALL">{t('audit.allRoles')}</SelectItem>
+                {Object.keys(ACTOR_BADGE).map((k) => (
+                  <SelectItem key={k} value={k}>{t(`audit.actor.${k}`)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -92,7 +91,7 @@ export default function AuditLogPage() {
           {filtered.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               <History className="h-10 w-10 mx-auto mb-2 opacity-40" />
-              لا توجد إدخالات مطابقة
+              {t('audit.empty')}
             </div>
           ) : (
             <div className="relative">
@@ -119,11 +118,11 @@ export default function AuditLogPage() {
                             <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                               <Badge variant={ACTOR_BADGE[e.actor]} className="h-5">
                                 {e.actor === 'SYSTEM' ? <Cog className="h-3 w-3 me-1" /> : <User className="h-3 w-3 me-1" />}
-                                {ACTOR_LABEL[e.actor]}
+                                {t(`audit.actor.${e.actor}`)}
                               </Badge>
                               <span>{e.actorName}</span>
                               <span>·</span>
-                              <Badge variant="outline" className="h-5">{meta.label}</Badge>
+                              <Badge variant="outline" className="h-5">{t(`audit.category.${e.category}`)}</Badge>
                             </div>
                           </div>
                           <div className="text-xs text-muted-foreground text-end shrink-0">

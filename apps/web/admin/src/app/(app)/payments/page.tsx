@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { ArrowDownRight, RotateCcw, ShieldCheck, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,6 +20,7 @@ import { notify } from '@/lib/notify';
 import { PAYMENTS, companyById, formatDate, type Payment } from '@naqla/shared-utils';
 
 export default function AdminPaymentsPage() {
+  const t = useTranslations('payments');
   const [tab, setTab] = useState('ALL');
   const [releasingId, setReleasingId] = useState<string | null>(null);
 
@@ -34,9 +36,9 @@ export default function AdminPaymentsPage() {
     try {
       await api.post(`/payments/${id}/release`, {});
       await mutate();
-      notify.success('تم الإفراج', 'حُوّل المبلغ لمحفظة الناقل');
+      notify.success(t('adminPayments.releaseSuccessTitle'), t('adminPayments.releaseSuccessBody'));
     } catch (err) {
-      notify.error(err, 'فشل الإفراج');
+      notify.error(err, t('adminPayments.releaseErrorTitle'));
     } finally {
       setReleasingId(null);
     }
@@ -60,37 +62,37 @@ export default function AdminPaymentsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="المالية" title="المدفوعات" subtitle="معاملات الضمان (Escrow)، الإفراج عن المبالغ، والعمولات" />
+      <PageHeader eyebrow={t('adminPayments.eyebrow')} title={t('title')} subtitle={t('adminPayments.subtitle')} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatsCard
-          label="محجوز في Escrow"
+          label={t('adminPayments.heldInEscrow')}
           value={<Currency amount={totalHeld} />}
-          hint={`${PAYMENTS.filter((p) => p.state === 'HELD').length} عملية`}
+          hint={t('adminPayments.transactionsCount', { count: PAYMENTS.filter((p) => p.state === 'HELD').length })}
           icon={ShieldCheck}
           tone="warning"
           index={0}
         />
         <StatsCard
-          label="تم الإفراج"
+          label={t('adminPayments.releasedCard')}
           value={<Currency amount={totalReleased} />}
-          hint={`${PAYMENTS.filter((p) => p.state === 'RELEASED').length} عملية`}
+          hint={t('adminPayments.transactionsCount', { count: PAYMENTS.filter((p) => p.state === 'RELEASED').length })}
           icon={ArrowDownRight}
           tone="success"
           index={1}
         />
         <StatsCard
-          label="عمولة المنصة"
+          label={t('adminPayments.platformCommission')}
           value={<Currency amount={totalCommission} />}
-          hint="على كل المعاملات"
+          hint={t('adminPayments.onAllTransactions')}
           icon={Wallet}
           tone="default"
           index={2}
         />
         <StatsCard
-          label="مردود"
+          label={t('adminPayments.refunded')}
           value={PAYMENTS.filter((p) => p.state === 'REFUNDED').length}
-          hint="استرداد"
+          hint={t('adminPayments.refund')}
           icon={RotateCcw}
           tone="danger"
           index={3}
@@ -99,10 +101,10 @@ export default function AdminPaymentsPage() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="ALL">الكل ({PAYMENTS.length})</TabsTrigger>
-          <TabsTrigger value="HELD">في Escrow ({PAYMENTS.filter((p) => p.state === 'HELD').length})</TabsTrigger>
-          <TabsTrigger value="RELEASED">مفرَج ({PAYMENTS.filter((p) => p.state === 'RELEASED').length})</TabsTrigger>
-          <TabsTrigger value="REFUNDED">مردود ({PAYMENTS.filter((p) => p.state === 'REFUNDED').length})</TabsTrigger>
+          <TabsTrigger value="ALL">{t('adminPayments.tabAll', { count: PAYMENTS.length })}</TabsTrigger>
+          <TabsTrigger value="HELD">{t('adminPayments.tabHeld', { count: PAYMENTS.filter((p) => p.state === 'HELD').length })}</TabsTrigger>
+          <TabsTrigger value="RELEASED">{t('adminPayments.tabReleased', { count: PAYMENTS.filter((p) => p.state === 'RELEASED').length })}</TabsTrigger>
+          <TabsTrigger value="REFUNDED">{t('adminPayments.tabRefunded', { count: PAYMENTS.filter((p) => p.state === 'REFUNDED').length })}</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -112,14 +114,14 @@ export default function AdminPaymentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>العملية</TableHead>
-                <TableHead>الطلب</TableHead>
-                <TableHead>العميل</TableHead>
-                <TableHead>الناقل</TableHead>
-                <TableHead className="text-end">المبلغ</TableHead>
-                <TableHead className="text-end">العمولة</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>الدفع</TableHead>
+                <TableHead>{t('adminPayments.colTransaction')}</TableHead>
+                <TableHead>{t('adminPayments.colOrder')}</TableHead>
+                <TableHead>{t('adminPayments.colClient')}</TableHead>
+                <TableHead>{t('adminPayments.colCarrier')}</TableHead>
+                <TableHead className="text-end">{t('adminPayments.colAmount')}</TableHead>
+                <TableHead className="text-end">{t('adminPayments.colCommission')}</TableHead>
+                <TableHead>{t('adminPayments.colStatus')}</TableHead>
+                <TableHead>{t('adminPayments.colPayment')}</TableHead>
                 <TableHead className="text-end"></TableHead>
               </TableRow>
             </TableHeader>
@@ -143,7 +145,7 @@ export default function AdminPaymentsPage() {
                         disabled={releasingId === p.id}
                       >
                         {releasingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                        إفراج
+                        {t('adminPayments.release')}
                       </Button>
                     )}
                   </TableCell>

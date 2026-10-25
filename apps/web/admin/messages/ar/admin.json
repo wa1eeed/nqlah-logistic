@@ -31,10 +31,287 @@
  "dashboard": {
  "title": "لوحة التحكم",
  "subtitle": "نظرة عامة على نشاط المنصة",
+ "subtitleFull": "نظرة شاملة على نشاط منصة نقلة",
  "totalCompanies": "إجمالي الشركات",
  "totalOrders": "إجمالي الطلبات",
  "openDisputes": "نزاعات مفتوحة",
- "platformRevenue": "إيراد المنصة"
+ "platformRevenue": "إيراد المنصة",
+ "export": "تصدير",
+ "ordersThisMonth": "طلبات هذا الشهر",
+ "totalRecorded": "الإجمالي المسجَّل",
+ "totalTransactions": "إجمالي المعاملات",
+ "commissionEarned": "عمولة محقّقة: {amount} ر.س.",
+ "activeCompanies": "شركات نشطة",
+ "awaitingKyc": "{count} بانتظار KYC",
+ "needsReview": "تحتاج مراجعة",
+ "activeDriversNow": "سائقون نشطون الآن",
+ "onTrip": "بحالة في رحلة",
+ "latestOrders": "آخر الطلبات",
+ "latestOrdersDesc": "آخر 7 طلبات على المنصة",
+ "all": "الكل",
+ "col": {
+ "number": "رقم",
+ "client": "العميل",
+ "route": "المسار",
+ "status": "الحالة",
+ "amount": "المبلغ"
+ },
+ "urgentTasks": "مهام عاجلة",
+ "urgentTasksDesc": "تحتاج مراجعة فورية",
+ "disputePrefix": "نزاع · {reason}",
+ "kycAwaitingReview": "KYC بانتظار المراجعة",
+ "escrowReleaseReady": "إفراج Escrow جاهز",
+ "escrowMeta": "{id} · {amount} ر.س.",
+ "recentActivity": "آخر نشاط",
+ "newOrderPublished": "طلب جديد منشور",
+ "escrowReleased": "إفراج عن مبلغ Escrow",
+ "escrowReleasedMeta": "{amount} ر.س. · أمس",
+ "orderAwaitingOffer": "طلب بانتظار قبول العرض",
+ "orderMeta": "{orderNumber} · منذ ساعتين",
+ "threeHoursAgo": "منذ 3 ساعات"
+ },
+ "audit": {
+ "eyebrow": "النظام",
+ "title": "سجل التدقيق",
+ "subtitle": "سجل غير قابل للتعديل لكل الإجراءات الحساسة على المنصة",
+ "searchPlaceholder": "ابحث في السجل...",
+ "allCategories": "كل الفئات",
+ "allRoles": "كل الأدوار",
+ "empty": "لا توجد إدخالات مطابقة",
+ "category": {
+ "AUTH": "حساب",
+ "COMPANY": "شركة",
+ "KYC": "KYC",
+ "ORDER": "طلب",
+ "PAYMENT": "دفع",
+ "DISPUTE": "نزاع",
+ "SETTINGS": "إعدادات",
+ "WALLET": "محفظة",
+ "TICKET": "تذكرة"
+ },
+ "actor": {
+ "ADMIN": "أدمن",
+ "SYSTEM": "النظام",
+ "CLIENT": "عميل",
+ "CARRIER": "ناقل"
+ }
+ },
+ "promotions": {
+ "eyebrow": "النظام",
+ "title": "الترويج والعروض",
+ "subtitle": "إدارة أكواد الخصم والحملات الترويجية للعملاء والناقلين",
+ "newCampaign": "حملة جديدة",
+ "totalCampaigns": "إجمالي الحملات",
+ "active": "فعّالة",
+ "totalUses": "إجمالي الاستخدامات",
+ "drafts": "مسودّات",
+ "col": {
+ "code": "الكود",
+ "description": "الوصف",
+ "audience": "الجمهور",
+ "type": "النوع",
+ "value": "القيمة",
+ "usage": "الاستخدام",
+ "validity": "السريان",
+ "status": "الحالة"
+ },
+ "copy": "نسخ",
+ "fixedAmount": "{value} ر.س",
+ "fullWaiver": "إعفاء كامل",
+ "pause": "إيقاف",
+ "activate": "تفعيل",
+ "delete": "حذف",
+ "status": {
+ "ACTIVE": "فعّال",
+ "PAUSED": "متوقّف",
+ "EXPIRED": "منته",
+ "DRAFT": "مسودّة"
+ },
+ "kind": {
+ "PERCENTAGE_OFF": "نسبة خصم",
+ "FIXED_AMOUNT": "مبلغ ثابت",
+ "COMMISSION_WAIVER": "إعفاء عمولة"
+ },
+ "audience": {
+ "CLIENT": "العملاء",
+ "CARRIER": "الناقلون",
+ "ALL": "الجميع"
+ }
+ },
+ "legal": {
+ "eyebrow": "قانوني و SEO",
+ "title": "إدارة الصفحات القانونية",
+ "subtitle": "تحرير ونشر شروط الاستخدام، سياسة الخصوصية، وشروط النقل",
+ "unpublishedDraft": "مسودّة غير منشورة",
+ "lastPublished": "آخر نشر: {date}",
+ "draftSaved": "مسودة محفوظة: {date}",
+ "savedNow": "حُفظ الآن",
+ "previewOnSite": "معاينة على الموقع",
+ "discardDraft": "تجاهل المسودّة",
+ "publish": "نشر",
+ "editMarkdown": "تحرير (Markdown)",
+ "preview": "معاينة",
+ "resetDefault": "استرجاع الافتراضي",
+ "confirmReset": "استرجاع المحتوى الافتراضي؟ ستفقد كل التعديلات والنسخة المنشورة الحالية.",
+ "autoSaveHint": "يُحفظ تلقائيا كمسودّة. اضغط \"نشر\" لتطبيق التغييرات.",
+ "confirmPublish": "تأكيد النشر",
+ "publishDialogDesc": "سيتم تحديث الإصدار من v{from} إلى v{to} ويُعرض المحتوى الجديد لكل المستخدمين فورا.",
+ "reacceptTitle": "المستخدمون الحاليون قد يحتاجون إعادة الموافقة",
+ "reacceptDesc": "يُسجَّل تاريخ آخر موافقة لكل مستخدم، ويمكن طلب إعادة الموافقة عند تغيير الإصدار.",
+ "cancel": "إلغاء",
+ "publishNow": "نشر الآن",
+ "charCount": "{count} حرف",
+ "doc": {
+ "terms": {
+ "label": "شروط الاستخدام",
+ "description": "اتفاقية المستخدم النهائي للمنصة"
+ },
+ "privacy": {
+ "label": "سياسة الخصوصية",
+ "description": "كيف نجمع ونحمي البيانات الشخصية"
+ },
+ "transport": {
+ "label": "شروط وأحكام النقل",
+ "description": "الشروط الخاصة بعمليات نقل البضائع"
+ }
+ },
+ "editor": {
+ "boldSnippet": "**نص**",
+ "italicSnippet": "*نص*",
+ "listSnippet": "\n- عنصر",
+ "orderedSnippet": "\n1. عنصر",
+ "linkSnippet": "[نص](https://)",
+ "codeSnippet": "`كود`"
+ }
+ },
+ "seo": {
+ "eyebrow": "قانوني و SEO",
+ "title": "إعدادات SEO وميتا",
+ "subtitle": "تحكم في كيفية ظهور الموقع في محركات البحث ووسائل التواصل",
+ "confirmReset": "استرجاع كل إعدادات SEO للقيم الافتراضية؟",
+ "resetDefault": "استرجاع الافتراضي",
+ "saved": "حُفظ",
+ "save": "حفظ",
+ "tabs": {
+ "general": "عام",
+ "verification": "التحقق والتحليلات",
+ "serpPreview": "معاينة SERP"
+ },
+ "general": {
+ "cardTitle": "الإعدادات الأساسية",
+ "cardDesc": "تظهر في عنوان نتيجة البحث والمتصفح",
+ "siteName": "اسم الموقع",
+ "defaultTitle": "العنوان الافتراضي",
+ "titleTemplate": "قالب العنوان (Template)",
+ "titleTemplatePlaceholder": "%s | نقلة",
+ "templateHint": "استخدم %s لاسم الصفحة",
+ "defaultDescription": "الوصف الافتراضي (Meta Description)",
+ "keywords": "الكلمات المفتاحية (مفصولة بفاصلة)",
+ "keywordsPlaceholder": "نقل بضائع, شحن, لوجستيات",
+ "canonical": "الرابط الكنسي (Canonical)",
+ "locale": "اللغة والمنطقة (Locale)",
+ "robotsHeading": "تعليمات robots.txt",
+ "length": "الطول: {count} حرف",
+ "preferUnder60": "مفضّل تحت 60 حرفا",
+ "preferUnder160": "مفضّل تحت 160 حرفا",
+ "allowIndex": "السماح بالأرشفة (index)",
+ "allowIndexDesc": "إذا أوقفته لن يظهر الموقع في محركات البحث",
+ "allowFollow": "السماح بتتبع الروابط (follow)",
+ "allowFollowDesc": "السماح بزحف الروابط الداخلية والخارجية"
+ },
+ "social": {
+ "cardDesc": "تتحكم في كيفية ظهور الموقع عند المشاركة على فيسبوك، تويتر، واتساب",
+ "ogImage": "صورة المشاركة (Open Graph Image)",
+ "ogImageHint": "المقاس الموصى به: 1200×630 بكسل",
+ "twitterHandle": "Twitter Handle",
+ "themeColor": "Theme Color",
+ "ogCardPreview": "معاينة بطاقة OG",
+ "ogImageNotSet": "صورة OG غير محددة"
+ },
+ "structured": {
+ "cardDesc": "بيانات الشركة المنظّمة لـ Google Knowledge Graph",
+ "orgName": "اسم المنظمة",
+ "orgLogo": "شعار المنظمة (URL)",
+ "phone": "الهاتف",
+ "email": "البريد",
+ "jsonLdPreview": "معاينة JSON-LD"
+ },
+ "verification": {
+ "cardTitle": "التحقّق والتحليلات",
+ "cardDesc": "رموز التحقق من ملكية الموقع ومعرفات أدوات التحليل",
+ "googleSearchConsole": "Google Search Console · رمز التحقق",
+ "bingWebmaster": "Bing Webmaster · رمز التحقق",
+ "googleAnalytics": "Google Analytics (G-XXXX)",
+ "metaPixel": "Meta Pixel ID"
+ },
+ "serp": {
+ "cardTitle": "كيف يظهر الموقع في Google",
+ "cardDesc": "تقريبي، قد يختلف حسب جهاز البحث وكلمات البحث",
+ "titleLength": "طول العنوان",
+ "descLength": "طول الوصف",
+ "keywords": "كلمات مفتاحية",
+ "ogSet": "OG محدّد"
+ }
+ },
+ "supportAdmin": {
+ "eyebrow": "النظام",
+ "title": "الدعم الفني",
+ "subtitle": "تذاكر الدعم الواردة من العملاء والناقلين",
+ "totalTickets": "إجمالي التذاكر",
+ "open": "مفتوحة",
+ "inProgress": "قيد المعالجة",
+ "urgent": "عاجلة",
+ "searchPlaceholder": "ابحث في التذاكر...",
+ "allStatuses": "كل الحالات",
+ "allPriorities": "كل الأولويات",
+ "noMatching": "لا توجد تذاكر مطابقة",
+ "selectTicket": "اختر تذكرة لعرض تفاصيلها",
+ "unassigned": "غير معيّن",
+ "messagesCount": "{count} رسالة",
+ "senderClient": "عميل",
+ "senderCarrier": "ناقل",
+ "close": "إغلاق",
+ "linkedOrder": "الطلب المرتبط",
+ "conversationLog": "سجل المحادثة ({count} رسائل)",
+ "conversationHint": "عرض المحادثة سيظهر في الواجهة الكاملة للتذكرة.",
+ "replyToTicket": "رد على التذكرة",
+ "col": {
+ "subject": "الموضوع",
+ "sender": "المُرسِل",
+ "category": "الفئة",
+ "priority": "الأولوية",
+ "assignee": "المسؤول",
+ "lastUpdate": "آخر تحديث",
+ "status": "الحالة"
+ },
+ "detail": {
+ "sender": "المُرسِل",
+ "assignee": "المسؤول",
+ "category": "الفئة",
+ "description": "الوصف"
+ },
+ "status": {
+ "OPEN": "مفتوحة",
+ "IN_PROGRESS": "قيد المعالجة",
+ "WAITING_USER": "بانتظار العميل",
+ "RESOLVED": "محلولة",
+ "CLOSED": "مغلقة"
+ },
+ "priority": {
+ "LOW": "منخفضة",
+ "MEDIUM": "متوسطة",
+ "HIGH": "عالية",
+ "URGENT": "عاجلة"
+ },
+ "category": {
+ "ACCOUNT": "حساب",
+ "BILLING": "فواتير",
+ "ORDER": "طلب",
+ "TECHNICAL": "تقني",
+ "KYC": "KYC",
+ "DRIVER": "سائق",
+ "OTHER": "أخرى"
+ }
  },
  "settings": {
  "title": "إعدادات المنصة",

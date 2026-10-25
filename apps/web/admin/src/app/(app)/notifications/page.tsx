@@ -1,5 +1,6 @@
 'use client';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
 import {
@@ -53,6 +54,7 @@ const ICONS: Record<string, { icon: any; tone: string }> = {
 };
 
 export default function AdminNotificationsPage() {
+  const t = useTranslations('notifications');
   const { data, mutate } = useSWR<{ items?: ApiNotification[]; data?: ApiNotification[]; unread?: number } | ApiNotification[]>(
     '/notifications',
     fetcher,
@@ -85,7 +87,7 @@ export default function AdminNotificationsPage() {
       await api.put(`/notifications/${id}/read`, {});
       await mutate();
     } catch (err) {
-      notify.error(err, 'فشل تحديث الإشعار');
+      notify.error(err, t('updateFailed'));
     }
   };
 
@@ -93,22 +95,22 @@ export default function AdminNotificationsPage() {
     try {
       await api.put('/notifications/read-all', {});
       await mutate();
-      notify.success('تم وضع كل الإشعارات كمقروءة');
+      notify.success(t('allMarkedRead'));
     } catch (err) {
-      notify.error(err, 'فشل العملية');
+      notify.error(err, t('operationFailed'));
     }
   };
 
   return (
     <>
       <PageHeader
-        eyebrow="النظام"
-        title="مركز الإشعارات"
-        subtitle={`${unread} إشعار غير مقروء`}
+        eyebrow={t('eyebrow')}
+        title={t('centerTitle')}
+        subtitle={t('unreadCount', { count: unread })}
         actions={
           unread > 0 && (
             <Button variant="outline" onClick={markAllRead}>
-              <CheckCheck className="h-4 w-4" /> تعليم الكل كمقروء
+              <CheckCheck className="h-4 w-4" /> {t('markAllRead')}
             </Button>
           )
         }
@@ -119,7 +121,7 @@ export default function AdminNotificationsPage() {
           {items.length === 0 ? (
             <div className="py-16 text-center text-muted-foreground">
               <Bell className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              لا توجد إشعارات
+              {t('noNotifications')}
             </div>
           ) : (
             <div className="divide-y">

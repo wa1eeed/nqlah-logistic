@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle, CheckCircle2, Clock, Eye, FileText, History, RotateCcw, Save, Scale, Send, Shield, Truck,
 } from 'lucide-react';
@@ -15,19 +16,20 @@ import { formatDate, type LegalDocId } from '@naqla/shared-utils';
 import { useLegalStore } from '@/stores/legal-store';
 import { cn } from '@/lib/utils';
 
-const DOC_META: Record<LegalDocId, { label: string; icon: any; description: string; url: string }> = {
-  terms:     { label: 'شروط الاستخدام',       icon: Scale,  description: 'اتفاقية المستخدم النهائي للمنصة', url: '/terms' },
-  privacy:   { label: 'سياسة الخصوصية',       icon: Shield, description: 'كيف نجمع ونحمي البيانات الشخصية',  url: '/privacy' },
-  transport: { label: 'شروط وأحكام النقل',    icon: Truck,  description: 'الشروط الخاصة بعمليات نقل البضائع', url: '/transport' },
+const DOC_META: Record<LegalDocId, { icon: any; url: string }> = {
+  terms:     { icon: Scale,  url: '/terms' },
+  privacy:   { icon: Shield, url: '/privacy' },
+  transport: { icon: Truck,  url: '/transport' },
 };
 
 export default function AdminLegalPage() {
+  const t = useTranslations('admin');
   return (
     <>
       <PageHeader
-        eyebrow="قانوني و SEO"
-        title="إدارة الصفحات القانونية"
-        subtitle="تحرير ونشر شروط الاستخدام، سياسة الخصوصية، وشروط النقل"
+        eyebrow={t('legal.eyebrow')}
+        title={t('legal.title')}
+        subtitle={t('legal.subtitle')}
       />
       <Tabs defaultValue="terms" className="space-y-4">
         <TabsList>
@@ -35,7 +37,7 @@ export default function AdminLegalPage() {
             const Icon = DOC_META[id].icon;
             return (
               <TabsTrigger key={id} value={id}>
-                <Icon className="h-4 w-4 me-1.5" /> {DOC_META[id].label}
+                <Icon className="h-4 w-4 me-1.5" /> {t(`legal.doc.${id}.label`)}
               </TabsTrigger>
             );
           })}
@@ -51,6 +53,7 @@ export default function AdminLegalPage() {
 }
 
 function DocEditor({ docId }: { docId: LegalDocId }) {
+  const t = useTranslations('admin');
   const doc = useLegalStore((s) => s.docs[docId]);
   const saveDraft = useLegalStore((s) => s.saveDraft);
   const publish = useLegalStore((s) => s.publish);
@@ -82,15 +85,15 @@ function DocEditor({ docId }: { docId: LegalDocId }) {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <CardTitle>{meta.label}</CardTitle>
+              <CardTitle>{t(`legal.doc.${docId}.label`)}</CardTitle>
               <Badge variant="outline" className="font-mono">v{doc.version}</Badge>
-              {hasDraft && <Badge variant="warning"><Clock className="h-3 w-3 me-1" /> مسودّة غير منشورة</Badge>}
+              {hasDraft && <Badge variant="warning"><Clock className="h-3 w-3 me-1" /> {t('legal.unpublishedDraft')}</Badge>}
             </div>
-            <CardDescription className="mt-1">{meta.description}</CardDescription>
+            <CardDescription className="mt-1">{t(`legal.doc.${docId}.description`)}</CardDescription>
             <div className="mt-2 text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
-              <span><History className="h-3 w-3 inline me-1" />آخر نشر: {formatDate(doc.publishedAt, 'd MMMM yyyy · HH:mm')}</span>
-              {doc.draftUpdatedAt && <span>• مسودة محفوظة: {formatDate(doc.draftUpdatedAt, 'd MMMM · HH:mm')}</span>}
-              {savedAt && <span className="text-success inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> حُفظ الآن</span>}
+              <span><History className="h-3 w-3 inline me-1" />{t('legal.lastPublished', { date: formatDate(doc.publishedAt, 'd MMMM yyyy · HH:mm') })}</span>
+              {doc.draftUpdatedAt && <span>• {t('legal.draftSaved', { date: formatDate(doc.draftUpdatedAt, 'd MMMM · HH:mm') })}</span>}
+              {savedAt && <span className="text-success inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> {t('legal.savedNow')}</span>}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -100,11 +103,11 @@ function DocEditor({ docId }: { docId: LegalDocId }) {
               rel="noreferrer"
               className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
             >
-              <Eye className="h-3.5 w-3.5" /> معاينة على الموقع
+              <Eye className="h-3.5 w-3.5" /> {t('legal.previewOnSite')}
             </a>
             {hasDraft && (
               <Button variant="ghost" size="sm" onClick={() => discardDraft(docId)}>
-                <RotateCcw className="h-3.5 w-3.5" /> تجاهل المسودّة
+                <RotateCcw className="h-3.5 w-3.5" /> {t('legal.discardDraft')}
               </Button>
             )}
             <Button
@@ -112,7 +115,7 @@ function DocEditor({ docId }: { docId: LegalDocId }) {
               onClick={() => setConfirmOpen(true)}
               disabled={!hasDraft}
             >
-              <Send className="h-3.5 w-3.5" /> نشر
+              <Send className="h-3.5 w-3.5" /> {t('legal.publish')}
             </Button>
           </div>
         </div>
@@ -122,19 +125,19 @@ function DocEditor({ docId }: { docId: LegalDocId }) {
         <Tabs value={tab} onValueChange={(v) => setTab(v as 'edit' | 'preview')}>
           <div className="flex items-center justify-between mb-3">
             <TabsList>
-              <TabsTrigger value="edit">تحرير (Markdown)</TabsTrigger>
-              <TabsTrigger value="preview">معاينة</TabsTrigger>
+              <TabsTrigger value="edit">{t('legal.editMarkdown')}</TabsTrigger>
+              <TabsTrigger value="preview">{t('legal.preview')}</TabsTrigger>
             </TabsList>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
-                if (confirm('استرجاع المحتوى الافتراضي؟ ستفقد كل التعديلات والنسخة المنشورة الحالية.')) {
+                if (confirm(t('legal.confirmReset'))) {
                   resetDoc(docId);
                 }
               }}
             >
-              استرجاع الافتراضي
+              {t('legal.resetDefault')}
             </Button>
           </div>
 
@@ -145,7 +148,7 @@ function DocEditor({ docId }: { docId: LegalDocId }) {
             />
             <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
               <Save className="h-3 w-3" />
-              يُحفظ تلقائيا كمسودّة. اضغط "نشر" لتطبيق التغييرات.
+              {t('legal.autoSaveHint')}
             </div>
           </TabsContent>
 
@@ -160,20 +163,20 @@ function DocEditor({ docId }: { docId: LegalDocId }) {
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد النشر</DialogTitle>
-            <DialogDescription>سيتم تحديث الإصدار من v{doc.version} إلى v{bumpVersionLabel(doc.version)} ويُعرض المحتوى الجديد لكل المستخدمين فورا.</DialogDescription>
+            <DialogTitle>{t('legal.confirmPublish')}</DialogTitle>
+            <DialogDescription>{t('legal.publishDialogDesc', { from: doc.version, to: bumpVersionLabel(doc.version) })}</DialogDescription>
           </DialogHeader>
           <div className="rounded-md bg-warning/10 border border-warning/30 p-3 flex items-start gap-2 text-sm">
             <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold">المستخدمون الحاليون قد يحتاجون إعادة الموافقة</p>
-              <p className="mt-1 text-xs text-muted-foreground">يُسجَّل تاريخ آخر موافقة لكل مستخدم، ويمكن طلب إعادة الموافقة عند تغيير الإصدار.</p>
+              <p className="font-semibold">{t('legal.reacceptTitle')}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('legal.reacceptDesc')}</p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>{t('legal.cancel')}</Button>
             <Button onClick={handlePublish}>
-              <CheckCircle2 className="h-4 w-4" /> نشر الآن
+              <CheckCircle2 className="h-4 w-4" /> {t('legal.publishNow')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -191,6 +194,7 @@ function bumpVersionLabel(v: string): string {
 // ─── Markdown editor + preview ────────────────────────────────────────
 
 function MarkdownEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const t = useTranslations('admin');
   const insertAtCursor = (snippet: string) => {
     const el = document.getElementById('md-editor') as HTMLTextAreaElement | null;
     if (!el) return;
@@ -204,13 +208,13 @@ function MarkdownEditor({ value, onChange }: { value: string; onChange: (v: stri
     { label: 'H1', insert: '\n# ' },
     { label: 'H2', insert: '\n## ' },
     { label: 'H3', insert: '\n### ' },
-    { label: 'Bold', insert: '**نص**' },
-    { label: 'Italic', insert: '*نص*' },
-    { label: 'List', insert: '\n- عنصر' },
-    { label: 'Ordered', insert: '\n1. عنصر' },
-    { label: 'Link', insert: '[نص](https://)' },
+    { label: 'Bold', insert: t('legal.editor.boldSnippet') },
+    { label: 'Italic', insert: t('legal.editor.italicSnippet') },
+    { label: 'List', insert: t('legal.editor.listSnippet') },
+    { label: 'Ordered', insert: t('legal.editor.orderedSnippet') },
+    { label: 'Link', insert: t('legal.editor.linkSnippet') },
     { label: 'Quote', insert: '\n> ' },
-    { label: 'Code', insert: '`كود`' },
+    { label: 'Code', insert: t('legal.editor.codeSnippet') },
   ];
 
   return (
@@ -227,7 +231,7 @@ function MarkdownEditor({ value, onChange }: { value: string; onChange: (v: stri
           </button>
         ))}
         <div className="ms-auto text-xs text-muted-foreground pe-2 num">
-          {value.length.toLocaleString('en-US')} حرف
+          {t('legal.charCount', { count: value.length.toLocaleString('en-US') })}
         </div>
       </div>
       <textarea

@@ -19,10 +19,12 @@ import { MiniStat } from '@/components/ui/mini-stat';
 import { FadeIn } from '@/components/ui/fade-in';
 import { FileText, Truck, Gavel, Wallet } from 'lucide-react';
 import useSWR from 'swr';
+import { useTranslations } from 'next-intl';
 import { fetcher } from '@/lib/api';
 import { ORDERS, companyById, formatDate, normalizeOrderList, SAUDI_CITIES, type Order } from '@naqla/shared-utils';
 
 export default function AdminOrdersPage() {
+  const t = useTranslations('orders');
   const [tab, setTab] = useState('ALL');
   const [city, setCity] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -53,12 +55,12 @@ export default function AdminOrdersPage() {
   }, [all, tab, city, search]);
 
   const TABS = [
-    { key: 'ALL',        label: 'الكل' },
-    { key: 'PUBLISHED',  label: 'منشور' },
-    { key: 'BIDDING',    label: 'قيد العروض' },
-    { key: 'IN_TRANSIT', label: 'في الطريق' },
-    { key: 'COMPLETED',  label: 'مكتمل' },
-    { key: 'CANCELLED',  label: 'ملغى' },
+    { key: 'ALL',        label: t('adminList.tabAll') },
+    { key: 'PUBLISHED',  label: t('status.published') },
+    { key: 'BIDDING',    label: t('status.bidding') },
+    { key: 'IN_TRANSIT', label: t('status.inTransit') },
+    { key: 'COMPLETED',  label: t('status.completed') },
+    { key: 'CANCELLED',  label: t('status.cancelled') },
   ];
 
   const inTransit = all.filter((o) => o.status === 'IN_TRANSIT').length;
@@ -67,14 +69,14 @@ export default function AdminOrdersPage() {
 
   return (
     <>
-      <PageHeader eyebrow="إدارة المنصة" title="الطلبات" subtitle="متابعة جميع طلبات الشحن وحالتها عبر المنصة" />
+      <PageHeader eyebrow={t('adminList.eyebrow')} title={t('title')} subtitle={t('adminList.subtitle')} />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MiniStat label="إجمالي الطلبات" value={all.length} icon={FileText} index={0} />
-        <MiniStat label="في الطريق" value={inTransit} icon={Truck} tone="success" index={1} />
-        <MiniStat label="عروض نشطة" value={bidding} icon={Gavel} tone="warning" index={2} />
-        <MiniStat label="قيمة المعاملات" value={<Currency amount={gmv} />} icon={Wallet} tone="default" index={3} />
+        <MiniStat label={t('adminList.statTotal')} value={all.length} icon={FileText} index={0} />
+        <MiniStat label={t('status.inTransit')} value={inTransit} icon={Truck} tone="success" index={1} />
+        <MiniStat label={t('adminList.statActiveBids')} value={bidding} icon={Gavel} tone="warning" index={2} />
+        <MiniStat label={t('adminList.statGmv')} value={<Currency amount={gmv} />} icon={Wallet} tone="default" index={3} />
       </div>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -94,15 +96,15 @@ export default function AdminOrdersPage() {
 
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Select value={city} onValueChange={setCity}>
-            <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="كل المدن" /></SelectTrigger>
+            <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder={t('adminList.allCities')} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">كل المدن</SelectItem>
+              <SelectItem value="ALL">{t('adminList.allCities')}</SelectItem>
               {SAUDI_CITIES.slice(0, 20).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
           <div className="relative w-full md:w-80">
             <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="بحث..." value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9" />
+            <Input placeholder={t('adminList.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9" />
           </div>
         </div>
       </div>
@@ -113,21 +115,21 @@ export default function AdminOrdersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>رقم</TableHead>
-                <TableHead>العميل</TableHead>
-                <TableHead>الناقل</TableHead>
-                <TableHead>المسار</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="text-center">عروض</TableHead>
-                <TableHead className="text-end">المبلغ</TableHead>
-                <TableHead>التاريخ</TableHead>
+                <TableHead>{t('adminList.colNumber')}</TableHead>
+                <TableHead>{t('fields.client')}</TableHead>
+                <TableHead>{t('fields.carrier')}</TableHead>
+                <TableHead>{t('fields.route')}</TableHead>
+                <TableHead>{t('adminList.colType')}</TableHead>
+                <TableHead>{t('adminList.colStatus')}</TableHead>
+                <TableHead className="text-center">{t('adminList.colBids')}</TableHead>
+                <TableHead className="text-end">{t('fields.amount')}</TableHead>
+                <TableHead>{t('fields.date')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-10">لا توجد طلبات</TableCell>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-10">{t('noOrders')}</TableCell>
                 </TableRow>
               ) : (
                 rows.map((o) => (
@@ -142,7 +144,7 @@ export default function AdminOrdersPage() {
                     <TableCell>{o.originCity} ← {o.destinationCity}</TableCell>
                     <TableCell>
                       <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'}>
-                        {o.mode === 'OPEN' ? 'مفتوح' : 'مباشر'}
+                        {o.mode === 'OPEN' ? t('adminList.modeOpen') : t('adminList.modeDirect')}
                       </Badge>
                     </TableCell>
                     <TableCell><StatusBadge status={o.status} /></TableCell>

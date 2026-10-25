@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
 import useSWR from 'swr';
+import { useTranslations } from 'next-intl';
 import { fetcher } from '@/lib/api';
 import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
@@ -25,16 +26,18 @@ import {
 } from '@naqla/shared-utils';
 import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 
-const TITLES: Record<string, string> = {
-  CREATED: 'إنشاء الطلب', PUBLISHED: 'نشر الطلب', BID_RECEIVED: 'استلام عرض',
-  BID_ACCEPTED: 'قبول عرض', CONFIRMED: 'تأكيد التحميل', PICKED_UP: 'تم الاستلام',
-  IN_TRANSIT: 'في الطريق', DELIVERED: 'تم التسليم',
-  PAYMENT_RELEASED: 'إفراج Escrow', COMPLETED: 'إغلاق الطلب', CANCELLED: 'إلغاء',
-};
+const TIMELINE_TITLE_KEYS = [
+  'CREATED', 'PUBLISHED', 'BID_RECEIVED', 'BID_ACCEPTED', 'CONFIRMED', 'PICKED_UP',
+  'IN_TRANSIT', 'DELIVERED', 'PAYMENT_RELEASED', 'COMPLETED', 'CANCELLED',
+] as const;
 
 export default function AdminOrderDetail() {
+  const t = useTranslations('orders');
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const TITLES: Record<string, string> = Object.fromEntries(
+    TIMELINE_TITLE_KEYS.map((k) => [k, t(`adminDetail.titles.${k}`)]),
+  );
   // Real-API source of truth (with mock fallback through the api interceptor).
   // normalizeOrder aliases Prisma field names so the UI doesn't crash on
   // weight/requiredTruckType/_count.bids — same pattern as client/carrier
@@ -55,8 +58,8 @@ export default function AdminOrderDetail() {
       <Card>
         <CardContent className="py-16 text-center">
           <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-semibold">الطلب غير موجود</h3>
-          <Button onClick={() => router.push('/orders')} className="mt-4">عودة</Button>
+          <h3 className="font-semibold">{t('adminDetail.notFound')}</h3>
+          <Button onClick={() => router.push('/orders')} className="mt-4">{t('adminDetail.backAlt')}</Button>
         </CardContent>
       </Card>
     );
@@ -95,17 +98,17 @@ export default function AdminOrderDetail() {
   return (
     <>
       <PageHeader
-        eyebrow="تفاصيل الطلب"
+        eyebrow={t('details')}
         title={order.orderNumber}
         subtitle={`${order.originCity} ← ${order.destinationCity} · ${formatDateTime(order.createdAt)}`}
         actions={
           <>
             <StatusBadge status={order.status} />
             <Badge variant={order.mode === 'DIRECT' ? 'warning' : 'secondary'}>
-              {order.mode === 'OPEN' ? 'سوق مفتوح' : 'إرسال مباشر'}
+              {order.mode === 'OPEN' ? t('mode.open') : t('mode.direct')}
             </Badge>
             <Button variant="outline" onClick={() => router.push('/orders')}>
-              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('adminDetail.back')}
             </Button>
           </>
         }
@@ -134,8 +137,8 @@ export default function AdminOrderDetail() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>العروض على الطلب</CardTitle>
-                  <Badge variant="secondary">{bids.length} عرض</Badge>
+                  <CardTitle>{t('adminDetail.bidsTitle')}</CardTitle>
+                  <Badge variant="secondary">{t('bidding.bidsCount', { count: String(bids.length) })}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -150,7 +153,7 @@ export default function AdminOrderDetail() {
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{c.nameAr}</div>
                         <div className="text-xs text-muted-foreground">
-                          {bid.estimatedDays} أيام · {bid.truckType}
+                          {t('adminDetail.daysUnit', { days: String(bid.estimatedDays ?? '') })} · {bid.truckType}
                         </div>
                       </div>
                       <Currency amount={bid.price} />
@@ -164,7 +167,7 @@ export default function AdminOrderDetail() {
 
           {/* Timeline */}
           <Card>
-            <CardHeader><CardTitle>سجل الأحداث</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('timeline')}</CardTitle></CardHeader>
             <CardContent>
               <ol className="relative">
                 {timeline.map((ev, i) => (
@@ -195,17 +198,17 @@ export default function AdminOrderDetail() {
 
         {/* Sidebar col */}
         <div className="space-y-6">
-          {client && <PartyCard kind="العميل" company={client} onClick={() => router.push(`/companies/${client.id}`)} />}
-          {carrier && <PartyCard kind="الناقل" company={carrier} onClick={() => router.push(`/companies/${carrier.id}`)} />}
+          {client && <PartyCard kind={t('fields.client')} company={client} onClick={() => router.push(`/companies/${client.id}`)} />}
+          {carrier && <PartyCard kind={t('fields.carrier')} company={carrier} onClick={() => router.push(`/companies/${carrier.id}`)} />}
 
           {/* Assigned driver */}
           <Card>
-            <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">السائق المُكلَّف</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">{t('adminDetail.assignedDriver')}</CardTitle></CardHeader>
             <CardContent>
               {orderDrivers.length === 0 ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <User className="h-4 w-4 shrink-0" />
-                  لم يُسند سائق بعد
+                  {t('adminDetail.noDriverAssigned')}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -227,16 +230,16 @@ export default function AdminOrderDetail() {
                         </div>
                         <dl className="divide-y text-xs">
                           <div className="flex justify-between py-1.5">
-                            <dt className="text-muted-foreground">تاريخ الإسناد</dt>
+                            <dt className="text-muted-foreground">{t('adminDetail.assignDate')}</dt>
                             <dd>{formatDate(od.assignedAt, 'd MMM · HH:mm')}</dd>
                           </div>
                           <div className="flex justify-between py-1.5 items-center">
-                            <dt className="text-muted-foreground">الحالة</dt>
+                            <dt className="text-muted-foreground">{t('adminDetail.statusLabel')}</dt>
                             <dd>
                               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium
                                 ${isOnTrip ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success'}`}>
                                 <span className={`h-1.5 w-1.5 rounded-full ${isOnTrip ? 'bg-warning' : 'bg-success'}`} />
-                                {isOnTrip ? 'في رحلة' : 'متاح'}
+                                {isOnTrip ? t('adminDetail.onTrip') : t('adminDetail.available')}
                               </span>
                             </dd>
                           </div>
@@ -250,7 +253,7 @@ export default function AdminOrderDetail() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>تفاصيل الشحنة</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('adminDetail.shipmentDetails')}</CardTitle></CardHeader>
             <CardContent>
               {showShipmentCard && order.orderType === 'CONSOLIDATED' && (
                 <ConsolidatedReadonly order={order} />
@@ -258,7 +261,7 @@ export default function AdminOrderDetail() {
               {showShipmentCard && order.orderType !== 'CONSOLIDATED' && assignedPlate && (
                 <div className="mb-4 rounded-lg border bg-muted/30 p-4 space-y-3">
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-                    <Truck className="h-3.5 w-3.5" /> الشاحنة والسائق
+                    <Truck className="h-3.5 w-3.5" /> {t('adminDetail.truckAndDriver')}
                   </div>
                   <div className="flex flex-col items-center gap-1.5">
                     <SaudiLicensePlate
@@ -277,7 +280,7 @@ export default function AdminOrderDetail() {
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-semibold">{assignedDriver.fullName}</div>
-                        <div className="text-xs text-muted-foreground"><span className="num">{assignedDriver.code}</span> · رخصة {assignedDriver.licenseClass}</div>
+                        <div className="text-xs text-muted-foreground"><span className="num">{assignedDriver.code}</span> · {t('adminDetail.license', { class: assignedDriver.licenseClass })}</div>
                       </div>
                       <a href={`tel:${assignedDriver.phone}`} dir="ltr" className="num text-xs font-medium text-[hsl(var(--mint))]">{assignedDriver.phone}</a>
                     </div>
@@ -285,34 +288,34 @@ export default function AdminOrderDetail() {
                 </div>
               )}
               <dl className="divide-y">
-                <Row label="الوصف" value={order.cargoDescription} />
-                <Row label="الوزن" icon={Weight} value={<span className="num">{order.weightKg.toLocaleString('en-US')} كجم</span>} />
-                <Row label="نوع الشاحنة" icon={Truck} value={order.truckType} />
-                <Row label="تأمين" icon={ShieldCheck} value={order.requiresInsurance ? 'مطلوب' : '—'} />
-                <Row label="تبريد" icon={Snowflake} value={order.requiresRefrigeration ? 'مطلوب' : '—'} />
+                <Row label={t('adminDetail.descLabel')} value={order.cargoDescription} />
+                <Row label={t('fields.weight')} icon={Weight} value={<span className="num">{t('adminDetail.weightUnit', { weight: order.weightKg.toLocaleString('en-US') })}</span>} />
+                <Row label={t('adminDetail.truckType')} icon={Truck} value={order.truckType} />
+                <Row label={t('adminDetail.insuranceLabel')} icon={ShieldCheck} value={order.requiresInsurance ? t('adminDetail.required') : '—'} />
+                <Row label={t('fields.refrigeration')} icon={Snowflake} value={order.requiresRefrigeration ? t('adminDetail.required') : '—'} />
               </dl>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>المسار والمواعيد</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('adminDetail.routeSchedule')}</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
-                <Row label="من" icon={MapPin} value={order.originCity} />
-                <Row label="إلى" icon={MapPin} value={order.destinationCity} />
-                <Row label="موعد الاستلام" icon={Calendar} value={formatDate(order.pickupDate, 'd MMM · HH:mm')} />
+                <Row label={t('fields.from')} icon={MapPin} value={order.originCity} />
+                <Row label={t('fields.to')} icon={MapPin} value={order.destinationCity} />
+                <Row label={t('adminDetail.pickupSchedule')} icon={Calendar} value={formatDate(order.pickupDate, 'd MMM · HH:mm')} />
               </dl>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>المالية</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('adminDetail.financials')}</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
-                <Row label="ميزانية العميل" value={<Currency amount={order.clientBudget} />} />
-                <Row label="السعر المتفق" value={<Currency amount={order.agreedPrice} />} />
-                <Row label="عمولة المنصة" value={<Currency amount={order.commission ?? 0} />} />
-                <Row label="صافي للناقل" value={<Currency amount={order.carrierAmount} />} />
+                <Row label={t('adminDetail.clientBudget')} value={<Currency amount={order.clientBudget} />} />
+                <Row label={t('adminDetail.agreedPrice')} value={<Currency amount={order.agreedPrice} />} />
+                <Row label={t('adminDetail.platformCommission')} value={<Currency amount={order.commission ?? 0} />} />
+                <Row label={t('adminDetail.carrierNet')} value={<Currency amount={order.carrierAmount} />} />
               </dl>
             </CardContent>
           </Card>
@@ -358,6 +361,7 @@ function Row({ label, value, icon: Icon }: { label: string; value: React.ReactNo
 }
 
 function MapSection({ order }: { order: any }) {
+  const t = useTranslations('orders');
   const o = coordsFor(order.originCity);
   const d = coordsFor(order.destinationCity);
   const km = distanceKm(o, d);
@@ -390,9 +394,9 @@ function MapSection({ order }: { order: any }) {
         className="rounded-b-none border-b"
       />
       <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
-        <RouteStat icon={MapPin} label="المسافة" value={<span className="num">{km.toLocaleString('en-US')} كم</span>} />
-        <RouteStat icon={Timer} label="المدة المتوقعة" value={duration} />
-        <RouteStat icon={Navigation} label="الطريق الرئيسي" value={road} />
+        <RouteStat icon={MapPin} label={t('adminDetail.distance')} value={<span className="num">{t('adminDetail.distanceUnit', { km: km.toLocaleString('en-US') })}</span>} />
+        <RouteStat icon={Timer} label={t('adminDetail.estimatedDuration')} value={duration} />
+        <RouteStat icon={Navigation} label={t('adminDetail.mainRoad')} value={road} />
       </CardContent>
     </Card>
   );
@@ -411,12 +415,13 @@ function AdminShipmentStatus({
   effectiveDelivery: string | null;
   fromCarrierBid: boolean;
 }) {
+  const t = useTranslations('orders');
   const meta: Record<string, { text: string; step: 1 | 2 | 3; tone: 'info' | 'warning' | 'success' }> = {
-    ASSIGNED:   { text: 'الطلب مُسند للناقل، قبل الاستلام',            step: 1, tone: 'info' },
-    CONFIRMED:  { text: 'الناقل أكّد الموعد',                          step: 1, tone: 'info' },
-    IN_TRANSIT: { text: 'الشحنة قيد التوصيل',                            step: 2, tone: 'warning' },
-    DELIVERED:  { text: 'تم التسليم، بانتظار تأكيد العميل',             step: 3, tone: 'warning' },
-    COMPLETED:  { text: 'مكتمل',                                        step: 3, tone: 'success' },
+    ASSIGNED:   { text: t('adminDetail.metaAssigned'),   step: 1, tone: 'info' },
+    CONFIRMED:  { text: t('adminDetail.metaConfirmed'),  step: 1, tone: 'info' },
+    IN_TRANSIT: { text: t('adminDetail.metaInTransit'),  step: 2, tone: 'warning' },
+    DELIVERED:  { text: t('adminDetail.metaDelivered'),  step: 3, tone: 'warning' },
+    COMPLETED:  { text: t('status.completed'),           step: 3, tone: 'success' },
   };
   const m = meta[order.status] ?? meta.ASSIGNED;
   const stepClass = (s: 1 | 2 | 3) =>
@@ -428,7 +433,7 @@ function AdminShipmentStatus({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <CardTitle className="flex items-center gap-2">حالة الشحنة <StatusBadge status={order.status} /></CardTitle>
+            <CardTitle className="flex items-center gap-2">{t('adminDetail.shipmentStatus')} <StatusBadge status={order.status} /></CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">{m.text}</p>
           </div>
         </div>
@@ -436,9 +441,9 @@ function AdminShipmentStatus({
       <CardContent className="space-y-5">
         <div className="flex items-center gap-2">
           {[
-            { s: 1 as const, label: 'الاستلام',  icon: MapPin },
-            { s: 2 as const, label: 'في الطريق', icon: Truck },
-            { s: 3 as const, label: 'التسليم',  icon: CheckCircle2 },
+            { s: 1 as const, label: t('adminDetail.stepPickup'),  icon: MapPin },
+            { s: 2 as const, label: t('status.inTransit'), icon: Truck },
+            { s: 3 as const, label: t('adminDetail.stepDelivery'),  icon: CheckCircle2 },
           ].map((step, i, arr) => (
             <div key={step.s} className="flex items-center gap-2 flex-1">
               <div className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${stepClass(step.s)}`}>
@@ -452,18 +457,18 @@ function AdminShipmentStatus({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Calendar className="h-3.5 w-3.5" /> موعد الاستلام</div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Calendar className="h-3.5 w-3.5" /> {t('adminDetail.pickupSchedule')}</div>
             <div className="mt-0.5 font-medium">
               {effectivePickup ? formatDate(effectivePickup, 'EEEE d MMM') : '—'}
             </div>
           </div>
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Package className="h-3.5 w-3.5" /> موعد التسليم المتوقع</div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Package className="h-3.5 w-3.5" /> {t('adminDetail.expectedDelivery')}</div>
             <div className="mt-0.5 font-medium">
-              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : 'سيُحدَّد لاحقا'}
+              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : t('adminDetail.tbd')}
             </div>
             {fromCarrierBid && (
-              <Badge variant="outline" className="mt-1 h-4 text-[10px]">من عرض الناقل</Badge>
+              <Badge variant="outline" className="mt-1 h-4 text-[10px]">{t('adminDetail.fromCarrierBid')}</Badge>
             )}
           </div>
         </div>
@@ -477,6 +482,7 @@ function AdminShipmentStatus({
  * framed as "auto-release in X" for observability. Read-only; no action.
  */
 function AdminEscrowSummary({ deliveredAt, total }: { deliveredAt: Date | string; total: number }) {
+  const t = useTranslations('orders');
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -499,9 +505,9 @@ function AdminEscrowSummary({ deliveredAt, total }: { deliveredAt: Date | string
             <Wallet className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-base">Escrow · في انتظار الإفراج</CardTitle>
+            <CardTitle className="text-base">{t('adminDetail.escrowTitle')}</CardTitle>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              الإفراج التلقائي بعد {ESCROW_AUTO_RELEASE_HOURS} ساعة من التسليم، أو فور تأكيد العميل (أيهما أسبق).
+              {t('adminDetail.escrowNote', { hours: String(ESCROW_AUTO_RELEASE_HOURS) })}
             </p>
           </div>
         </div>
@@ -510,18 +516,18 @@ function AdminEscrowSummary({ deliveredAt, total }: { deliveredAt: Date | string
         <div className="rounded-lg bg-background border p-4">
           <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5" />
-            المتبقّي
+            {t('adminDetail.escrowRemaining')}
           </div>
           <div className="flex items-baseline gap-2 font-mono num" dir="ltr">
-            <span className="text-2xl font-bold">{pad(hours)}</span><span className="text-muted-foreground">س</span>
-            <span className="text-2xl font-bold">{pad(mins)}</span><span className="text-muted-foreground">د</span>
-            <span className="text-2xl font-bold">{pad(secs)}</span><span className="text-muted-foreground">ث</span>
+            <span className="text-2xl font-bold">{pad(hours)}</span><span className="text-muted-foreground">{t('adminDetail.escrowH')}</span>
+            <span className="text-2xl font-bold">{pad(mins)}</span><span className="text-muted-foreground">{t('adminDetail.escrowM')}</span>
+            <span className="text-2xl font-bold">{pad(secs)}</span><span className="text-muted-foreground">{t('adminDetail.escrowS')}</span>
           </div>
           <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div className="h-full bg-warning transition-[width]" style={{ width: `${pct}%` }} aria-hidden />
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            الإفراج المتوقّع:{' '}
+            {t('adminDetail.escrowExpected')}{' '}
             <span className="num" dir="ltr">
               {releaseAt.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
             </span>
@@ -530,15 +536,15 @@ function AdminEscrowSummary({ deliveredAt, total }: { deliveredAt: Date | string
         <div className="rounded-lg bg-background border p-4">
           <dl className="space-y-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-muted-foreground">قيمة الطلب</dt>
+              <dt className="text-muted-foreground">{t('adminDetail.escrowOrderValue')}</dt>
               <dd className="font-medium"><Currency amount={breakdown.total} /></dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-muted-foreground">عمولة المنصة ({Math.round(COMMISSION_RATE * 100)}%)</dt>
+              <dt className="text-muted-foreground">{t('adminDetail.escrowCommission', { pct: String(Math.round(COMMISSION_RATE * 100)) })}</dt>
               <dd className="font-medium text-muted-foreground">−<Currency amount={breakdown.commission} /></dd>
             </div>
             <div className="flex justify-between pt-2 mt-1 border-t font-bold">
-              <dt>صافي للناقل</dt>
+              <dt>{t('adminDetail.carrierNet')}</dt>
               <dd className="text-success"><Currency amount={breakdown.carrierAmount} /></dd>
             </div>
           </dl>
@@ -562,9 +568,6 @@ function RouteStat({ icon: Icon, label, value }: { icon: LucideIcon; label: stri
   );
 }
 
-const LEG_LABEL: Record<ConsolidatedLeg['status'], string> = {
-  PENDING: 'لم تُوزَّع', ASSIGNED: 'موزّعة', IN_TRANSIT: 'في الطريق', DELIVERED: 'سُلّمت',
-};
 const LEG_TONE: Record<ConsolidatedLeg['status'], string> = {
   PENDING: 'bg-muted text-muted-foreground',
   ASSIGNED: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
@@ -578,6 +581,13 @@ type ReadonlyLeg = ConsolidatedLeg & { plateNumber?: string; driverName?: string
 function ConsolidatedReadonly({ order }: {
   order: { id: string; orderNumber: string; truckCount?: number; legs?: ConsolidatedLeg[]; agreedPrice: number | null; commission?: number | null };
 }) {
+  const t = useTranslations('orders');
+  const LEG_LABEL: Record<ConsolidatedLeg['status'], string> = {
+    PENDING: t('adminDetail.legs.PENDING'),
+    ASSIGNED: t('adminDetail.legs.ASSIGNED'),
+    IN_TRANSIT: t('adminDetail.legs.IN_TRANSIT'),
+    DELIVERED: t('adminDetail.legs.DELIVERED'),
+  };
   // Live legs from the API (enriched with plate + driver name); fall back to the
   // mock order legs.
   const { data: legsData } = useSWR<{ truckCount: number; legs: ReadonlyLeg[] }>(`/orders/${order.id}/legs`, fetcher);
@@ -591,9 +601,9 @@ function ConsolidatedReadonly({ order }: {
     <div className="mb-4 space-y-3 rounded-lg border bg-muted/30 p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-          <Layers className="h-3.5 w-3.5" /> طلب مجمّع · {count} شاحنات
+          <Layers className="h-3.5 w-3.5" /> {t('adminDetail.consolidatedTitle', { count: String(count) })}
         </div>
-        <span className="num text-xs text-muted-foreground">موزّعة {distributed}/{count}</span>
+        <span className="num text-xs text-muted-foreground">{t('adminDetail.consolidatedDistributed', { ratio: `${distributed}/${count}` })}</span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-[hsl(var(--mint))]" style={{ width: `${pct}%` }} />
@@ -613,13 +623,13 @@ function ConsolidatedReadonly({ order }: {
                     {leg.reference && <div className="num font-mono text-[11px] text-foreground truncate" dir="ltr">{leg.reference}</div>}
                     {driverName
                       ? <div className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="h-3 w-3" /> {driverName}</div>
-                      : <div className="text-xs text-muted-foreground">بدون سائق</div>}
+                      : <div className="text-xs text-muted-foreground">{t('adminDetail.noDriver')}</div>}
                   </div>
                 </>
               ) : (
                 <div className="min-w-0 flex-1">
                   {leg.reference && <div className="num font-mono text-[11px] text-foreground truncate" dir="ltr">{leg.reference}</div>}
-                  <div className="text-xs text-muted-foreground">لم تُوزَّع بعد</div>
+                  <div className="text-xs text-muted-foreground">{t('adminDetail.notAssignedYet')}</div>
                 </div>
               )}
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${LEG_TONE[leg.status]}`}>{LEG_LABEL[leg.status]}</span>
@@ -628,10 +638,10 @@ function ConsolidatedReadonly({ order }: {
         })}
       </div>
       <div className="rounded-md border bg-background p-3 text-sm">
-        <div className="mb-1 font-semibold">الفاتورة المجمّعة</div>
-        <div className="flex justify-between text-muted-foreground"><span className="num">{count} شاحنات × </span><Currency amount={perLeg} /></div>
-        <div className="mt-1 flex justify-between border-t pt-1 font-semibold"><span>الإجمالي</span><Currency amount={order.agreedPrice ?? 0} /></div>
-        <p className="mt-1 text-[11px] text-muted-foreground">فاتورة واحدة برقم الطلب {order.orderNumber}.</p>
+        <div className="mb-1 font-semibold">{t('adminDetail.consolidatedInvoice')}</div>
+        <div className="flex justify-between text-muted-foreground"><span className="num">{t('adminDetail.trucksMultiplier', { count: String(count) })}</span><Currency amount={perLeg} /></div>
+        <div className="mt-1 flex justify-between border-t pt-1 font-semibold"><span>{t('adminDetail.total')}</span><Currency amount={order.agreedPrice ?? 0} /></div>
+        <p className="mt-1 text-[11px] text-muted-foreground">{t('adminDetail.singleInvoice', { orderNumber: order.orderNumber })}</p>
       </div>
     </div>
   );

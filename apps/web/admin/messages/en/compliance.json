@@ -1,0 +1,194 @@
+{
+  "actions": {
+    "cancel": "Cancel"
+  },
+  "kyc": {
+    "eyebrow": "Platform Administration",
+    "title": "Company Verification (KYC)",
+    "subtitle": "Queue of companies awaiting document verification and approval",
+    "stats": {
+      "total": "Total companies",
+      "pending": "Awaiting approval",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "queueTitle": "Verification queue ({count})",
+    "empty": "No pending verification requests",
+    "kind": {
+      "carrier": "Carrier",
+      "client": "Client"
+    },
+    "accountType": {
+      "individual": "Individual"
+    },
+    "reviewStatus": {
+      "pending": "Awaiting review",
+      "notSubmitted": "Not submitted"
+    },
+    "registeredAt": "Registered {time}",
+    "review": "Review",
+    "reviewDialog": {
+      "title": "Review documents: {name}",
+      "description": "Review the attached documents before approving or rejecting"
+    },
+    "fields": {
+      "nationalId": "National ID number",
+      "crNumber": "Commercial registration",
+      "vatNumber": "VAT number",
+      "city": "City",
+      "region": "Region",
+      "email": "Email",
+      "phone": "Mobile"
+    },
+    "requiredDocs": "Required documents",
+    "docs": {
+      "commercialRegister": "Commercial registration",
+      "zakatCertificate": "Zakat and income certificate",
+      "vatCertificate": "VAT certificate",
+      "insurancePolicy": "Insurance policy",
+      "freightLicense": "Freight transport license"
+    },
+    "docStatus": {
+      "attached": "Attached",
+      "missing": "Missing"
+    },
+    "missingDocWarning": "One document is missing; it can be requested from the company via an automatic support ticket.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectDialog": {
+      "title": "Rejection reason",
+      "description": "This will be shown to the company so it can correct its documents",
+      "placeholder": "Example: the commercial registration is expired...",
+      "confirm": "Confirm rejection"
+    },
+    "toast": {
+      "approvedTitle": "Approved",
+      "approvedBody": "{name} is now active",
+      "approveError": "Failed to approve the company",
+      "rejectedTitle": "Rejected",
+      "rejectedBodyWithReason": "{name}, reason: {reason}",
+      "rejectedBody": "{name} has been rejected",
+      "rejectError": "Failed to reject the company"
+    }
+  },
+  "disputes": {
+    "eyebrow": "Platform Administration",
+    "title": "Disputes",
+    "subtitle": "Manage disputes between clients and carriers and track their resolution",
+    "stats": {
+      "open": "Open",
+      "openHint": "Needs assignment",
+      "underReview": "Under review",
+      "underReviewHint": "Compliance team",
+      "resolved": "Resolved",
+      "resolvedHint": "Closed successfully"
+    },
+    "tabs": {
+      "all": "All ({count})",
+      "open": "Open ({count})",
+      "underReview": "Under review ({count})",
+      "resolved": "Resolved ({count})"
+    },
+    "empty": "No disputes in this category",
+    "raisedBy": {
+      "client": "From client",
+      "carrier": "From carrier"
+    },
+    "orderLabel": "Order {number}",
+    "raisedByLabel": "Raised by {name}",
+    "resolvedAtLabel": "Resolved {date}",
+    "viewDetails": "View details",
+    "assignReviewer": "Assign reviewer"
+  },
+  "disputeDetail": {
+    "notFound": "Dispute not found",
+    "backToDisputes": "Back to disputes",
+    "eyebrow": "Dispute details",
+    "title": "Dispute {id}",
+    "assignReviewer": "Assign reviewer",
+    "resolveDispute": "Resolve dispute",
+    "back": "Back",
+    "problemDescription": "Problem description",
+    "parties": "Dispute parties",
+    "roles": {
+      "client": "Client",
+      "carrier": "Carrier"
+    },
+    "party": {
+      "creator": "Initiator",
+      "otherParty": "Other party",
+      "city": "City",
+      "phone": "Phone",
+      "rating": "Rating"
+    },
+    "timeline": {
+      "title": "Message log",
+      "opened": "Opened the dispute. Reason: {reason}",
+      "adminName": "Fahd Al-Otaibi (Admin)",
+      "adminInitials": "FA",
+      "received": "The dispute was received and will be routed for review",
+      "reviewStarted": "Dispute review started",
+      "closed": "The dispute was closed"
+    },
+    "replyLabel": "Add a reply to both parties",
+    "replyPlaceholder": "Write your reply...",
+    "send": "Send",
+    "relatedOrder": "Related order",
+    "order": {
+      "value": "Value",
+      "status": "Status",
+      "createdAt": "Created on"
+    },
+    "resolutionOptions": "Resolution options",
+    "resolutions": {
+      "REFUND_CLIENT": {
+        "label": "Full refund to client",
+        "description": "The full amount is refunded and the penalty is charged to the carrier"
+      },
+      "PAY_CARRIER": {
+        "label": "Release amount to carrier",
+        "description": "The carrier is in the right; the amount is paid as agreed"
+      },
+      "SPLIT": {
+        "label": "50/50 split",
+        "description": "The amount is split equally between both parties"
+      },
+      "DISMISS": {
+        "label": "Dismiss dispute",
+        "description": "There is no basis for the dispute; the normal process continues"
+      }
+    },
+    "sla": {
+      "title": "Response indicator",
+      "elapsed": "Elapsed time",
+      "recommended": "Recommended SLA",
+      "hours24": "24 hours",
+      "warning": "You must respond within 24 hours to avoid escalating the dispute"
+    },
+    "openedAt": "Opened {date}",
+    "resolvedAt": "Resolved {date}",
+    "assignDialog": {
+      "title": "Assign a reviewer to the dispute",
+      "description": "Choose the responsible compliance team member",
+      "reviewerLabel": "Reviewer",
+      "placeholder": "Choose a team member",
+      "confirm": "Assign"
+    },
+    "resolveDialog": {
+      "title": "Resolve dispute {id}",
+      "description": "The decision will directly affect the escrow amount and both parties' ratings.",
+      "decisionLabel": "Decision",
+      "decisionPlaceholder": "Choose a decision",
+      "noteLabel": "Decision note (sent to both parties)",
+      "notePlaceholder": "Explain the decision and its reasons...",
+      "confirm": "Confirm decision"
+    },
+    "toast": {
+      "assignedTitle": "Assigned",
+      "assignedBody": "{name} is now reviewing the dispute",
+      "assignError": "Failed to assign the team member",
+      "resolvedTitle": "Dispute resolved",
+      "resolveError": "Failed to resolve the dispute"
+    }
+  }
+}

@@ -1,5 +1,6 @@
 'use client';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
 import {
@@ -34,6 +35,7 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
+  const t = useTranslations('admin');
   // SWR pulls real stats from `/admin/dashboard/stats`. When the endpoint
   // returns nothing useful (or API is unreachable + mock fallback engages),
   // we compute stats from the mock arrays so the dashboard never looks empty.
@@ -75,7 +77,7 @@ export default function AdminDashboard() {
   if (isLoading && !statsData) {
     return (
       <>
-        <PageHeader title="لوحة التحكم" subtitle="نظرة شاملة على نشاط منصة نقلة" />
+        <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitleFull')} />
         <SkeletonStatCards count={5} />
         <div className="mt-6">
           <Skeleton className="h-6 w-40 mb-3" />
@@ -88,11 +90,11 @@ export default function AdminDashboard() {
   return (
     <>
       <PageHeader
-        title="لوحة التحكم"
-        subtitle="نظرة شاملة على نشاط منصة نقلة"
+        title={t('dashboard.title')}
+        subtitle={t('dashboard.subtitleFull')}
         actions={
           <Button variant="outline">
-            <ArrowUpRight className="h-4 w-4" /> تصدير
+            <ArrowUpRight className="h-4 w-4" /> {t('dashboard.export')}
           </Button>
         }
       />
@@ -100,37 +102,37 @@ export default function AdminDashboard() {
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <StatsCard
-          label="طلبات هذا الشهر"
+          label={t('dashboard.ordersThisMonth')}
           value={totalOrders}
-          hint="الإجمالي المسجَّل"
+          hint={t('dashboard.totalRecorded')}
           icon={FileText}
           tone="default"
         />
         <StatsCard
-          label="إجمالي المعاملات"
+          label={t('dashboard.totalTransactions')}
           value={<Currency amount={gmv} />}
-          hint={`عمولة محقّقة: ${commission.toLocaleString('en-US')} ر.س.`}
+          hint={t('dashboard.commissionEarned', { amount: commission.toLocaleString('en-US') })}
           icon={Wallet}
           tone="success"
         />
         <StatsCard
-          label="شركات نشطة"
+          label={t('dashboard.activeCompanies')}
           value={activeCompanies}
-          hint={`${pendingKyc} بانتظار KYC`}
+          hint={t('dashboard.awaitingKyc', { count: pendingKyc })}
           icon={Building2}
           tone="default"
         />
         <StatsCard
-          label="نزاعات مفتوحة"
+          label={t('dashboard.openDisputes')}
           value={openDisputes}
-          hint="تحتاج مراجعة"
+          hint={t('dashboard.needsReview')}
           icon={AlertTriangle}
           tone="danger"
         />
         <StatsCard
-          label="سائقون نشطون الآن"
+          label={t('dashboard.activeDriversNow')}
           value={activeDrivers}
-          hint="بحالة في رحلة"
+          hint={t('dashboard.onTrip')}
           icon={Users}
           tone="warning"
         />
@@ -143,12 +145,12 @@ export default function AdminDashboard() {
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <CardTitle>آخر الطلبات</CardTitle>
-                <CardDescription className="mt-1">آخر 7 طلبات على المنصة</CardDescription>
+                <CardTitle>{t('dashboard.latestOrders')}</CardTitle>
+                <CardDescription className="mt-1">{t('dashboard.latestOrdersDesc')}</CardDescription>
               </div>
               <Link href="/orders">
                 <Button variant="ghost" size="sm" className="gap-1">
-                  الكل
+                  {t('dashboard.all')}
                   <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
                 </Button>
               </Link>
@@ -158,11 +160,11 @@ export default function AdminDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>رقم</TableHead>
-                  <TableHead>العميل</TableHead>
-                  <TableHead>المسار</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="text-end">المبلغ</TableHead>
+                  <TableHead>{t('dashboard.col.number')}</TableHead>
+                  <TableHead>{t('dashboard.col.client')}</TableHead>
+                  <TableHead>{t('dashboard.col.route')}</TableHead>
+                  <TableHead>{t('dashboard.col.status')}</TableHead>
+                  <TableHead className="text-end">{t('dashboard.col.amount')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -187,8 +189,8 @@ export default function AdminDashboard() {
         {/* Urgent tasks */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">مهام عاجلة</CardTitle>
-            <CardDescription>تحتاج مراجعة فورية</CardDescription>
+            <CardTitle className="text-base">{t('dashboard.urgentTasks')}</CardTitle>
+            <CardDescription>{t('dashboard.urgentTasksDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {DISPUTES.filter((d) => d.status === 'OPEN').slice(0, 1).map((d) => (
@@ -196,7 +198,7 @@ export default function AdminDashboard() {
                 key={d.id}
                 priority="high"
                 icon={AlertTriangle}
-                title={`نزاع · ${d.reason}`}
+                title={t('dashboard.disputePrefix', { reason: d.reason })}
                 meta={`${d.id} · ${formatRelative(d.createdAt)}`}
               />
             ))}
@@ -205,7 +207,7 @@ export default function AdminDashboard() {
                 key={c.id}
                 priority="medium"
                 icon={Inbox}
-                title="KYC بانتظار المراجعة"
+                title={t('dashboard.kycAwaitingReview')}
                 meta={c.nameAr}
               />
             ))}
@@ -214,8 +216,8 @@ export default function AdminDashboard() {
                 key={p.id}
                 priority="low"
                 icon={Coins}
-                title="إفراج Escrow جاهز"
-                meta={`${p.id} · ${p.amount.toLocaleString('en-US')} ر.س.`}
+                title={t('dashboard.escrowReleaseReady')}
+                meta={t('dashboard.escrowMeta', { id: p.id, amount: p.amount.toLocaleString('en-US') })}
               />
             ))}
           </CardContent>
@@ -225,12 +227,12 @@ export default function AdminDashboard() {
       {/* Recent activity */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">آخر نشاط</CardTitle>
+          <CardTitle className="text-base">{t('dashboard.recentActivity')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <ActivityItem icon={FileText} tone="default" title="طلب جديد منشور" meta={`${ORDERS[3]?.orderNumber} · منذ ساعتين`} />
-          <ActivityItem icon={Coins} tone="success" title="إفراج عن مبلغ Escrow" meta={`${PAYMENTS[0]?.amount.toLocaleString('en-US')} ر.س. · أمس`} />
-          <ActivityItem icon={RefreshCw} tone="warning" title="طلب بانتظار قبول العرض" meta="منذ 3 ساعات" />
+          <ActivityItem icon={FileText} tone="default" title={t('dashboard.newOrderPublished')} meta={t('dashboard.orderMeta', { orderNumber: ORDERS[3]?.orderNumber ?? '' })} />
+          <ActivityItem icon={Coins} tone="success" title={t('dashboard.escrowReleased')} meta={t('dashboard.escrowReleasedMeta', { amount: PAYMENTS[0]?.amount.toLocaleString('en-US') ?? '' })} />
+          <ActivityItem icon={RefreshCw} tone="warning" title={t('dashboard.orderAwaitingOffer')} meta={t('dashboard.threeHoursAgo')} />
         </CardContent>
       </Card>
     </>

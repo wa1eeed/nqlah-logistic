@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowDownLeft, ArrowRight, ArrowUpRight, Download, FileSpreadsheet,
@@ -30,16 +31,6 @@ import {
   type TxKind, type WalletTransaction,
 } from '@naqla/shared-utils';
 
-const TX_LABEL: Record<TxKind, string> = {
-  CREDIT:           'إيداع',
-  DEBIT:            'خصم',
-  ESCROW_HOLD:      'حجز Escrow',
-  ESCROW_RELEASE:   'إفراج Escrow',
-  REFUND:           'استرداد للعميل',
-  COMMISSION:       'عمولة المنصة',
-  PAYOUT:           'تحويل بنكي',
-};
-
 const TX_DIRECTION: Record<TxKind, 'in' | 'out'> = {
   CREDIT:         'in',
   DEBIT:          'out',
@@ -51,6 +42,16 @@ const TX_DIRECTION: Record<TxKind, 'in' | 'out'> = {
 };
 
 export default function AdminWalletDetailPage() {
+  const t = useTranslations('payments');
+  const TX_LABEL: Record<TxKind, string> = {
+    CREDIT:           t('walletDetail.txKind.credit'),
+    DEBIT:            t('walletDetail.txKind.debit'),
+    ESCROW_HOLD:      t('walletDetail.txKind.escrowHold'),
+    ESCROW_RELEASE:   t('walletDetail.txKind.escrowRelease'),
+    REFUND:           t('walletDetail.txKind.refund'),
+    COMMISSION:       t('walletDetail.txKind.commission'),
+    PAYOUT:           t('walletDetail.txKind.payout'),
+  };
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const company = companyById(params.id);
@@ -70,8 +71,8 @@ export default function AdminWalletDetailPage() {
       <Card>
         <CardContent className="py-16 text-center">
           <Wallet className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-semibold">المحفظة غير موجودة</h3>
-          <Button onClick={() => router.push('/wallets')} className="mt-4">عودة</Button>
+          <h3 className="font-semibold">{t('walletDetail.notFound')}</h3>
+          <Button onClick={() => router.push('/wallets')} className="mt-4">{t('walletDetail.goBack')}</Button>
         </CardContent>
       </Card>
     );
@@ -81,12 +82,12 @@ export default function AdminWalletDetailPage() {
   const totalDebit  = txs.filter((tx) => TX_DIRECTION[tx.kind] === 'out').reduce((s, tx) => s + tx.amount, 0);
 
   const exportColumns = [
-    { key: 'at',           label: 'التاريخ',     format: (r: WalletTransaction) => formatDate(r.at, 'd MMM yyyy · HH:mm') },
-    { key: 'id',           label: 'المعرّف' },
-    { key: 'kind',         label: 'النوع',       format: (r: WalletTransaction) => TX_LABEL[r.kind] },
-    { key: 'description',  label: 'الوصف' },
-    { key: 'amount',       label: 'المبلغ',      format: (r: WalletTransaction) => (TX_DIRECTION[r.kind] === 'in' ? '+ ' : '- ') + r.amount.toLocaleString('en-US') },
-    { key: 'balanceAfter', label: 'الرصيد بعد',  format: (r: WalletTransaction) => r.balanceAfter.toLocaleString('en-US') },
+    { key: 'at',           label: t('walletDetail.colDate'),         format: (r: WalletTransaction) => formatDate(r.at, 'd MMM yyyy · HH:mm') },
+    { key: 'id',           label: t('walletDetail.colId') },
+    { key: 'kind',         label: t('walletDetail.colType'),         format: (r: WalletTransaction) => TX_LABEL[r.kind] },
+    { key: 'description',  label: t('walletDetail.colDescription') },
+    { key: 'amount',       label: t('walletDetail.colAmount'),       format: (r: WalletTransaction) => (TX_DIRECTION[r.kind] === 'in' ? '+ ' : '- ') + r.amount.toLocaleString('en-US') },
+    { key: 'balanceAfter', label: t('walletDetail.colBalanceAfter'), format: (r: WalletTransaction) => r.balanceAfter.toLocaleString('en-US') },
   ];
 
   const handleExportPDF = () => {
@@ -124,13 +125,13 @@ export default function AdminWalletDetailPage() {
         description,
         note: note || undefined,
       });
-      notify.success('تم تسجيل المعاملة', `${kind === 'CREDIT' ? 'إيداع' : 'خصم'} ${Number(amount).toLocaleString('en-US')} ر.س`);
+      notify.success(t('walletDetail.txRecordedTitle'), t('walletDetail.txRecordedBody', { type: kind === 'CREDIT' ? t('walletDetail.txKind.credit') : t('walletDetail.txKind.debit'), amount: Number(amount).toLocaleString('en-US') }));
       setOpen(false);
       setAmount('');
       setNote('');
       setDescription('');
     } catch (err) {
-      notify.error(err, 'فشل تسجيل المعاملة');
+      notify.error(err, t('walletDetail.txRecordedError'));
     } finally {
       setSubmitting(false);
     }
@@ -139,13 +140,13 @@ export default function AdminWalletDetailPage() {
   return (
     <>
       <PageHeader
-        eyebrow="المحفظة"
-        title={`محفظة ${company.nameAr}`}
-        subtitle={`${wallet.id} · آخر تحديث ${formatDate(wallet.updatedAt, 'd MMM · HH:mm')}`}
+        eyebrow={t('walletDetail.eyebrow')}
+        title={t('walletDetail.title', { name: company.nameAr })}
+        subtitle={t('walletDetail.subtitle', { id: wallet.id, date: formatDate(wallet.updatedAt, 'd MMM · HH:mm') })}
         actions={
           <>
             <Button variant="outline" onClick={() => router.push('/wallets')}>
-              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('walletDetail.back')}
             </Button>
           </>
         }
@@ -159,17 +160,17 @@ export default function AdminWalletDetailPage() {
           </Avatar>
           <div className="flex-1 min-w-0">
             <Badge variant={company.kind === 'CLIENT' ? 'default' : 'success'} className="mb-2">
-              {company.kind === 'CLIENT' ? 'عميل' : 'ناقل'}
+              {company.kind === 'CLIENT' ? t('walletDetail.client') : t('walletDetail.carrier')}
             </Badge>
-            <div className="text-sm text-muted-foreground">الرصيد المتاح</div>
+            <div className="text-sm text-muted-foreground">{t('walletDetail.availableBalance')}</div>
             <div className="mt-1 text-4xl font-bold tracking-tight num">
               {wallet.balance.toLocaleString('en-US')}
-              <span className="text-xl text-muted-foreground ms-2">ر.س.</span>
+              <span className="text-xl text-muted-foreground ms-2">{t('walletDetail.sar')}</span>
             </div>
             {wallet.escrowHeld > 0 && (
               <div className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                 <ShieldCheck className="h-4 w-4 text-warning" />
-                محجوز في Escrow: <span className="num font-medium text-foreground">{wallet.escrowHeld.toLocaleString('en-US')}</span> ر.س.
+                {t('walletDetail.heldInEscrowLabel')} <span className="num font-medium text-foreground">{wallet.escrowHeld.toLocaleString('en-US')}</span> {t('walletDetail.sar')}
               </div>
             )}
           </div>
@@ -178,45 +179,45 @@ export default function AdminWalletDetailPage() {
               <DialogTrigger asChild>
                 <Button>
                   <Wallet className="h-4 w-4" />
-                  إجراء معاملة
+                  {t('walletDetail.makeTransaction')}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>إجراء معاملة على المحفظة</DialogTitle>
-                  <DialogDescription>سجّل عملية على محفظة {company.nameAr}</DialogDescription>
+                  <DialogTitle>{t('walletDetail.dialogTitle')}</DialogTitle>
+                  <DialogDescription>{t('walletDetail.dialogDescription', { name: company.nameAr })}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
                   <div className="space-y-2">
-                    <Label>النوع</Label>
+                    <Label>{t('walletDetail.fieldType')}</Label>
                     <Select value={txKind} onValueChange={(v) => setTxKind(v as TxKind)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="CREDIT">إيداع (Credit)</SelectItem>
-                        <SelectItem value="DEBIT">خصم (Debit)</SelectItem>
-                        <SelectItem value="ESCROW_RELEASE">إفراج للناقل</SelectItem>
-                        <SelectItem value="REFUND">استرداد للعميل</SelectItem>
-                        <SelectItem value="COMMISSION">عمولة المنصة</SelectItem>
-                        <SelectItem value="PAYOUT">تحويل بنكي</SelectItem>
+                        <SelectItem value="CREDIT">{t('walletDetail.selectCredit')}</SelectItem>
+                        <SelectItem value="DEBIT">{t('walletDetail.selectDebit')}</SelectItem>
+                        <SelectItem value="ESCROW_RELEASE">{t('walletDetail.selectEscrowRelease')}</SelectItem>
+                        <SelectItem value="REFUND">{t('walletDetail.selectRefund')}</SelectItem>
+                        <SelectItem value="COMMISSION">{t('walletDetail.selectCommission')}</SelectItem>
+                        <SelectItem value="PAYOUT">{t('walletDetail.selectPayout')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="amount">المبلغ (ر.س.)</Label>
+                    <Label htmlFor="amount">{t('walletDetail.fieldAmount')}</Label>
                     <Input id="amount" type="number" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="description">الوصف</Label>
-                    <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="مثال: إيداع رصيد إضافي" />
+                    <Label htmlFor="description">{t('walletDetail.fieldDescription')}</Label>
+                    <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('walletDetail.descriptionPlaceholder')} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="note">ملاحظة (اختياري)</Label>
-                    <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظات داخلية..." />
+                    <Label htmlFor="note">{t('walletDetail.fieldNote')}</Label>
+                    <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('walletDetail.notePlaceholder')} />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-                  <Button onClick={handleSubmit} disabled={!amount || !description}>تأكيد المعاملة</Button>
+                  <Button variant="outline" onClick={() => setOpen(false)}>{t('walletDetail.cancel')}</Button>
+                  <Button onClick={handleSubmit} disabled={!amount || !description}>{t('walletDetail.confirmTransaction')}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -234,32 +235,32 @@ export default function AdminWalletDetailPage() {
 
       {/* Summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SummaryStat icon={ArrowDownLeft} tone="success" label="إجمالي الإيداعات" value={totalCredit} />
-        <SummaryStat icon={ArrowUpRight}   tone="danger"  label="إجمالي الخصومات" value={totalDebit} />
-        <SummaryStat icon={RotateCcw}      tone="default" label="عدد المعاملات"   value={txs.length} suffix=" معاملة" />
+        <SummaryStat icon={ArrowDownLeft} tone="success" label={t('walletDetail.totalCredits')} value={totalCredit} />
+        <SummaryStat icon={ArrowUpRight}   tone="danger"  label={t('walletDetail.totalDebits')} value={totalDebit} />
+        <SummaryStat icon={RotateCcw}      tone="default" label={t('walletDetail.transactionsCount')}   value={txs.length} suffix={t('walletDetail.transactionsSuffix')} />
       </div>
 
       {/* Transactions table */}
       <Card>
         <CardHeader>
-          <CardTitle>كشف الحساب</CardTitle>
-          <CardDescription className="mt-1">{txs.length} معاملة منذ افتتاح المحفظة</CardDescription>
+          <CardTitle>{t('statementOfAccount')}</CardTitle>
+          <CardDescription className="mt-1">{t('walletDetail.sinceOpening', { count: txs.length })}</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>التاريخ</TableHead>
-                <TableHead>المعرّف</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>الوصف</TableHead>
-                <TableHead className="text-end">المبلغ</TableHead>
-                <TableHead className="text-end">الرصيد بعد</TableHead>
+                <TableHead>{t('walletDetail.colDate')}</TableHead>
+                <TableHead>{t('walletDetail.colId')}</TableHead>
+                <TableHead>{t('walletDetail.colType')}</TableHead>
+                <TableHead>{t('walletDetail.colDescription')}</TableHead>
+                <TableHead className="text-end">{t('walletDetail.colAmount')}</TableHead>
+                <TableHead className="text-end">{t('walletDetail.colBalanceAfter')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {txs.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">لا توجد معاملات</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">{t('walletDetail.noTransactions')}</TableCell></TableRow>
               ) : (
                 txs.map((tx) => {
                   const dir = TX_DIRECTION[tx.kind];
@@ -291,6 +292,7 @@ export default function AdminWalletDetailPage() {
 }
 
 function SummaryStat({ icon: Icon, tone, label, value, suffix }: { icon: any; tone: 'success' | 'danger' | 'default'; label: string; value: number; suffix?: string }) {
+  const t = useTranslations('payments');
   const TONES = { success: 'bg-success/15 text-success', danger: 'bg-destructive/15 text-destructive', default: 'bg-primary/10 text-primary' };
   return (
     <Card>
@@ -299,7 +301,7 @@ function SummaryStat({ icon: Icon, tone, label, value, suffix }: { icon: any; to
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
           <p className="text-2xl font-bold tracking-tight mt-1.5 num">
             {value.toLocaleString('en-US')}
-            <span className="text-sm text-muted-foreground ms-1.5">{suffix ?? 'ر.س.'}</span>
+            <span className="text-sm text-muted-foreground ms-1.5">{suffix ?? t('walletDetail.sar')}</span>
           </p>
         </div>
         <div className={`flex h-11 w-11 items-center justify-center rounded-xl shrink-0 ${TONES[tone]}`}>

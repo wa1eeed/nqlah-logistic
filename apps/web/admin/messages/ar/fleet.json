@@ -57,5 +57,64 @@
  "licenseExpiry": "صلاحية الرخصة",
  "phone": "الجوال",
  "totalTrips": "الرحلات المنجزة"
+ },
+ "adminDrivers": {
+ "title": "كل السائقين في المنصة",
+ "subtitle": "قائمة موحّدة للسائقين عبر جميع شركات النقل",
+ "stats": {
+ "total": "إجمالي السائقين",
+ "onTrip": "في رحلة",
+ "available": "متاحون",
+ "offDuty": "خارج الخدمة"
+ },
+ "searchPlaceholder": "ابحث باسم، هوية، جوال، أو ناقل...",
+ "allStatuses": "كل الحالات",
+ "noResults": "لا توجد نتائج",
+ "table": {
+ "driver": "السائق",
+ "carrier": "الناقل",
+ "id": "هوية",
+ "licenseClass": "فئة الرخصة",
+ "licenseExpiry": "صلاحية الرخصة",
+ "trips": "الرحلات",
+ "phone": "الجوال",
+ "currentOrder": "الطلب الحالي",
+ "status": "الحالة"
+ }
+ },
+ "adminTrucks": {
+ "title": "كل الشاحنات في المنصة",
+ "subtitle": "نظرة شاملة على أسطول جميع الناقلين المسجّلين",
+ "stats": {
+ "total": "إجمالي الشاحنات",
+ "onTrip": "في رحلة",
+ "available": "متاحة",
+ "maintenance": "صيانة"
+ },
+ "searchPlaceholder": "ابحث بلوحة، رقم، أو اسم الناقل...",
+ "allStatuses": "كل الحالات",
+ "allTypes": "كل الأنواع",
+ "capacityValue": "{value} طن",
+ "noResults": "لا توجد نتائج",
+ "types": {
+ "SMALL_VAN": "فان صغير",
+ "BOX_TRUCK": "صندوق",
+ "MEDIUM_FLATBED": "مسطح متوسط",
+ "LARGE_FLATBED": "مسطح كبير",
+ "REFRIGERATED": "مبرّد",
+ "TANKER": "صهريج",
+ "LOWBED": "لوبد",
+ "CONTAINER_TRAILER": "حاوية"
+ },
+ "table": {
+ "plate": "اللوحة",
+ "carrier": "الناقل",
+ "type": "النوع",
+ "capacity": "الحمولة",
+ "model": "الموديل",
+ "driver": "السائق",
+ "lastInspection": "الفحص الأخير",
+ "status": "الحالة"
+ }
  }
 }

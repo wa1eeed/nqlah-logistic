@@ -6,6 +6,25 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.44 — Admin dashboard fully bilingual (2026-10-25)
+
+> Completes the dashboard translation effort: the whole admin console.
+
+- Every admin `(app)` page now renders through next-intl instead of hardcoded
+  Arabic: dashboard, orders (list/detail), companies (list + 360° profile:
+  overview/orders/trucks/drivers/financial/statement/profile+KYC/team), drivers,
+  trucks, payments, wallets (list/detail), reports (executive analytics + jsPDF
+  export), kyc, disputes (list/detail), promotions, legal, seo, audit, support,
+  notifications — plus the shared chrome (top bar, notification center) and the
+  app-wide StatusBadge.
+- Two new message namespaces registered in the admin i18n config: `companies`
+  and `compliance` (so the big companies + KYC/disputes surfaces each own a file
+  and could be translated in parallel without collisions).
+- Keys added (en/ar symmetric): admin 350, payments 241, companies 228,
+  compliance 132, orders 147, fleet 94, common 97, notifications 33.
+- Typecheck clean for the admin app; every namespace is en/ar symmetric; no
+  Arabic literals remain in the pages (only genuine data/API values).
+
 ### v0.9.43 — Carrier dashboard fully bilingual (2026-10-25)
 
 > Continues the translation effort: the whole authenticated carrier portal.

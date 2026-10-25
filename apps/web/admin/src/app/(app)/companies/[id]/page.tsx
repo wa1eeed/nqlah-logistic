@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, ArrowRight, BarChart2, Building2, Check, Crown, FileCheck, FileText, FileX,
@@ -71,13 +72,8 @@ interface CompanyStats {
   trend: { month: string; orders: number; revenue: number }[];
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: 'مسودة', PUBLISHED: 'منشور', BIDDING: 'قيد العروض', ASSIGNED: 'مُسند',
-  CONFIRMED: 'مؤكد', IN_TRANSIT: 'في الطريق', DELIVERED: 'تم التسليم',
-  COMPLETED: 'مكتمل', CANCELLED: 'ملغى', DISPUTED: 'نزاع',
-};
-
 export default function AdminCompanyDetail() {
+  const t = useTranslations('companies');
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
@@ -115,8 +111,8 @@ export default function AdminCompanyDetail() {
       <Card>
         <CardContent className="py-16 text-center">
           <Building2 className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-semibold">الشركة غير موجودة</h3>
-          <Button onClick={() => router.push('/companies')} className="mt-4">عودة</Button>
+          <h3 className="font-semibold">{t('detail.notFound')}</h3>
+          <Button onClick={() => router.push('/companies')} className="mt-4">{t('detail.backToList')}</Button>
         </CardContent>
       </Card>
     );
@@ -125,7 +121,7 @@ export default function AdminCompanyDetail() {
   return (
     <>
       <PageHeader
-        eyebrow="ملف الكيان · 360°"
+        eyebrow={t('detail.eyebrow')}
         title={
           <span className="flex items-center gap-3">
             <Avatar className="h-10 w-10 border border-border/70">
@@ -134,12 +130,12 @@ export default function AdminCompanyDetail() {
             {company.nameAr}
           </span>
         }
-        subtitle={`${isCarrier ? 'ناقل' : 'عميل'} · ${company.city}`}
+        subtitle={t('detail.subtitle', { role: isCarrier ? t('kind.carrier') : t('kind.client'), city: company.city })}
         actions={
           <>
             <StatusBadge status={company.kycStatus} />
             <Button variant="outline" onClick={() => router.push('/companies')}>
-              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('detail.back')}
             </Button>
           </>
         }
@@ -147,14 +143,14 @@ export default function AdminCompanyDetail() {
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="overflow-x-auto">
-          <TabsTrigger value="overview"><Gauge className="h-4 w-4 me-1.5" /> نظرة عامة</TabsTrigger>
-          <TabsTrigger value="orders"><Package className="h-4 w-4 me-1.5" /> الطلبات</TabsTrigger>
-          {isCarrier && <TabsTrigger value="trucks"><Truck className="h-4 w-4 me-1.5" /> الشاحنات</TabsTrigger>}
-          {isCarrier && <TabsTrigger value="drivers"><UserIcon className="h-4 w-4 me-1.5" /> السائقون</TabsTrigger>}
-          <TabsTrigger value="financial"><Wallet className="h-4 w-4 me-1.5" /> المالية</TabsTrigger>
-          <TabsTrigger value="statement"><FileText className="h-4 w-4 me-1.5" /> كشف الحساب</TabsTrigger>
-          <TabsTrigger value="profile"><Building2 className="h-4 w-4 me-1.5" /> الملف والتحقق</TabsTrigger>
-          <TabsTrigger value="team"><Users className="h-4 w-4 me-1.5" /> الفريق</TabsTrigger>
+          <TabsTrigger value="overview"><Gauge className="h-4 w-4 me-1.5" /> {t('detail.tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="orders"><Package className="h-4 w-4 me-1.5" /> {t('detail.tabs.orders')}</TabsTrigger>
+          {isCarrier && <TabsTrigger value="trucks"><Truck className="h-4 w-4 me-1.5" /> {t('detail.tabs.trucks')}</TabsTrigger>}
+          {isCarrier && <TabsTrigger value="drivers"><UserIcon className="h-4 w-4 me-1.5" /> {t('detail.tabs.drivers')}</TabsTrigger>}
+          <TabsTrigger value="financial"><Wallet className="h-4 w-4 me-1.5" /> {t('detail.tabs.financial')}</TabsTrigger>
+          <TabsTrigger value="statement"><FileText className="h-4 w-4 me-1.5" /> {t('detail.tabs.statement')}</TabsTrigger>
+          <TabsTrigger value="profile"><Building2 className="h-4 w-4 me-1.5" /> {t('detail.tabs.profile')}</TabsTrigger>
+          <TabsTrigger value="team"><Users className="h-4 w-4 me-1.5" /> {t('detail.tabs.team')}</TabsTrigger>
         </TabsList>
 
         {/* ─── Overview: KPIs + charts ─── */}
@@ -167,13 +163,13 @@ export default function AdminCompanyDetail() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>طلبات هذه الشركة</CardTitle>
+                <CardTitle>{t('detail.orders.title')}</CardTitle>
                 <Badge variant="secondary">{orders.length}</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
               {orders.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">لا توجد طلبات</p>
+                <p className="text-sm text-muted-foreground py-6 text-center">{t('detail.orders.empty')}</p>
               ) : (
                 orders.slice(0, 20).map((o) => (
                   <button
@@ -232,6 +228,7 @@ export default function AdminCompanyDetail() {
 
 // ─── Overview tab ────────────────────────────────────────────────────
 function OverviewTab({ stats, isCarrier }: { stats?: CompanyStats; isCarrier: boolean }) {
+  const t = useTranslations('companies');
   if (!stats) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -243,32 +240,32 @@ function OverviewTab({ stats, isCarrier }: { stats?: CompanyStats; isCarrier: bo
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatsCard label="إجمالي الطلبات" value={stats.totalOrders} hint="المسجّلة" icon={Package} index={0} />
-        <StatsCard label="نسبة الإكمال" value={pct(stats.completionRate)} hint={`${stats.completedOrders} مكتملة`} icon={Activity} tone="success" index={1} />
-        <StatsCard label="إجمالي المعاملات (GMV)" value={<Currency amount={stats.gmv} />} hint="للطلبات المنجزة" icon={TrendingUp} index={2} />
+        <StatsCard label={t('detail.overview.totalOrders')} value={stats.totalOrders} hint={t('detail.overview.totalOrdersHint')} icon={Package} index={0} />
+        <StatsCard label={t('detail.overview.completionRate')} value={pct(stats.completionRate)} hint={t('detail.overview.completionRateHint', { count: String(stats.completedOrders) })} icon={Activity} tone="success" index={1} />
+        <StatsCard label={t('detail.overview.gmv')} value={<Currency amount={stats.gmv} />} hint={t('detail.overview.gmvHint')} icon={TrendingUp} index={2} />
         <StatsCard
-          label={isCarrier ? 'صافي إيراد الناقل' : 'إجمالي الإنفاق'}
+          label={isCarrier ? t('detail.overview.revenueCarrier') : t('detail.overview.revenueClient')}
           value={<Currency amount={stats.revenue} />}
-          hint={isCarrier ? 'بعد العمولة' : 'على الطلبات المنجزة'}
+          hint={isCarrier ? t('detail.overview.revenueHintCarrier') : t('detail.overview.revenueHintClient')}
           icon={Wallet} tone="success" index={3}
         />
         {isCarrier ? (
           <>
-            <StatsCard label="عروض نشطة" value={stats.activeBids} hint={`فوز ${pct(stats.winRate)}`} icon={BarChart2} tone="warning" index={4} />
-            <StatsCard label="حجم الأسطول" value={stats.fleetSize} hint={`${stats.driversCount} سائق`} icon={Truck} index={5} />
+            <StatsCard label={t('detail.overview.activeBids')} value={stats.activeBids} hint={t('detail.overview.activeBidsHint', { rate: pct(stats.winRate) })} icon={BarChart2} tone="warning" index={4} />
+            <StatsCard label={t('detail.overview.fleetSize')} value={stats.fleetSize} hint={t('detail.overview.fleetSizeHint', { count: String(stats.driversCount) })} icon={Truck} index={5} />
             <StatsCard
-              label="التقييم"
+              label={t('detail.overview.rating')}
               value={stats.rating != null ? stats.rating.toFixed(1) : '—'}
-              hint={`${stats.reviewsCount} تقييم`} icon={Star} tone="success" index={6}
+              hint={t('detail.overview.ratingHint', { count: String(stats.reviewsCount) })} icon={Star} tone="success" index={6}
             />
-            <StatsCard label="نزاعات" value={stats.disputedOrders} hint="تحتاج متابعة" icon={ShieldCheck} tone={stats.disputedOrders > 0 ? 'danger' : 'default'} index={7} />
+            <StatsCard label={t('detail.overview.disputes')} value={stats.disputedOrders} hint={t('detail.overview.disputesHint')} icon={ShieldCheck} tone={stats.disputedOrders > 0 ? 'danger' : 'default'} index={7} />
           </>
         ) : (
           <>
-            <StatsCard label="متوسط قيمة الطلب" value={<Currency amount={stats.avgOrderValue} />} hint="للمنجزة" icon={BarChart2} index={4} />
-            <StatsCard label="طلبات ملغاة" value={stats.cancelledOrders} hint="من الإجمالي" icon={X} tone={stats.cancelledOrders > 0 ? 'warning' : 'default'} index={5} />
-            <StatsCard label="نزاعات" value={stats.disputedOrders} hint="تحتاج متابعة" icon={ShieldCheck} tone={stats.disputedOrders > 0 ? 'danger' : 'default'} index={6} />
-            <StatsCard label="أعضاء الفريق" value={stats.teamSize} hint="مستخدمون" icon={Users} index={7} />
+            <StatsCard label={t('detail.overview.avgOrderValue')} value={<Currency amount={stats.avgOrderValue} />} hint={t('detail.overview.avgOrderValueHint')} icon={BarChart2} index={4} />
+            <StatsCard label={t('detail.overview.cancelledOrders')} value={stats.cancelledOrders} hint={t('detail.overview.cancelledOrdersHint')} icon={X} tone={stats.cancelledOrders > 0 ? 'warning' : 'default'} index={5} />
+            <StatsCard label={t('detail.overview.disputes')} value={stats.disputedOrders} hint={t('detail.overview.disputesHint')} icon={ShieldCheck} tone={stats.disputedOrders > 0 ? 'danger' : 'default'} index={6} />
+            <StatsCard label={t('detail.overview.teamSize')} value={stats.teamSize} hint={t('detail.overview.teamSizeHint')} icon={Users} index={7} />
           </>
         )}
       </div>
@@ -276,8 +273,8 @@ function OverviewTab({ stats, isCarrier }: { stats?: CompanyStats; isCarrier: bo
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">النشاط خلال 6 أشهر</CardTitle>
-            <CardDescription>عدد الطلبات والمعاملات الشهرية</CardDescription>
+            <CardTitle className="text-base">{t('detail.overview.activityTitle')}</CardTitle>
+            <CardDescription>{t('detail.overview.activityDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <TrendChart trend={stats.trend} />
@@ -285,7 +282,7 @@ function OverviewTab({ stats, isCarrier }: { stats?: CompanyStats; isCarrier: bo
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">توزّع الطلبات حسب الحالة</CardTitle>
+            <CardTitle className="text-base">{t('detail.overview.distributionTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <StatusDistribution breakdown={stats.statusBreakdown} total={stats.totalOrders} />
@@ -297,8 +294,9 @@ function OverviewTab({ stats, isCarrier }: { stats?: CompanyStats; isCarrier: bo
 }
 
 function TrendChart({ trend }: { trend: CompanyStats['trend'] }) {
-  if (!trend.some((t) => t.orders > 0 || t.revenue > 0)) {
-    return <p className="text-sm text-muted-foreground py-12 text-center">لا يوجد نشاط في آخر 6 أشهر</p>;
+  const t = useTranslations('companies');
+  if (!trend.some((pt) => pt.orders > 0 || pt.revenue > 0)) {
+    return <p className="text-sm text-muted-foreground py-12 text-center">{t('detail.overview.noActivity')}</p>;
   }
   return (
     <div style={{ width: '100%', height: 260 }} dir="ltr">
@@ -312,8 +310,8 @@ function TrendChart({ trend }: { trend: CompanyStats['trend'] }) {
             formatter={(v) => Number(v ?? 0).toLocaleString('en-US')}
             labelStyle={{ direction: 'ltr' }}
           />
-          <Bar yAxisId="left" name="الطلبات" dataKey="orders" fill="hsl(var(--mint))" radius={[4, 4, 0, 0]} maxBarSize={32} />
-          <Line yAxisId="right" name="المعاملات" type="monotone" dataKey="revenue" stroke="#0A3D3A" strokeWidth={2} dot={{ r: 3 }} />
+          <Bar yAxisId="left" name={t('detail.overview.chartOrders')} dataKey="orders" fill="hsl(var(--mint))" radius={[4, 4, 0, 0]} maxBarSize={32} />
+          <Line yAxisId="right" name={t('detail.overview.chartRevenue')} type="monotone" dataKey="revenue" stroke="#0A3D3A" strokeWidth={2} dot={{ r: 3 }} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
@@ -321,9 +319,10 @@ function TrendChart({ trend }: { trend: CompanyStats['trend'] }) {
 }
 
 function StatusDistribution({ breakdown, total }: { breakdown: Record<string, number>; total: number }) {
+  const t = useTranslations('companies');
   const entries = Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
   if (entries.length === 0 || total === 0) {
-    return <p className="text-sm text-muted-foreground py-12 text-center">لا توجد طلبات</p>;
+    return <p className="text-sm text-muted-foreground py-12 text-center">{t('detail.overview.noOrders')}</p>;
   }
   return (
     <div className="space-y-3">
@@ -332,7 +331,7 @@ function StatusDistribution({ breakdown, total }: { breakdown: Record<string, nu
         return (
           <div key={status}>
             <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-muted-foreground">{STATUS_LABEL[status] ?? status}</span>
+              <span className="text-muted-foreground">{t.has(`detail.overview.status.${status}`) ? t(`detail.overview.status.${status}`) : status}</span>
               <span className="num font-medium">{count} · {p}%</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -347,6 +346,7 @@ function StatusDistribution({ breakdown, total }: { breakdown: Record<string, nu
 
 // ─── Financial tab ───────────────────────────────────────────────────
 function FinancialTab({ stats, isCarrier }: { stats?: CompanyStats; isCarrier: boolean }) {
+  const t = useTranslations('companies');
   if (!stats) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -358,17 +358,17 @@ function FinancialTab({ stats, isCarrier }: { stats?: CompanyStats; isCarrier: b
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <StatsCard label="إجمالي المعاملات (GMV)" value={<Currency amount={stats.gmv} />} icon={TrendingUp} index={0} />
+        <StatsCard label={t('detail.financial.gmv')} value={<Currency amount={stats.gmv} />} icon={TrendingUp} index={0} />
         <StatsCard
-          label={isCarrier ? 'صافي إيراد الناقل' : 'إجمالي الإنفاق'}
+          label={isCarrier ? t('detail.financial.revenueCarrier') : t('detail.financial.revenueClient')}
           value={<Currency amount={stats.revenue} />} icon={Wallet} tone="success" index={1}
         />
-        <StatsCard label="عمولة المنصة" value={<Currency amount={stats.commission} />} hint="من طلبات هذه الشركة" icon={BarChart2} index={2} />
-        <StatsCard label="متوسط قيمة الطلب" value={<Currency amount={stats.avgOrderValue} />} icon={Package} index={3} />
+        <StatsCard label={t('detail.financial.commission')} value={<Currency amount={stats.commission} />} hint={t('detail.financial.commissionHint')} icon={BarChart2} index={2} />
+        <StatsCard label={t('detail.financial.avgOrderValue')} value={<Currency amount={stats.avgOrderValue} />} icon={Package} index={3} />
         {isCarrier && (
           <>
-            <StatsCard label="نسبة الفوز بالعروض" value={pct(stats.winRate)} hint={`${stats.wonBids} من ${stats.totalBids}`} icon={Activity} index={4} />
-            <StatsCard label="عروض نشطة" value={stats.activeBids} icon={BarChart2} tone="warning" index={5} />
+            <StatsCard label={t('detail.financial.winRate')} value={pct(stats.winRate)} hint={t('detail.financial.winRateHint', { won: String(stats.wonBids), total: String(stats.totalBids) })} icon={Activity} index={4} />
+            <StatsCard label={t('detail.financial.activeBids')} value={stats.activeBids} icon={BarChart2} tone="warning" index={5} />
           </>
         )}
       </div>
@@ -376,14 +376,14 @@ function FinancialTab({ stats, isCarrier }: { stats?: CompanyStats; isCarrier: b
       {isCarrier && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">مستحقّات الأسطول المستقل (فريلانس)</CardTitle>
-            <CardDescription>فواتير السائقين/الشاحنات المستقلّة لهذا الناقل</CardDescription>
+            <CardTitle className="text-base">{t('detail.financial.freelanceTitle')}</CardTitle>
+            <CardDescription>{t('detail.financial.freelanceDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <FinRow label="مستحق (غير مدفوع)" value={stats.freelancerDue} tone="warning" />
-              <FinRow label="مدفوع" value={stats.freelancerPaid} tone="success" />
-              <FinRow label="عدد الفواتير" value={stats.freelancerCount} count />
+              <FinRow label={t('detail.financial.due')} value={stats.freelancerDue} tone="warning" />
+              <FinRow label={t('detail.financial.paid')} value={stats.freelancerPaid} tone="success" />
+              <FinRow label={t('detail.financial.invoiceCount')} value={stats.freelancerCount} count />
             </div>
           </CardContent>
         </Card>
@@ -406,64 +406,59 @@ function FinRow({ label, value, tone, count }: { label: string; value: number; t
 
 // ─── Profile + KYC tab ───────────────────────────────────────────────
 function ProfileTab({ company, isCarrier }: { company: Company; isCarrier: boolean }) {
+  const t = useTranslations('companies');
   const { data: kycDocs } = useSWR<{ id: string; type: string; status: string; fileUrl: string; createdAt: string }[]>(
     `/companies/${company.id}/kyc`, fetcher);
   const docs = Array.isArray(kycDocs) ? kycDocs : [];
+  const kycStatusText = company.kycStatus === 'APPROVED'
+    ? t('detail.profile.kycApproved')
+    : company.kycStatus === 'REJECTED'
+      ? t('detail.profile.kycRejected')
+      : t('detail.profile.kycPending');
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
-        <CardHeader><CardTitle>المعلومات الأساسية</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t('detail.profile.basicInfo')}</CardTitle></CardHeader>
         <CardContent>
           <dl className="divide-y">
-            <Row label="الاسم (عربي)" value={company.nameAr} />
+            <Row label={t('detail.profile.nameAr')} value={company.nameAr} />
             <Row label="Name (EN)" value={<span className="num">{company.nameEn || '—'}</span>} />
-            <Row label="السجل التجاري" value={<span className="num">{company.crNumber || '—'}</span>} />
-            <Row label="الرقم الضريبي" value={<span className="num">{company.vatNumber || '—'}</span>} />
-            <Row label="المدينة" icon={MapPin} value={`${company.city}، ${company.region}`} />
-            <Row label="البريد" icon={Mail} value={<span className="num">{company.contactEmail}</span>} />
-            <Row label="الهاتف" icon={Phone} value={<span className="num" dir="ltr">{company.contactPhone}</span>} />
-            <Row label="تاريخ التسجيل" value={formatDate(company.joinedAt, 'd MMMM yyyy')} />
+            <Row label={t('detail.profile.crNumber')} value={<span className="num">{company.crNumber || '—'}</span>} />
+            <Row label={t('detail.profile.vatNumber')} value={<span className="num">{company.vatNumber || '—'}</span>} />
+            <Row label={t('detail.profile.city')} icon={MapPin} value={t('detail.profile.cityValue', { city: company.city, region: company.region })} />
+            <Row label={t('detail.profile.email')} icon={Mail} value={<span className="num">{company.contactEmail}</span>} />
+            <Row label={t('detail.profile.phone')} icon={Phone} value={<span className="num" dir="ltr">{company.contactPhone}</span>} />
+            <Row label={t('detail.profile.registeredAt')} value={formatDate(company.joinedAt, 'd MMMM yyyy')} />
           </dl>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>مستندات التحقق (KYC)</CardTitle>
-          <CardDescription className="mt-1">حالة اعتماد الكيان: {company.kycStatus === 'APPROVED' ? 'معتمد' : company.kycStatus === 'REJECTED' ? 'مرفوض' : 'قيد المراجعة'}</CardDescription>
+          <CardTitle>{t('detail.profile.kycTitle')}</CardTitle>
+          <CardDescription className="mt-1">{t('detail.profile.kycStatusLabel', { status: kycStatusText })}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {docs.length === 0 ? (
-            <KycDocRow label="لم تُرفع مستندات بعد" state="missing" />
+            <KycDocRow label={t('detail.profile.noDocsUploaded')} state="missing" />
           ) : (
             docs.map((d) => (
               <KycDocRow
                 key={d.id}
-                label={KYC_TYPE_LABEL[d.type] ?? d.type}
+                label={t.has(`detail.profile.kycTypes.${d.type}`) ? t(`detail.profile.kycTypes.${d.type}`) : d.type}
                 file={d.fileUrl}
                 state={d.status === 'APPROVED' ? 'approved' : d.status === 'REJECTED' ? 'rejected' : 'pending'}
               />
             ))
           )}
           {isCarrier && docs.length > 0 && (
-            <p className="text-[11px] text-muted-foreground pt-1">تشمل رخصة النقل وبوليصة التأمين عند توفرها.</p>
+            <p className="text-[11px] text-muted-foreground pt-1">{t('detail.profile.carrierDocsNote')}</p>
           )}
         </CardContent>
       </Card>
     </div>
   );
 }
-
-const KYC_TYPE_LABEL: Record<string, string> = {
-  COMMERCIAL_REGISTER: 'السجل التجاري',
-  VAT_CERTIFICATE: 'شهادة الزكاة والدخل',
-  TAX_CERTIFICATE: 'شهادة الضريبة (VAT)',
-  FREIGHT_LICENSE: 'رخصة نقل البضائع',
-  INSURANCE_POLICY: 'بوليصة التأمين',
-  ARTICLES_OF_ASSOCIATION: 'عقد التأسيس',
-  BANK_LETTER: 'خطاب البنك (IBAN)',
-  OTHER: 'وثيقة أخرى',
-};
 
 function Row({
   label, value, icon: Icon,
@@ -482,11 +477,12 @@ function Row({
 function KycDocRow({
   label, file, state,
 }: { label: string; file?: string; state: 'pending' | 'approved' | 'rejected' | 'missing' }) {
+  const t = useTranslations('companies');
   const META = {
-    pending:  { bg: 'bg-warning/15 text-warning',         label: 'بانتظار', icon: FileText },
-    approved: { bg: 'bg-success/15 text-success',         label: 'معتمد',   icon: FileCheck },
-    rejected: { bg: 'bg-destructive/15 text-destructive', label: 'مرفوض',  icon: FileX },
-    missing:  { bg: 'bg-muted text-muted-foreground',     label: 'لم يُرفع', icon: FileText },
+    pending:  { bg: 'bg-warning/15 text-warning',         label: t('detail.profile.statePending'),  icon: FileText },
+    approved: { bg: 'bg-success/15 text-success',         label: t('detail.profile.stateApproved'), icon: FileCheck },
+    rejected: { bg: 'bg-destructive/15 text-destructive', label: t('detail.profile.stateRejected'), icon: FileX },
+    missing:  { bg: 'bg-muted text-muted-foreground',     label: t('detail.profile.stateMissing'),  icon: FileText },
   } as const;
   const m = META[state];
   const Icon = m.icon;
@@ -506,7 +502,7 @@ function KycDocRow({
       </div>
       {state !== 'missing' && file && (
         <Button variant="ghost" size="sm" asChild>
-          <a href={file} target="_blank" rel="noopener noreferrer">عرض</a>
+          <a href={file} target="_blank" rel="noopener noreferrer">{t('detail.profile.view')}</a>
         </Button>
       )}
     </div>
@@ -514,26 +510,21 @@ function KycDocRow({
 }
 
 // ─── Trucks tab ──────────────────────────────────────────────────────
-const TRUCK_TYPE_LABEL: Record<string, string> = {
-  SMALL_FLATBED: 'مسطح صغير', MEDIUM_FLATBED: 'مسطح متوسط', LARGE_FLATBED: 'مسطح كبير',
-  REFRIGERATED: 'مبرّد', CONTAINER_20: 'حاوية 20', CONTAINER_40: 'حاوية 40',
-  TANKER: 'صهريج', CURTAINSIDER: 'ستائري', BOX_TRUCK: 'صندوق', LOWBED: 'لوبد',
-};
-
 interface ApiTruck {
   id: string; plateNumber: string; type: string; capacity: number; status: string;
   ownership: string; currentDriver?: { user: { firstName: string; lastName: string } } | null;
 }
 
 function TrucksTab({ companyId }: { companyId: string }) {
+  const t = useTranslations('companies');
   const { data } = useSWR<ApiTruck[]>(`/admin/companies/${companyId}/trucks`, fetcher);
   if (!data) return <TabSkeleton />;
-  if (data.length === 0) return <EmptyCard icon={Truck} text="لا توجد شاحنات مسجّلة لهذا الناقل" />;
+  if (data.length === 0) return <EmptyCard icon={Truck} text={t('detail.trucks.empty')} />;
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">أسطول الشاحنات</CardTitle>
+          <CardTitle className="text-base">{t('detail.trucks.title')}</CardTitle>
           <Badge variant="secondary">{data.length}</Badge>
         </div>
       </CardHeader>
@@ -541,26 +532,26 @@ function TrucksTab({ companyId }: { companyId: string }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>اللوحة</TableHead>
-              <TableHead>النوع</TableHead>
-              <TableHead>الحمولة</TableHead>
-              <TableHead>الملكية</TableHead>
-              <TableHead>السائق الحالي</TableHead>
-              <TableHead>الحالة</TableHead>
+              <TableHead>{t('detail.trucks.plate')}</TableHead>
+              <TableHead>{t('detail.trucks.type')}</TableHead>
+              <TableHead>{t('detail.trucks.capacity')}</TableHead>
+              <TableHead>{t('detail.trucks.ownership')}</TableHead>
+              <TableHead>{t('detail.trucks.currentDriver')}</TableHead>
+              <TableHead>{t('detail.trucks.status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((t) => {
-              const plate = parsePlateString(t.plateNumber);
-              const driver = t.currentDriver ? `${t.currentDriver.user.firstName} ${t.currentDriver.user.lastName}`.trim() : '—';
+            {data.map((tk) => {
+              const plate = parsePlateString(tk.plateNumber);
+              const driver = tk.currentDriver ? `${tk.currentDriver.user.firstName} ${tk.currentDriver.user.lastName}`.trim() : '—';
               return (
-                <TableRow key={t.id}>
+                <TableRow key={tk.id}>
                   <TableCell><div className="w-[96px]"><SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="fill" /></div></TableCell>
-                  <TableCell className="text-sm">{TRUCK_TYPE_LABEL[t.type] ?? t.type}</TableCell>
-                  <TableCell className="num text-sm">{t.capacity} طن</TableCell>
-                  <TableCell><Badge variant={t.ownership === 'OWNED' ? 'secondary' : 'outline'}>{t.ownership === 'OWNED' ? 'مملوكة' : 'مستقلّة'}</Badge></TableCell>
+                  <TableCell className="text-sm">{t.has(`detail.trucks.types.${tk.type}`) ? t(`detail.trucks.types.${tk.type}`) : tk.type}</TableCell>
+                  <TableCell className="num text-sm">{t('detail.trucks.capacityValue', { value: tk.capacity.toLocaleString('en-US') })}</TableCell>
+                  <TableCell><Badge variant={tk.ownership === 'OWNED' ? 'secondary' : 'outline'}>{tk.ownership === 'OWNED' ? t('detail.trucks.owned') : t('detail.trucks.independent')}</Badge></TableCell>
                   <TableCell className="text-sm text-muted-foreground">{driver}</TableCell>
-                  <TableCell><StatusBadge status={t.status} /></TableCell>
+                  <TableCell><StatusBadge status={tk.status} /></TableCell>
                 </TableRow>
               );
             })}
@@ -579,15 +570,16 @@ interface ApiDriver {
 }
 
 function DriversTab({ companyId }: { companyId: string }) {
+  const t = useTranslations('companies');
   const { data } = useSWR<ApiDriver[]>(`/admin/companies/${companyId}/drivers`, fetcher);
   if (!data) return <TabSkeleton />;
-  if (data.length === 0) return <EmptyCard icon={UserIcon} text="لا يوجد سائقون مسجّلون لهذا الناقل" />;
+  if (data.length === 0) return <EmptyCard icon={UserIcon} text={t('detail.drivers.empty')} />;
   const now = Date.now();
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">السائقون</CardTitle>
+          <CardTitle className="text-base">{t('detail.drivers.title')}</CardTitle>
           <Badge variant="secondary">{data.length}</Badge>
         </div>
       </CardHeader>
@@ -595,13 +587,13 @@ function DriversTab({ companyId }: { companyId: string }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>السائق</TableHead>
-              <TableHead>الجوال</TableHead>
-              <TableHead>الرخصة</TableHead>
-              <TableHead>الملكية</TableHead>
-              <TableHead className="text-center">رحلات</TableHead>
-              <TableHead className="text-center">التقييم</TableHead>
-              <TableHead>الحالة</TableHead>
+              <TableHead>{t('detail.drivers.driver')}</TableHead>
+              <TableHead>{t('detail.drivers.phone')}</TableHead>
+              <TableHead>{t('detail.drivers.license')}</TableHead>
+              <TableHead>{t('detail.drivers.ownership')}</TableHead>
+              <TableHead className="text-center">{t('detail.drivers.trips')}</TableHead>
+              <TableHead className="text-center">{t('detail.drivers.rating')}</TableHead>
+              <TableHead>{t('detail.drivers.status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -622,11 +614,11 @@ function DriversTab({ companyId }: { companyId: string }) {
                     <div className="flex flex-col">
                       <span className="num text-xs" dir="ltr">{d.licenseNumber} · {d.licenseType}</span>
                       <span className={`text-[11px] ${expState === 'expired' ? 'text-destructive font-medium' : expState === 'soon' ? 'text-warning' : 'text-muted-foreground'}`}>
-                        {expState === 'expired' ? 'منتهية الصلاحية' : expState === 'soon' ? `تنتهي خلال ${days} يوم` : `سارية حتى ${formatDate(d.licenseExpiry, 'MMM yyyy')}`}
+                        {expState === 'expired' ? t('detail.drivers.expired') : expState === 'soon' ? t('detail.drivers.expiresIn', { days: days.toLocaleString('en-US') }) : t('detail.drivers.validUntil', { date: formatDate(d.licenseExpiry, 'MMM yyyy') })}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant={d.ownership === 'OWNED' ? 'secondary' : 'outline'}>{d.ownership === 'OWNED' ? 'موظّف' : 'مستقل'}</Badge></TableCell>
+                  <TableCell><Badge variant={d.ownership === 'OWNED' ? 'secondary' : 'outline'}>{d.ownership === 'OWNED' ? t('detail.drivers.employed') : t('detail.drivers.freelance')}</Badge></TableCell>
                   <TableCell className="text-center num">{d.totalTrips}</TableCell>
                   <TableCell className="text-center num">{d.rating > 0 ? d.rating.toFixed(1) : '—'}</TableCell>
                   <TableCell><StatusBadge status={d.status} /></TableCell>
@@ -641,12 +633,6 @@ function DriversTab({ companyId }: { companyId: string }) {
 }
 
 // ─── Account statement tab ───────────────────────────────────────────
-const TX_TYPE_LABEL: Record<string, string> = {
-  CREDIT_NOTE: 'إشعار دائن', DEBIT_NOTE: 'إشعار مدين',
-  ADMIN_CREDIT: 'إضافة يدوية', ADMIN_DEBIT: 'خصم يدوي', ADMIN_ADJUSTMENT: 'تسوية',
-  ESCROW_HOLD: 'حجز ضمان', ESCROW_RELEASE: 'تحرير ضمان', COMMISSION: 'عمولة', PAYOUT: 'تحويل',
-};
-
 interface StatementLine {
   id: string; type: string; amount: number; balance: number; reference?: string | null;
   description: string; createdAt: string;
@@ -656,6 +642,7 @@ interface Statement {
 }
 
 function StatementTab({ companyId, companyName }: { companyId: string; companyName: string }) {
+  const t = useTranslations('companies');
   const { data, mutate } = useSWR<Statement>(`/admin/companies/${companyId}/statement`, fetcher);
   const { mutate: globalMutate } = useSWRConfig();
   const [open, setOpen] = useState(false);
@@ -665,52 +652,70 @@ function StatementTab({ companyId, companyName }: { companyId: string; companyNa
     globalMutate(`/companies/${companyId}/stats`); // refresh the Financial tab too
   };
 
+  const txLabel = (type: string) => (t.has(`detail.statement.txTypes.${type}`) ? t(`detail.statement.txTypes.${type}`) : type);
+
   if (!data) return <TabSkeleton />;
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <StatsCard label="رصيد الحساب" value={<Currency amount={data.walletBalance} />} hint="المستحق حاليا" icon={Wallet} tone={data.walletBalance >= 0 ? 'success' : 'danger'} index={0} />
-        <StatsCard label="إجمالي الدائن" value={<Currency amount={data.totalCredits} />} hint="لصالح الناقل" icon={PlusCircle} tone="success" index={1} />
-        <StatsCard label="إجمالي المدين" value={<Currency amount={data.totalDebits} />} hint="على الناقل" icon={MinusCircle} tone="warning" index={2} />
+        <StatsCard label={t('detail.statement.balance')} value={<Currency amount={data.walletBalance} />} hint={t('detail.statement.balanceHint')} icon={Wallet} tone={data.walletBalance >= 0 ? 'success' : 'danger'} index={0} />
+        <StatsCard label={t('detail.statement.totalCredits')} value={<Currency amount={data.totalCredits} />} hint={t('detail.statement.totalCreditsHint')} icon={PlusCircle} tone="success" index={1} />
+        <StatsCard label={t('detail.statement.totalDebits')} value={<Currency amount={data.totalDebits} />} hint={t('detail.statement.totalDebitsHint')} icon={MinusCircle} tone="warning" index={2} />
       </div>
 
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <CardTitle className="text-base">كشف الحساب</CardTitle>
-              <CardDescription className="mt-1">حركات حساب الناقل مع المنصة</CardDescription>
+              <CardTitle className="text-base">{t('detail.statement.title')}</CardTitle>
+              <CardDescription className="mt-1">{t('detail.statement.desc')}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => printStatement(companyName, data)} disabled={data.lines.length === 0}>
-                <Printer className="h-4 w-4" /> طباعة / PDF
+              <Button variant="outline" size="sm" onClick={() => printStatement(companyName, data, {
+                statementTitle: t('detail.statement.printDoc.statementTitle'),
+                brand: t('detail.statement.printDoc.brand'),
+                balance: t('detail.statement.printDoc.balance'),
+                totalCredits: t('detail.statement.printDoc.totalCredits'),
+                totalDebits: t('detail.statement.printDoc.totalDebits'),
+                sar: t('detail.statement.printDoc.sar'),
+                hDate: t('detail.statement.printDoc.hDate'),
+                hType: t('detail.statement.printDoc.hType'),
+                hReference: t('detail.statement.printDoc.hReference'),
+                hDescription: t('detail.statement.printDoc.hDescription'),
+                hAmount: t('detail.statement.printDoc.hAmount'),
+                hBalance: t('detail.statement.printDoc.hBalance'),
+                noTransactions: t('detail.statement.printDoc.noTransactions'),
+                popupBlocked: t('detail.statement.printDoc.popupBlocked'),
+                txLabel,
+              })} disabled={data.lines.length === 0}>
+                <Printer className="h-4 w-4" /> {t('detail.statement.printBtn')}
               </Button>
               <Button size="sm" onClick={() => setOpen(true)}>
-                <FileText className="h-4 w-4" /> إصدار إشعار
+                <FileText className="h-4 w-4" /> {t('detail.statement.issueNote')}
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {data.lines.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-10 text-center">لا توجد حركات بعد</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">{t('detail.statement.noTransactions')}</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>المرجع</TableHead>
-                  <TableHead>البيان</TableHead>
-                  <TableHead className="text-end">المبلغ</TableHead>
-                  <TableHead className="text-end">الرصيد</TableHead>
+                  <TableHead>{t('detail.statement.date')}</TableHead>
+                  <TableHead>{t('detail.statement.type')}</TableHead>
+                  <TableHead>{t('detail.statement.reference')}</TableHead>
+                  <TableHead>{t('detail.statement.description')}</TableHead>
+                  <TableHead className="text-end">{t('detail.statement.amount')}</TableHead>
+                  <TableHead className="text-end">{t('detail.statement.balanceCol')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.lines.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell className="text-xs text-muted-foreground num whitespace-nowrap">{formatDate(l.createdAt, 'd MMM yyyy')}</TableCell>
-                    <TableCell className="text-sm">{TX_TYPE_LABEL[l.type] ?? l.type}</TableCell>
+                    <TableCell className="text-sm">{txLabel(l.type)}</TableCell>
                     <TableCell className="num text-xs font-mono text-muted-foreground" dir="ltr">{l.reference ?? '—'}</TableCell>
                     <TableCell className="text-sm max-w-[280px] truncate">{l.description}</TableCell>
                     <TableCell className={`text-end num font-medium ${l.amount >= 0 ? 'text-success' : 'text-destructive'}`}>
@@ -733,6 +738,7 @@ function StatementTab({ companyId, companyName }: { companyId: string; companyNa
 function IssueNoteDialog({ companyId, open, onOpenChange, onIssued }: {
   companyId: string; open: boolean; onOpenChange: (v: boolean) => void; onIssued: () => void;
 }) {
+  const t = useTranslations('companies');
   const [type, setType] = useState<'CREDIT' | 'DEBIT'>('CREDIT');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
@@ -745,12 +751,12 @@ function IssueNoteDialog({ companyId, open, onOpenChange, onIssued }: {
     try {
       const r = await api.post(`/admin/companies/${companyId}/notes`, { type, amount: amt, reason: reason.trim() });
       const ref = r.data?.data?.reference ?? r.data?.reference;
-      notify.success('تم إصدار الإشعار', ref ? `المرجع ${ref}` : undefined);
+      notify.success(t('detail.note.successTitle'), ref ? t('detail.note.successRef', { ref }) : undefined);
       setAmount(''); setReason(''); setType('CREDIT');
       onOpenChange(false);
       onIssued();
     } catch (err) {
-      notify.error(err, 'تعذّر إصدار الإشعار');
+      notify.error(err, t('detail.note.errorMsg'));
     } finally {
       setSaving(false);
     }
@@ -760,31 +766,31 @@ function IssueNoteDialog({ companyId, open, onOpenChange, onIssued }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>إصدار إشعار</DialogTitle>
-          <DialogDescription>إشعار دائن يرفع رصيد الناقل، ومدين يخفضه. يُسجَّل في كشف الحساب برقم مرجعي.</DialogDescription>
+          <DialogTitle>{t('detail.note.title')}</DialogTitle>
+          <DialogDescription>{t('detail.note.desc')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-1">
           <div className="grid grid-cols-2 gap-2">
             <Button type="button" variant={type === 'CREDIT' ? 'default' : 'outline'} onClick={() => setType('CREDIT')}>
-              <PlusCircle className="h-4 w-4" /> إشعار دائن
+              <PlusCircle className="h-4 w-4" /> {t('detail.note.credit')}
             </Button>
             <Button type="button" variant={type === 'DEBIT' ? 'default' : 'outline'} onClick={() => setType('DEBIT')}>
-              <MinusCircle className="h-4 w-4" /> إشعار مدين
+              <MinusCircle className="h-4 w-4" /> {t('detail.note.debit')}
             </Button>
           </div>
           <div className="space-y-1.5">
-            <Label>المبلغ (ر.س)</Label>
+            <Label>{t('detail.note.amountLabel')}</Label>
             <Input type="number" min="0" step="0.01" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
           </div>
           <div className="space-y-1.5">
-            <Label>السبب / البيان</Label>
-            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: مكافأة أداء، تعويض، غرامة تأخير…" rows={3} />
+            <Label>{t('detail.note.reasonLabel')}</Label>
+            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('detail.note.reasonPlaceholder')} rows={3} />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('detail.note.cancel')}</Button>
           <Button onClick={submit} disabled={saving || !(Number(amount) > 0) || !reason.trim()}>
-            {saving ? 'جار الإصدار…' : 'إصدار'}
+            {saving ? t('detail.note.saving') : t('detail.note.submit')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -792,21 +798,27 @@ function IssueNoteDialog({ companyId, open, onOpenChange, onIssued }: {
   );
 }
 
+interface PrintLabels {
+  statementTitle: string; brand: string; balance: string; totalCredits: string; totalDebits: string;
+  sar: string; hDate: string; hType: string; hReference: string; hDescription: string; hAmount: string;
+  hBalance: string; noTransactions: string; popupBlocked: string; txLabel: (type: string) => string;
+}
+
 /** Open a clean, print-ready statement in a new window (saves as PDF via print). */
-function printStatement(companyName: string, data: Statement) {
+function printStatement(companyName: string, data: Statement, L: PrintLabels) {
   const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
-  const sar = (n: number) => `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
+  const sar = (n: number) => `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${L.sar}`;
   const rows = data.lines.map((l) => `
     <tr>
       <td>${new Date(l.createdAt).toLocaleDateString('en-GB')}</td>
-      <td>${esc(TX_TYPE_LABEL[l.type] ?? l.type)}</td>
+      <td>${esc(L.txLabel(l.type))}</td>
       <td class="mono">${esc(l.reference ?? '—')}</td>
       <td>${esc(l.description)}</td>
       <td class="num ${l.amount >= 0 ? 'cr' : 'dr'}">${l.amount >= 0 ? '+' : '−'}${sar(Math.abs(l.amount))}</td>
       <td class="num">${sar(l.balance)}</td>
     </tr>`).join('');
   const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
-    <title>كشف حساب — ${esc(companyName)}</title>
+    <title>${esc(L.statementTitle)} — ${esc(companyName)}</title>
     <style>
       body{font-family:-apple-system,Segoe UI,Tahoma,Arial,sans-serif;color:#0A3D3A;margin:32px}
       h1{font-size:20px;margin:0 0 4px}.sub{color:#6B7280;font-size:13px;margin-bottom:20px}
@@ -820,18 +832,18 @@ function printStatement(companyName: string, data: Statement) {
       .cr{color:#059669}.dr{color:#dc2626}
       @media print{body{margin:12mm}}
     </style></head><body>
-    <h1>كشف حساب — ${esc(companyName)}</h1>
-    <div class="sub">نقلة لوجيستك · ${new Date().toLocaleDateString('en-GB')}</div>
+    <h1>${esc(L.statementTitle)} — ${esc(companyName)}</h1>
+    <div class="sub">${esc(L.brand)} · ${new Date().toLocaleDateString('en-GB')}</div>
     <div class="cards">
-      <div class="card"><div class="l">رصيد الحساب</div><div class="v">${sar(data.walletBalance)}</div></div>
-      <div class="card"><div class="l">إجمالي الدائن</div><div class="v cr">${sar(data.totalCredits)}</div></div>
-      <div class="card"><div class="l">إجمالي المدين</div><div class="v dr">${sar(data.totalDebits)}</div></div>
+      <div class="card"><div class="l">${esc(L.balance)}</div><div class="v">${sar(data.walletBalance)}</div></div>
+      <div class="card"><div class="l">${esc(L.totalCredits)}</div><div class="v cr">${sar(data.totalCredits)}</div></div>
+      <div class="card"><div class="l">${esc(L.totalDebits)}</div><div class="v dr">${sar(data.totalDebits)}</div></div>
     </div>
-    <table><thead><tr><th>التاريخ</th><th>النوع</th><th>المرجع</th><th>البيان</th><th class="num">المبلغ</th><th class="num">الرصيد</th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="6">لا توجد حركات</td></tr>'}</tbody></table>
+    <table><thead><tr><th>${esc(L.hDate)}</th><th>${esc(L.hType)}</th><th>${esc(L.hReference)}</th><th>${esc(L.hDescription)}</th><th class="num">${esc(L.hAmount)}</th><th class="num">${esc(L.hBalance)}</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="6">${esc(L.noTransactions)}</td></tr>`}</tbody></table>
     </body></html>`;
   const w = window.open('', '_blank');
-  if (!w) { notify.error(null, 'تعذّر فتح نافذة الطباعة — اسمح بالنوافذ المنبثقة'); return; }
+  if (!w) { notify.error(null, L.popupBlocked); return; }
   w.document.write(html);
   w.document.close();
   w.focus();
@@ -857,34 +869,35 @@ function EmptyCard({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
 
 // ─── Admin Team section ──────────────────────────────────────────────
 function AdminTeamSection({ companyId, companyKind }: { companyId: string; companyKind: 'CLIENT' | 'CARRIER' }) {
+  const t = useTranslations('companies');
   const [members, setMembers] = useState<TeamMember[]>(() => teamMembersFor(companyId));
 
   if (members.length === 0) {
     return (
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> الفريق</CardTitle></CardHeader>
-        <CardContent className="text-sm text-muted-foreground">لا يوجد أعضاء بعد</CardContent>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> {t('detail.team.title')}</CardTitle></CardHeader>
+        <CardContent className="text-sm text-muted-foreground">{t('detail.team.empty')}</CardContent>
       </Card>
     );
   }
 
   const roleLabels: Record<CompanyRole, { icon: LucideIcon; label: string }> = {
-    OWNER:    { icon: Crown,       label: 'المالك' },
-    ADMIN:    { icon: ShieldCheck, label: 'مدير' },
-    STAFF:    { icon: Package,     label: 'مشرف عمليات' },
-    DISPATCH: { icon: Truck,       label: 'مشرف أسطول' },
-    FINANCE:  { icon: Wallet,      label: 'محاسب' },
+    OWNER:    { icon: Crown,       label: t('detail.team.roles.OWNER') },
+    ADMIN:    { icon: ShieldCheck, label: t('detail.team.roles.ADMIN') },
+    STAFF:    { icon: Package,     label: t('detail.team.roles.STAFF') },
+    DISPATCH: { icon: Truck,       label: t('detail.team.roles.DISPATCH') },
+    FINANCE:  { icon: Wallet,      label: t('detail.team.roles.FINANCE') },
   };
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> الفريق</CardTitle>
-          <Badge variant="secondary">{members.length} عضو</Badge>
+          <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> {t('detail.team.title')}</CardTitle>
+          <Badge variant="secondary">{t('detail.team.memberCount', { count: members.length.toLocaleString('en-US') })}</Badge>
         </div>
         <CardDescription className="mt-1">
-          الأدمن يمكنه عرض وإيقاف/حذف الأعضاء فقط. إضافة الأعضاء حق الشركة من إعداداتها.
+          {t('detail.team.desc')}
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
@@ -901,12 +914,12 @@ function AdminTeamSection({ companyId, companyKind }: { companyId: string; compa
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold truncate">{m.fullName}</span>
                     {m.isOwner && <Crown className="h-4 w-4 text-warning shrink-0" />}
-                    {m.status === 'SUSPENDED' && <Badge variant="destructive" className="text-[10px]">موقوف</Badge>}
+                    {m.status === 'SUSPENDED' && <Badge variant="destructive" className="text-[10px]">{t('detail.team.suspended')}</Badge>}
                   </div>
                   <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                     <span className="num" dir="ltr">{m.phone}</span>
                     {m.email && <span dir="ltr">· {m.email}</span>}
-                    <span>· انضم {formatDate(m.addedAt)}</span>
+                    <span>· {t('detail.team.joinedPrefix', { date: formatDate(m.addedAt) })}</span>
                   </div>
                 </div>
                 <Badge variant="outline" className="shrink-0 gap-1">
@@ -921,18 +934,18 @@ function AdminTeamSection({ companyId, companyKind }: { companyId: string; compa
                     <DropdownMenuContent align="end">
                       {m.status === 'ACTIVE' ? (
                         <DropdownMenuItem onClick={() => setMembers((s) => s.map((x) => x.id === m.id ? { ...x, status: 'SUSPENDED' } : x))}>
-                          <X className="h-3.5 w-3.5" /> إيقاف
+                          <X className="h-3.5 w-3.5" /> {t('detail.team.suspend')}
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem onClick={() => setMembers((s) => s.map((x) => x.id === m.id ? { ...x, status: 'ACTIVE' } : x))}>
-                          <Check className="h-3.5 w-3.5" /> تنشيط
+                          <Check className="h-3.5 w-3.5" /> {t('detail.team.activate')}
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
-                        onClick={() => { if (confirm('حذف هذا العضو من الفريق؟')) setMembers((s) => s.filter((x) => x.id !== m.id)); }}
+                        onClick={() => { if (confirm(t('detail.team.removeConfirm'))) setMembers((s) => s.filter((x) => x.id !== m.id)); }}
                       >
-                        <Trash2 className="h-3.5 w-3.5" /> حذف من الفريق
+                        <Trash2 className="h-3.5 w-3.5" /> {t('detail.team.removeFromTeam')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
