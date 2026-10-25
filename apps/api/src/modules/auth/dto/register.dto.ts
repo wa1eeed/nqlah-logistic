@@ -1,5 +1,5 @@
 import {
-  IsEmail, IsEnum, IsOptional, IsString, IsBoolean, Matches, MinLength,
+  IsEmail, IsEnum, IsOptional, IsString, IsBoolean, IsDateString, Matches, MinLength,
 } from 'class-validator';
 import { IsStrongPassword } from '../../../common/validators/strong-password.validator';
 
@@ -31,6 +31,20 @@ export class RegisterDto {
 
   @IsEnum(['CLIENT', 'CARRIER'] as const, { message: 'نوع الحساب غير صالح' })
   companyType!: 'CLIENT' | 'CARRIER';
+
+  // COMPANY (a registered business) or INDIVIDUAL (a sole operator). Default COMPANY.
+  @IsOptional()
+  @IsEnum(['COMPANY', 'INDIVIDUAL'] as const, { message: 'نوع الكيان غير صالح' })
+  accountType?: 'COMPANY' | 'INDIVIDUAL';
+
+  // National ID — relevant for an individual operator.
+  @IsOptional() @IsString() nationalId?: string;
+
+  // For an INDIVIDUAL carrier, the owner is also a driver; these seed their
+  // driver profile (optional — completed later in the driver portal if omitted).
+  @IsOptional() @IsString() licenseNumber?: string;
+  @IsOptional() @IsDateString() licenseExpiry?: string;
+  @IsOptional() @IsString() licenseType?: string;
 
   @IsString()
   @MinLength(2)

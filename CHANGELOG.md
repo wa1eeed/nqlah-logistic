@@ -6,7 +6,24 @@
 
 ## [Unreleased] — قيد التطوير
 
-### v0.9.58 — Driver login credentials + invite fix (2026-10-26)
+### v0.9.59 — Individual entity type + unified driver access (2026-10-26)
+
+- **`Company.entityType`** (`COMPANY` | `INDIVIDUAL`, default `COMPANY`) — applies
+  to clients and carriers alike. Additive migration; existing rows are `COMPANY`.
+- **Registration persists it:** `/auth/register` now accepts `accountType`
+  (+ `nationalId`, optional license fields). An **INDIVIDUAL carrier** (a sole
+  operator) is auto-provisioned a **driver profile** for its owner — so one
+  account is both its own carrier (receives market orders) and its own driver.
+- **Unified driver access:** the `/driver` portal/app API now authorizes **any
+  user with a driver profile**, not only role `DRIVER` — so a carrier-invited
+  driver and an individual operator (role `CARRIER_ADMIN`) use the same portal.
+- Verified end-to-end (individual registers → entityType persisted → driver
+  profile created → owner uses `/driver/me`). 28 unit specs pass.
+- **Known gap (next):** the carrier/client **registration UI is still a mock**
+  (it sets a dev token instead of calling `/auth/register`), so `entityType`
+  is not yet populated from the UI — real registration must be wired.
+- Phase A of the drivers/individual program; admin reorg (Clients/Carriers pages
+  with Company/Individual tabs + driver affiliation tags) is Phase B.
 
 - **Driver login now works.** Adding a driver (`POST /fleet/drivers/invite`) now
   sets a login password and normalizes the phone the same way login does, and
