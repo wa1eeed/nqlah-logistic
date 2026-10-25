@@ -234,6 +234,9 @@ model User {
 
 model Company {
   id              String            @id @default(cuid())
+  /// Short, human-friendly public reference (e.g. "NQ-7K4F2P") shown in the UI
+  /// instead of the internal cuid. Generated at creation; unique.
+  code            String?           @unique
   type            CompanyType
   /// COMPANY (a registered business) or INDIVIDUAL (a sole operator — a single
   /// freelance driver who is also their own carrier, or an individual client).

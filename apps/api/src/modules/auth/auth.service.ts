@@ -13,6 +13,7 @@ import { TokenBlacklistService } from '../../common/security/token-blacklist.ser
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { normalizeSaudiPhone } from '@naqla/shared-utils';
+import { companyCode } from '../../common/codes';
 
 @Injectable()
 export class AuthService {
@@ -52,6 +53,7 @@ export class AuthService {
     const company = await this.prisma.company.create({
       data: {
         type: dto.companyType,
+        code: companyCode(),
         entityType: dto.accountType === 'INDIVIDUAL' ? 'INDIVIDUAL' : 'COMPANY',
         nameAr: dto.companyNameAr,
         nameEn: dto.companyNameEn,

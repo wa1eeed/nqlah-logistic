@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable 
 import * as bcrypt from 'bcrypt';
 import { normalizeSaudiPhone } from '@naqla/shared-utils';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { companyCode } from '../../common/codes';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 interface CreateOwnedClientDto {
@@ -64,6 +65,7 @@ export class OwnedClientsService {
       const company = await tx.company.create({
         data: {
           type: 'CLIENT',
+          code: companyCode(),
           nameAr: dto.companyNameAr,
           nameEn: dto.companyNameEn,
           city: dto.city,

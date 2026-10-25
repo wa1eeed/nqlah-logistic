@@ -31,6 +31,9 @@ Tracked verbatim so nothing is dropped. Work top-to-bottom; one PR per coherent 
    allow/deny toggles).
 
 Standard for all: professional, best-practice, scalable; English deep-docs polish at the end.
+**ID principle (owner note):** never surface raw cuids (`cmvo…`) in the UI — show a short,
+professionally generated public code. Done for companies (`Company.code` → `NQ-XXXXXX`);
+apply the same to any other entity whose reference is shown (drivers, etc.).
 Also found (lower priority): admin **login page i18n** is broken (`auth.login.*` missing).
 
 ---
