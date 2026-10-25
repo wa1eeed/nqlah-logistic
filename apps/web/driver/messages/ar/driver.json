@@ -1,0 +1,43 @@
+{
+  "fallbackName": "السائق",
+  "roleDriver": "سائق",
+  "logout": "تسجيل الخروج",
+  "portalSubtitle": "بوابة السائق",
+  "login": {
+    "title": "مرحبًا بعودتك",
+    "subtitle": "سجّل الدخول برقم جوالك لعرض مهامك"
+  },
+  "jobs": {
+    "title": "مهامي",
+    "emptyTitle": "لا توجد مهام نشطة",
+    "emptyDescription": "ستظهر الرحلات المُسندة إليك هنا بمجرد إضافتها من قسم التشغيل.",
+    "stopsCount": "{count, plural, zero {# محطة} one {محطة واحدة} two {محطتان} few {# محطات} many {# محطة} other {# محطة}}"
+  },
+  "detail": {
+    "back": "العودة إلى المهام",
+    "notFound": "هذه المهمة لم تعد نشطة أو غير موجودة.",
+    "pickup": "الاستلام"
+  },
+  "location": {
+    "report": "إبلاغ موقعي الحالي",
+    "reported": "تم إرسال الموقع",
+    "denied": "تم رفض إذن تحديد الموقع",
+    "unsupported": "خاصية تحديد الموقع غير متوفرة على هذا الجهاز"
+  },
+  "stops": {
+    "title": "محطات الرحلة",
+    "empty": "لا توجد محطات في هذه الرحلة.",
+    "markArrived": "تسجيل الوصول",
+    "markCompleted": "إنهاء المحطة",
+    "markedArrived": "تم تسجيل الوصول",
+    "markedCompleted": "تم إنهاء المحطة",
+    "type": {
+      "PICKUP": "استلام",
+      "DELIVERY": "تسليم",
+      "DROPOFF": "إنزال",
+      "WAREHOUSE": "مستودع",
+      "RETURN_EMPTY": "إرجاع فارغ",
+      "EXCHANGE": "تبادل"
+    }
+  }
+}

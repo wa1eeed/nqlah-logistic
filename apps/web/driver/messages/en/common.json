@@ -1,0 +1,17 @@
+{
+  "loading": "Loading...",
+  "language": "Language",
+  "status": {
+    "ASSIGNED": "Assigned",
+    "CONFIRMED": "Confirmed",
+    "IN_TRANSIT": "In Transit",
+    "DELIVERED": "Delivered",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled",
+    "DISPUTED": "Disputed",
+    "PENDING": "Pending",
+    "EN_ROUTE": "En Route",
+    "ARRIVED": "Arrived",
+    "SKIPPED": "Skipped"
+  }
+}

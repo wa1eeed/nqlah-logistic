@@ -6,6 +6,30 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.57 — Driver web portal (2026-10-25)
+
+- New Next.js 14 web app `apps/web/driver` (`@naqla/driver-web`, dev port 3006)
+  — the driver-facing portal that consumes the `/driver` API. Mobile-first
+  (drivers are on phones), light "Mint" theme, bilingual ar/en with RTL, Latin
+  digits throughout. Mirrors `apps/web/carrier` for tooling, auth, i18n and UI.
+- **Sign-in** (`/login`) — phone + password via `POST /auth/login` (DRIVER
+  role); JWT stored under driver-scoped localStorage keys, the `(app)` layout
+  guards every screen and redirects to `/login` when unauthenticated.
+- **My Jobs** (`/`) — `GET /driver/jobs` rendered as tappable cards
+  (order number, origin→destination, status, pickup date, stop count) with an
+  empty state.
+- **Job detail** (`/jobs/[id]`) — the order's ordered route `stops` (type, city,
+  address, contact, instructions, per-stop status); the driver advances a stop
+  (arrived → completed) via the shared `PATCH /orders/:id/stops/:stopId`, and a
+  "report my location" button reads `navigator.geolocation` and posts
+  `POST /driver/location` (graceful when permission is denied).
+- i18n: cookie-based locale `naqla-locale-driver` (English default), namespaces
+  `common` / `auth` / `driver`.
+- Package named `@naqla/driver-web` (not `@naqla/driver`) because the pre-existing
+  Expo mobile app at `apps/driver` already owns `@naqla/driver`.
+- Quality gates pass: `tsc --noEmit` clean, `next build` clean, en/ar messages
+  valid and symmetric.
+
 ### v0.9.56 — Fix: open collection on DIRECT-upfront publish (2026-10-25)
 
 - A DIRECT order with an upfront price auto-assigns on publish; that branch

@@ -1,0 +1,17 @@
+{
+  "loading": "جار التحميل...",
+  "language": "اللغة",
+  "status": {
+    "ASSIGNED": "مُسندة",
+    "CONFIRMED": "مؤكدة",
+    "IN_TRANSIT": "قيد النقل",
+    "DELIVERED": "تم التسليم",
+    "COMPLETED": "مكتملة",
+    "CANCELLED": "ملغاة",
+    "DISPUTED": "متنازع عليها",
+    "PENDING": "بالانتظار",
+    "EN_ROUTE": "في الطريق",
+    "ARRIVED": "وصل",
+    "SKIPPED": "تم التخطي"
+  }
+}
