@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
+import { Badge } from '@/components/ui/badge';
 import { StatsCard } from '@/components/stats-card';
 import { FadeIn } from '@/components/ui/fade-in';
 import { UserCheck, UserMinus } from 'lucide-react';
@@ -32,7 +33,7 @@ type ApiDriver = {
   isActive: boolean;
   createdAt: string;
   user: { firstName: string; lastName: string; phone: string; nationalId: string | null };
-  company: { id: string; nameAr: string };
+  company: { id: string; nameAr: string; entityType?: 'COMPANY' | 'INDIVIDUAL' };
   orderDrivers: Array<{
     order: { id: string; orderNumber: string; status: string; originCity: string; destinationCity: string };
   }>;
@@ -42,6 +43,8 @@ export default function AdminDriversPage() {
   const t = useTranslations('fleet');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string>('ALL');
+  const [affiliation, setAffiliation] = useState<'ALL' | 'CARRIER' | 'INDEPENDENT'>('ALL');
+  const isIndependent = (d: ApiDriver) => d.company?.entityType === 'INDIVIDUAL';
 
   const { data: raw } = useSWR<ApiDriver[] | { items?: ApiDriver[] }>('/admin/drivers?limit=200', fetcher);
   const apiDrivers: ApiDriver[] = useMemo(() => {
@@ -52,13 +55,15 @@ export default function AdminDriversPage() {
   const filtered = useMemo(() => {
     return apiDrivers.filter((d) => {
       if (status !== 'ALL' && d.status !== status) return false;
+      if (affiliation === 'INDEPENDENT' && !isIndependent(d)) return false;
+      if (affiliation === 'CARRIER' && isIndependent(d)) return false;
       if (q) {
         const hay = `${d.user.firstName} ${d.user.lastName} ${d.user.phone ?? ''} ${d.user.nationalId ?? ''} ${d.company.nameAr}`.toLowerCase();
         if (!hay.includes(q.toLowerCase())) return false;
       }
       return true;
     });
-  }, [apiDrivers, q, status]);
+  }, [apiDrivers, q, status, affiliation]);
 
   const total    = apiDrivers.length;
   const onTrip   = apiDrivers.filter((d) => d.status === 'ON_TRIP').length;
@@ -102,6 +107,14 @@ export default function AdminDriversPage() {
                 <SelectItem value="OFF_DUTY">{t('driverStatus.offDuty')}</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={affiliation} onValueChange={(v) => setAffiliation(v as 'ALL' | 'CARRIER' | 'INDEPENDENT')}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">{t('adminDrivers.affiliation.all')}</SelectItem>
+                <SelectItem value="CARRIER">{t('adminDrivers.affiliation.carrier')}</SelectItem>
+                <SelectItem value="INDEPENDENT">{t('adminDrivers.affiliation.independent')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Mobile: app-like card list */}
@@ -127,9 +140,12 @@ export default function AdminDriversPage() {
                           <span className="font-medium truncate">{fullName}</span>
                           <StatusBadge status={d.status} />
                         </div>
-                        <Link href={`/companies/${d.company.id}`} className="text-xs text-muted-foreground hover:text-primary">
-                          {d.company.nameAr}
-                        </Link>
+                        <span className="flex items-center gap-1.5">
+                          <Link href={`/companies/${d.company.id}`} className="text-xs text-muted-foreground hover:text-primary">
+                            {d.company.nameAr}
+                          </Link>
+                          {isIndependent(d) && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t('adminDrivers.independent')}</Badge>}
+                        </span>
                       </div>
                     </div>
                     <div className="mt-2.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -195,9 +211,12 @@ export default function AdminDriversPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Link href={`/companies/${d.company.id}`} className="hover:text-primary text-sm">
-                          {d.company.nameAr}
-                        </Link>
+                        <span className="flex items-center gap-1.5">
+                          <Link href={`/companies/${d.company.id}`} className="hover:text-primary text-sm">
+                            {d.company.nameAr}
+                          </Link>
+                          {isIndependent(d) && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t('adminDrivers.independent')}</Badge>}
+                        </span>
                       </TableCell>
                       <TableCell className="num text-xs">{d.user.nationalId ?? '—'}</TableCell>
                       <TableCell className="text-xs">{d.licenseType}</TableCell>

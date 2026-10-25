@@ -3,6 +3,18 @@
     "client": "عميل",
     "carrier": "ناقل"
   },
+  "clientsPage": {
+    "eyebrow": "إدارة المنصة",
+    "title": "العملاء",
+    "subtitle": "الشركات والأفراد الذين يطلبون الشحنات",
+    "total": "إجمالي العملاء"
+  },
+  "carriersPage": {
+    "eyebrow": "إدارة المنصة",
+    "title": "الناقلون",
+    "subtitle": "الشركات والمشغّلون الأفراد الذين ينفّذون الشحنات",
+    "total": "إجمالي الناقلين"
+  },
   "list": {
     "eyebrow": "إدارة المنصة",
     "title": "الناقلون والعملاء",
@@ -17,8 +29,11 @@
     "tabs": {
       "all": "الكل ({count})",
       "clients": "العملاء ({count})",
-      "carriers": "الناقلون ({count})"
+      "carriers": "الناقلون ({count})",
+      "companies": "شركات ({count})",
+      "individuals": "أفراد ({count})"
     },
+    "individuals": "أفراد",
     "searchPlaceholder": "ابحث بالاسم، السجل، المدينة...",
     "table": {
       "company": "الشركة",

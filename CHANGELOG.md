@@ -6,7 +6,21 @@
 
 ## [Unreleased] — قيد التطوير
 
-### v0.9.60 — Real registration wired (carrier + client) (2026-10-26)
+### v0.9.61 — Admin reorg: Clients/Carriers pages + individual tabs (2026-10-26)
+
+- The admin "Carriers & Clients" page is **split into two sidebar pages** —
+  **Clients** (`/clients`) and **Carriers** (`/carriers`) — each with
+  **Company | Individual** tabs (filtering `entityType`), KPIs, search and the
+  shared `CompaniesList` component. The combined `/companies` list now redirects
+  to `/carriers`; the shared `/companies/[id]` detail route is unchanged.
+- `normalizeCompany` now maps `accountType` from the real `entityType` column
+  (it was reading a non-existent field), so Individual/Company badges light up
+  across the admin.
+- **Drivers page:** an **Independent** tag on sole-operator drivers (their
+  company's `entityType = INDIVIDUAL`) + an affiliation filter
+  (All / Carrier drivers / Independent). `listDrivers` now returns
+  `company.entityType`.
+- Phase B of the individual-driver program. en/ar strings added.
 
 - The carrier and client **registration pages now create real accounts** via
   `POST /auth/register` and sign the user in — previously `submit()` was a mock

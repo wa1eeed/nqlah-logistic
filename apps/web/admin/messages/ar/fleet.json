@@ -69,6 +69,12 @@
  },
  "searchPlaceholder": "ابحث باسم، هوية، جوال، أو ناقل...",
  "allStatuses": "كل الحالات",
+ "independent": "مستقل",
+ "affiliation": {
+ "all": "كل السائقين",
+ "carrier": "سائقو الناقلين",
+ "independent": "المستقلّون"
+ },
  "noResults": "لا توجد نتائج",
  "table": {
  "driver": "السائق",

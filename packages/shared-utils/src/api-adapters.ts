@@ -232,7 +232,9 @@ export function normalizeCompany<T extends object>(input: T | null | undefined):
     kind: (c.kind as string | undefined) ?? (c.type as string | undefined) ?? 'CLIENT',
     joinedAt: (c.joinedAt as string | undefined) ?? (c.createdAt as string | undefined) ?? '',
     kycStatus,
-    accountType: (c.accountType as string | undefined) ?? 'COMPANY',
+    // The API column is `entityType` (COMPANY|INDIVIDUAL); fall back to a
+    // pre-supplied accountType, then COMPANY.
+    accountType: (c.entityType as string | undefined) ?? (c.accountType as string | undefined) ?? 'COMPANY',
     nameEn: (c.nameEn as string | undefined) ?? '',
     crNumber: (c.crNumber as string | undefined) ?? '',
     vatNumber: (c.vatNumber as string | undefined) ?? '',
