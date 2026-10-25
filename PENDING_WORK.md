@@ -20,9 +20,11 @@ Tracked verbatim so nothing is dropped. Work top-to-bottom; one PR per coherent 
    distinguished; groups shown as elegant, configurable cards.
 6. **Group reflected on the provider** — a provider's detail page shows the group it
    belongs to; the providers list shows a **group-name tag** per provider.
-7. **360° admin detail pages (provider AND client)** — complete: all their orders +
-   statuses, history, a timeline, the audit log, and the account statement — everything
-   in one place.
+7. ✅ **360° admin detail pages (provider AND client)** — the detail page gathers
+   overview KPIs, all orders + statuses, fleet (trucks/drivers), financials, the
+   account statement, the **Activity & Audit Log timeline**, profile/KYC, and team —
+   everything in one place. Activity tab + `GET /admin/companies/:id/audit` added in
+   v0.9.65 (PR for `feat/company-360-activity`). Verified live.
 8. **C1 — heterogeneous consolidated orders** — a consolidated order whose legs can each
    have a **different truck type + destination + price** (per-leg), across client/admin/
    carrier. (Currently: N trucks on one shared route.)

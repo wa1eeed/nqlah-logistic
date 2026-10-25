@@ -6,6 +6,17 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.65 — 360° company detail: Activity & Audit Log tab (2026-10-26)
+
+- New **Activity** tab on the admin company detail page (both carriers and
+  clients): a full timeline (`Activity & Audit Log`) of audit-log events by the
+  company's users, on the company itself, and on its orders — most recent first.
+- Backend `GET /api/admin/companies/:id/audit` (`AdminService.companyAudit`)
+  aggregates the three sources and returns the latest 100 with the acting user.
+- Action keys are humanized into readable labels (e.g. `admin.company.status_change`
+  → "Account status changed"), and the raw resource cuid is never shown — per the
+  short-code/no-cuid principle. Verified live. (Backlog item 7.)
+
 ### v0.9.64 — Short public company codes (no raw cuids in the UI) (2026-10-26)
 
 - `Company.code` — a short, professionally generated public reference

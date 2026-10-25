@@ -89,6 +89,11 @@ export class AdminController {
     return this.admin.companyStatement(id);
   }
 
+  @Get('companies/:id/audit')
+  companyAudit(@Param('id') id: string) {
+    return this.admin.companyAudit(id);
+  }
+
   @Post('companies/:id/notes')
   @Audit({ action: 'admin.company.accountNote', resourceType: 'Company', idFrom: 'param', idKey: 'id' })
   issueAccountNote(@Param('id') id: string, @Body() dto: AccountNoteDto) {

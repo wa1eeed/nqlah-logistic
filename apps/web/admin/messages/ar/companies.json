@@ -66,12 +66,25 @@
       "drivers": "السائقون",
       "financial": "المالية",
       "statement": "كشف الحساب",
+      "activity": "النشاط",
       "profile": "الملف والتحقق",
       "team": "الفريق"
     },
     "orders": {
       "title": "طلبات هذه الشركة",
       "empty": "لا توجد طلبات"
+    },
+    "activity": {
+      "title": "سجل النشاط والتدقيق",
+      "subtitle": "الخط الزمني الكامل للإجراءات الإدارية وأحداث الحساب",
+      "empty": "لا يوجد نشاط مسجّل",
+      "actions": {
+        "admin.company.status_change": "تغيير حالة الحساب",
+        "admin.company.accountNote": "إصدار إشعار محاسبي",
+        "admin.dispute.update": "تحديث نزاع",
+        "admin.settings.update": "تحديث الإعدادات",
+        "admin.wallet.manualTx": "حركة محفظة يدوية"
+      }
     },
     "overview": {
       "totalOrders": "إجمالي الطلبات",
