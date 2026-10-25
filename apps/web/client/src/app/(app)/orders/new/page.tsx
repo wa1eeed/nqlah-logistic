@@ -134,6 +134,13 @@ export default function NewOrderWizard() {
   const { data: carriersRaw, isLoading: carriersLoading } =
     useSWR<ApiCarrier[]>('/companies?type=CARRIER&status=ACTIVE&limit=100', fetcher);
   const [step, setStep] = useState(1);
+
+  // Reset scroll to the top of the page whenever the step changes, so a new
+  // step always opens from its beginning instead of wherever the Next button
+  // was (important on mobile, where Next sits far down the page).
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
   const [carrierSearch, setCarrierSearch] = useState('');
   const [form, setForm] = useState<FormState>({
     tripType: 'INTER_CITY',
@@ -837,18 +844,18 @@ export default function NewOrderWizard() {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 sticky bottom-0 z-10 -mx-4 border-t bg-background/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none">
         <Button variant="outline" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1}>
           <ChevronRight className="h-4 w-4 rtl:rotate-180" />
           {t('wizard.nav.prev')}
         </Button>
         {step < STEPS.length ? (
-          <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext}>
+          <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext} className="min-w-[120px]">
             {t('wizard.nav.next')}
             <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
           </Button>
         ) : (
-          <Button onClick={submit} disabled={!canNext || submitting}>
+          <Button onClick={submit} disabled={!canNext || submitting} className="min-w-[120px]">
             <Send className="h-4 w-4" />
             {submitting ? t('wizard.nav.submitting') : t('wizard.nav.submit')}
           </Button>
