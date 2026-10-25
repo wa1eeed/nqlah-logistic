@@ -184,6 +184,20 @@
       "windowEvening": "Evening (12:00 - 18:00)",
       "windowAllDay": "All day (8:00 - 18:00)",
       "windowHint": "The carrier will confirm the exact time within the window when accepting the bid.",
+      "stopsTitle": "Intermediate stops (optional)",
+      "stopsHint": "Add stops between pickup and final delivery for a multi-stop trip.",
+      "addStop": "Add stop",
+      "stopN": "Stop {n}",
+      "removeStop": "Remove stop",
+      "stopCity": "City",
+      "stopAddress": "Address / details (optional)",
+      "stopTypes": {
+        "DROPOFF": "Drop-off",
+        "PICKUP": "Additional pickup",
+        "WAREHOUSE": "Warehouse",
+        "RETURN_EMPTY": "Return empty container",
+        "EXCHANGE": "Exchange"
+      },
       "pickupLocation": "Pickup location in {city}",
       "deliveryLocation": "Delivery location in {city}",
       "addressPlaceholder": "Detailed address (optional)"

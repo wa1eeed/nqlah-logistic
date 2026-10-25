@@ -184,6 +184,20 @@
       "windowEvening": "مساء (12:00 - 18:00)",
       "windowAllDay": "طوال اليوم (8:00 - 18:00)",
       "windowHint": "الناقل سيؤكّد الوقت الدقيق داخل النافذة عند قبول العرض.",
+      "stopsTitle": "محطّات وسيطة (اختياري)",
+      "stopsHint": "أضف محطّات بين الاستلام والتسليم النهائي لإنشاء رحلة متعدّدة المحطّات.",
+      "addStop": "إضافة محطّة",
+      "stopN": "المحطّة {n}",
+      "removeStop": "حذف المحطّة",
+      "stopCity": "المدينة",
+      "stopAddress": "العنوان / التفاصيل (اختياري)",
+      "stopTypes": {
+        "DROPOFF": "تسليم جزئي",
+        "PICKUP": "استلام إضافي",
+        "WAREHOUSE": "مستودع",
+        "RETURN_EMPTY": "إرجاع حاوية فارغة",
+        "EXCHANGE": "تبادل"
+      },
       "pickupLocation": "موقع الاستلام في {city}",
       "deliveryLocation": "موقع التسليم في {city}",
       "addressPlaceholder": "عنوان تفصيلي (اختياري)"

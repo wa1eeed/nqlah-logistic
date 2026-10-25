@@ -49,6 +49,9 @@ export type TripType = 'SAME_CITY' | 'INTER_CITY';
  *                  across its own trucks/drivers.
  */
 export type OrderKind = 'SINGLE' | 'CONSOLIDATED';
+export type RouteStopType = 'PICKUP' | 'DROPOFF' | 'WAREHOUSE' | 'RETURN_EMPTY' | 'EXCHANGE';
+/** An optional intermediate stop between the pickup origin and the final delivery. */
+export interface RouteStop { type: RouteStopType; city: string; address: string; instructions: string; }
 
 /** Allowed truck count range for a consolidated order. */
 const CONSOLIDATED_MIN = 2;
@@ -72,6 +75,8 @@ interface FormState {
   destinationAddress: string;
   /** Precise delivery location set via the map. */
   destinationPin: MapPoint | null;
+  /** Optional ordered intermediate stops (between pickup and final delivery). */
+  stops: RouteStop[];
   pickupDate: string;
   pickupWindow: PickupWindow;
   mode: 'OPEN' | 'DIRECT' | null;
@@ -166,6 +171,7 @@ export default function NewOrderWizard() {
     destinationCity: 'جدة',
     destinationAddress: '',
     destinationPin: null,
+    stops: [],
     pickupDate: '',
     pickupWindow: 'ALL_DAY',
     // Initial selections honour the client's policy (pre-pick when only one option).
@@ -290,6 +296,32 @@ export default function NewOrderWizard() {
         ...(form.originPin?.lng   != null ? { originLng: form.originPin.lng }     : {}),
         ...(form.destinationPin?.lat != null ? { destinationLat: form.destinationPin.lat } : {}),
         ...(form.destinationPin?.lng != null ? { destinationLng: form.destinationPin.lng } : {}),
+        // Multi-stop route: only sent when the client added intermediate stops;
+        // otherwise omitted so the server builds the classic 2-stop route.
+        ...(form.stops.length > 0 ? {
+          stops: [
+            {
+              type: 'PICKUP', city: form.originCity, region: origin?.region ?? form.originCity,
+              address: form.originAddress || form.originPin?.address || form.originCity,
+              ...(form.originPin?.lat != null ? { lat: form.originPin.lat } : {}),
+              ...(form.originPin?.lng != null ? { lng: form.originPin.lng } : {}),
+            },
+            ...form.stops.map((s) => {
+              const c = activeCities.find((x) => x.nameAr === s.city);
+              return {
+                type: s.type, city: s.city, region: c?.region ?? s.city,
+                address: s.address || s.city,
+                ...(s.instructions ? { instructions: s.instructions } : {}),
+              };
+            }),
+            {
+              type: 'DELIVERY', city: form.destinationCity, region: dest?.region ?? form.destinationCity,
+              address: form.destinationAddress || form.destinationPin?.address || form.destinationCity,
+              ...(form.destinationPin?.lat != null ? { lat: form.destinationPin.lat } : {}),
+              ...(form.destinationPin?.lng != null ? { lng: form.destinationPin.lng } : {}),
+            },
+          ],
+        } : {}),
         ...(form.specialInstructions ? { specialInstructions: form.specialInstructions } : {}),
         // Collection method is validated server-side against the client's policy.
         collectionMethod: form.collectionMethod,
@@ -587,6 +619,63 @@ export default function NewOrderWizard() {
                 onOriginPin={(p) => { set('originPin', p); set('originAddress', p.address); }}
                 onDestPin={(p) => { set('destinationPin', p); set('destinationAddress', p.address); }}
               />
+
+              {/* Optional intermediate stops → a multi-stop trip. Omitted entirely
+                  when empty, so a plain pickup→delivery order is unchanged. */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Route className="h-4 w-4 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <Label>{t('wizard.route.stopsTitle')}</Label>
+                      <p className="text-xs text-muted-foreground">{t('wizard.route.stopsHint')}</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button" variant="outline" size="sm" className="shrink-0"
+                    onClick={() => set('stops', [...form.stops, { type: 'DROPOFF', city: form.destinationCity, address: '', instructions: '' }])}
+                  >
+                    <Plus className="h-4 w-4" /> {t('wizard.route.addStop')}
+                  </Button>
+                </div>
+                {form.stops.map((s, i) => (
+                  <div key={i} className="rounded-md border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground">{t('wizard.route.stopN', { n: i + 1 })}</span>
+                      <Button
+                        type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                        onClick={() => set('stops', form.stops.filter((_, j) => j !== i))}
+                        aria-label={t('wizard.route.removeStop')}
+                      ><Minus className="h-4 w-4" /></Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Select value={s.type} onValueChange={(v) => set('stops', form.stops.map((x, j) => (j === i ? { ...x, type: v as RouteStopType } : x)))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="DROPOFF">{t('wizard.route.stopTypes.DROPOFF')}</SelectItem>
+                          <SelectItem value="PICKUP">{t('wizard.route.stopTypes.PICKUP')}</SelectItem>
+                          <SelectItem value="WAREHOUSE">{t('wizard.route.stopTypes.WAREHOUSE')}</SelectItem>
+                          <SelectItem value="RETURN_EMPTY">{t('wizard.route.stopTypes.RETURN_EMPTY')}</SelectItem>
+                          <SelectItem value="EXCHANGE">{t('wizard.route.stopTypes.EXCHANGE')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={s.city} onValueChange={(v) => set('stops', form.stops.map((x, j) => (j === i ? { ...x, city: v } : x)))}>
+                        <SelectTrigger><SelectValue placeholder={t('wizard.route.stopCity')} /></SelectTrigger>
+                        <SelectContent>
+                          {activeCities.map((c) => (
+                            <SelectItem key={c.id} value={c.nameAr}>{localizeCity(c.nameAr, undefined, activeCities)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Input
+                      value={s.address}
+                      onChange={(e) => set('stops', form.stops.map((x, j) => (j === i ? { ...x, address: e.target.value } : x)))}
+                      placeholder={t('wizard.route.stopAddress')}
+                    />
+                  </div>
+                ))}
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
