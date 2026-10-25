@@ -136,6 +136,7 @@
     },
     "profile": {
       "basicInfo": "Basic Information",
+      "code": "Company code",
       "nameAr": "Name (AR)",
       "crNumber": "Commercial Register",
       "vatNumber": "VAT Number",

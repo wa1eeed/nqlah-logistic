@@ -450,6 +450,7 @@ function ProfileTab({ company, isCarrier }: { company: Company; isCarrier: boole
         <CardHeader><CardTitle>{t('detail.profile.basicInfo')}</CardTitle></CardHeader>
         <CardContent>
           <dl className="divide-y">
+            <Row label={t('detail.profile.code')} value={<span className="num">{(company as { code?: string }).code ?? '—'}</span>} />
             <Row label={t('detail.profile.nameAr')} value={company.nameAr} />
             <Row label="Name (EN)" value={<span className="num">{company.nameEn || '—'}</span>} />
             <Row label={t('detail.profile.crNumber')} value={<span className="num">{company.crNumber || '—'}</span>} />

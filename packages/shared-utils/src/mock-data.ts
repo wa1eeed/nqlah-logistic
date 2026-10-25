@@ -25,6 +25,8 @@ export type AccountType = 'COMPANY' | 'INDIVIDUAL';
 
 export interface Company {
   id: string;
+  /** Short public reference (e.g. "NQ-7K4F2P") shown instead of the cuid. */
+  code?: string;
   kind: CompanyKind;
   /** Defaults to 'COMPANY' for legacy entries. Individuals use 'INDIVIDUAL'. */
   accountType?: AccountType;

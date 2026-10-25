@@ -69,10 +69,11 @@ export function CompaniesList({ kind }: { kind: 'CLIENT' | 'CARRIER' }) {
     return arr;
   }, [list, entity, search]);
 
+  // Never show the raw cuid — fall back to the short public code.
   const idCell = (c: Company) =>
     c.accountType === 'INDIVIDUAL'
-      ? c.nationalId ? t('list.nationalIdPrefix', { id: c.nationalId }) : t('list.idPrefix', { id: c.id })
-      : c.crNumber ? `CR · ${c.crNumber}` : c.id;
+      ? (c.nationalId ? t('list.nationalIdPrefix', { id: c.nationalId }) : (c.code ?? ''))
+      : (c.crNumber ? `CR · ${c.crNumber}` : (c.code ?? ''));
 
   return (
     <>

@@ -6,6 +6,15 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.64 — Short public company codes (no raw cuids in the UI) (2026-10-26)
+
+- `Company.code` — a short, professionally generated public reference
+  (e.g. `NQ-7K4F2P`) set at creation; existing rows backfilled in the migration.
+- The admin lists and the company detail now show the **code** instead of the
+  internal cuid as the company reference. Verified live.
+- Principle recorded: never surface raw cuids in the UI — use short generated
+  codes (apply to other entities' references too).
+
 ### v0.9.63 — Group tags on companies (2026-10-26)
 
 - The admin **Carriers** and **Clients** lists now show a **group tag** on each
