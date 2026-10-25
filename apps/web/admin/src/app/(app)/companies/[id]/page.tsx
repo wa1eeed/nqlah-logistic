@@ -3,13 +3,14 @@ import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, ArrowRight, BarChart2, Building2, Check, Crown, FileCheck, FileText, FileX,
-  Gauge, Mail, MapPin, MoreVertical, Package, Phone, ShieldCheck, Star, Trash2, TrendingUp,
-  Truck, Upload, Users, Wallet, X, type LucideIcon,
+  Gauge, Mail, MapPin, MinusCircle, MoreVertical, Package, Phone, PlusCircle, Printer,
+  ShieldCheck, Star, Trash2, TrendingUp, Truck, User as UserIcon, Users, Wallet, X,
+  type LucideIcon,
 } from 'lucide-react';
 import {
   Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { Button } from '@/components/ui/button';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -19,13 +20,24 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/page-header';
 import { StatsCard } from '@/components/stats-card';
 import { StatusBadge } from '@/components/status-badge';
+import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 import { Currency } from '@/components/currency';
 import { Skeleton } from '@/components/ui/skeleton';
-import { fetcher } from '@/lib/api';
+import { notify } from '@/lib/notify';
+import { api, fetcher } from '@/lib/api';
 import {
   COMPANIES, ORDERS, formatDate, teamMembersFor, permissionsFor,
   normalizeCompany, normalizeOrderList,
@@ -134,10 +146,13 @@ export default function AdminCompanyDetail() {
       />
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
+        <TabsList className="overflow-x-auto">
           <TabsTrigger value="overview"><Gauge className="h-4 w-4 me-1.5" /> نظرة عامة</TabsTrigger>
           <TabsTrigger value="orders"><Package className="h-4 w-4 me-1.5" /> الطلبات</TabsTrigger>
+          {isCarrier && <TabsTrigger value="trucks"><Truck className="h-4 w-4 me-1.5" /> الشاحنات</TabsTrigger>}
+          {isCarrier && <TabsTrigger value="drivers"><UserIcon className="h-4 w-4 me-1.5" /> السائقون</TabsTrigger>}
           <TabsTrigger value="financial"><Wallet className="h-4 w-4 me-1.5" /> المالية</TabsTrigger>
+          <TabsTrigger value="statement"><FileText className="h-4 w-4 me-1.5" /> كشف الحساب</TabsTrigger>
           <TabsTrigger value="profile"><Building2 className="h-4 w-4 me-1.5" /> الملف والتحقق</TabsTrigger>
           <TabsTrigger value="team"><Users className="h-4 w-4 me-1.5" /> الفريق</TabsTrigger>
         </TabsList>
@@ -177,9 +192,28 @@ export default function AdminCompanyDetail() {
           </Card>
         </TabsContent>
 
+        {/* ─── Trucks (carrier) ─── */}
+        {isCarrier && (
+          <TabsContent value="trucks">
+            <TrucksTab companyId={company.id} />
+          </TabsContent>
+        )}
+
+        {/* ─── Drivers (carrier) ─── */}
+        {isCarrier && (
+          <TabsContent value="drivers">
+            <DriversTab companyId={company.id} />
+          </TabsContent>
+        )}
+
         {/* ─── Financial ─── */}
         <TabsContent value="financial">
           <FinancialTab stats={statsData} isCarrier={isCarrier} />
+        </TabsContent>
+
+        {/* ─── Account statement ─── */}
+        <TabsContent value="statement">
+          <StatementTab companyId={company.id} companyName={company.nameAr} />
         </TabsContent>
 
         {/* ─── Profile + KYC ─── */}
@@ -476,6 +510,348 @@ function KycDocRow({
         </Button>
       )}
     </div>
+  );
+}
+
+// ─── Trucks tab ──────────────────────────────────────────────────────
+const TRUCK_TYPE_LABEL: Record<string, string> = {
+  SMALL_FLATBED: 'مسطح صغير', MEDIUM_FLATBED: 'مسطح متوسط', LARGE_FLATBED: 'مسطح كبير',
+  REFRIGERATED: 'مبرّد', CONTAINER_20: 'حاوية 20', CONTAINER_40: 'حاوية 40',
+  TANKER: 'صهريج', CURTAINSIDER: 'ستائري', BOX_TRUCK: 'صندوق', LOWBED: 'لوبد',
+};
+
+interface ApiTruck {
+  id: string; plateNumber: string; type: string; capacity: number; status: string;
+  ownership: string; currentDriver?: { user: { firstName: string; lastName: string } } | null;
+}
+
+function TrucksTab({ companyId }: { companyId: string }) {
+  const { data } = useSWR<ApiTruck[]>(`/admin/companies/${companyId}/trucks`, fetcher);
+  if (!data) return <TabSkeleton />;
+  if (data.length === 0) return <EmptyCard icon={Truck} text="لا توجد شاحنات مسجّلة لهذا الناقل" />;
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">أسطول الشاحنات</CardTitle>
+          <Badge variant="secondary">{data.length}</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>اللوحة</TableHead>
+              <TableHead>النوع</TableHead>
+              <TableHead>الحمولة</TableHead>
+              <TableHead>الملكية</TableHead>
+              <TableHead>السائق الحالي</TableHead>
+              <TableHead>الحالة</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((t) => {
+              const plate = parsePlateString(t.plateNumber);
+              const driver = t.currentDriver ? `${t.currentDriver.user.firstName} ${t.currentDriver.user.lastName}`.trim() : '—';
+              return (
+                <TableRow key={t.id}>
+                  <TableCell><div className="w-[96px]"><SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="fill" /></div></TableCell>
+                  <TableCell className="text-sm">{TRUCK_TYPE_LABEL[t.type] ?? t.type}</TableCell>
+                  <TableCell className="num text-sm">{t.capacity} طن</TableCell>
+                  <TableCell><Badge variant={t.ownership === 'OWNED' ? 'secondary' : 'outline'}>{t.ownership === 'OWNED' ? 'مملوكة' : 'مستقلّة'}</Badge></TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{driver}</TableCell>
+                  <TableCell><StatusBadge status={t.status} /></TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Drivers tab ─────────────────────────────────────────────────────
+interface ApiDriver {
+  id: string; status: string; ownership: string; licenseNumber: string; licenseExpiry: string;
+  licenseType: string; rating: number; totalTrips: number;
+  user: { firstName: string; lastName: string; phone: string; nationalId?: string | null };
+}
+
+function DriversTab({ companyId }: { companyId: string }) {
+  const { data } = useSWR<ApiDriver[]>(`/admin/companies/${companyId}/drivers`, fetcher);
+  if (!data) return <TabSkeleton />;
+  if (data.length === 0) return <EmptyCard icon={UserIcon} text="لا يوجد سائقون مسجّلون لهذا الناقل" />;
+  const now = Date.now();
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">السائقون</CardTitle>
+          <Badge variant="secondary">{data.length}</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>السائق</TableHead>
+              <TableHead>الجوال</TableHead>
+              <TableHead>الرخصة</TableHead>
+              <TableHead>الملكية</TableHead>
+              <TableHead className="text-center">رحلات</TableHead>
+              <TableHead className="text-center">التقييم</TableHead>
+              <TableHead>الحالة</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((d) => {
+              const exp = new Date(d.licenseExpiry).getTime();
+              const days = Math.round((exp - now) / 86400000);
+              const expState = days < 0 ? 'expired' : days < 60 ? 'soon' : 'ok';
+              return (
+                <TableRow key={d.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8"><AvatarFallback>{`${d.user.firstName?.[0] ?? ''}${d.user.lastName?.[0] ?? ''}`}</AvatarFallback></Avatar>
+                      <span className="text-sm font-medium">{d.user.firstName} {d.user.lastName}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="num text-sm" dir="ltr">{d.user.phone}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="num text-xs" dir="ltr">{d.licenseNumber} · {d.licenseType}</span>
+                      <span className={`text-[11px] ${expState === 'expired' ? 'text-destructive font-medium' : expState === 'soon' ? 'text-warning' : 'text-muted-foreground'}`}>
+                        {expState === 'expired' ? 'منتهية الصلاحية' : expState === 'soon' ? `تنتهي خلال ${days} يوم` : `سارية حتى ${formatDate(d.licenseExpiry, 'MMM yyyy')}`}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell><Badge variant={d.ownership === 'OWNED' ? 'secondary' : 'outline'}>{d.ownership === 'OWNED' ? 'موظّف' : 'مستقل'}</Badge></TableCell>
+                  <TableCell className="text-center num">{d.totalTrips}</TableCell>
+                  <TableCell className="text-center num">{d.rating > 0 ? d.rating.toFixed(1) : '—'}</TableCell>
+                  <TableCell><StatusBadge status={d.status} /></TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Account statement tab ───────────────────────────────────────────
+const TX_TYPE_LABEL: Record<string, string> = {
+  CREDIT_NOTE: 'إشعار دائن', DEBIT_NOTE: 'إشعار مدين',
+  ADMIN_CREDIT: 'إضافة يدوية', ADMIN_DEBIT: 'خصم يدوي', ADMIN_ADJUSTMENT: 'تسوية',
+  ESCROW_HOLD: 'حجز ضمان', ESCROW_RELEASE: 'تحرير ضمان', COMMISSION: 'عمولة', PAYOUT: 'تحويل',
+};
+
+interface StatementLine {
+  id: string; type: string; amount: number; balance: number; reference?: string | null;
+  description: string; createdAt: string;
+}
+interface Statement {
+  companyName: string; walletBalance: number; totalCredits: number; totalDebits: number; lines: StatementLine[];
+}
+
+function StatementTab({ companyId, companyName }: { companyId: string; companyName: string }) {
+  const { data, mutate } = useSWR<Statement>(`/admin/companies/${companyId}/statement`, fetcher);
+  const { mutate: globalMutate } = useSWRConfig();
+  const [open, setOpen] = useState(false);
+
+  const onIssued = () => {
+    mutate();
+    globalMutate(`/companies/${companyId}/stats`); // refresh the Financial tab too
+  };
+
+  if (!data) return <TabSkeleton />;
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatsCard label="رصيد الحساب" value={<Currency amount={data.walletBalance} />} hint="المستحق حاليا" icon={Wallet} tone={data.walletBalance >= 0 ? 'success' : 'danger'} index={0} />
+        <StatsCard label="إجمالي الدائن" value={<Currency amount={data.totalCredits} />} hint="لصالح الناقل" icon={PlusCircle} tone="success" index={1} />
+        <StatsCard label="إجمالي المدين" value={<Currency amount={data.totalDebits} />} hint="على الناقل" icon={MinusCircle} tone="warning" index={2} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <CardTitle className="text-base">كشف الحساب</CardTitle>
+              <CardDescription className="mt-1">حركات حساب الناقل مع المنصة</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => printStatement(companyName, data)} disabled={data.lines.length === 0}>
+                <Printer className="h-4 w-4" /> طباعة / PDF
+              </Button>
+              <Button size="sm" onClick={() => setOpen(true)}>
+                <FileText className="h-4 w-4" /> إصدار إشعار
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {data.lines.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-10 text-center">لا توجد حركات بعد</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>التاريخ</TableHead>
+                  <TableHead>النوع</TableHead>
+                  <TableHead>المرجع</TableHead>
+                  <TableHead>البيان</TableHead>
+                  <TableHead className="text-end">المبلغ</TableHead>
+                  <TableHead className="text-end">الرصيد</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.lines.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="text-xs text-muted-foreground num whitespace-nowrap">{formatDate(l.createdAt, 'd MMM yyyy')}</TableCell>
+                    <TableCell className="text-sm">{TX_TYPE_LABEL[l.type] ?? l.type}</TableCell>
+                    <TableCell className="num text-xs font-mono text-muted-foreground" dir="ltr">{l.reference ?? '—'}</TableCell>
+                    <TableCell className="text-sm max-w-[280px] truncate">{l.description}</TableCell>
+                    <TableCell className={`text-end num font-medium ${l.amount >= 0 ? 'text-success' : 'text-destructive'}`}>
+                      {l.amount >= 0 ? '+' : '−'}<Currency amount={Math.abs(l.amount)} />
+                    </TableCell>
+                    <TableCell className="text-end num"><Currency amount={l.balance} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <IssueNoteDialog companyId={companyId} open={open} onOpenChange={setOpen} onIssued={onIssued} />
+    </div>
+  );
+}
+
+function IssueNoteDialog({ companyId, open, onOpenChange, onIssued }: {
+  companyId: string; open: boolean; onOpenChange: (v: boolean) => void; onIssued: () => void;
+}) {
+  const [type, setType] = useState<'CREDIT' | 'DEBIT'>('CREDIT');
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    const amt = Number(amount);
+    if (!(amt > 0) || !reason.trim() || saving) return;
+    setSaving(true);
+    try {
+      const r = await api.post(`/admin/companies/${companyId}/notes`, { type, amount: amt, reason: reason.trim() });
+      const ref = r.data?.data?.reference ?? r.data?.reference;
+      notify.success('تم إصدار الإشعار', ref ? `المرجع ${ref}` : undefined);
+      setAmount(''); setReason(''); setType('CREDIT');
+      onOpenChange(false);
+      onIssued();
+    } catch (err) {
+      notify.error(err, 'تعذّر إصدار الإشعار');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>إصدار إشعار</DialogTitle>
+          <DialogDescription>إشعار دائن يرفع رصيد الناقل، ومدين يخفضه. يُسجَّل في كشف الحساب برقم مرجعي.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-1">
+          <div className="grid grid-cols-2 gap-2">
+            <Button type="button" variant={type === 'CREDIT' ? 'default' : 'outline'} onClick={() => setType('CREDIT')}>
+              <PlusCircle className="h-4 w-4" /> إشعار دائن
+            </Button>
+            <Button type="button" variant={type === 'DEBIT' ? 'default' : 'outline'} onClick={() => setType('DEBIT')}>
+              <MinusCircle className="h-4 w-4" /> إشعار مدين
+            </Button>
+          </div>
+          <div className="space-y-1.5">
+            <Label>المبلغ (ر.س)</Label>
+            <Input type="number" min="0" step="0.01" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>السبب / البيان</Label>
+            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: مكافأة أداء، تعويض، غرامة تأخير…" rows={3} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
+          <Button onClick={submit} disabled={saving || !(Number(amount) > 0) || !reason.trim()}>
+            {saving ? 'جار الإصدار…' : 'إصدار'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Open a clean, print-ready statement in a new window (saves as PDF via print). */
+function printStatement(companyName: string, data: Statement) {
+  const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+  const sar = (n: number) => `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
+  const rows = data.lines.map((l) => `
+    <tr>
+      <td>${new Date(l.createdAt).toLocaleDateString('en-GB')}</td>
+      <td>${esc(TX_TYPE_LABEL[l.type] ?? l.type)}</td>
+      <td class="mono">${esc(l.reference ?? '—')}</td>
+      <td>${esc(l.description)}</td>
+      <td class="num ${l.amount >= 0 ? 'cr' : 'dr'}">${l.amount >= 0 ? '+' : '−'}${sar(Math.abs(l.amount))}</td>
+      <td class="num">${sar(l.balance)}</td>
+    </tr>`).join('');
+  const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+    <title>كشف حساب — ${esc(companyName)}</title>
+    <style>
+      body{font-family:-apple-system,Segoe UI,Tahoma,Arial,sans-serif;color:#0A3D3A;margin:32px}
+      h1{font-size:20px;margin:0 0 4px}.sub{color:#6B7280;font-size:13px;margin-bottom:20px}
+      .cards{display:flex;gap:12px;margin-bottom:20px}
+      .card{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:12px}
+      .card .l{font-size:12px;color:#6B7280}.card .v{font-size:18px;font-weight:700;margin-top:4px}
+      table{width:100%;border-collapse:collapse;font-size:13px}
+      th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:start}
+      th{background:#f8fafc;font-size:12px;color:#6B7280}
+      .num{text-align:end;font-variant-numeric:tabular-nums}.mono{font-family:ui-monospace,monospace;font-size:11px;color:#6B7280;direction:ltr}
+      .cr{color:#059669}.dr{color:#dc2626}
+      @media print{body{margin:12mm}}
+    </style></head><body>
+    <h1>كشف حساب — ${esc(companyName)}</h1>
+    <div class="sub">نقلة لوجيستك · ${new Date().toLocaleDateString('en-GB')}</div>
+    <div class="cards">
+      <div class="card"><div class="l">رصيد الحساب</div><div class="v">${sar(data.walletBalance)}</div></div>
+      <div class="card"><div class="l">إجمالي الدائن</div><div class="v cr">${sar(data.totalCredits)}</div></div>
+      <div class="card"><div class="l">إجمالي المدين</div><div class="v dr">${sar(data.totalDebits)}</div></div>
+    </div>
+    <table><thead><tr><th>التاريخ</th><th>النوع</th><th>المرجع</th><th>البيان</th><th class="num">المبلغ</th><th class="num">الرصيد</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="6">لا توجد حركات</td></tr>'}</tbody></table>
+    </body></html>`;
+  const w = window.open('', '_blank');
+  if (!w) { notify.error(null, 'تعذّر فتح نافذة الطباعة — اسمح بالنوافذ المنبثقة'); return; }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 400);
+}
+
+// ─── shared small bits ───────────────────────────────────────────────
+function TabSkeleton() {
+  return (
+    <Card><CardContent className="p-4 space-y-2">
+      {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
+    </CardContent></Card>
+  );
+}
+function EmptyCard({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
+  return (
+    <Card><CardContent className="py-16 text-center text-muted-foreground">
+      <Icon className="h-10 w-10 mx-auto mb-3 opacity-40" />
+      <p className="text-sm">{text}</p>
+    </CardContent></Card>
   );
 }
 

@@ -201,6 +201,78 @@ export class AdminService {
     });
   }
 
+  // ─── Company fleet + account statement (admin provider view) ────────
+
+  async companyTrucks(companyId: string) {
+    return this.prisma.truck.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      include: { currentDriver: { include: { user: { select: { firstName: true, lastName: true } } } } },
+    });
+  }
+
+  async companyDrivers(companyId: string) {
+    return this.prisma.driverProfile.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { firstName: true, lastName: true, phone: true, nationalId: true } } },
+    });
+  }
+
+  /** The company's account statement: wallet balance, credit/debit totals, ledger. */
+  async companyStatement(companyId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { walletBalance: true, nameAr: true, type: true },
+    });
+    if (!company) throw new NotFoundException({ code: 'COMPANY_NOT_FOUND', message: 'الشركة غير موجودة' });
+    const lines = await this.prisma.transaction.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      take: 300,
+    });
+    const totalCredits = lines.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0);
+    const totalDebits = lines.filter((l) => l.amount < 0).reduce((s, l) => s + Math.abs(l.amount), 0);
+    return {
+      companyName: company.nameAr,
+      walletBalance: company.walletBalance,
+      totalCredits,
+      totalDebits,
+      lines,
+    };
+  }
+
+  /**
+   * Issue a credit or debit note against a company's account. A credit note
+   * raises the balance (platform owes the carrier more); a debit note lowers
+   * it. Recorded as a wallet Transaction with a CN-/DN- reference.
+   */
+  async issueAccountNote(
+    companyId: string,
+    dto: { type: 'CREDIT' | 'DEBIT'; amount: number; reason: string },
+  ) {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundException({ code: 'COMPANY_NOT_FOUND', message: 'الشركة غير موجودة' });
+    const year = new Date().getFullYear();
+    const seq = Math.floor(100000 + Math.random() * 900000);
+    const reference = `${dto.type === 'CREDIT' ? 'CN' : 'DN'}-${year}-${seq}`;
+    const delta = dto.type === 'DEBIT' ? -dto.amount : dto.amount;
+    const newBalance = company.walletBalance + delta;
+    return this.prisma.$transaction(async (tx) => {
+      await tx.company.update({ where: { id: companyId }, data: { walletBalance: newBalance } });
+      return tx.transaction.create({
+        data: {
+          companyId,
+          type: dto.type === 'CREDIT' ? 'CREDIT_NOTE' : 'DEBIT_NOTE',
+          amount: delta,
+          balance: newBalance,
+          reference,
+          description: dto.reason,
+        },
+      });
+    });
+  }
+
   async getSettings() {
     return this.prisma.setting.findMany({ orderBy: { category: 'asc' } });
   }
