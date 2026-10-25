@@ -302,11 +302,16 @@ export class OrdersService {
     if (order.mode === 'DIRECT' && !policy.allowDirect) {
       throw new ForbiddenException({ code: 'POLICY_DIRECT_DISABLED', message: 'الإسناد المباشر غير مسموح لهذا العميل' });
     }
-    // DIRECT + pre-agreed price: skip negotiation, assign immediately.
+    // DIRECT + pre-agreed price: skip negotiation, assign immediately — and
+    // open the collection (escrow/prepaid/COD) just like assign()/bid-accept do.
     if (order.mode === 'DIRECT' && order.agreedPrice && order.targetCarrierId) {
-      return this.prisma.order.update({
-        where: { id },
-        data: { status: 'ASSIGNED', carrierId: order.targetCarrierId },
+      return this.prisma.$transaction(async (tx) => {
+        const assigned = await tx.order.update({
+          where: { id },
+          data: { status: 'ASSIGNED', carrierId: order.targetCarrierId },
+        });
+        await this.collection.initiate(tx, assigned);
+        return assigned;
       });
     }
     return this.prisma.order.update({
