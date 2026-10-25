@@ -8,6 +8,7 @@ import type { DriverStatus } from '../../generated/prisma';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { PoliciesService } from '../policies/policies.service';
+import { CollectionService } from '../payments/collection/collection.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import {
   AssignDriverDto,
@@ -102,6 +103,7 @@ export class OrdersService {
     private prisma: PrismaService,
     private realtime: RealtimeGateway,
     private policies: PoliciesService,
+    private collection: CollectionService,
   ) {}
 
   async list(query: PaginationDto & { status?: OrderStatus; mine?: boolean }, actor: AuthUser) {
@@ -230,6 +232,7 @@ export class OrdersService {
         // v0.6.0 workflow fields — resolved against the client's policy above.
         mode: sourcing.mode,
         targetCarrierId: sourcing.targetCarrierId,
+        collectionMethod: sourcing.collectionMethod,
         // Pre-seed agreed price for DIRECT orders with an allowed upfront price.
         ...(sourcing.fixedPrice != null ? {
           agreedPrice:      sourcing.fixedPrice,
@@ -316,15 +319,20 @@ export class OrdersService {
     }
     const commissionRate = 0.08;
     const commission = +(dto.agreedPrice * commissionRate).toFixed(2);
-    return this.prisma.order.update({
-      where: { id },
-      data: {
-        carrierId: dto.carrierId,
-        agreedPrice: dto.agreedPrice,
-        commissionAmount: commission,
-        carrierAmount: dto.agreedPrice - commission,
-        status: 'ASSIGNED',
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.order.update({
+        where: { id },
+        data: {
+          carrierId: dto.carrierId,
+          agreedPrice: dto.agreedPrice,
+          commissionAmount: commission,
+          carrierAmount: +(dto.agreedPrice - commission).toFixed(2),
+          status: 'ASSIGNED',
+        },
+      });
+      // Open the collection per the order's method (escrow hold / prepaid / COD).
+      await this.collection.initiate(tx, updated);
+      return updated;
     });
   }
 
@@ -346,9 +354,14 @@ export class OrdersService {
     if (['COMPLETED', 'CANCELLED'].includes(order.status)) {
       throw new BadRequestException({ code: 'INVALID_TRANSITION', message: 'لا يمكن إلغاء الطلب' });
     }
-    return this.prisma.order.update({
-      where: { id },
-      data: { status: 'CANCELLED', cancelReason: dto.reason },
+    return this.prisma.$transaction(async (tx) => {
+      // Refund any prepaid collection before cancelling.
+      const payment = await tx.payment.findFirst({ where: { orderId: id } });
+      if (payment) await this.collection.refund(tx, payment.id);
+      return tx.order.update({
+        where: { id },
+        data: { status: 'CANCELLED', cancelReason: dto.reason },
+      });
     });
   }
 
@@ -388,13 +401,13 @@ export class OrdersService {
       throw new BadRequestException({ code: 'INVALID_TRANSITION', message: 'الطلب لم يُسلَّم بعد' });
     }
     return this.prisma.$transaction(async (tx) => {
+      // Settle the collection first (credit carrier / debit COD commission); for
+      // COD this throws if the cash was not recorded as collected.
+      const payment = await tx.payment.findFirst({ where: { orderId: id } });
+      if (payment && payment.status !== 'RELEASED') await this.collection.settle(tx, payment.id);
       const updatedOrder = await tx.order.update({
         where: { id },
         data: { status: 'COMPLETED' },
-      });
-      await tx.payment.updateMany({
-        where: { orderId: id, status: 'HELD' },
-        data: { status: 'RELEASED', releasedAt: new Date() },
       });
       // Set assigned drivers back to AVAILABLE once order completes.
       const assigned = await tx.orderDriver.findMany({ where: { orderId: id }, select: { driverId: true } });
@@ -558,7 +571,9 @@ export class OrdersService {
     if (mode === 'OPEN' && !policy.allowMarketPricing) {
       throw new ForbiddenException({ code: 'POLICY_MARKET_PRICING_DISABLED', message: 'تسعير السوق غير مسموح لهذا العميل' });
     }
-    return { mode, targetCarrierId, fixedPrice };
+    // Collection method is validated against the same policy (allowPrepaid/allowCOD).
+    const collectionMethod = this.collection.resolveMethod(dto.collectionMethod, policy);
+    return { mode, targetCarrierId, fixedPrice, collectionMethod };
   }
 
   // ─── Consolidated legs ───────────────────────────────────────

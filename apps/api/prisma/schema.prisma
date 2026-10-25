@@ -384,6 +384,12 @@ model Order {
   /// "MORNING" (8-12) | "EVENING" (12-18) | "ALL_DAY" (8-18) — client's preferred pickup band.
   pickupWindow String @default("ALL_DAY")
 
+  /// How the client pays — chosen at creation, gated by the client's policy.
+  /// "ESCROW" (default; platform holds until completion) | "PREPAID_WALLET"
+  /// (debited from the client wallet now) | "PREPAID_GATEWAY" (charged online
+  /// now, stubbed provider) | "COD" (collected on delivery).
+  collectionMethod String @default("ESCROW")
+
   /// "SINGLE" | "CONSOLIDATED" — a consolidated order ships `truckCount` trucks
   /// along the same route; its legs are OrderTruck rows (String, no migration to
   /// add a type). truckCount is null for single orders.
@@ -471,43 +477,43 @@ model Order {
 /// route ("same trip"). Backwards-compatible: Order keeps its origin and
 /// destination columns as a denormalized summary (first PICKUP / last delivery).
 model OrderStop {
-  id            String    @id @default(cuid())
-  orderId       String
-  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   /// 1-based position in the route.
-  sequence      Int
-  type          StopType
+  sequence Int
+  type     StopType
   /// "PENDING" | "EN_ROUTE" | "ARRIVED" | "COMPLETED" | "SKIPPED".
   /// String (not enum) to mirror OrderTruck.status and add states migration-free.
-  status        String    @default("PENDING")
+  status   String   @default("PENDING")
 
-  city          String
-  region        String
-  address       String
-  lat           Float?
-  lng           Float?
+  city    String
+  region  String
+  address String
+  lat     Float?
+  lng     Float?
 
-  contactName   String?
-  contactPhone  String?
-  scheduledAt   DateTime?
-  windowStart   DateTime?
-  windowEnd     DateTime?
-  instructions  String?
+  contactName  String?
+  contactPhone String?
+  scheduledAt  DateTime?
+  windowStart  DateTime?
+  windowEnd    DateTime?
+  instructions String?
 
   /// Container handling at this stop (for CONTAINER_* trucks / empty return).
   containerNo   String?
   /// True when this stop is the empty-container return that keeps the trip
   /// open after the cargo is delivered (cargo-delivery vs trip-completion).
-  isEmptyReturn Boolean   @default(false)
+  isEmptyReturn Boolean @default(false)
 
-  arrivedAt     DateTime?
-  completedAt   DateTime?
-  proofPhotos   String[]  @default([])
-  proofNote     String?
+  arrivedAt   DateTime?
+  completedAt DateTime?
+  proofPhotos String[]  @default([])
+  proofNote   String?
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([orderId, sequence])
   @@index([orderId])
@@ -638,9 +644,17 @@ model Payment {
   paymentMethod  String?
   transactionRef String?
 
-  paidAt     DateTime?
-  heldAt     DateTime?
-  releasedAt DateTime?
+  /// Mirrors Order.collectionMethod for this payment's settlement strategy.
+  collectionMethod String  @default("ESCROW")
+  /// Amount still to be collected on delivery (COD / partial remainder); 0 for
+  /// fully-prepaid or escrow payments.
+  dueOnDelivery    Decimal @default(0) @db.Decimal(12, 2)
+
+  paidAt      DateTime?
+  heldAt      DateTime?
+  releasedAt  DateTime?
+  /// When the on-delivery amount (COD) was recorded as collected.
+  collectedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -35,7 +35,7 @@ with today's behavior as the first registered strategies (no behavior change):
 1. ✅ Multi-stop route foundation — `OrderStop`/`StopType` (PR #47, pending merge).
 2. ✅ **Money as exact Decimal** — foundation (this PR); see `docs/adr/0001-money-as-decimal.md`.
 3. ✅ Policy engine **enforcement** — `effectiveForCompany` wired into order create + publish (sourcing + pricing gates, forced carrier); permissive defaults = today's behavior. First Jest unit tests. (This PR.)
-4. ⏳ **Collection modules** — COD · prepaid-wallet · prepaid-gateway (abstracted, stubbed provider) · partial, selected by policy, over the existing escrow.
+4. ✅ **Collection modules** — ESCROW · prepaid-wallet · prepaid-gateway (abstracted, stubbed provider) · COD, selected by policy, over the existing escrow; unified settlement on completion/release; prepaid auto-refund on cancel. (This PR.) **PARTIAL (deposit + COD remainder) deferred to a follow-up** — its split settlement needs its own PR.
 5. ⏳ Sourcing/visibility customization + provider groups.
 6. ⏳ Dashboards — client route builder + allowed payment choices · admin group/workflow control + route view · carrier stop execution.
 7. ⏳ Provider-owned clients (sub-tenancy).
