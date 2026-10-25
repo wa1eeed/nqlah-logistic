@@ -20,7 +20,7 @@ import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
 import { Skeleton, SkeletonStatCards, SkeletonRows } from '@/components/ui/skeleton';
 import { fetcher } from '@/lib/api';
-import { ORDERS, COMPANIES, DISPUTES, PAYMENTS, companyById, formatRelative } from '@naqla/shared-utils';
+import { ORDERS, COMPANIES, DISPUTES, PAYMENTS, companyById, formatRelative, localizeCity } from '@naqla/shared-utils';
 
 interface DashboardStats {
   totalOrders?: number;
@@ -176,7 +176,7 @@ export default function AdminDashboard() {
                   >
                     <TableCell className="font-mono text-xs text-muted-foreground">{o.orderNumber}</TableCell>
                     <TableCell>{companyById(o.clientId)?.nameAr ?? '—'}</TableCell>
-                    <TableCell>{o.originCity} ← {o.destinationCity}</TableCell>
+                    <TableCell>{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</TableCell>
                     <TableCell><StatusBadge status={o.status} /></TableCell>
                     <TableCell className="text-end"><Currency amount={o.agreedPrice ?? o.clientBudget} /></TableCell>
                   </TableRow>

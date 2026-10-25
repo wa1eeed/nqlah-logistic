@@ -19,7 +19,7 @@ import { useFreelancerStore } from '@/stores/freelancer-store';
 import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
 import {
-  CURRENT_CARRIER_ID, DRIVERS, TRUCKS, normalizeTruckList, normalizeDriverList,
+  CURRENT_CARRIER_ID, DRIVERS, TRUCKS, localizeCity, normalizeTruckList, normalizeDriverList,
   type ConsolidatedLeg, type ConsolidatedLegStatus, type Driver, type Order, type Truck,
 } from '@naqla/shared-utils';
 
@@ -145,7 +145,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                 <Layers className="h-4 w-4 text-[hsl(var(--mint))]" /> طلب مجمّع · {count} شاحنات
               </CardTitle>
               <CardDescription className="mt-1 flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" /> {order.originCity} ← {order.destinationCity}
+                <MapPin className="h-3.5 w-3.5" /> {localizeCity(order.originCity)} ← {localizeCity(order.destinationCity)}
               </CardDescription>
             </div>
             <div className="text-end">

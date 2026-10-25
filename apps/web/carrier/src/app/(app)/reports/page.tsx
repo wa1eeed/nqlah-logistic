@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/page-header';
 import { StatsCard } from '@/components/stats-card';
 import { Currency } from '@/components/currency';
 import {
-  CURRENT_CARRIER_ID, bidsForCarrier, carrierById, driversForCarrier,
+  CURRENT_CARRIER_ID, bidsForCarrier, carrierById, driversForCarrier, localizeCity,
   ordersForCarrier, trucksForCarrier,
 } from '@naqla/shared-utils';
 
@@ -46,16 +46,16 @@ export default function CarrierReportsPage() {
 
   // Top routes
   const topRoutes = useMemo(() => {
-    const map = new Map<string, { count: number; revenue: number }>();
+    const map = new Map<string, { count: number; revenue: number; originCity: string; destinationCity: string }>();
     for (const o of orders) {
       const key = `${o.originCity} ← ${o.destinationCity}`;
-      const cur = map.get(key) ?? { count: 0, revenue: 0 };
+      const cur = map.get(key) ?? { count: 0, revenue: 0, originCity: o.originCity, destinationCity: o.destinationCity };
       cur.count += 1;
       cur.revenue += o.carrierAmount ?? o.agreedPrice ?? 0;
       map.set(key, cur);
     }
-    return Array.from(map.entries())
-      .map(([route, v]) => ({ route, ...v }))
+    return Array.from(map.values())
+      .map((v) => ({ route: `${localizeCity(v.originCity)} ← ${localizeCity(v.destinationCity)}`, ...v }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
   }, [orders]);

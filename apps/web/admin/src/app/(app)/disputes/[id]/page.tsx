@@ -27,7 +27,7 @@ import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
 import {
   DISPUTES, ORDERS, companyById, formatDate, formatDateTime, formatRelative,
-  type Dispute,
+  localizeCity, type Dispute,
 } from '@naqla/shared-utils';
 
 type ResolutionType = 'REFUND_CLIENT' | 'PAY_CARRIER' | 'SPLIT' | 'DISMISS';
@@ -275,7 +275,7 @@ export default function AdminDisputeDetail() {
                 <Link href={`/orders/${order.id}`} className="font-mono text-primary hover:underline block">
                   {order.orderNumber}
                 </Link>
-                <div className="text-xs text-muted-foreground">{order.originCity} ← {order.destinationCity}</div>
+                <div className="text-xs text-muted-foreground">{localizeCity(order.originCity)} ← {localizeCity(order.destinationCity)}</div>
                 <dl className="pt-2 border-t space-y-1 text-xs">
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">{t('disputeDetail.order.value')}</dt>
@@ -452,7 +452,7 @@ function PartyCard({
         <dl className="mt-3 pt-3 border-t space-y-1 text-xs">
           <div className="flex justify-between">
             <dt className="text-muted-foreground">{t('disputeDetail.party.city')}</dt>
-            <dd>{company.city}</dd>
+            <dd>{localizeCity(company.city)}</dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-muted-foreground">{t('disputeDetail.party.phone')}</dt>

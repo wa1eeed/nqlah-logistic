@@ -25,7 +25,7 @@ import { StatusBadge } from '@/components/status-badge';
 import { StatsCard } from '@/components/stats-card';
 import {
   CURRENT_CLIENT_ID, disputesFor, formatRelative, normalizeOrderList,
-  ordersForClient,
+  ordersForClient, localizeCity,
   type Dispute,
 } from '@naqla/shared-utils';
 
@@ -168,7 +168,7 @@ export default function ClientDisputesPage() {
                 <SelectContent>
                   {myOrders.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
-                      {o.orderNumber} — {o.originCity} ← {o.destinationCity}
+                      {o.orderNumber} — {localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}
                     </SelectItem>
                   ))}
                 </SelectContent>

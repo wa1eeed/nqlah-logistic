@@ -19,7 +19,7 @@ import { Skeleton, SkeletonStatCards, SkeletonRows } from '@/components/ui/skele
 import { fetcher } from '@/lib/api';
 import {
   CURRENT_CLIENT_ID, formatRelative, invoicesForClient, ordersForClient,
-  normalizeOrderList, type Order,
+  normalizeOrderList, localizeCity, type Order,
 } from '@naqla/shared-utils';
 
 const STATUS_EVENT: Record<string, { color: string }> = {
@@ -72,7 +72,7 @@ export default function ClientDashboard() {
         href:  `/orders/${o.id}`,
         label: t(`dashboard.event.${o.status}`),
         color: STATUS_EVENT[o.status].color,
-        sub:   `${o.orderNumber} · ${o.originCity} ← ${o.destinationCity}`,
+        sub:   `${o.orderNumber} · ${localizeCity(o.originCity)} ← ${localizeCity(o.destinationCity)}`,
         time:  formatRelative(o.createdAt),
       }));
   }, [all]);
@@ -176,7 +176,7 @@ export default function ClientDashboard() {
                 {all.slice(0, 7).map((o) => (
                   <TableRow key={o.id} className="cursor-pointer" onClick={() => (window.location.href = `/orders/${o.id}`)}>
                     <TableCell className="font-mono text-xs text-muted-foreground">{o.orderNumber}</TableCell>
-                    <TableCell>{o.originCity} ← {o.destinationCity}</TableCell>
+                    <TableCell>{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</TableCell>
                     <TableCell>
                       <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'}>
                         {o.mode === 'OPEN' ? t('dashboard.modeOpen') : t('dashboard.modeDirect')}

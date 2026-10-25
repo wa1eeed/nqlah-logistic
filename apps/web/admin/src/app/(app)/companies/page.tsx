@@ -19,7 +19,7 @@ import { MiniStat } from '@/components/ui/mini-stat';
 import { FadeIn } from '@/components/ui/fade-in';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
-import { COMPANIES, formatDate, normalizeCompanyList, type Company } from '@naqla/shared-utils';
+import { COMPANIES, formatDate, normalizeCompanyList, localizeCity, type Company } from '@naqla/shared-utils';
 
 export default function AdminCompaniesPage() {
   const t = useTranslations('companies');
@@ -163,7 +163,7 @@ export default function AdminCompaniesPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{c.city}</TableCell>
+                      <TableCell>{localizeCity(c.city)}</TableCell>
                       <TableCell><StatusBadge status={c.kycStatus} /></TableCell>
                       <TableCell className="text-end">
                         {c.kind === 'CARRIER' ? (

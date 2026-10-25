@@ -4,6 +4,7 @@
  * Mirrors the production domain (companies, KYC, orders, bids, fleet, payments,
  * disputes) with believable Saudi names and figures.
  */
+import { detectLocale } from './format';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -2327,6 +2328,60 @@ export const DEFAULT_CITIES: City[] = [
   { id: 'CITY-BAH', nameAr: 'الباحة',          nameEn: 'Baha',       region: 'الباحة',        lat: 20.0129, lng: 41.4677, active: true },
   { id: 'CITY-JOF', nameAr: 'الجوف',           nameEn: 'Jouf',       region: 'الجوف',         lat: 29.9697, lng: 40.1677, active: true },
 ];
+
+// ───────────────────────────────────────────────────────────────────────────
+// City / region name localization
+//
+// Cities are stored on orders as their Arabic name (free text from the
+// catalog). To show English under the English UI we map the Arabic name to its
+// English one. The map is seeded from DEFAULT_CITIES plus the other common
+// hubs/regions; unknown names fall through unchanged.
+// ───────────────────────────────────────────────────────────────────────────
+
+const CITY_EN: Record<string, string> = {
+  // extra hubs not in DEFAULT_CITIES
+  'الخبر': 'Khobar', 'الظهران': 'Dhahran', 'بريدة': 'Buraydah', 'عنيزة': 'Unaizah',
+  'خميس مشيط': 'Khamis Mushait', 'جازان': 'Jazan', 'الأحساء': 'Al-Ahsa', 'الهفوف': 'Hofuf',
+  'الخرج': 'Al-Kharj', 'حفر الباطن': 'Hafar Al-Batin', 'عرعر': 'Arar', 'سكاكا': 'Sakaka',
+  'القطيف': 'Qatif', 'رابغ': 'Rabigh', 'الدوادمي': 'Al-Dawadmi', 'القريات': 'Al-Qurayyat',
+};
+for (const c of DEFAULT_CITIES) CITY_EN[c.nameAr] = c.nameEn;
+
+const REGION_EN: Record<string, string> = {
+  // the 13 official regions
+  'الرياض': 'Riyadh', 'مكة المكرمة': 'Makkah', 'المدينة المنورة': 'Madinah',
+  'الشرقية': 'Eastern Province', 'عسير': 'Asir', 'تبوك': 'Tabuk', 'حائل': 'Hail',
+  'القصيم': 'Qassim', 'نجران': 'Najran', 'الباحة': 'Al-Bahah', 'الجوف': 'Al-Jouf',
+  'جازان': 'Jazan', 'الحدود الشمالية': 'Northern Borders',
+  // directional coverage areas used in carrier onboarding
+  'الوسطى': 'Central', 'الغربية': 'Western', 'الجنوبية': 'Southern',
+  'الشمالية': 'Northern', 'جميع المناطق': 'All regions',
+};
+
+/**
+ * Localize a city name. Under the Arabic UI returns the stored Arabic name;
+ * under English returns the English name when known, else the original.
+ * Pass extra catalog cities (from the live /settings/catalogs) to cover
+ * admin-added cities beyond the built-in hubs.
+ */
+export function localizeCity(name: string | null | undefined, locale?: 'ar' | 'en', extra?: { nameAr: string; nameEn: string }[]): string {
+  if (!name) return name ?? '';
+  const loc = locale ?? detectLocale();
+  if (loc !== 'en') return name;
+  if (extra) {
+    const hit = extra.find((c) => c.nameAr === name || c.nameEn === name);
+    if (hit?.nameEn) return hit.nameEn;
+  }
+  return CITY_EN[name] ?? name;
+}
+
+/** Localize an administrative region name (English under the English UI). */
+export function localizeRegion(name: string | null | undefined, locale?: 'ar' | 'en'): string {
+  if (!name) return name ?? '';
+  const loc = locale ?? detectLocale();
+  if (loc !== 'en') return name;
+  return REGION_EN[name] ?? name;
+}
 
 // ───────────────────────────────────────────────────────────────────────────
 // Cargo Types (admin-managed)

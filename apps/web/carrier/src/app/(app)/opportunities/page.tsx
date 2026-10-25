@@ -20,7 +20,7 @@ import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import {
-  CURRENT_CARRIER_ID, SAUDI_CITIES, companyById, formatDate, openOpportunitiesForCarrier,
+  CURRENT_CARRIER_ID, SAUDI_CITIES, companyById, formatDate, localizeCity, openOpportunitiesForCarrier,
   normalizeOrderList, type Order,
 } from '@naqla/shared-utils';
 
@@ -135,7 +135,7 @@ export default function CarrierOpportunitiesPage() {
           <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder={t('opportunities.allCities')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">{t('opportunities.allCities')}</SelectItem>
-            {SAUDI_CITIES.slice(0, 20).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            {SAUDI_CITIES.slice(0, 20).map((c) => <SelectItem key={c} value={c}>{localizeCity(c)}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={setSort}>
@@ -168,7 +168,7 @@ export default function CarrierOpportunitiesPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold">{o.originCity} ← {o.destinationCity}</h3>
+                        <h3 className="font-semibold">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</h3>
                         <Badge variant={isDirect ? 'warning' : 'success'}>
                           {isDirect ? <><UserSearch className="h-3 w-3" /> {t('opportunities.directedToYou')}</> : <><Radio className="h-3 w-3" /> {t('opportunities.openMarket')}</>}
                         </Badge>

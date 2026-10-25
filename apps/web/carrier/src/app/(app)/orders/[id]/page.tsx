@@ -27,7 +27,7 @@ import { RouteMap } from '@/components/route-map';
 import { EscrowCountdown } from '@/components/escrow-countdown';
 import {
   ORDERS, TRUCKS, DRIVERS, CURRENT_CARRIER_ID, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
-  formatDate, formatDateTime, timelineFor, normalizeOrder, type Order,
+  formatDate, formatDateTime, localizeCity, timelineFor, normalizeOrder, type Order,
 } from '@naqla/shared-utils';
 import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 import { OwnershipBadge } from '@/components/fleet-bits';
@@ -159,7 +159,7 @@ export default function CarrierOrderDetail() {
     <>
       <PageHeader
         title={order.orderNumber}
-        subtitle={`${order.originCity} ← ${order.destinationCity} · ${formatDateTime(order.createdAt)}`}
+        subtitle={`${localizeCity(order.originCity)} ← ${localizeCity(order.destinationCity)} · ${formatDateTime(order.createdAt)}`}
         actions={
           <>
             <StatusBadge status={order.status} />
@@ -239,7 +239,7 @@ export default function CarrierOrderDetail() {
                     <div className="flex items-center gap-2 text-sm">
                       <span className="inline-block h-2 w-2 bg-info rounded-full animate-pulse" />
                       <span className="text-muted-foreground">{t('detail.inTransitTo')}</span>
-                      <span className="font-semibold">{order.destinationCity}</span>
+                      <span className="font-semibold">{localizeCity(order.destinationCity)}</span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Button onClick={() => setMarkDeliveredOpen(true)} className="flex-1 sm:flex-none">
@@ -353,7 +353,7 @@ export default function CarrierOrderDetail() {
                   <div className="min-w-0">
                     <div className="font-semibold truncate">{client.nameAr}</div>
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Building2 className="h-3 w-3" /> {client.city}
+                      <Building2 className="h-3 w-3" /> {localizeCity(client.city)}
                     </div>
                   </div>
                 </div>
@@ -420,8 +420,8 @@ export default function CarrierOrderDetail() {
             <CardHeader><CardTitle>{t('detail.route')}</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
-                <Row label={t('detail.from')} icon={MapPin} value={`${order.originCity}، ${order.originAddress}`} />
-                <Row label={t('detail.to')} icon={MapPin} value={`${order.destinationCity}، ${order.destinationAddress}`} />
+                <Row label={t('detail.from')} icon={MapPin} value={`${localizeCity(order.originCity)}، ${order.originAddress}`} />
+                <Row label={t('detail.to')} icon={MapPin} value={`${localizeCity(order.destinationCity)}، ${order.destinationAddress}`} />
                 <Row label={t('detail.pickup')} icon={Calendar} value={formatDate(order.pickupDate, 'EEEE d MMM · HH:mm')} />
               </dl>
             </CardContent>
@@ -833,8 +833,8 @@ function MapSection({ order }: { order: any }) {
   return (
     <Card>
       <RouteMap
-        origin={{ ...o, label: order.originCity }}
-        destination={{ ...d, label: order.destinationCity }}
+        origin={{ ...o, label: localizeCity(order.originCity) }}
+        destination={{ ...d, label: localizeCity(order.destinationCity) }}
         progress={isConsolidated ? undefined : progress}
         trucks={isConsolidated ? trucks : undefined}
         live={order.status === 'IN_TRANSIT'}

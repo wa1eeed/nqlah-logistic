@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { Currency } from '@/components/currency';
 import { playSoundIfEnabled } from '@/lib/sound';
-import { DEFAULT_CITIES, CURRENT_CLIENT_ID, companyById, policyForClient, type ClientPolicy } from '@naqla/shared-utils';
+import { DEFAULT_CITIES, CURRENT_CLIENT_ID, companyById, policyForClient, localizeCity, type ClientPolicy } from '@naqla/shared-utils';
 import { MapAddressPicker, type MapPoint } from '@/components/map-address-picker';
 import { api, fetcher } from '@/lib/api';
 
@@ -522,7 +522,7 @@ export default function NewOrderWizard() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {activeCities.map((c) => (
-                        <SelectItem key={c.id} value={c.nameAr}>{c.nameAr}</SelectItem>
+                        <SelectItem key={c.id} value={c.nameAr}>{localizeCity(c.nameAr, undefined, activeCities)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -535,7 +535,7 @@ export default function NewOrderWizard() {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {activeCities.map((c) => (
-                          <SelectItem key={c.id} value={c.nameAr}>{c.nameAr}</SelectItem>
+                          <SelectItem key={c.id} value={c.nameAr}>{localizeCity(c.nameAr, undefined, activeCities)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -546,7 +546,7 @@ export default function NewOrderWizard() {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {activeCities.map((c) => (
-                          <SelectItem key={c.id} value={c.nameAr}>{c.nameAr}</SelectItem>
+                          <SelectItem key={c.id} value={c.nameAr}>{localizeCity(c.nameAr, undefined, activeCities)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -676,7 +676,7 @@ export default function NewOrderWizard() {
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold truncate">{c.nameAr}</div>
                           {c.nameEn && <div className="text-xs text-muted-foreground truncate" dir="ltr">{c.nameEn}</div>}
-                          <div className="text-xs text-muted-foreground mt-1">{c.city}</div>
+                          <div className="text-xs text-muted-foreground mt-1">{localizeCity(c.city)}</div>
                         </div>
                         {form.targetCarrierId === c.id && (
                           <Check className="h-5 w-5 text-primary shrink-0" />
@@ -810,8 +810,8 @@ export default function NewOrderWizard() {
               </Section>
               <Separator />
               <Section title={t('wizard.review.route')}>
-                <Row label={t('wizard.review.from')} value={`${form.originCity} — ${form.originAddress || '—'}`} />
-                <Row label={t('wizard.review.to')} value={`${form.destinationCity} — ${form.destinationAddress || '—'}`} />
+                <Row label={t('wizard.review.from')} value={`${localizeCity(form.originCity)} — ${form.originAddress || '—'}`} />
+                <Row label={t('wizard.review.to')} value={`${localizeCity(form.destinationCity)} — ${form.destinationAddress || '—'}`} />
                 <Row label={t('wizard.review.pickupDate')} value={form.pickupDate || '—'} />
               </Section>
               <Separator />
@@ -958,7 +958,7 @@ function OrderSummary({
           label={t('wizard.summary.route')}
           muted={!form.originCity || !form.destinationCity}
           value={form.originCity && form.destinationCity
-            ? `${form.originCity} ← ${form.destinationCity}`
+            ? `${localizeCity(form.originCity)} ← ${localizeCity(form.destinationCity)}`
             : t('wizard.summary.notSetM')}
         />
         <SummaryRow

@@ -41,7 +41,7 @@ import { notify } from '@/lib/notify';
 import { api, fetcher } from '@/lib/api';
 import {
   COMPANIES, ORDERS, formatDate, teamMembersFor, permissionsFor,
-  normalizeCompany, normalizeOrderList,
+  normalizeCompany, normalizeOrderList, localizeCity, localizeRegion,
   type Company, type CompanyRole, type Order, type TeamMember,
 } from '@naqla/shared-utils';
 
@@ -130,7 +130,7 @@ export default function AdminCompanyDetail() {
             {company.nameAr}
           </span>
         }
-        subtitle={t('detail.subtitle', { role: isCarrier ? t('kind.carrier') : t('kind.client'), city: company.city })}
+        subtitle={t('detail.subtitle', { role: isCarrier ? t('kind.carrier') : t('kind.client'), city: localizeCity(company.city) })}
         actions={
           <>
             <StatusBadge status={company.kycStatus} />
@@ -178,7 +178,7 @@ export default function AdminCompanyDetail() {
                     className="w-full flex items-center gap-3 p-2.5 rounded-md hover:bg-muted transition-colors text-start"
                   >
                     <span className="font-mono text-xs text-muted-foreground shrink-0">{o.orderNumber}</span>
-                    <span className="flex-1 text-sm truncate">{o.originCity} ← {o.destinationCity}</span>
+                    <span className="flex-1 text-sm truncate">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</span>
                     <StatusBadge status={o.status} />
                     <Currency amount={o.agreedPrice ?? o.clientBudget} />
                   </button>
@@ -425,7 +425,7 @@ function ProfileTab({ company, isCarrier }: { company: Company; isCarrier: boole
             <Row label="Name (EN)" value={<span className="num">{company.nameEn || '—'}</span>} />
             <Row label={t('detail.profile.crNumber')} value={<span className="num">{company.crNumber || '—'}</span>} />
             <Row label={t('detail.profile.vatNumber')} value={<span className="num">{company.vatNumber || '—'}</span>} />
-            <Row label={t('detail.profile.city')} icon={MapPin} value={t('detail.profile.cityValue', { city: company.city, region: company.region })} />
+            <Row label={t('detail.profile.city')} icon={MapPin} value={t('detail.profile.cityValue', { city: localizeCity(company.city), region: localizeRegion(company.region) })} />
             <Row label={t('detail.profile.email')} icon={Mail} value={<span className="num">{company.contactEmail}</span>} />
             <Row label={t('detail.profile.phone')} icon={Phone} value={<span className="num" dir="ltr">{company.contactPhone}</span>} />
             <Row label={t('detail.profile.registeredAt')} value={formatDate(company.joinedAt, 'd MMMM yyyy')} />

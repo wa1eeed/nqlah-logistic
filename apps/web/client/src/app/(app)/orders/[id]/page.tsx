@@ -34,7 +34,7 @@ import {
   estimatedDurationLabel, primaryRoadFor, formatDate, formatDateTime, formatRelative,
   lastRound, proposalForOrder, timelineFor,
   cancellationPolicy, escrowBreakdown, COMMISSION_RATE, pickupWindowLabel, estimateDeliveryDate,
-  normalizeOrder,
+  normalizeOrder, localizeCity,
   type DirectProposal, type Order, type ConsolidatedLeg,
 } from '@naqla/shared-utils';
 
@@ -146,7 +146,7 @@ export default function ClientOrderDetail() {
     <>
       <PageHeader
         title={order.orderNumber}
-        subtitle={`${order.originCity} ← ${order.destinationCity} · ${formatDateTime(order.createdAt)}`}
+        subtitle={`${localizeCity(order.originCity)} ← ${localizeCity(order.destinationCity)} · ${formatDateTime(order.createdAt)}`}
         actions={
           <>
             <StatusBadge status={order.status} />
@@ -244,7 +244,7 @@ export default function ClientOrderDetail() {
                               <span className="num">{c.rating?.toFixed(1)}</span>
                               <span>(<span className="num">{c.completedTrips}</span> {t('detail.tripsWord')})</span>
                             </span>
-                            <span>· {c.city}</span>
+                            <span>· {localizeCity(c.city)}</span>
                             <span>· {t('detail.bids.responsePrefix')} <span className="num">{c.responseTimeMins}</span> {t('detail.minUnit')}</span>
                             <span>· {bid.truckType && TRUCK_LABELS[bid.truckType] ? t(TRUCK_LABELS[bid.truckType]) : bid.truckType}</span>
                           </div>
@@ -393,8 +393,8 @@ export default function ClientOrderDetail() {
             <CardHeader><CardTitle>{t('detail.routeTitle')}</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
-                <Row label={t('detail.fields.from')} icon={MapPin} value={`${order.originCity} — ${order.originAddress}`} />
-                <Row label={t('detail.fields.to')} icon={MapPin} value={`${order.destinationCity} — ${order.destinationAddress}`} />
+                <Row label={t('detail.fields.from')} icon={MapPin} value={`${localizeCity(order.originCity)} — ${order.originAddress}`} />
+                <Row label={t('detail.fields.to')} icon={MapPin} value={`${localizeCity(order.destinationCity)} — ${order.destinationAddress}`} />
                 <Row label={t('detail.fields.pickupDate')} icon={Calendar} value={formatDate(order.pickupDate, 'EEEE d MMM · HH:mm')} />
               </dl>
             </CardContent>
@@ -502,7 +502,7 @@ export default function ClientOrderDetail() {
                           <span className="num">{carrier?.rating?.toFixed(1) ?? '—'}</span>
                           {carrier?.completedTrips != null && <span>(<span className="num">{carrier.completedTrips}</span> {t('detail.tripsWord')})</span>}
                         </span>
-                        {carrier?.city && <span>· {carrier.city}</span>}
+                        {carrier?.city && <span>· {localizeCity(carrier.city)}</span>}
                         {carrier?.insurance && <Badge variant="default" className="h-4 text-[10px] gap-1"><Shield className="h-3 w-3" /> {t('detail.bids.insurance')}</Badge>}
                       </div>
                     </div>
@@ -1009,7 +1009,7 @@ function CarrierInfoCard({ order }: { order: Order }) {
                   )}
                 </span>
               )}
-              {carrier.city && <span>· {carrier.city}</span>}
+              {carrier.city && <span>· {localizeCity(carrier.city)}</span>}
               {carrier.contactPhone && (
                 <span dir="ltr" className="num">{carrier.contactPhone}</span>
               )}
@@ -1159,8 +1159,8 @@ function MapSection({ order }: { order: any }) {
   return (
     <Card>
       <RouteMap
-        origin={{ ...o, label: order.originCity }}
-        destination={{ ...d, label: order.destinationCity }}
+        origin={{ ...o, label: localizeCity(order.originCity) }}
+        destination={{ ...d, label: localizeCity(order.destinationCity) }}
         progress={isConsolidated ? undefined : progress}
         trucks={isConsolidated ? trucks : undefined}
         live={order.status === 'IN_TRANSIT'}
