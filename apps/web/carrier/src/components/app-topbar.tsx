@@ -1,12 +1,13 @@
 'use client';
 import * as React from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Bell, LogOut, Menu, Moon, Search, Sun, User } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NotificationCenter } from '@/components/notification-center';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -38,6 +39,7 @@ function useTheme() {
 
 export function AppTopbar() {
   const t = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -55,7 +57,7 @@ export function AppTopbar() {
             <span className="sr-only">{t('menu')}</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="p-0 w-72 sm:max-w-72 flex flex-col">
+        <SheetContent side={locale === 'ar' ? 'right' : 'left'} className="p-0 w-72 sm:max-w-72 flex flex-col">
           <SidebarContent onNavigate={() => setMobileOpen(false)} />
         </SheetContent>
       </Sheet>
@@ -68,6 +70,7 @@ export function AppTopbar() {
       </div>
 
       <div className="flex items-center gap-2">
+        <LanguageSwitcher />
         <Button variant="outline" size="icon" onClick={toggle} aria-label={t('toggleTheme')}>
           {mounted && theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>

@@ -6,6 +6,17 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.45 — Navbar language switcher + RTL-aware mobile sidebar (2026-10-25)
+
+- A professional **language switcher** (globe dropdown, English / العربية with a
+  check on the active one) now sits in every portal's top bar. It sets the
+  locale cookie the server reads and reloads — which also lets anyone with an
+  old `ar` cookie switch back to English now that the dashboards are bilingual.
+- The **mobile sidebar** now opens from the logical side: from the LEFT under
+  English (LTR) and from the RIGHT under Arabic (RTL), via `useLocale`.
+- Verified live: switching to العربية re-renders the client portal in Arabic;
+  the mobile drawer opens left in English; typecheck clean for all three apps.
+
 ### v0.9.44 — Admin dashboard fully bilingual (2026-10-25)
 
 > Completes the dashboard translation effort: the whole admin console.
