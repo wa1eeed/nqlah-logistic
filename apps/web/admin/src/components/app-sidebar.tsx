@@ -37,7 +37,8 @@ const NAV: NavGroupKey[] = [
     titleKey: 'platform',
     items: [
       { href: '/',           labelKey: 'dashboard',   icon: LayoutDashboard },
-      { href: '/companies',  labelKey: 'companies',   icon: Building2 },
+      { href: '/clients',   labelKey: 'clients',   icon: Users },
+      { href: '/carriers',  labelKey: 'carriers',  icon: Truck },
       { href: '/kyc',        labelKey: 'kyc',         icon: ShieldCheck },
       { href: '/orders',     labelKey: 'orders',      icon: FileText },
       { href: '/disputes',   labelKey: 'disputes',    icon: AlertCircle },

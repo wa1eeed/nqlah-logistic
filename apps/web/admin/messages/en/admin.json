@@ -4,6 +4,8 @@
  "nav": {
  "dashboard": "Dashboard",
  "companies": "Carriers & Clients",
+ "clients": "Clients",
+ "carriers": "Carriers",
  "kyc": "KYC Approval",
  "orders": "Orders",
  "disputes": "Disputes",

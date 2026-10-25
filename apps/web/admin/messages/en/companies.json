@@ -3,6 +3,18 @@
     "client": "Client",
     "carrier": "Carrier"
   },
+  "clientsPage": {
+    "eyebrow": "Platform Management",
+    "title": "Clients",
+    "subtitle": "Companies and individuals that request shipments",
+    "total": "Total Clients"
+  },
+  "carriersPage": {
+    "eyebrow": "Platform Management",
+    "title": "Carriers",
+    "subtitle": "Companies and individual operators that fulfill shipments",
+    "total": "Total Carriers"
+  },
   "list": {
     "eyebrow": "Platform Management",
     "title": "Carriers & Clients",
@@ -17,8 +29,11 @@
     "tabs": {
       "all": "All ({count})",
       "clients": "Clients ({count})",
-      "carriers": "Carriers ({count})"
+      "carriers": "Carriers ({count})",
+      "companies": "Companies ({count})",
+      "individuals": "Individuals ({count})"
     },
+    "individuals": "Individuals",
     "searchPlaceholder": "Search by name, CR, city...",
     "table": {
       "company": "Company",

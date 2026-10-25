@@ -74,7 +74,7 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         include: {
           user: { select: { firstName: true, lastName: true, phone: true, nationalId: true } },
-          company: { select: { id: true, nameAr: true } },
+          company: { select: { id: true, nameAr: true, entityType: true } },
           orderDrivers: {
             where: { order: { status: { in: ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'] } } },
             orderBy: { assignedAt: 'desc' },

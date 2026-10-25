@@ -69,6 +69,12 @@
  },
  "searchPlaceholder": "Search by name, ID, phone, or carrier...",
  "allStatuses": "All Statuses",
+ "independent": "Independent",
+ "affiliation": {
+ "all": "All drivers",
+ "carrier": "Carrier drivers",
+ "independent": "Independent"
+ },
  "noResults": "No results",
  "table": {
  "driver": "Driver",
