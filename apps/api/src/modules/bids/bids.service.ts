@@ -2,12 +2,17 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { money, round2 } from '../../common/money/money';
 import { CollectionService } from '../payments/collection/collection.service';
+import { PoliciesService } from '../policies/policies.service';
 import { CreateBidDto, UpdateBidDto } from './dto/bid.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 @Injectable()
 export class BidsService {
-  constructor(private prisma: PrismaService, private collection: CollectionService) {}
+  constructor(
+    private prisma: PrismaService,
+    private collection: CollectionService,
+    private policies: PoliciesService,
+  ) {}
 
   async list(orderId: string) {
     return this.prisma.bid.findMany({
@@ -25,6 +30,11 @@ export class BidsService {
     if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
     if (!['PUBLISHED', 'BIDDING'].includes(order.status)) {
       throw new BadRequestException({ code: 'BIDDING_CLOSED', message: 'باب العروض مغلق' });
+    }
+    // Provider visibility: the order's client may restrict its market to a set
+    // of providers. A carrier outside that set cannot bid.
+    if (!(await this.policies.canCarrierServeClient(actor.companyId, order.clientId))) {
+      throw new ForbiddenException({ code: 'POLICY_CARRIER_NOT_VISIBLE', message: 'هذا الطلب غير متاح لك' });
     }
 
     // Idempotent: upsert by (orderId, carrierId).

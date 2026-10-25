@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
+
+const VISIBILITY_SCOPES = ['ALL', 'GROUP', 'CARRIER'] as const;
 
 export class ClientPolicyDto {
   @IsBoolean() allowMarket!: boolean;
@@ -9,6 +11,19 @@ export class ClientPolicyDto {
   @IsBoolean() allowFixedPricing!: boolean;
   @IsBoolean() allowPrepaid!: boolean;
   @IsBoolean() allowCOD!: boolean;
+  @IsOptional() @IsEnum(VISIBILITY_SCOPES) visibilityScope?: (typeof VISIBILITY_SCOPES)[number];
+  @IsOptional() @IsString() visibleCarrierGroupId?: string | null;
+}
+
+export class CreateCarrierGroupDto {
+  @IsString() name!: string;
+  @IsOptional() @IsString() description?: string;
+}
+
+export class UpdateCarrierGroupDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) carrierIds?: string[];
 }
 
 export class CreateGroupDto {

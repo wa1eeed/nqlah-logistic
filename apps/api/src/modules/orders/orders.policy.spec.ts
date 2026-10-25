@@ -19,7 +19,10 @@ const DEFAULT_POLICY = {
 };
 
 function makeService(policy: typeof DEFAULT_POLICY) {
-  const policies = { effectiveForCompany: jest.fn().mockResolvedValue(policy) };
+  const policies = {
+    effectiveForCompany: jest.fn().mockResolvedValue(policy),
+    visibleCarrierIds: jest.fn().mockResolvedValue(null),
+  };
   const collection = { resolveMethod: jest.fn().mockReturnValue('ESCROW') };
   const service = new OrdersService({} as never, {} as never, policies as never, collection as never);
   // resolveSourcing is private; exercise it directly for a focused unit test.

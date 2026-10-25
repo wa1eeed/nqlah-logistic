@@ -877,11 +877,29 @@ model PolicyGroup {
   allowPrepaid       Boolean @default(true)
   allowCOD           Boolean @default(true)
 
+  /// Which providers this group's clients can see/deal with:
+  /// "ALL" (whole marketplace) | "GROUP" (only `visibleCarrierGroupId`'s carriers)
+  /// | "CARRIER" (only `forcedCarrierId`). Default ALL = today's open market.
+  visibilityScope       String  @default("ALL")
+  visibleCarrierGroupId String?
+
   /// Client company ids governed by this group.
   clientIds String[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// A named set of provider (carrier) companies, used to scope which providers a
+/// client group can see (PolicyGroup.visibilityScope = "GROUP").
+model CarrierGroup {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  /// Carrier company ids in this group.
+  carrierIds  String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model SupportTicket {
