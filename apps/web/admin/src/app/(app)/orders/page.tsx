@@ -21,7 +21,7 @@ import { FileText, Truck, Gavel, Wallet } from 'lucide-react';
 import useSWR from 'swr';
 import { useTranslations } from 'next-intl';
 import { fetcher } from '@/lib/api';
-import { ORDERS, companyById, formatDate, normalizeOrderList, SAUDI_CITIES, type Order } from '@naqla/shared-utils';
+import { ORDERS, companyById, formatDate, normalizeOrderList, SAUDI_CITIES, localizeCity, type Order } from '@naqla/shared-utils';
 
 export default function AdminOrdersPage() {
   const t = useTranslations('orders');
@@ -99,7 +99,7 @@ export default function AdminOrdersPage() {
             <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder={t('adminList.allCities')} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">{t('adminList.allCities')}</SelectItem>
-              {SAUDI_CITIES.slice(0, 20).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {SAUDI_CITIES.slice(0, 20).map((c) => <SelectItem key={c} value={c}>{localizeCity(c)}</SelectItem>)}
             </SelectContent>
           </Select>
           <div className="relative w-full md:w-80">
@@ -141,7 +141,7 @@ export default function AdminOrdersPage() {
                     </TableCell>
                     <TableCell>{companyById(o.clientId)?.nameAr ?? '—'}</TableCell>
                     <TableCell>{companyById(o.carrierId)?.nameAr ?? <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell>{o.originCity} ← {o.destinationCity}</TableCell>
+                    <TableCell>{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</TableCell>
                     <TableCell>
                       <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'}>
                         {o.mode === 'OPEN' ? t('adminList.modeOpen') : t('adminList.modeDirect')}

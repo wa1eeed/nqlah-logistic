@@ -22,7 +22,7 @@ import { TeamTab } from '@/components/settings/team-tab';
 import { useAuthStore } from '@/lib/auth-store';
 import { fetcher, api } from '@/lib/api';
 import { notify } from '@/lib/notify';
-import { formatDate, CURRENT_CARRIER_ID } from '@naqla/shared-utils';
+import { formatDate, localizeCity, localizeRegion, CURRENT_CARRIER_ID } from '@naqla/shared-utils';
 
 const KYC_TYPES = [
   { value: 'COMMERCIAL_REGISTER', label: 'السجل التجاري' },
@@ -167,7 +167,7 @@ export default function CarrierSettingsPage() {
                     <Row label={t('company.nameEn')} value={<span className="num">{company.nameEn as string}</span>} />
                     <Row label={t('company.crNumber')} value={<span className="num">{(company.crNumber as string) || '—'}</span>} />
                     <Row label={t('company.vatNumber')} value={<span className="num">{(company.vatNumber as string) || '—'}</span>} />
-                    <Row label={t('company.city')} icon={MapPin} value={`${company.city as string}، ${company.region as string}`} />
+                    <Row label={t('company.city')} icon={MapPin} value={`${localizeCity(company.city as string)}، ${localizeRegion(company.region as string)}`} />
                     <Row label={t('company.email')} icon={Mail} value={<span className="num">{company.contactEmail as string}</span>} />
                     <Row label={t('company.phone')} icon={Phone} value={<span className="num" dir="ltr">{company.contactPhone as string}</span>} />
                     <Row label={t('company.joinDate')} value={formatDate((company.createdAt as string) ?? '', 'd MMMM yyyy')} />

@@ -19,6 +19,7 @@ import { Skeleton, SkeletonStatCards, SkeletonRows } from '@/components/ui/skele
 import { fetcher } from '@/lib/api';
 import {
   CURRENT_CARRIER_ID, DRIVERS, TRUCKS, companyById, formatDate, formatRelative,
+  localizeCity,
   openOpportunitiesForCarrier, ordersForCarrier, paymentsForCarrier,
   normalizeOrderList, type Order,
 } from '@naqla/shared-utils';
@@ -89,7 +90,7 @@ export default function CarrierDashboard() {
         href:  `/orders/${o.id}`,
         label: t(STATUS_EVENT[o.status].labelKey),
         color: STATUS_EVENT[o.status].color,
-        sub:   `${o.orderNumber} · ${o.originCity} ← ${o.destinationCity}`,
+        sub:   `${o.orderNumber} · ${localizeCity(o.originCity)} ← ${localizeCity(o.destinationCity)}`,
         time:  formatRelative(o.createdAt),
       }));
   }, [myOrders, t]);
@@ -200,7 +201,7 @@ export default function CarrierDashboard() {
                   <TableRow key={o.id} className="cursor-pointer" onClick={() => (window.location.href = `/opportunities/${o.id}`)}>
                     <TableCell>
                       <div>
-                        <div className="text-sm">{o.originCity} ← {o.destinationCity}</div>
+                        <div className="text-sm">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</div>
                         <div className="text-xs text-muted-foreground truncate max-w-[180px]">{o.cargoDescription}</div>
                       </div>
                     </TableCell>
@@ -243,7 +244,7 @@ export default function CarrierDashboard() {
                 {myOrders.slice(0, 5).map((o) => (
                   <TableRow key={o.id} className="cursor-pointer" onClick={() => (window.location.href = `/orders/${o.id}`)}>
                     <TableCell className="font-mono text-xs text-muted-foreground">{o.orderNumber}</TableCell>
-                    <TableCell>{o.originCity} ← {o.destinationCity}</TableCell>
+                    <TableCell>{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</TableCell>
                     <TableCell><StatusBadge status={o.status} /></TableCell>
                     <TableCell className="text-end"><Currency amount={o.carrierAmount ?? o.agreedPrice} /></TableCell>
                   </TableRow>

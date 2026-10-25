@@ -22,7 +22,7 @@ import {
   ORDERS, TRUCKS, DRIVERS, bidsForOrder, companyById, coordsFor, distanceKm, estimatedDurationLabel,
   primaryRoadFor, timelineFor, formatDate, formatDateTime,
   normalizeOrder, COMMISSION_RATE, ESCROW_AUTO_RELEASE_HOURS, escrowAutoReleaseAt,
-  escrowBreakdown, escrowMsRemaining, type ConsolidatedLeg,
+  escrowBreakdown, escrowMsRemaining, localizeCity, type ConsolidatedLeg,
 } from '@naqla/shared-utils';
 import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 
@@ -100,7 +100,7 @@ export default function AdminOrderDetail() {
       <PageHeader
         eyebrow={t('details')}
         title={order.orderNumber}
-        subtitle={`${order.originCity} ← ${order.destinationCity} · ${formatDateTime(order.createdAt)}`}
+        subtitle={`${localizeCity(order.originCity)} ← ${localizeCity(order.destinationCity)} · ${formatDateTime(order.createdAt)}`}
         actions={
           <>
             <StatusBadge status={order.status} />
@@ -301,8 +301,8 @@ export default function AdminOrderDetail() {
             <CardHeader><CardTitle>{t('adminDetail.routeSchedule')}</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
-                <Row label={t('fields.from')} icon={MapPin} value={order.originCity} />
-                <Row label={t('fields.to')} icon={MapPin} value={order.destinationCity} />
+                <Row label={t('fields.from')} icon={MapPin} value={localizeCity(order.originCity)} />
+                <Row label={t('fields.to')} icon={MapPin} value={localizeCity(order.destinationCity)} />
                 <Row label={t('adminDetail.pickupSchedule')} icon={Calendar} value={formatDate(order.pickupDate, 'd MMM · HH:mm')} />
               </dl>
             </CardContent>
@@ -339,7 +339,7 @@ function PartyCard({
           <div className="min-w-0">
             <div className="text-sm font-medium truncate text-primary">{company.nameAr}</div>
             <div className="text-xs text-muted-foreground flex items-center gap-1">
-              <Building2 className="h-3 w-3" /> {company.city}
+              <Building2 className="h-3 w-3" /> {localizeCity(company.city)}
             </div>
           </div>
         </button>
@@ -385,8 +385,8 @@ function MapSection({ order }: { order: any }) {
   return (
     <Card>
       <RouteMap
-        origin={{ ...o, label: order.originCity }}
-        destination={{ ...d, label: order.destinationCity }}
+        origin={{ ...o, label: localizeCity(order.originCity) }}
+        destination={{ ...d, label: localizeCity(order.destinationCity) }}
         progress={isConsolidated ? undefined : progress}
         trucks={isConsolidated ? trucks : undefined}
         live={order.status === 'IN_TRANSIT'}

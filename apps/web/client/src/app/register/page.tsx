@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { DEV_USERS, DEV_BYPASS_TOKEN } from '@naqla/shared-utils';
+import { DEV_USERS, DEV_BYPASS_TOKEN, localizeCity, localizeRegion } from '@naqla/shared-utils';
 import { useAuthStore } from '@/lib/auth-store';
 import { cn } from '@/lib/utils';
 
@@ -436,14 +436,14 @@ function StepCompany({
             <Label>{t('register.city')}</Label>
             <Select value={form.city} onValueChange={(v) => set('city', v)}>
               <SelectTrigger><SelectValue placeholder={t('register.cityPlaceholder')} /></SelectTrigger>
-              <SelectContent>{CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              <SelectContent>{CITIES.map((c) => <SelectItem key={c} value={c}>{localizeCity(c)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label>{t('register.region')}</Label>
             <Select value={form.region} onValueChange={(v) => set('region', v)}>
               <SelectTrigger><SelectValue placeholder={t('register.regionPlaceholder')} /></SelectTrigger>
-              <SelectContent>{REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+              <SelectContent>{REGIONS.map((r) => <SelectItem key={r} value={r}>{localizeRegion(r)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         </div>

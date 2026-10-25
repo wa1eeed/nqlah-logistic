@@ -17,7 +17,7 @@ import { PageTransition, FadeItem } from '@/components/page-transition';
 import { StatsCard } from '@/components/stats-card';
 import { Currency } from '@/components/currency';
 import {
-  CURRENT_CARRIER_ID, ORDERS, bidsForCarrier, formatRelative,
+  CURRENT_CARRIER_ID, ORDERS, bidsForCarrier, formatRelative, localizeCity,
   type Bid,
 } from '@naqla/shared-utils';
 
@@ -119,7 +119,7 @@ export default function CarrierBidsPage() {
                           <Link href={`/orders/${b.orderId}`} className="font-mono text-xs text-primary">{b.orderId}</Link>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {order ? `${order.originCity} ← ${order.destinationCity}` : '—'}
+                          {order ? `${localizeCity(order.originCity)} ← ${localizeCity(order.destinationCity)}` : '—'}
                         </TableCell>
                         <TableCell className="text-end font-medium"><Currency amount={b.price} /></TableCell>
                         <TableCell className="num text-sm">{b.estimatedDays} {b.estimatedDays === 1 ? t('bids.day') : t('bids.days')}</TableCell>

@@ -26,7 +26,7 @@ import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
 import {
-  ORDERS, TRUCKS, companyById, formatDate, formatDateTime, formatRelative, lastRound, proposalForOrder,
+  ORDERS, TRUCKS, companyById, formatDate, formatDateTime, formatRelative, lastRound, localizeCity, proposalForOrder,
   pickupWindowLabel, normalizeOrder,
   CURRENT_CARRIER_ID,
   type DirectProposal,
@@ -127,7 +127,7 @@ export default function CarrierOpportunityDetail() {
   return (
     <>
       <PageHeader
-        title={`${order.originCity} ← ${order.destinationCity}`}
+        title={`${localizeCity(order.originCity)} ← ${localizeCity(order.destinationCity)}`}
         subtitle={`${t('oppDetail.opportunity')} · ${order.orderNumber}`}
         actions={
           <>
@@ -483,7 +483,7 @@ export default function CarrierOpportunityDetail() {
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{client.nameAr}</div>
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Building2 className="h-3 w-3" /> {client.city}
+                      <Building2 className="h-3 w-3" /> {localizeCity(client.city)}
                     </div>
                   </div>
                 </div>
@@ -508,8 +508,8 @@ export default function CarrierOpportunityDetail() {
             <CardHeader><CardTitle>{t('oppDetail.route')}</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
-                <Row label={t('oppDetail.from')} icon={MapPin} value={order.originCity} />
-                <Row label={t('oppDetail.to')} icon={MapPin} value={order.destinationCity} />
+                <Row label={t('oppDetail.from')} icon={MapPin} value={localizeCity(order.originCity)} />
+                <Row label={t('oppDetail.to')} icon={MapPin} value={localizeCity(order.destinationCity)} />
                 <Row label={t('oppDetail.pickup')} icon={Calendar} value={formatDate(order.pickupDate, 'EEEE d MMM · HH:mm')} />
               </dl>
             </CardContent>
@@ -614,7 +614,7 @@ function DirectNegotiationView({
   return (
     <>
       <PageHeader
-        title={`${t('oppDetail.direct.titlePrefix')} · ${order.originCity} ← ${order.destinationCity}`}
+        title={`${t('oppDetail.direct.titlePrefix')} · ${localizeCity(order.originCity)} ← ${localizeCity(order.destinationCity)}`}
         subtitle={`${order.orderNumber} · ${t('oppDetail.direct.fromClient', { name: client?.nameAr ?? '—' })}`}
         actions={
           <>
@@ -805,7 +805,7 @@ function DirectNegotiationView({
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold truncate">{client.nameAr}</div>
-                    <div className="text-xs text-muted-foreground">{client.city}</div>
+                    <div className="text-xs text-muted-foreground">{localizeCity(client.city)}</div>
                   </div>
                 </div>
               </CardContent>
@@ -822,8 +822,8 @@ function DirectNegotiationView({
                 <Row label={t('oppDetail.weight')} icon={Weight} value={<span className="num">{(order.weightKg ?? 0).toLocaleString('en-US')} {t('units.kg')}</span>} />
                 <Row label={t('oppDetail.truckType')} icon={Truck} value={order.truckType} />
                 <Row label={t('oppDetail.pickup')} icon={Calendar} value={formatDate(order.pickupDate, 'EEEE d MMM · HH:mm')} />
-                <Row label={t('oppDetail.from')} icon={MapPin} value={`${order.originCity}، ${order.originAddress}`} />
-                <Row label={t('oppDetail.to')} icon={MapPin} value={`${order.destinationCity}، ${order.destinationAddress}`} />
+                <Row label={t('oppDetail.from')} icon={MapPin} value={`${localizeCity(order.originCity)}، ${order.originAddress}`} />
+                <Row label={t('oppDetail.to')} icon={MapPin} value={`${localizeCity(order.destinationCity)}، ${order.destinationAddress}`} />
                 {order.requiresInsurance && <Row label={t('oppDetail.insurance')} icon={ShieldCheck} value={t('oppDetail.required')} />}
                 {order.requiresRefrigeration && <Row label={t('oppDetail.refrigeration')} icon={Snowflake} value={t('oppDetail.required')} />}
               </dl>

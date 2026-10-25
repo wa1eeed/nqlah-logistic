@@ -21,7 +21,7 @@ import { Currency } from '@/components/currency';
 import { PageTransition, FadeItem } from '@/components/page-transition';
 import {
   CURRENT_CLIENT_ID, formatDate, ordersForClient,
-  normalizeOrderList, type Order,
+  normalizeOrderList, localizeCity, type Order,
 } from '@naqla/shared-utils';
 import { fetcher } from '@/lib/api';
 
@@ -139,7 +139,7 @@ export default function ClientOrdersPage() {
             <SelectContent>
               <SelectItem value="ALL">{t('list.allCities')}</SelectItem>
               {cities.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+                <SelectItem key={c} value={c}>{localizeCity(c)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -200,7 +200,7 @@ export default function ClientOrdersPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="text-sm">{o.originCity} ← {o.destinationCity}</span>
+                            <span className="text-sm">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</span>
                             <span className="text-xs text-muted-foreground truncate max-w-[280px]">{o.cargoDescription}</span>
                           </div>
                         </TableCell>

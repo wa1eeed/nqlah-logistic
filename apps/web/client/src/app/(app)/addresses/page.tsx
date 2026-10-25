@@ -20,6 +20,7 @@ import { PageHeader } from '@/components/page-header';
 import { useAuthStore } from '@/lib/auth-store';
 import { fetcher, api } from '@/lib/api';
 import { notify } from '@/lib/notify';
+import { localizeCity } from '@naqla/shared-utils';
 
 type AddressKind = 'PICKUP' | 'DESTINATION' | 'BOTH';
 
@@ -187,7 +188,7 @@ export default function AddressesPage() {
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <div className="font-medium">{a.city}</div>
+                      <div className="font-medium">{localizeCity(a.city)}</div>
                       <div className="text-xs text-muted-foreground leading-relaxed">{a.address}</div>
                     </div>
                   </div>
@@ -244,7 +245,7 @@ export default function AddressesPage() {
                 <Select value={form.city} onValueChange={(v) => setForm((f) => ({ ...f, city: v }))}>
                   <SelectTrigger><SelectValue placeholder={t('addresses.selectCity')} /></SelectTrigger>
                   <SelectContent>
-                    {SAUDI_CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {SAUDI_CITIES.map((c) => <SelectItem key={c} value={c}>{localizeCity(c)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

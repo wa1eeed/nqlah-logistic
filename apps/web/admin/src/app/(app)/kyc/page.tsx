@@ -17,7 +17,7 @@ import { PageHeader } from '@/components/page-header';
 import { StatsCard } from '@/components/stats-card';
 import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
-import { COMPANIES, formatRelative, pendingKycCompanies, type Company } from '@naqla/shared-utils';
+import { COMPANIES, formatRelative, pendingKycCompanies, localizeCity, localizeRegion, type Company } from '@naqla/shared-utils';
 
 const REQUIRED_DOCS = [
   'commercialRegister',
@@ -139,7 +139,7 @@ export default function KycQueuePage() {
                     </div>
                     <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                       <span className="font-mono">{c.id}</span>
-                      <span>· {c.city}</span>
+                      <span>· {localizeCity(c.city)}</span>
                       <span>· {t('kyc.registeredAt', { time: formatRelative(c.joinedAt) })}</span>
                       <span dir="ltr">· {c.contactEmail}</span>
                     </div>
@@ -170,8 +170,8 @@ export default function KycQueuePage() {
                   mono
                 />
                 <Info label={t('kyc.fields.vatNumber')} value={reviewing.vatNumber} mono />
-                <Info label={t('kyc.fields.city')} value={reviewing.city} />
-                <Info label={t('kyc.fields.region')} value={reviewing.region} />
+                <Info label={t('kyc.fields.city')} value={localizeCity(reviewing.city)} />
+                <Info label={t('kyc.fields.region')} value={localizeRegion(reviewing.region)} />
                 <Info label={t('kyc.fields.email')} value={reviewing.contactEmail} dir="ltr" />
                 <Info label={t('kyc.fields.phone')} value={reviewing.contactPhone} dir="ltr" />
               </div>

@@ -15,7 +15,7 @@ import { EmptyState } from '@/components/empty-state';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import {
-  CURRENT_CARRIER_ID, formatDate, ordersForCarrier,
+  CURRENT_CARRIER_ID, formatDate, localizeCity, ordersForCarrier,
   normalizeOrderList, type Order,
 } from '@naqla/shared-utils';
 
@@ -103,7 +103,7 @@ export default function CarrierOrdersPage() {
                           <TableCell className="font-mono text-xs font-medium">{o.orderNumber}</TableCell>
                           <TableCell>
                             <div>
-                              <div className="text-sm">{o.originCity} ← {o.destinationCity}</div>
+                              <div className="text-sm">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</div>
                               <div className="text-xs text-muted-foreground truncate max-w-[280px]">{o.cargoDescription}</div>
                             </div>
                           </TableCell>

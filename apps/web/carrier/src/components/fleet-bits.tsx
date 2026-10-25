@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
 import { cn } from '@/lib/utils';
-import { formatDate, formatDateTime, type FleetAuditEvent, type FleetEventType, type TruckTrip } from '@naqla/shared-utils';
+import { formatDate, formatDateTime, localizeCity, type FleetAuditEvent, type FleetEventType, type TruckTrip } from '@naqla/shared-utils';
 
 /** Driver-worded status labels (StatusBadge's defaults are truck-worded). */
 const DRIVER_STATUS_LABEL: Record<string, string> = {
@@ -195,9 +195,9 @@ export function TripsTimeline({ trips, emptyLabel = 'لا توجد رحلات ب
               </div>
               <div className="mt-2 flex items-center gap-2 text-sm font-medium flex-wrap">
                 <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                {t.originCity}
+                {localizeCity(t.originCity)}
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground rtl:rotate-180" />
-                {t.destinationCity}
+                {localizeCity(t.destinationCity)}
                 <span className="text-xs text-muted-foreground num">· {t.distanceKm.toLocaleString('en-US')} كم</span>
               </div>
               <div className="mt-1.5 flex items-center justify-between gap-3 flex-wrap text-xs text-muted-foreground">

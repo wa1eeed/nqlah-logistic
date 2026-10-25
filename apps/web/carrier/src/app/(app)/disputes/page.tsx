@@ -23,7 +23,7 @@ import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
 import { StatsCard } from '@/components/stats-card';
 import {
-  CURRENT_CARRIER_ID, disputesFor, formatRelative, normalizeOrderList,
+  CURRENT_CARRIER_ID, disputesFor, formatRelative, localizeCity, normalizeOrderList,
   ordersForCarrier,
   type Dispute,
 } from '@naqla/shared-utils';
@@ -165,7 +165,7 @@ export default function CarrierDisputesPage() {
                 <SelectContent>
                   {myOrders.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
-                      {o.orderNumber} · {o.originCity} ← {o.destinationCity}
+                      {o.orderNumber} · {localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}
                     </SelectItem>
                   ))}
                 </SelectContent>

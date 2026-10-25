@@ -17,7 +17,7 @@ import { openTrackingSocket } from '@/lib/tracking-socket';
 import { fetcher } from '@/lib/api';
 import {
   CURRENT_CLIENT_ID, activeOrdersForClient, companyById, coordsFor, distanceKm,
-  estimatedDurationLabel, formatDateTime, primaryRoadFor, normalizeOrderList, type Order,
+  estimatedDurationLabel, formatDateTime, primaryRoadFor, normalizeOrderList, localizeCity, type Order,
 } from '@naqla/shared-utils';
 
 export default function TrackingPage() {
@@ -80,7 +80,7 @@ export default function TrackingPage() {
                     <span className="font-mono text-xs text-primary">{o.orderNumber}</span>
                     <StatusBadge status={o.status} />
                   </div>
-                  <div className="text-sm font-medium truncate">{o.originCity} ← {o.destinationCity}</div>
+                  <div className="text-sm font-medium truncate">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</div>
                   <div className="text-xs text-muted-foreground mt-0.5 truncate">{carrier?.nameAr ?? '—'}</div>
                 </button>
               );
@@ -166,8 +166,8 @@ function TrackingDetail({ order }: { order: any }) {
     <>
       <Card>
         <RouteMap
-          origin={{ ...o, label: order.originCity }}
-          destination={{ ...d, label: order.destinationCity }}
+          origin={{ ...o, label: localizeCity(order.originCity) }}
+          destination={{ ...d, label: localizeCity(order.destinationCity) }}
           progress={isConsolidated ? undefined : progress}
           trucks={isConsolidated ? trucks : undefined}
           height={420}
@@ -285,11 +285,11 @@ function TrackingTimeline({ order, km, progress, road }: { order: any; km: numbe
   const at = (f: number) => formatDateTime(new Date(t0 + totalMs * f).toISOString());
 
   const milestones = [
-    { f: 0,    title: t('tracking.milestones.received'),         place: order.originCity,      icon: Package },
-    { f: 0.05, title: t('tracking.milestones.departed'),         place: order.originCity,      icon: Truck },
+    { f: 0,    title: t('tracking.milestones.received'),         place: localizeCity(order.originCity),      icon: Package },
+    { f: 0.05, title: t('tracking.milestones.departed'),         place: localizeCity(order.originCity),      icon: Truck },
     { f: 0.5,  title: t('tracking.milestones.midway'),           place: road,                  icon: Navigation },
-    { f: 0.85, title: t('tracking.milestones.approaching'),      place: order.destinationCity, icon: MapPin },
-    { f: 1,    title: t('tracking.milestones.expectedDelivery'), place: order.destinationCity, icon: Flag },
+    { f: 0.85, title: t('tracking.milestones.approaching'),      place: localizeCity(order.destinationCity), icon: MapPin },
+    { f: 1,    title: t('tracking.milestones.expectedDelivery'), place: localizeCity(order.destinationCity), icon: Flag },
   ];
 
   const events: TimelineEvent[] = [];

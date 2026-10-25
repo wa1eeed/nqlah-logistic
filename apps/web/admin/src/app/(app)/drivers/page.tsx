@@ -19,7 +19,7 @@ import { StatsCard } from '@/components/stats-card';
 import { FadeIn } from '@/components/ui/fade-in';
 import { UserCheck, UserMinus } from 'lucide-react';
 import { fetcher } from '@/lib/api';
-import { formatDate } from '@naqla/shared-utils';
+import { formatDate, localizeCity } from '@naqla/shared-utils';
 
 type ApiDriver = {
   id: string;
@@ -162,7 +162,7 @@ export default function AdminDriversPage() {
                         {activeOrder ? (
                           <Link href={`/orders/${activeOrder.id}`} className="group">
                             <div className="text-xs font-mono text-primary hover:underline">{activeOrder.orderNumber}</div>
-                            <div className="text-xs text-muted-foreground">{activeOrder.originCity} ← {activeOrder.destinationCity}</div>
+                            <div className="text-xs text-muted-foreground">{localizeCity(activeOrder.originCity)} ← {localizeCity(activeOrder.destinationCity)}</div>
                             <div className="mt-1"><StatusBadge status={activeOrder.status} /></div>
                           </Link>
                         ) : (
