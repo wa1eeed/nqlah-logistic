@@ -111,6 +111,23 @@ export class PoliciesService {
   /** The effective policy for a client company: its group's policy, else default. */
   async effectiveForCompany(companyId: string | null | undefined) {
     if (!companyId) return DEFAULT_POLICY;
+    // Sub-tenancy: a carrier-owned client is private to its owner — force direct
+    // assignment to the owner and keep it off the open market. This overrides
+    // any policy group.
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { ownerCarrierId: true },
+    });
+    if (company?.ownerCarrierId) {
+      return {
+        ...DEFAULT_POLICY,
+        allowMarket: false,
+        allowDirect: true,
+        forcedCarrierId: company.ownerCarrierId,
+        allowMarketPricing: false,
+        visibilityScope: 'CARRIER',
+      };
+    }
     const g = await this.prisma.policyGroup.findFirst({ where: { clientIds: { has: companyId } } });
     return g ? toDto(g as GroupRow).policy : DEFAULT_POLICY;
   }
@@ -124,6 +141,12 @@ export class PoliciesService {
    */
   async visibleCarrierIds(clientId: string | null | undefined): Promise<string[] | null> {
     if (!clientId) return null;
+    // A carrier-owned client can only ever deal with its owner.
+    const company = await this.prisma.company.findUnique({
+      where: { id: clientId },
+      select: { ownerCarrierId: true },
+    });
+    if (company?.ownerCarrierId) return [company.ownerCarrierId];
     const g = await this.prisma.policyGroup.findFirst({ where: { clientIds: { has: clientId } } });
     if (!g || g.visibilityScope === 'ALL') return null;
     if (g.visibilityScope === 'CARRIER') return g.forcedCarrierId ? [g.forcedCarrierId] : [];

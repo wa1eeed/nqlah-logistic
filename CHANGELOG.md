@@ -6,6 +6,19 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.53 — Provider-owned clients (sub-tenancy) (2026-10-25)
+
+- A carrier can register and manage its own **private clients** (`Company.
+  ownerCarrierId`): a "My Clients" page in the carrier dashboard creates a client
+  account owned by the carrier (`POST /carrier/clients`, `GET /carrier/clients`).
+- **Privacy + auto-routing:** an owned client's effective policy is forced to its
+  owner (direct assignment, off the open market, owner-only visibility), so its
+  orders route privately to the carrier and never appear to other providers or
+  on the marketplace. Enforced in `PoliciesService` (effective policy +
+  `visibleCarrierIds`); overrides any policy group.
+- Additive, nullable migration — existing platform clients are unaffected.
+- Tests: `owned-clients.policy.spec.ts`; 20 specs total.
+
 ### v0.9.52 — Stop execution (carrier + admin) (2026-10-25)
 
 - A **trip-route panel** now renders the order's multi-stop route on the carrier
