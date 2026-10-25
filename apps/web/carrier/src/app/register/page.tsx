@@ -17,9 +17,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { DEV_USERS, DEV_BYPASS_TOKEN, localizeCity, localizeRegion } from '@naqla/shared-utils';
+import { localizeCity, localizeRegion } from '@naqla/shared-utils';
 import { useTruckTypesStore } from '@/stores/truck-types-store';
 import { useAuthStore } from '@/lib/auth-store';
+import { api } from '@/lib/api';
+import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 
 type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -218,11 +220,34 @@ export default function CarrierRegisterPage() {
 
   const submit = async () => {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    localStorage.setItem('naqla_carrier_token', DEV_BYPASS_TOKEN);
-    localStorage.setItem('naqla_carrier_refresh', DEV_BYPASS_TOKEN);
-    useAuthStore.setState({ user: { ...DEV_USERS.carrier, avatar: null } as never });
-    router.push('/');
+    try {
+      const [firstName, ...rest] = form.fullName.trim().split(/\s+/);
+      await api.post('/auth/register', {
+        companyType: 'CARRIER',
+        accountType: form.accountType || 'COMPANY',
+        // Individuals have no trade name — use the person's name as the account name.
+        companyNameAr: (form.companyNameAr || form.fullName).trim(),
+        ...(form.companyNameEn ? { companyNameEn: form.companyNameEn.trim() } : {}),
+        city: form.city,
+        region: form.region,
+        contactPhone: form.phone,
+        ...(form.email ? { contactEmail: form.email, email: form.email } : {}),
+        firstName: firstName || form.fullName,
+        lastName: rest.join(' ') || firstName || form.fullName,
+        phone: form.phone,
+        password: form.password,
+        ...(form.nationalId ? { nationalId: form.nationalId } : {}),
+        acceptedTerms: form.acceptTerms,
+        acceptedPrivacy: form.acceptPrivacy,
+        acceptedTransport: form.acceptTransport,
+      });
+      // Account created — sign in (phone verification can be completed later).
+      await useAuthStore.getState().login(form.phone, form.password);
+      router.push('/');
+    } catch (e) {
+      notify.error(e);
+      setSubmitting(false);
+    }
   };
 
   const toggleTruck = (id: string) => set('truckTypes', form.truckTypes.includes(id) ? form.truckTypes.filter((x) => x !== id) : [...form.truckTypes, id]);
