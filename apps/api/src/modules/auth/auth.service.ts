@@ -52,6 +52,7 @@ export class AuthService {
     const company = await this.prisma.company.create({
       data: {
         type: dto.companyType,
+        entityType: dto.accountType === 'INDIVIDUAL' ? 'INDIVIDUAL' : 'COMPANY',
         nameAr: dto.companyNameAr,
         nameEn: dto.companyNameEn,
         city: dto.city,
@@ -71,6 +72,7 @@ export class AuthService {
         passwordHash,
         firstName: dto.firstName,
         lastName: dto.lastName,
+        nationalId: dto.nationalId,
         role: dto.companyType === 'CLIENT' ? 'CLIENT_ADMIN' : 'CARRIER_ADMIN',
         companyId: company.id,
         // The first user of a newly-registered company is the OWNER. The OWNER
@@ -83,6 +85,23 @@ export class AuthService {
         isEmailVerified: false,
       },
     });
+
+    // An INDIVIDUAL carrier is a sole operator: the owner is also a driver, so
+    // provision a driver profile now (they can then use the driver portal/app).
+    // License details are seeded if provided, else placeholders to complete later.
+    if (dto.companyType === 'CARRIER' && dto.accountType === 'INDIVIDUAL') {
+      await this.prisma.driverProfile.create({
+        data: {
+          userId: user.id,
+          companyId: company.id,
+          licenseNumber: dto.licenseNumber ?? `IND-${user.id}`,
+          licenseExpiry: dto.licenseExpiry ? new Date(dto.licenseExpiry) : new Date(),
+          licenseType: dto.licenseType ?? 'PENDING',
+          ownership: 'OWNED',
+          status: 'AVAILABLE',
+        },
+      });
+    }
 
     // Send phone OTP automatically — this is the canonical verification path
     await this.otp.send(phone);

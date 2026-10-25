@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
@@ -18,9 +18,9 @@ export class DriverService {
   constructor(private prisma: PrismaService) {}
 
   private async requireProfile(actor: AuthUser) {
-    if (actor.role !== 'DRIVER') {
-      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'خاص بالسائقين' });
-    }
+    // A "driver" is anyone with a driver profile — a carrier-invited driver
+    // (role DRIVER) or an individual operator who is their own carrier+driver
+    // (role CARRIER_ADMIN). Access is by profile, not by role.
     const profile = await this.prisma.driverProfile.findUnique({
       where: { userId: actor.id },
       include: {

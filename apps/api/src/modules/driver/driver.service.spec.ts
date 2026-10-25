@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { DriverService } from './driver.service';
 
 const driverActor = { id: 'user-d1', role: 'DRIVER', companyId: 'car-1' } as never;
@@ -18,13 +18,14 @@ const PROFILE = {
 };
 
 describe('DriverService', () => {
-  it('rejects non-drivers', async () => {
+  it('allows any user with a driver profile, regardless of role', async () => {
+    // An individual operator (role CARRIER_ADMIN) with a driver profile is a driver.
     const { svc } = makeService(PROFILE);
-    await expect(svc.me({ id: 'u', role: 'CLIENT_ADMIN', companyId: 'c' } as never))
-      .rejects.toBeInstanceOf(ForbiddenException);
+    await expect(svc.me({ id: 'u', role: 'CARRIER_ADMIN', companyId: 'c' } as never))
+      .resolves.toMatchObject({ id: 'drv-1' });
   });
 
-  it('404s when the driver has no profile', async () => {
+  it('404s when the user has no driver profile', async () => {
     const { svc } = makeService(null);
     await expect(svc.me(driverActor)).rejects.toBeInstanceOf(NotFoundException);
   });

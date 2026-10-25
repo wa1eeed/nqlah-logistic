@@ -30,6 +30,11 @@ enum CompanyType {
   CARRIER
 }
 
+enum CompanyEntityType {
+  COMPANY
+  INDIVIDUAL
+}
+
 /// Per-company role of a user inside their company account. Controls which
 /// company features they can access. Different from UserRole (which is the
 /// platform-wide kind: admin / client_admin / carrier_admin / driver).
@@ -228,13 +233,16 @@ model User {
 }
 
 model Company {
-  id              String        @id @default(cuid())
+  id              String            @id @default(cuid())
   type            CompanyType
-  status          CompanyStatus @default(PENDING_VERIFICATION)
-  kycStatus       KYCStatus     @default(NOT_SUBMITTED)
+  /// COMPANY (a registered business) or INDIVIDUAL (a sole operator — a single
+  /// freelance driver who is also their own carrier, or an individual client).
+  entityType      CompanyEntityType @default(COMPANY)
+  status          CompanyStatus     @default(PENDING_VERIFICATION)
+  kycStatus       KYCStatus         @default(NOT_SUBMITTED)
   /// Company-default UI language for transactional emails/SMS templates and
   /// new team members. Individual users can still override via `User.preferredLanguage`.
-  defaultLanguage String        @default("ar")
+  defaultLanguage String            @default("ar")
 
   nameAr    String
   nameEn    String?
