@@ -6,6 +6,16 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.40 — 10-hour login sessions (2026-10-25)
+
+- The access-token lifetime default is now **10h** (was 15m) for every portal —
+  client, carrier and admin all issue 10h tokens, and any future dashboard on
+  the same auth inherits it. Set via `JWT_EXPIRES_IN` (env templates updated to
+  `10h`); the refresh token stays 7d. This removes the practical session-expiry
+  friction on top of the refresh-race fix (v0.9.32).
+- Verified live: client and admin logins now return tokens with a 36000s
+  (10-hour) lifetime.
+
 ### v0.9.39 — Carrier profile: fleet tabs + account statement (2026-10-25)
 
 > Builds on the 360° page (v0.9.37).

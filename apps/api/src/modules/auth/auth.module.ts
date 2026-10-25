@@ -13,7 +13,7 @@ import { TokenBlacklistService } from '../../common/security/token-blacklist.ser
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET ?? 'change-me',
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN ?? process.env.JWT_ACCESS_TTL ?? '15m' },
+      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN ?? process.env.JWT_ACCESS_TTL ?? '10h' },
     }),
   ],
   controllers: [AuthController, AdminAuthController],

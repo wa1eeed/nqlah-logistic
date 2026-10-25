@@ -102,7 +102,7 @@ export class AdminAuthService {
 
   private async issueTokens(user: { id: string; role: string; email: string | null; firstName: string; lastName: string }) {
     const jti = randomUUID();
-    const accessTTL = process.env.JWT_EXPIRES_IN ?? process.env.JWT_ACCESS_TTL ?? '15m';
+    const accessTTL = process.env.JWT_EXPIRES_IN ?? process.env.JWT_ACCESS_TTL ?? '10h';
     const refreshTTL = process.env.JWT_REFRESH_EXPIRES_IN ?? process.env.JWT_REFRESH_TTL ?? '7d';
 
     const accessToken = await this.jwt.signAsync(

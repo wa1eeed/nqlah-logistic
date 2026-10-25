@@ -294,7 +294,7 @@ export class AuthService {
     const jti = randomUUID();
     // Prefer the documented env names (JWT_EXPIRES_IN / JWT_REFRESH_EXPIRES_IN,
     // set in every .env template); keep the legacy *_TTL names as a fallback.
-    const accessTTL = process.env.JWT_EXPIRES_IN ?? process.env.JWT_ACCESS_TTL ?? '15m';
+    const accessTTL = process.env.JWT_EXPIRES_IN ?? process.env.JWT_ACCESS_TTL ?? '10h';
     const refreshTTL = process.env.JWT_REFRESH_EXPIRES_IN ?? process.env.JWT_REFRESH_TTL ?? '7d';
 
     const accessToken = await this.jwt.signAsync(
