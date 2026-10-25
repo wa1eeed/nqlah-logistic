@@ -25,6 +25,9 @@
   `POST /driver/location` (graceful when permission is denied).
 - i18n: cookie-based locale `naqla-locale-driver` (English default), namespaces
   `common` / `auth` / `driver`.
+- **Deploy:** `apps/web/driver/Dockerfile` (multi-stage, standalone, port 3006)
+  mirroring the carrier image — so the portal can run as its own Coolify
+  resource. `NEXT_PUBLIC_API_URL` points it at the API. Build verified locally.
 - Package named `@naqla/driver-web` (not `@naqla/driver`) because the pre-existing
   Expo mobile app at `apps/driver` already owns `@naqla/driver`.
 - Quality gates pass: `tsc --noEmit` clean, `next build` clean, en/ar messages
