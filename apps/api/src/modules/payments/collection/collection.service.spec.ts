@@ -42,4 +42,27 @@ describe('CollectionService.resolveMethod', () => {
   it('rejects an unknown method', () => {
     expect(() => svc.resolveMethod('BITCOIN', ALLOW_ALL)).toThrow(BadRequestException);
   });
+
+  // ─── Admin-configured per-group defaults ───────────────────────
+  it('uses the group default collection method when none requested', () => {
+    expect(svc.resolveMethod(undefined, { ...ALLOW_ALL, defaultCollectionMethod: 'PREPAID_WALLET' }))
+      .toBe('PREPAID_WALLET');
+  });
+
+  it('lets the client override the group default when not enforced', () => {
+    expect(svc.resolveMethod('COD', { ...ALLOW_ALL, defaultCollectionMethod: 'PREPAID_WALLET' }))
+      .toBe('COD');
+  });
+
+  it('forces the admin default and ignores the client when enforced', () => {
+    expect(svc.resolveMethod('PREPAID_WALLET', {
+      ...ALLOW_ALL, defaultCollectionMethod: 'COD', enforceCollectionMethod: true,
+    })).toBe('COD');
+  });
+
+  it('still validates an enforced default against the allow toggles', () => {
+    expect(() => svc.resolveMethod('ESCROW', {
+      allowPrepaid: true, allowCOD: false, defaultCollectionMethod: 'COD', enforceCollectionMethod: true,
+    })).toThrow(ForbiddenException);
+  });
 });

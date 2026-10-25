@@ -10,6 +10,10 @@ const DEFAULT_POLICY = {
   allowFixedPricing: true,
   allowPrepaid: true,
   allowCOD: true,
+  defaultAssignment: undefined as string | undefined,
+  defaultPricing: undefined as string | undefined,
+  defaultCollectionMethod: undefined as string | undefined,
+  enforceCollectionMethod: false,
   visibilityScope: 'ALL',
   visibleCarrierGroupId: undefined as string | undefined,
 };
@@ -18,6 +22,8 @@ type GroupRow = {
   id: string; name: string; description: string | null;
   allowMarket: boolean; allowDirect: boolean; forcedCarrierId: string | null;
   allowMarketPricing: boolean; allowFixedPricing: boolean; allowPrepaid: boolean; allowCOD: boolean;
+  defaultAssignment: string | null; defaultPricing: string | null;
+  defaultCollectionMethod: string | null; enforceCollectionMethod: boolean;
   visibilityScope: string; visibleCarrierGroupId: string | null;
   clientIds: string[];
 };
@@ -36,6 +42,10 @@ function toDto(g: GroupRow) {
       allowFixedPricing: g.allowFixedPricing,
       allowPrepaid: g.allowPrepaid,
       allowCOD: g.allowCOD,
+      defaultAssignment: g.defaultAssignment ?? undefined,
+      defaultPricing: g.defaultPricing ?? undefined,
+      defaultCollectionMethod: g.defaultCollectionMethod ?? undefined,
+      enforceCollectionMethod: g.enforceCollectionMethod,
       visibilityScope: g.visibilityScope,
       visibleCarrierGroupId: g.visibleCarrierGroupId ?? undefined,
     },
@@ -77,6 +87,10 @@ export class PoliciesService {
               allowFixedPricing: p.allowFixedPricing,
               allowPrepaid: p.allowPrepaid,
               allowCOD: p.allowCOD,
+              defaultAssignment: p.defaultAssignment ?? null,
+              defaultPricing: p.defaultPricing ?? null,
+              defaultCollectionMethod: p.defaultCollectionMethod ?? null,
+              enforceCollectionMethod: p.enforceCollectionMethod ?? false,
               visibilityScope: p.visibilityScope ?? 'ALL',
               visibleCarrierGroupId: p.visibleCarrierGroupId ?? null,
             }

@@ -6,6 +6,25 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.66 — Admin-configured per-group module defaults (2026-10-26)
+
+- **PolicyGroup** gains admin-set module defaults: `defaultAssignment`
+  (MARKET|DIRECT), `defaultPricing` (MARKET|FIXED), `defaultCollectionMethod`
+  (one of the collection methods), and `enforceCollectionMethod`.
+- **Collection is configured by the admin, not the client** (backlog item 3):
+  when `enforceCollectionMethod` is set, the order's collection method is forced
+  to the group's default and the client's choice is ignored; otherwise the client
+  may still choose, falling back to the group default, then ESCROW. The result is
+  always validated against the group's allow toggles. (`resolveMethod` + tests.)
+- **Per-group defaults wired into order creation** (backlog item 9): a new order
+  with no explicit sourcing uses the group's `defaultAssignment`; collection uses
+  the group default/enforcement above.
+- **Elegant, configurable group UX** (backlog item 5): each client group now
+  renders as four visually-distinct module cards — الإسناد / التسعير / التحصيل /
+  نطاق الظهور — colour-coded with icons, an at-a-glance chip summary (with a lock
+  on an enforced collection method), toggles, and a default selector per module.
+- Migration `20261026160000_policy_group_module_defaults`. Verified live.
+
 ### v0.9.65 — 360° company detail: Activity & Audit Log tab (2026-10-26)
 
 - New **Activity** tab on the admin company detail page (both carriers and

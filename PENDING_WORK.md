@@ -11,13 +11,16 @@ Tracked verbatim so nothing is dropped. Work top-to-bottom; one PR per coherent 
    `/companies?type=…&limit=200(+status)` → 400 (limit>100 / unsupported `status`),
    now fetched as `/companies?type=…&limit=100`. (fix PR) Re-verify on staging after
    redeploy; the dedicated page (item 1) rebuilds this surface cleanly.
-3. **Collection module configured by the ADMIN, not the client** — the admin sets the
-   collection options/default per client (or per group); the client only uses what the
-   admin allows.
+3. ✅ **Collection module configured by the ADMIN, not the client** — the admin sets a
+   group's `defaultCollectionMethod` and can `enforceCollectionMethod` so the client's
+   choice is ignored and the admin's method is forced on every order; otherwise the
+   client picks within the allowed methods. (`resolveMethod` + tests, v0.9.66.)
 4. **Provider groups + visibility scope — make it discoverable** — a clear place in the
    admin to control it (part of item 1), not buried.
-5. **Elegant groups UX** — group creation/config/customization visually + logically
-   distinguished; groups shown as elegant, configurable cards.
+5. ✅ **Elegant groups UX** — each client group renders as four colour-coded, icon-led
+   module cards (الإسناد / التسعير / التحصيل / نطاق الظهور) with an at-a-glance chip
+   summary (lock on an enforced collection method), toggles and a per-module default
+   selector. (v0.9.66.)
 6. **Group reflected on the provider** — a provider's detail page shows the group it
    belongs to; the providers list shows a **group-name tag** per provider.
 7. ✅ **360° admin detail pages (provider AND client)** — the detail page gathers
@@ -28,9 +31,10 @@ Tracked verbatim so nothing is dropped. Work top-to-bottom; one PR per coherent 
 8. **C1 — heterogeneous consolidated orders** — a consolidated order whose legs can each
    have a **different truck type + destination + price** (per-leg), across client/admin/
    carrier. (Currently: N trucks on one shared route.)
-9. **C2 — complete the modules** — PARTIAL collection method + **per-group module
-   defaults** (admin sets a group's default pricing/collection/assignment, not just
-   allow/deny toggles).
+9. ✅ **C2 — complete the modules** — **per-group module defaults** done: the admin sets
+   a group's default assignment (MARKET|DIRECT), pricing (MARKET|FIXED) and collection
+   method (+ enforcement), beyond the existing allow/deny toggles. Assignment + collection
+   defaults are wired into order creation; pricing default is stored/surfaced. (v0.9.66.)
 
 Standard for all: professional, best-practice, scalable; English deep-docs polish at the end.
 **ID principle (owner note):** never surface raw cuids (`cmvo…`) in the UI — show a short,

@@ -563,7 +563,12 @@ export class OrdersService {
    */
   private async resolveSourcing(dto: CreateOrderDto, companyId: string) {
     const policy = await this.policies.effectiveForCompany(companyId);
-    let mode: 'OPEN' | 'DIRECT' = dto.mode === 'DIRECT' ? 'DIRECT' : 'OPEN';
+    // When the client doesn't pick a sourcing module, fall back to the group's
+    // admin-set default (`defaultAssignment`), else the open market.
+    const resolvedMode = dto.mode
+      ? dto.mode
+      : (policy.defaultAssignment === 'DIRECT' ? 'DIRECT' : 'OPEN');
+    let mode: 'OPEN' | 'DIRECT' = resolvedMode === 'DIRECT' ? 'DIRECT' : 'OPEN';
     let targetCarrierId: string | null = mode === 'DIRECT' ? dto.targetCarrierId ?? null : null;
     if (policy.forcedCarrierId) {
       mode = 'DIRECT';
