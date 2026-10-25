@@ -131,6 +131,53 @@ export default function CarrierFleetDrivers() {
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
+          {/* Mobile: app-like card list */}
+          <div className="md:hidden divide-y">
+            {rows.length === 0 ? (
+              <div className="text-center text-muted-foreground py-10">
+                <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                {t('driversList.empty')}
+              </div>
+            ) : (
+              rows.map((d) => (
+                <div
+                  key={d.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => router.push(`/fleet/drivers/${d.id}`)}
+                  className="p-4 cursor-pointer transition-colors active:bg-muted/60"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><Hash className="h-3 w-3" />{d.code}</span>
+                    <DriverStatusBadge status={d.status} />
+                  </div>
+                  <div className="mt-2 flex items-center gap-2.5">
+                    <Avatar className="h-8 w-8"><AvatarFallback>{d.fullName.split(' ').slice(0, 2).map((w) => w[0]).join('')}</AvatarFallback></Avatar>
+                    <span className="font-medium">{d.fullName}</span>
+                    <ExpiryBadge date={d.licenseExpiry} />
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                    <span className="text-muted-foreground">{t('driversList.table.id')}</span>
+                    <span className="text-end font-mono num text-xs">{d.nationalId}</span>
+                    <span className="text-muted-foreground">{t('driver.licenseClass')}</span>
+                    <span className="text-end">{licenseClassLabel(d.licenseClass)}</span>
+                    <span className="text-muted-foreground">{t('ownership.label')}</span>
+                    <span className="text-end"><OwnershipBadge ownership={d.ownership} /></span>
+                    <span className="text-muted-foreground">{t('driversList.table.truck')}</span>
+                    <span className="text-end">
+                      {d.truck
+                        ? <span className="inline-flex items-center gap-1.5"><TruckIcon className="h-3.5 w-3.5 text-muted-foreground" /><span className="font-mono text-xs">{d.truck.code}</span></span>
+                        : <span className="text-muted-foreground">{t('driversList.noTruck')}</span>}
+                    </span>
+                    <span className="text-muted-foreground">{t('driversList.table.trips')}</span>
+                    <span className="text-end num">{d.totalTrips ?? 0}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          {/* Desktop: table */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -180,6 +227,7 @@ export default function CarrierFleetDrivers() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

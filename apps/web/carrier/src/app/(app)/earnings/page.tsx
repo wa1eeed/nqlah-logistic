@@ -82,6 +82,37 @@ export default function CarrierEarningsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
+            {/* Mobile: app-like card list */}
+            <div className="md:hidden divide-y">
+              {all.map((p) => {
+                const clientName =
+                  p.order?.client?.nameAr
+                  ?? (p.clientId ? companyById(p.clientId)?.nameAr : null)
+                  ?? '—';
+                const orderRef = p.order?.orderNumber ?? p.orderId;
+                return (
+                  <div key={p.id} className="p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs text-primary">{orderRef}</span>
+                      <StatusBadge status={p.state} />
+                    </div>
+                    <div className="mt-1 text-sm font-medium">{clientName}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{p.id}</div>
+                    <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                      <span className="text-muted-foreground">{t('fields.price')}</span>
+                      <span className="text-end"><Currency amount={p.amount ?? 0} /></span>
+                      <span className="text-muted-foreground">{t('fields.commission')}</span>
+                      <span className="text-end text-destructive"><Currency amount={-(p.commission ?? 0)} /></span>
+                      <span className="text-muted-foreground">{t('fields.net')}</span>
+                      <span className="text-end font-medium"><Currency amount={carrierNetOf(p)} /></span>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">{formatDate(p.releasedAt ?? p.paidAt ?? p.createdAt)}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Desktop: table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -123,6 +154,7 @@ export default function CarrierEarningsPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </FadeItem>

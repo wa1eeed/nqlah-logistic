@@ -103,6 +103,26 @@ export default function CarrierFinancePage() {
           <Card>
             <CardHeader><CardTitle>{t('finance.last5Transactions')}</CardTitle></CardHeader>
             <CardContent className="p-0">
+              {/* Mobile: app-like card list */}
+              <div className="md:hidden divide-y">
+                {txs.slice(0, 5).map((tx) => {
+                  const isIn = TX_IN.includes(tx.kind);
+                  return (
+                    <div key={tx.id} className="p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant={isIn ? 'success' : 'destructive'}>{txLabel(tx.kind)}</Badge>
+                        <span className={`font-medium num ${isIn ? 'text-success' : 'text-destructive'}`}>
+                          {isIn ? '+ ' : '- '}{tx.amount.toLocaleString('en-US')}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 text-sm">{tx.description}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">{formatDate(tx.at, 'd MMM · HH:mm')}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -128,6 +148,7 @@ export default function CarrierFinancePage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -156,6 +177,34 @@ export default function CarrierFinancePage() {
               <CardDescription className="mt-1">{t('finance.heldBreakdownDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
+              {/* Mobile: app-like card list */}
+              <div className="md:hidden divide-y">
+                {heldPayments.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-10">{t('finance.noHeld')}</div>
+                ) : (
+                  heldPayments.map((p) => (
+                    <div key={p.id} className="p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs text-primary">{p.orderId}</span>
+                        <StatusBadge status={p.state} />
+                      </div>
+                      <div className="mt-1 text-sm font-medium">{companyById(p.clientId)?.nameAr ?? '—'}</div>
+                      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                        <span className="text-muted-foreground">{t('fields.totalAmount')}</span>
+                        <span className="text-end"><Currency amount={p.amount} /></span>
+                        <span className="text-muted-foreground">{t('fields.commission')}</span>
+                        <span className="text-end text-destructive"><Currency amount={-p.commission} /></span>
+                        <span className="text-muted-foreground">{t('fields.vat')}</span>
+                        <span className="text-end text-destructive"><Currency amount={-p.vat} /></span>
+                        <span className="text-muted-foreground">{t('fields.netProfit')}</span>
+                        <span className="text-end font-bold"><Currency amount={p.amount - p.commission - p.vat} /></span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -186,6 +235,7 @@ export default function CarrierFinancePage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -215,6 +265,34 @@ export default function CarrierFinancePage() {
                 <StatMini icon={ArrowUpRight}    label={t('finance.withdrawals')}    value={totalDebit}  tone="danger" />
                 <StatMini icon={TrendingUp}      label={t('finance.currentBalance')} value={wallet?.balance ?? 0} tone="default" />
               </div>
+              {/* Mobile: app-like card list */}
+              <div className="md:hidden -mx-6 border-t divide-y">
+                {filteredTxs.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-10">{t('finance.noTransactions')}</div>
+                ) : (
+                  filteredTxs.map((tx) => {
+                    const isIn = TX_IN.includes(tx.kind);
+                    return (
+                      <div key={tx.id} className="px-6 py-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge variant={isIn ? 'success' : 'destructive'}>{txLabel(tx.kind)}</Badge>
+                          <span className={`font-medium num ${isIn ? 'text-success' : 'text-destructive'}`}>
+                            {isIn ? '+ ' : '- '}{tx.amount.toLocaleString('en-US')}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 text-sm">{tx.description}</div>
+                        {tx.note && <div className="text-xs text-muted-foreground mt-0.5">{tx.note}</div>}
+                        <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                          <span>{formatDate(tx.at, 'd MMM · HH:mm')}</span>
+                          <span className="num">{t('fields.balanceAfter')}: {tx.balanceAfter.toLocaleString('en-US')}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -249,6 +327,7 @@ export default function CarrierFinancePage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

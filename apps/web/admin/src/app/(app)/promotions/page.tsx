@@ -54,6 +54,60 @@ export default function PromotionsPage() {
       <FadeIn delay={0.1}>
       <Card>
         <CardContent className="p-0">
+          {/* Mobile: app-like card list */}
+          <div className="md:hidden divide-y">
+            {items.map((p) => (
+              <div key={p.id} className="p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => copy(p.code)}
+                    className="inline-flex items-center gap-2 font-mono text-sm bg-muted px-2 py-1 rounded hover:bg-muted/60"
+                    title={t('promotions.copy')}
+                  >
+                    {p.code}
+                    <Copy className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                  <Badge variant={STATUS_BADGE[p.status]}>{t(`promotions.status.${p.status}`)}</Badge>
+                </div>
+                <div className="mt-2 text-sm">{p.description}</div>
+                <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline">{t(`promotions.audience.${p.audience}`)}</Badge>
+                  <span className="text-xs text-muted-foreground">{t(`promotions.kind.${p.kind}`)}</span>
+                  <span className="num text-xs font-medium">
+                    {p.kind === 'PERCENTAGE_OFF' ? `${p.value}%` :
+                     p.kind === 'FIXED_AMOUNT'   ? t('promotions.fixedAmount', { value: p.value }) :
+                     t('promotions.fullWaiver')}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <div className="text-xs">
+                    <span className="num font-medium">{p.usageCount.toLocaleString('en-US')}</span>
+                    {p.usageLimit && (
+                      <span className="text-muted-foreground"> / {p.usageLimit.toLocaleString('en-US')}</span>
+                    )}
+                    <span className="text-muted-foreground"> · {formatDate(p.startsAt, 'd MMM')} ← {formatDate(p.endsAt, 'd MMM yyyy')}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {p.status === 'ACTIVE' ? (
+                      <Button size="sm" variant="ghost" title={t('promotions.pause')}>
+                        <Pause className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : p.status === 'PAUSED' ? (
+                      <Button size="sm" variant="ghost" title={t('promotions.activate')}>
+                        <Play className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : null}
+                    <Button size="sm" variant="ghost" title={t('promotions.delete')} className="text-destructive hover:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -128,6 +182,7 @@ export default function PromotionsPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
       </FadeIn>

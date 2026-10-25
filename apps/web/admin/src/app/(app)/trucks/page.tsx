@@ -97,6 +97,50 @@ export default function AdminTrucksPage() {
             </Select>
           </div>
 
+          {/* Mobile: app-like card list */}
+          <div className="md:hidden -mx-4 border-t divide-y">
+            {filtered.length === 0 ? (
+              <div className="text-center text-muted-foreground py-10">
+                <Filter className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                {t('adminTrucks.noResults')}
+              </div>
+            ) : (
+              filtered.map((truck) => {
+                const plate = parsePlateString(truck.plateNumber);
+                const carrier = carrierById(truck.carrierId);
+                const drv = driverById(truck.assignedDriverId);
+                const typeLabel = (TRUCK_TYPE_KEYS as readonly string[]).includes(truck.truckType)
+                  ? t(`adminTrucks.types.${truck.truckType}`)
+                  : truck.truckType;
+                return (
+                  <div key={truck.id} className="p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="w-[96px]">
+                        <SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="fill" />
+                      </div>
+                      <StatusBadge status={truck.status} />
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <Link href={`/companies/${truck.carrierId}`} className="text-sm font-medium hover:text-primary truncate">
+                        {carrier?.nameAr ?? '—'}
+                      </Link>
+                      <span className="text-xs text-muted-foreground shrink-0">{typeLabel}</span>
+                    </div>
+                    <div className="mt-1.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span className="num">
+                        {t('adminTrucks.capacityValue', { value: (truck.capacityKg / 1000).toFixed(0) })} · <span className="num">{truck.modelYear}</span>
+                      </span>
+                      <span className="truncate max-w-[140px]">{drv?.fullName ?? '—'}</span>
+                    </div>
+                    <div className="mt-1 num text-xs text-muted-foreground">{formatDate(truck.lastInspection)}</div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -148,6 +192,7 @@ export default function AdminTrucksPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
       </FadeIn>

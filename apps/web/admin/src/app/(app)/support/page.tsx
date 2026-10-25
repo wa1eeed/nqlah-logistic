@@ -95,6 +95,46 @@ export default function AdminSupportPage() {
               </Select>
             </div>
 
+            {/* Mobile: app-like card list */}
+            <div className="md:hidden -mx-4 border-t divide-y">
+              {filtered.length === 0 ? (
+                <div className="text-center text-muted-foreground py-10">
+                  <Filter className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  {t('supportAdmin.noMatching')}
+                </div>
+              ) : (
+                filtered.map((ticket) => {
+                  const c = companyById(ticket.raisedById);
+                  return (
+                    <button
+                      key={ticket.id}
+                      type="button"
+                      onClick={() => setSelected(ticket)}
+                      className={`w-full text-start p-4 transition-colors active:bg-muted/60 ${selected?.id === ticket.id ? 'bg-primary/5' : ''}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-medium truncate">{ticket.subject}</span>
+                        <Badge variant={STATUS_BADGE[ticket.status]}>{t(`supportAdmin.status.${ticket.status}`)}</Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground font-mono">{ticket.id} · {t('supportAdmin.messagesCount', { count: ticket.messageCount })}</div>
+                      <div className="mt-1 text-sm truncate">
+                        {c?.nameAr ?? '—'} <span className="text-muted-foreground">· {ticket.raisedBy === 'CLIENT' ? t('supportAdmin.senderClient') : t('supportAdmin.senderCarrier')}</span>
+                      </div>
+                      <div className="mt-2.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{t(`supportAdmin.category.${ticket.category}`)}</Badge>
+                          <Badge variant={PRIORITY_BADGE[ticket.priority]}>{t(`supportAdmin.priority.${ticket.priority}`)}</Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{formatRelative(ticket.updatedAt)}</span>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -145,6 +185,7 @@ export default function AdminSupportPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 

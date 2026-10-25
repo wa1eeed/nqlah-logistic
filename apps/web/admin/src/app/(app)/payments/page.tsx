@@ -111,6 +111,45 @@ export default function AdminPaymentsPage() {
       <FadeIn delay={0.08}>
       <Card>
         <CardContent className="p-0">
+          {/* Mobile: app-like card list */}
+          <div className="md:hidden divide-y">
+            {rows.map((p) => (
+              <div key={p.id} className="p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-medium">{p.id}</span>
+                  <StatusBadge status={p.state} />
+                </div>
+                <div className="mt-1 font-mono text-xs text-primary">{p.orderId}</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {companyById(p.clientId)?.nameAr ?? '—'} ← {companyById(p.carrierId)?.nameAr ?? '—'}
+                </div>
+                <div className="mt-2.5 flex items-center justify-between gap-2">
+                  <span className="num text-xs text-muted-foreground">{formatDate(p.paidAt)}</span>
+                  <div className="text-end">
+                    <div className="text-sm font-semibold"><Currency amount={p.amount} /></div>
+                    <div className="text-xs text-muted-foreground">
+                      {t('adminPayments.colCommission')}: <Currency amount={p.commission} />
+                    </div>
+                  </div>
+                </div>
+                {p.state === 'HELD' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 w-full"
+                    onClick={() => release(p.id)}
+                    disabled={releasingId === p.id}
+                  >
+                    {releasingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                    {t('adminPayments.release')}
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -153,6 +192,7 @@ export default function AdminPaymentsPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
       </FadeIn>

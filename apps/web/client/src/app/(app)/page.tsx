@@ -161,6 +161,30 @@ export default function ClientDashboard() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
+            {/* Mobile: app-like card list */}
+            <div className="md:hidden divide-y">
+              {all.slice(0, 7).map((o) => (
+                <Link key={o.id} href={`/orders/${o.id}`} className="block p-4 transition-colors active:bg-muted/60">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs text-muted-foreground">{o.orderNumber}</span>
+                    <StatusBadge status={o.status} />
+                  </div>
+                  <div className="mt-1.5 text-sm font-medium">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</div>
+                  <div className="mt-2.5 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'}>
+                        {o.mode === 'OPEN' ? t('dashboard.modeOpen') : t('dashboard.modeDirect')}
+                      </Badge>
+                      <span className="num text-xs text-muted-foreground">{t('dashboard.colBids')}: {o.bidCount || '—'}</span>
+                    </div>
+                    <span className="text-sm font-semibold"><Currency amount={o.agreedPrice ?? o.clientBudget} /></span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -189,6 +213,7 @@ export default function ClientDashboard() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 

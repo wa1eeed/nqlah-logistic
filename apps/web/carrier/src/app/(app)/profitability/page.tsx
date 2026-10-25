@@ -172,7 +172,66 @@ export default function CarrierProfitabilityPage() {
                 {t('profitability.noInvoices')}
               </div>
             ) : (
-              <div className="-mx-6 overflow-x-auto px-6">
+             <>
+              {/* Mobile: app-like card list */}
+              <div className="md:hidden -mx-6 border-t divide-y">
+                {rows.map((r) => {
+                  const parsed = parsePlateString(r.plate);
+                  return (
+                    <div key={r.id} className="px-6 py-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-medium num" dir="ltr">{r.orderNumber}</div>
+                        {r.status === 'PAID' ? (
+                          <Badge variant="outline" className="gap-1 border-success/30 bg-success/10 text-success">
+                            <BadgeCheck className="h-3 w-3" />
+                            {t('profitability.paid')}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning">
+                            {t('profitability.due')}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{t('profitability.issuedOn', { date: formatDate(r.issuedAt) })}</div>
+                      <div className="mt-2 flex items-center gap-2">
+                        {parsed.letters.length > 0 && (
+                          <SaudiLicensePlate letters={parsed.letters} numbers={parsed.numbers} size="thumbnail" />
+                        )}
+                        <span className="text-sm">{r.driverName}</span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                        <span className="text-muted-foreground">{t('profitability.colClientRevenue')}</span>
+                        <span className="text-end"><Currency amount={r.revenue} /></span>
+                        <span className="text-muted-foreground">{t('profitability.colTripFare')}</span>
+                        <span className="text-end"><Currency amount={r.amount} /></span>
+                        <span className="text-muted-foreground">{t('profitability.colProfit')}</span>
+                        <span className="text-end">
+                          <Currency amount={r.profit} className={r.profit !== undefined && r.profit < 0 ? 'text-destructive' : 'text-success'} />
+                          {r.marginPct !== undefined && (
+                            <span className="num text-xs text-muted-foreground ms-1" dir="ltr">{r.marginPct.toFixed(1)}%</span>
+                          )}
+                        </span>
+                      </div>
+                      {r.status === 'PAID' && r.paidAt && (
+                        <div className="text-xs text-muted-foreground mt-1">{t('profitability.paidOn', { date: formatDate(r.paidAt) })}</div>
+                      )}
+                      <div className="mt-3">
+                        {r.status === 'DUE' ? (
+                          <Button size="sm" className="w-full" onClick={() => setPayTarget(r)}>
+                            {t('profitability.recordPayment')}
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="ghost" className="w-full" onClick={() => doMarkDue(r.id)}>
+                            {t('profitability.reopen')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden md:block -mx-6 overflow-x-auto px-6">
               <Table className="min-w-[640px]">
                 <TableHeader>
                   <TableRow>
@@ -252,6 +311,7 @@ export default function CarrierProfitabilityPage() {
                 </TableBody>
               </Table>
               </div>
+             </>
             )}
           </CardContent>
         </Card>

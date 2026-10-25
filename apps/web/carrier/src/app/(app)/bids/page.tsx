@@ -88,6 +88,42 @@ export default function CarrierBidsPage() {
               </Select>
             </div>
 
+            {/* Mobile: app-like card list */}
+            <div className="md:hidden -mx-4 -mb-4 border-t divide-y">
+              {filtered.length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground">
+                  <X className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  {t('bids.noMatches')}
+                </div>
+              ) : (
+                filtered.map((b) => {
+                  const order = ORDERS.find((o) => o.id === b.orderId);
+                  return (
+                    <div key={b.id} className="p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs">{b.id}</span>
+                        <Badge variant={STATUS_BADGE[b.status]}>{STATUS_LABELS[b.status]}</Badge>
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">
+                          {order ? `${localizeCity(order.originCity)} ← ${localizeCity(order.destinationCity)}` : '—'}
+                        </span>
+                        <span className="text-sm font-semibold"><Currency amount={b.price} /></span>
+                      </div>
+                      <Link href={`/orders/${b.orderId}`} className="font-mono text-xs text-primary">{b.orderId}</Link>
+                      {b.notes && <div className="text-xs text-muted-foreground truncate mt-1">{b.notes}</div>}
+                      <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                        <span className="num">{b.estimatedDays} {b.estimatedDays === 1 ? t('bids.day') : t('bids.days')}</span>
+                        <span>{formatRelative(b.createdAt)}</span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -134,6 +170,7 @@ export default function CarrierBidsPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </FadeItem>

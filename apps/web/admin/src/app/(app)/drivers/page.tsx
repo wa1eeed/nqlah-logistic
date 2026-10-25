@@ -104,6 +104,56 @@ export default function AdminDriversPage() {
             </Select>
           </div>
 
+          {/* Mobile: app-like card list */}
+          <div className="md:hidden -mx-4 border-t divide-y">
+            {filtered.length === 0 ? (
+              <div className="text-center text-muted-foreground py-10">
+                <Filter className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                {t('adminDrivers.noResults')}
+              </div>
+            ) : (
+              filtered.map((d) => {
+                const fullName = `${d.user.firstName} ${d.user.lastName}`;
+                const initials = fullName.trim().split(' ').slice(0, 2).map((w) => w[0] ?? '').join('');
+                const activeOrder = d.orderDrivers[0]?.order ?? null;
+                return (
+                  <div key={d.id} className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarFallback>{initials}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium truncate">{fullName}</span>
+                          <StatusBadge status={d.status} />
+                        </div>
+                        <Link href={`/companies/${d.company.id}`} className="text-xs text-muted-foreground hover:text-primary">
+                          {d.company.nameAr}
+                        </Link>
+                      </div>
+                    </div>
+                    <div className="mt-2.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span>{d.licenseType} · {formatDate(d.licenseExpiry, 'd MMM yyyy')}</span>
+                      <a href={`tel:${d.user.phone}`} className="num inline-flex items-center gap-1 hover:text-primary" dir="ltr">
+                        <Phone className="h-3 w-3" /> {d.user.phone}
+                      </a>
+                    </div>
+                    <div className="mt-1 num text-xs text-muted-foreground">{t('adminDrivers.table.trips')}: {d.totalTrips.toLocaleString('en-US')}</div>
+                    {activeOrder && (
+                      <Link href={`/orders/${activeOrder.id}`} className="mt-2 block rounded-md bg-muted/40 p-2">
+                        <div className="text-xs font-mono text-primary">{activeOrder.orderNumber}</div>
+                        <div className="text-xs text-muted-foreground">{localizeCity(activeOrder.originCity)} ← {localizeCity(activeOrder.destinationCity)}</div>
+                        <div className="mt-1"><StatusBadge status={activeOrder.status} /></div>
+                      </Link>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -176,6 +226,7 @@ export default function AdminDriversPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
       </FadeIn>

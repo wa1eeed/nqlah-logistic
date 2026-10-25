@@ -110,6 +110,56 @@ export default function AdminCompaniesPage() {
       <FadeIn delay={0.08}>
         <Card>
           <CardContent className="p-0">
+            {/* Mobile: app-like card list */}
+            <div className="md:hidden divide-y">
+              {rows.length === 0 ? (
+                <div className="text-center text-muted-foreground py-14">{t('list.empty')}</div>
+              ) : (
+                rows.map((c) => (
+                  <Link key={c.id} href={`/companies/${c.id}`} className="block p-4 transition-colors active:bg-muted/60">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarFallback>{c.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium truncate">{c.nameAr}</span>
+                          <StatusBadge status={c.kycStatus} />
+                        </div>
+                        <div className="text-xs font-mono text-muted-foreground truncate">
+                          {c.accountType === 'INDIVIDUAL'
+                            ? c.nationalId ? t('list.nationalIdPrefix', { id: c.nationalId }) : t('list.idPrefix', { id: c.id })
+                            : c.crNumber ? `CR · ${c.crNumber}` : c.id}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-2.5 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={c.kind === 'CLIENT' ? 'default' : 'success'}>
+                          {c.kind === 'CLIENT' ? t('kind.client') : t('kind.carrier')}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{localizeCity(c.city)}</span>
+                      </div>
+                      <span className="text-xs">
+                        {c.kind === 'CARRIER' ? (
+                          <span className="text-muted-foreground num">
+                            {t('list.trips', { count: (c.completedTrips ?? 0).toLocaleString('en-US') })}
+                          </span>
+                        ) : c.monthlyVolume ? (
+                          <Currency amount={c.monthlyVolume} />
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 num text-xs text-muted-foreground">{formatDate(c.joinedAt)}</div>
+                  </Link>
+                ))
+              )}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -182,6 +232,7 @@ export default function AdminCompaniesPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </FadeIn>

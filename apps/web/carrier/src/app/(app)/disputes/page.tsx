@@ -113,6 +113,31 @@ export default function CarrierDisputesPage() {
               {t('disputes.empty')}
             </div>
           ) : (
+           <>
+            {/* Mobile: app-like card list */}
+            <div className="md:hidden divide-y">
+              {myDisputes.map((d) => (
+                <div key={d.id} className="p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs">{d.id}</span>
+                    <StatusBadge status={d.status} />
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <Link href={`/orders/${d.orderId}`} className="font-mono text-xs text-primary">
+                      {d.order?.orderNumber ?? d.orderId}
+                    </Link>
+                    <Badge variant={('raisedBy' in d ? d.raisedBy : 'CARRIER') === 'CARRIER' ? 'default' : 'outline'}>
+                      {('raisedBy' in d ? d.raisedBy : 'CARRIER') === 'CARRIER' ? t('disputes.raisedByYou') : t('disputes.raisedByClient')}
+                    </Badge>
+                  </div>
+                  <div className="mt-1 text-sm font-medium">{d.reason}</div>
+                  <div className="text-xs text-muted-foreground truncate">{d.description}</div>
+                  <div className="mt-2 text-xs text-muted-foreground">{formatRelative(d.createdAt)}</div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop: table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -147,6 +172,8 @@ export default function CarrierDisputesPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
+           </>
           )}
         </CardContent>
       </Card>
