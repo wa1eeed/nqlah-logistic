@@ -6,6 +6,13 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.38 — Search + city filter on client orders (2026-10-25)
+
+- The client "My orders" page gained a search box (order number, route cities,
+  cargo description) and a city filter (any order whose origin or destination
+  is the chosen city). Both compose with the existing status tabs; the empty
+  state distinguishes "no matches" from "no orders yet".
+
 ### v0.9.37 — 360° provider/company page (2026-10-24)
 
 > Feature #6. The admin company-detail page now rivals the Reports page.
