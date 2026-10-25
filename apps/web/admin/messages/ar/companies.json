@@ -39,6 +39,9 @@
     "eyebrow": "ملف الكيان · 360°",
     "subtitle": "{role} · {city}",
     "back": "رجوع",
+    "whiteLabelOn": "وايت ليبل: مفعّل",
+    "whiteLabelOff": "وايت ليبل: متوقّف",
+    "whiteLabelToggled": "تم تحديث الوايت ليبل",
     "notFound": "الشركة غير موجودة",
     "backToList": "عودة",
     "tabs": {

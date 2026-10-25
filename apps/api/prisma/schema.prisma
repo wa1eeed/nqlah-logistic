@@ -257,6 +257,14 @@ model Company {
   subscriptionPlan   String    @default("basic")
   subscriptionEndsAt DateTime?
 
+  /// White-label: when enabled (by an admin), a carrier's own client area and
+  /// driver app render under the carrier's brand instead of Naqla's.
+  whiteLabelEnabled Boolean @default(false)
+  brandName         String?
+  brandLogo         String?
+  /// Primary brand color as a hex string (e.g. "#0F766E").
+  brandColor        String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

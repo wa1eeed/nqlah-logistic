@@ -39,6 +39,9 @@
     "eyebrow": "Entity Profile · 360°",
     "subtitle": "{role} · {city}",
     "back": "Back",
+    "whiteLabelOn": "White-label: On",
+    "whiteLabelOff": "White-label: Off",
+    "whiteLabelToggled": "White-label updated",
     "notFound": "Company not found",
     "backToList": "Go back",
     "tabs": {

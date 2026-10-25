@@ -5,7 +5,18 @@
  "company": "Company Info",
  "team": "Team",
  "settings": "Settings",
- "kyc": "Documents"
+ "kyc": "Documents",
+ "branding": "Branding"
+ },
+ "branding": {
+ "title": "Branding",
+ "desc": "Set how your brand appears to your own clients and drivers (white-label).",
+ "disabled": "White-label is not enabled for your account. Contact the platform admin to enable it.",
+ "brandName": "Brand name",
+ "brandLogo": "Logo URL",
+ "brandColor": "Primary color (hex)",
+ "save": "Save branding",
+ "saved": "Branding saved"
  },
  "company": {
  "info": "Basic Information",
@@ -67,7 +78,7 @@
  },
  "STAFF": {
  "label": "Operations Staff",
- "icon": "ðŸ, ¦"
+ "icon": "ðŸ‘¥"
  },
  "DISPATCH": {
  "label": "Fleet Dispatcher",

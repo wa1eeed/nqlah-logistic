@@ -6,6 +6,21 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.54 — White-label branding (2026-10-25)
+
+- Carriers can run their own client area (and later driver app) under their own
+  brand. `Company` gains `whiteLabelEnabled` + `brandName` / `brandLogo` /
+  `brandColor` (additive migration; default off = Naqla brand).
+- **Admin** enables the white-label subscription per carrier
+  (`PATCH /admin/companies/:id/white-label`) — a toggle on the company detail.
+- **Carrier** sets its brand in a new Settings → Branding tab
+  (`GET`/`PATCH /carrier/branding`); editing is blocked until an admin enables
+  it (`WHITE_LABEL_DISABLED`).
+- Tests: `white-label.service.spec.ts`; 23 specs total.
+- The branded **driver app** is the final step (its own phase); this lays the
+  branding foundation it will consume.
+- Also fixed a pre-existing corrupted emoji byte in carrier `settings.json`.
+
 ### v0.9.53 — Provider-owned clients (sub-tenancy) (2026-10-25)
 
 - A carrier can register and manage its own **private clients** (`Company.
