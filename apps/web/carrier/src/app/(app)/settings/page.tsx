@@ -3,8 +3,9 @@ import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import {
-  Building2, FileText, Loader2, Mail, MapPin, Phone, Star, Truck, Upload, Users,
+  Building2, FileText, Loader2, Mail, MapPin, Palette, Phone, Star, Truck, Upload, Users,
 } from 'lucide-react';
+import { BrandingPanel } from '@/components/branding-panel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,7 +138,12 @@ export default function CarrierSettingsPage() {
           <TabsTrigger value="company"><Building2 className="h-4 w-4 me-1.5" /> {t('tabs.company')}</TabsTrigger>
           <TabsTrigger value="team"><Users className="h-4 w-4 me-1.5" /> {t('tabs.team')}</TabsTrigger>
           <TabsTrigger value="kyc"><FileText className="h-4 w-4 me-1.5" /> {t('tabs.kyc')}</TabsTrigger>
+          <TabsTrigger value="branding"><Palette className="h-4 w-4 me-1.5" /> {t('tabs.branding')}</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="branding">
+          <BrandingPanel />
+        </TabsContent>
 
         {/* ─── Company Info ─── */}
         <TabsContent value="company">

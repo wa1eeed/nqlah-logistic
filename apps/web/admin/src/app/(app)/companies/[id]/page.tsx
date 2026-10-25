@@ -76,6 +76,7 @@ export default function AdminCompanyDetail() {
   const t = useTranslations('companies');
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { mutate: wlMutate } = useSWRConfig();
 
   const { data: companyData, isLoading } = useSWR<unknown>(
     params.id ? `/companies/${params.id}` : null, fetcher);
@@ -133,6 +134,21 @@ export default function AdminCompanyDetail() {
         subtitle={t('detail.subtitle', { role: isCarrier ? t('kind.carrier') : t('kind.client'), city: localizeCity(company.city) })}
         actions={
           <>
+            {isCarrier && (
+              <Button
+                variant={(companyData as { whiteLabelEnabled?: boolean })?.whiteLabelEnabled ? 'default' : 'outline'}
+                onClick={async () => {
+                  const next = !(companyData as { whiteLabelEnabled?: boolean })?.whiteLabelEnabled;
+                  try {
+                    await api.patch(`/admin/companies/${company.id}/white-label`, { enabled: next });
+                    notify.success(t('detail.whiteLabelToggled'));
+                    wlMutate(`/companies/${params.id}`);
+                  } catch (e) { notify.error(e); }
+                }}
+              >
+                {(companyData as { whiteLabelEnabled?: boolean })?.whiteLabelEnabled ? t('detail.whiteLabelOn') : t('detail.whiteLabelOff')}
+              </Button>
+            )}
             <StatusBadge status={company.kycStatus} />
             <Button variant="outline" onClick={() => router.push('/companies')}>
               <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('detail.back')}

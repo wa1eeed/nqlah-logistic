@@ -44,7 +44,8 @@ with today's behavior as the first registered strategies (no behavior change):
    - Note: the admin settings policy panels are Arabic-hardcoded (missed in the i18n pass) — needs an i18n follow-up.
 7. ✅ Provider-owned clients (sub-tenancy) — `Company.ownerCarrierId`; carrier "My Clients" page (create/list); owned clients forced private to their owner (off-market, owner-only). (PR #55.)
 8. ⏳ Individual-driver portal + unified driver app (consumes stop execution).
-9. ⏳ White-label (provider-branded client area + driver app).
+9. 🟡 White-label — branding **foundation** done: `Company.whiteLabelEnabled` + brand fields; admin enable toggle; carrier Settings → Branding tab. (PR #56.) Remaining: apply the brand to the provider-owned-client experience + the (future) driver app.
+8. ⏳ Driver portal (individual drivers) — NEXT · then the unified **driver app** as the final step.
 
 Tests and an extracted order state-machine are woven into the phases that touch
 transitions (from phase 3), not deferred to a single pass. Payment gateway: a
