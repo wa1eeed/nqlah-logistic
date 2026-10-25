@@ -26,8 +26,6 @@ import { SmsTemplatesPanel } from '@/components/settings/sms-templates-panel';
 import { CompliancePanel } from '@/components/settings/compliance-panel';
 import { NotificationsPanel } from '@/components/settings/notifications-panel';
 import { TruckTypesPanel } from '@/components/settings/truck-types-panel';
-import { ClientPoliciesPanel } from '@/components/settings/client-policies-panel';
-import { CarrierGroupsPanel } from '@/components/settings/carrier-groups-panel';
 import { useBrandsStore } from '@/stores/brands-store';
 import { useCitiesStore } from '@/stores/cities-store';
 import { useCargoTypesStore } from '@/stores/cargo-types-store';
@@ -184,16 +182,7 @@ export default function AdminSettingsPage() {
             <Globe className="h-4 w-4 me-1.5" />
             {t('settings.tabs.general')}
           </TabsTrigger>
-          <TabsTrigger value="policies">
-            <ShieldCheck className="h-4 w-4 me-1.5" />
-            سياسات العملاء
-          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="policies" className="space-y-6">
-          <ClientPoliciesPanel />
-          <CarrierGroupsPanel />
-        </TabsContent>
 
         <TabsContent value="financial">
           <Card>
