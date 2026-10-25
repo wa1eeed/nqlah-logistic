@@ -1,0 +1,43 @@
+{
+  "fallbackName": "Driver",
+  "roleDriver": "Driver",
+  "logout": "Sign Out",
+  "portalSubtitle": "Driver Portal",
+  "login": {
+    "title": "Welcome Back",
+    "subtitle": "Sign in with your phone number to see your jobs"
+  },
+  "jobs": {
+    "title": "My Jobs",
+    "emptyTitle": "No active jobs",
+    "emptyDescription": "Assigned trips will appear here once dispatch adds them.",
+    "stopsCount": "{count, plural, one {# stop} other {# stops}}"
+  },
+  "detail": {
+    "back": "Back to jobs",
+    "notFound": "This job is no longer active or wasn't found.",
+    "pickup": "Pickup"
+  },
+  "location": {
+    "report": "Report my location",
+    "reported": "Location reported",
+    "denied": "Location permission denied",
+    "unsupported": "Location is not available on this device"
+  },
+  "stops": {
+    "title": "Route stops",
+    "empty": "No stops on this route.",
+    "markArrived": "Mark arrived",
+    "markCompleted": "Mark completed",
+    "markedArrived": "Marked as arrived",
+    "markedCompleted": "Stop completed",
+    "type": {
+      "PICKUP": "Pickup",
+      "DELIVERY": "Delivery",
+      "DROPOFF": "Drop-off",
+      "WAREHOUSE": "Warehouse",
+      "RETURN_EMPTY": "Empty return",
+      "EXCHANGE": "Exchange"
+    }
+  }
+}
