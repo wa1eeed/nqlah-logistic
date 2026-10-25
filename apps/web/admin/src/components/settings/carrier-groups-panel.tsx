@@ -25,7 +25,7 @@ type CarrierGroup = { id: string; name: string; description?: string; carrierIds
  */
 export function CarrierGroupsPanel() {
   const { data } = useSWR<CarrierGroup[]>('/policies/carrier-groups', fetcher);
-  const { data: carriersData } = useSWR<Co[]>('/companies?type=CARRIER&status=ACTIVE&limit=200', fetcher);
+  const { data: carriersData } = useSWR<Co[]>('/companies?type=CARRIER&limit=100', fetcher);
   const { mutate } = useSWRConfig();
   const groups: CarrierGroup[] = Array.isArray(data) ? data : [];
   const carriers: Co[] = Array.isArray(carriersData)
