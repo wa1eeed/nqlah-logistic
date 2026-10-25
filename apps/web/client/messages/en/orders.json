@@ -214,6 +214,12 @@
       "payment": "Payment method",
       "prepaidTitle": "Prepaid",
       "prepaidDesc": "The amount is held in Escrow and released after delivery is confirmed.",
+      "escrowTitle": "Escrow",
+      "escrowDesc": "The platform holds the amount and releases it to the carrier after completion.",
+      "walletTitle": "Pay from wallet",
+      "walletDesc": "The amount is deducted from your wallet balance now.",
+      "gatewayTitle": "Pay online",
+      "gatewayDesc": "Pay now by card through the payment gateway.",
       "codTitle": "Cash on delivery",
       "codDesc": "Paid to the carrier directly upon receiving the shipment."
     },

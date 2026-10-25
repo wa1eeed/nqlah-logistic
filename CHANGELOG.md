@@ -6,6 +6,18 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.51 — Client collection-method selector (2026-10-25)
+
+- The new-order wizard's payment step now offers the full **collection method**
+  set — Escrow / Pay from wallet / Pay online / Cash on delivery — gated by the
+  client's live policy (`/policies/mine`: `allowPrepaid` / `allowCOD`; Escrow is
+  always available). The choice is sent as `collectionMethod` and validated
+  server-side (phase 4). Review + summary rows updated; en/ar strings added.
+- Replaces the previous coarse Prepaid/COD toggle.
+- Remaining 6b slice: the multi-stop **route builder** UI (add intermediate
+  stops) — the backend already accepts `stops[]` and synthesizes a 2-stop route
+  when omitted, so basic orders are unaffected. Tracked in `PENDING_WORK.md`.
+
 ### v0.9.50 — Admin control: provider visibility + carrier groups (2026-10-25)
 
 - The admin **client-policies panel** now exposes **provider visibility scope**

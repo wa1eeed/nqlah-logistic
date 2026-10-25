@@ -79,13 +79,22 @@ interface FormState {
   /** MARKET = carriers bid; FIXED = client sets the price. */
   pricingMode: 'MARKET' | 'FIXED';
   fixedPrice: number | null;
-  /** PREPAID = Escrow; COD = cash/transfer on delivery. */
-  paymentMethod: 'PREPAID' | 'COD';
+  /** Collection method — gated by the client's policy (allowPrepaid/allowCOD).
+   *  ESCROW is always available; wallet/gateway need prepaid; COD needs COD. */
+  collectionMethod: 'ESCROW' | 'PREPAID_WALLET' | 'PREPAID_GATEWAY' | 'COD';
   truckType: string;
   requiresInsurance: boolean;
   requiresRefrigeration: boolean;
   specialInstructions: string;
 }
+
+/** Collection method → the `wizard.dispatch.*` title key used to label it. */
+const COLLECTION_TITLE_KEY: Record<FormState['collectionMethod'], string> = {
+  ESCROW: 'escrowTitle',
+  PREPAID_WALLET: 'walletTitle',
+  PREPAID_GATEWAY: 'gatewayTitle',
+  COD: 'codTitle',
+};
 
 const STEPS = [
   { id: 1, labelKey: 'wizard.steps.cargo',        icon: Package },
@@ -164,7 +173,7 @@ export default function NewOrderWizard() {
     targetCarrierId: policy.forcedCarrierId ?? null,
     pricingMode: policy.allowMarketPricing ? 'MARKET' : 'FIXED',
     fixedPrice: null,
-    paymentMethod: policy.allowPrepaid ? 'PREPAID' : 'COD',
+    collectionMethod: 'ESCROW',
     truckType: 'LARGE_FLATBED',
     requiresInsurance: false,
     requiresRefrigeration: false,
@@ -189,8 +198,9 @@ export default function NewOrderWizard() {
       }
       if (s.pricingMode === 'MARKET' && !policy.allowMarketPricing) next.pricingMode = 'FIXED';
       if (s.pricingMode === 'FIXED' && !policy.allowFixedPricing) next.pricingMode = 'MARKET';
-      if (s.paymentMethod === 'PREPAID' && !policy.allowPrepaid) next.paymentMethod = 'COD';
-      if (s.paymentMethod === 'COD' && !policy.allowCOD) next.paymentMethod = 'PREPAID';
+      // ESCROW is always valid; fall back to it if the chosen method is now disallowed.
+      if ((s.collectionMethod === 'PREPAID_WALLET' || s.collectionMethod === 'PREPAID_GATEWAY') && !policy.allowPrepaid) next.collectionMethod = 'ESCROW';
+      if (s.collectionMethod === 'COD' && !policy.allowCOD) next.collectionMethod = 'ESCROW';
       return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -281,9 +291,11 @@ export default function NewOrderWizard() {
         ...(form.destinationPin?.lat != null ? { destinationLat: form.destinationPin.lat } : {}),
         ...(form.destinationPin?.lng != null ? { destinationLng: form.destinationPin.lng } : {}),
         ...(form.specialInstructions ? { specialInstructions: form.specialInstructions } : {}),
-        // Note: pricingMode / paymentMethod are UI-only and not part of the API
-        // schema (FIXED pricing is sent via agreedPriceUpfront below), so they
-        // are intentionally NOT included — the strict API rejects unknown keys.
+        // Collection method is validated server-side against the client's policy.
+        collectionMethod: form.collectionMethod,
+        // Note: pricingMode is UI-only (FIXED pricing is sent via
+        // agreedPriceUpfront below), so it is intentionally NOT included —
+        // the strict API rejects unknown keys.
         // DIRECT-mode only field
         ...(form.mode === 'DIRECT' && form.targetCarrierId
           ? { targetCarrierId: form.targetCarrierId }
@@ -739,19 +751,36 @@ export default function NewOrderWizard() {
               <div className="rounded-lg border p-4 space-y-3">
                 <Label>{t('wizard.dispatch.payment')}</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* ESCROW is always available (platform default). */}
+                  <ChoiceCard
+                    selected={form.collectionMethod === 'ESCROW'}
+                    onClick={() => set('collectionMethod', 'ESCROW')}
+                    icon={<Wallet className="h-6 w-6" />}
+                    title={t('wizard.dispatch.escrowTitle')}
+                    description={t('wizard.dispatch.escrowDesc')}
+                  />
                   {policy.allowPrepaid && (
                     <ChoiceCard
-                      selected={form.paymentMethod === 'PREPAID'}
-                      onClick={() => set('paymentMethod', 'PREPAID')}
+                      selected={form.collectionMethod === 'PREPAID_WALLET'}
+                      onClick={() => set('collectionMethod', 'PREPAID_WALLET')}
                       icon={<Wallet className="h-6 w-6" />}
-                      title={t('wizard.dispatch.prepaidTitle')}
-                      description={t('wizard.dispatch.prepaidDesc')}
+                      title={t('wizard.dispatch.walletTitle')}
+                      description={t('wizard.dispatch.walletDesc')}
+                    />
+                  )}
+                  {policy.allowPrepaid && (
+                    <ChoiceCard
+                      selected={form.collectionMethod === 'PREPAID_GATEWAY'}
+                      onClick={() => set('collectionMethod', 'PREPAID_GATEWAY')}
+                      icon={<Wallet className="h-6 w-6" />}
+                      title={t('wizard.dispatch.gatewayTitle')}
+                      description={t('wizard.dispatch.gatewayDesc')}
                     />
                   )}
                   {policy.allowCOD && (
                     <ChoiceCard
-                      selected={form.paymentMethod === 'COD'}
-                      onClick={() => set('paymentMethod', 'COD')}
+                      selected={form.collectionMethod === 'COD'}
+                      onClick={() => set('collectionMethod', 'COD')}
                       icon={<Banknote className="h-6 w-6" />}
                       title={t('wizard.dispatch.codTitle')}
                       description={t('wizard.dispatch.codDesc')}
@@ -830,7 +859,7 @@ export default function NewOrderWizard() {
                 <Row label={t('wizard.review.pricing')} value={form.pricingMode === 'FIXED'
                   ? `${t('wizard.review.fixedValue')} · ${(form.fixedPrice ?? 0).toLocaleString('en-US')} ${t('wizard.sarUnit')}`
                   : t('wizard.dispatch.marketTitle')} />
-                <Row label={t('wizard.review.payment')} value={form.paymentMethod === 'COD' ? t('wizard.dispatch.codTitle') : t('wizard.review.prepaidValue')} />
+                <Row label={t('wizard.review.payment')} value={t(`wizard.dispatch.${COLLECTION_TITLE_KEY[form.collectionMethod]}`)} />
               </Section>
               <Separator />
               <Section title={t('wizard.review.requirements')}>
@@ -998,9 +1027,9 @@ function OrderSummary({
             : t('wizard.dispatch.marketTitle')}
         />
         <SummaryRow
-          icon={form.paymentMethod === 'COD' ? Banknote : Wallet}
+          icon={form.collectionMethod === 'COD' ? Banknote : Wallet}
           label={t('wizard.summary.payment')}
-          value={form.paymentMethod === 'COD' ? t('wizard.summary.codShort') : t('wizard.summary.prepaidShort')}
+          value={t(`wizard.dispatch.${COLLECTION_TITLE_KEY[form.collectionMethod]}`)}
         />
         <SummaryRow
           icon={Truck}

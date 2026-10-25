@@ -39,7 +39,7 @@ with today's behavior as the first registered strategies (no behavior change):
 5. ✅ Provider groups (`CarrierGroup`) + client→provider **visibility scope** (ALL/GROUP/CARRIER), enforced in market listing, bidding, and direct-target selection; permissive default. (This PR.)
 6. 🟡 Dashboards (in progress):
    - 6a ✅ **Admin control** — provider-visibility scope in the client-policies panel + a carrier-groups panel (`/settings` policies tab). (This PR.)
-   - 6b ⏳ Client — new-order **route builder** (multi-stop) + allowed collection-method selector.
+   - 6b 🟡 Client — **collection-method selector** done (Escrow/Wallet/Gateway/COD, policy-gated, sent as `collectionMethod`). Remaining: the multi-stop **route builder** UI (add intermediate stops); backend already accepts `stops[]`.
    - 6c ⏳ Carrier (+admin) — route **stop execution** view (per-stop status + proof) and COD collect.
    - Note: the admin settings policy panels are Arabic-hardcoded (missed in the i18n pass) — needs an i18n follow-up.
 7. ⏳ Provider-owned clients (sub-tenancy).
