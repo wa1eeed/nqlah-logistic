@@ -1,12 +1,51 @@
 # Pending Work — حالة الربط الحالية
 
-> آخر تحديث: 2026-10-24 (بعد v0.9.29 — Consolidated read-only wired to the API)
+> آخر تحديث: 2026-10-25 (بدء برنامج المنصّة المعيارية — الأساس المالي Decimal)
 >
 > الهدف من هذا الملف: نقطة استئناف واضحة. يلخّص ما تبقّى من الربط/الإصلاحات قبل
 > أن نعتبر النظام جاهزاً لـ release v1.0.
 >
 > **ملاحظة تصميم (v0.9.16):** إعادة التصميم لنظام "Mint" الفاتح مكتملة عبر الصفحة
 > التسويقية (الرئيسية + الداخلية) وكل اللوحات الثلاث. هذه نقاط ربط/بيانات، لا تصميم.
+
+---
+
+## 🧭 Modular platform program (started 2026-10-25)
+
+Naqla is a logistics-market **operating system**: the admin configures the
+workflow (sourcing, pricing, collection, visibility) per client or per group,
+and the same primitives serve platform clients, carriers/providers, their
+drivers, and later provider-owned clients and white-label. The policy backbone
+already exists (`PolicyGroup` + `PoliciesService.effectiveForCompany`) **but is
+not yet enforced** — the program completes, enforces, and extends it rather than
+rebuilding the current order/assignment/escrow flow.
+
+**Architecture:** a policy engine resolves the effective config per company (via
+its group, admin-overridable) and selects a strategy from four module families,
+with today's behavior as the first registered strategies (no behavior change):
+
+| Family | Today → added |
+| --- | --- |
+| Sourcing/Assignment | MARKET (bids) · DIRECT (forced carrier) → provider-visibility scope, provider groups |
+| Pricing | market bids · fixed upfront |
+| Collection | escrow hold/release → + COD · prepaid-wallet · prepaid-gateway · partial |
+| Visibility/Tenancy | platform client → + provider-owned client (sub-tenant) |
+
+**Roadmap (PR per phase, in order; merged on the owner's command):**
+1. ✅ Multi-stop route foundation — `OrderStop`/`StopType` (PR #47, pending merge).
+2. ✅ **Money as exact Decimal** — foundation (this PR); see `docs/adr/0001-money-as-decimal.md`.
+3. ⏳ Policy engine **enforcement** — wire `effectiveForCompany` into order create/publish/assign/bids + payments; permissive defaults = today's behavior.
+4. ⏳ **Collection modules** — COD · prepaid-wallet · prepaid-gateway (abstracted, stubbed provider) · partial, selected by policy, over the existing escrow.
+5. ⏳ Sourcing/visibility customization + provider groups.
+6. ⏳ Dashboards — client route builder + allowed payment choices · admin group/workflow control + route view · carrier stop execution.
+7. ⏳ Provider-owned clients (sub-tenancy).
+8. ⏳ Individual-driver portal + unified driver app (consumes stop execution).
+9. ⏳ White-label (provider-branded client area + driver app).
+
+Tests and an extracted order state-machine are woven into the phases that touch
+transitions (from phase 3), not deferred to a single pass. Payment gateway: a
+clean interface + wallet/COD concrete now; a real provider (Moyasar/Tap/HyperPay)
+integrated once chosen.
 
 ---
 

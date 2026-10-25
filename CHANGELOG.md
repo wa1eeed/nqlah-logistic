@@ -6,6 +6,24 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.46 — Money as exact Decimal (2026-10-25)
+
+- All monetary columns moved from floating-point (`Float`) to exact
+  `Decimal(12,2)` (NUMERIC) in Postgres — `Order`, `Bid`, `Payment`,
+  `Transaction` (wallet ledger), `Invoice`, `FreelancerInvoice`, and the
+  `Company` wallet/credit fields; `Company.commissionRate` is `Decimal(5,4)`.
+  Non-money numerics (weights, volumes, dimensions, coordinates, ratings) stay
+  `Float`. Migration is a plain column-type change; existing values cast over.
+- Server-side money arithmetic (wallet credit/debit, credit/debit notes,
+  bid-accept commission split) now uses exact `Decimal` math via
+  `common/money/money.ts` (`money`, `round2`, `toNum`), ending float drift.
+- **Frontend is unchanged:** a response-layer step (`normalizeDecimals` in the
+  global `ResponseInterceptor`) serializes every `Decimal` back to a plain
+  `number`, so API response shapes — and all dashboard consumers — are
+  identical. See `docs/adr/0001-money-as-decimal.md`.
+- First foundation of the modular platform program (policy engine → payment
+  modules → multi-stop execution → driver app); see `PENDING_WORK.md`.
+
 ### v0.9.45 — Navbar language switcher + RTL-aware mobile sidebar (2026-10-25)
 
 - A professional **language switcher** (globe dropdown, English / العربية with a

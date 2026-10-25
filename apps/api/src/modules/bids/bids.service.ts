@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { money, round2 } from '../../common/money/money';
 import { CreateBidDto, UpdateBidDto } from './dto/bid.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
@@ -93,9 +94,8 @@ export class BidsService {
         data: { status: 'REJECTED' },
       });
       // assign the order
-      const commissionRate = 0.08;
-      const commission = +(bid.amount * commissionRate).toFixed(2);
-      const carrierAmount = +(bid.amount - commission).toFixed(2);
+      const commission = round2(money(bid.amount).mul(0.08));
+      const carrierAmount = round2(money(bid.amount).sub(commission));
       await tx.order.update({
         where: { id: orderId },
         data: {
