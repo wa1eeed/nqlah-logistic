@@ -6,6 +6,24 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.47 — Policy engine enforcement (2026-10-25)
+
+- `PolicyGroup` policies now **govern order creation** (they were stored and
+  admin-editable but never enforced). `OrdersService` resolves the client's
+  effective policy (`PoliciesService.effectiveForCompany`) and applies it:
+  - a group's `forcedCarrierId` pins every order to one provider (forces DIRECT);
+  - `allowMarket` / `allowDirect` gate market posting vs direct assignment;
+  - `allowFixedPricing` / `allowMarketPricing` gate the pricing modes.
+  Enforced at create, re-checked at publish. Clear error codes
+  (`POLICY_MARKET_DISABLED`, `POLICY_DIRECT_DISABLED`, …).
+- **Permissive by default:** the default policy allows everything with no forced
+  carrier, so ungrouped clients are completely unaffected — behavior is
+  unchanged until an admin tightens a group.
+- Payment toggles (`allowPrepaid` / `allowCOD`) are resolved but consumed by the
+  collection modules in the next phase.
+- First unit tests + Jest harness for the API (`jest.config.js`,
+  `orders.policy.spec.ts`): 7 specs covering the policy sourcing matrix.
+
 ### v0.9.46 — Money as exact Decimal (2026-10-25)
 
 - All monetary columns moved from floating-point (`Float`) to exact
