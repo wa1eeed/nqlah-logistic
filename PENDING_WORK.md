@@ -1,6 +1,41 @@
 # Pending Work — حالة الربط الحالية
 
-> آخر تحديث: 2026-10-25 (بدء برنامج المنصّة المعيارية — الأساس المالي Decimal)
+## 🔴 Owner-requested backlog (2026-10-26) — admin policy UX + heterogeneous orders + modules
+
+Tracked verbatim so nothing is dropped. Work top-to-bottom; one PR per coherent item.
+
+1. **Dedicated Policy & Groups page** — isolate policy/group management out of the
+   general Settings tab into its own clear, professional admin page (its own sidebar
+   entry). Elegant, configurable, visually + logically well-organized.
+2. **Fix 500 on carrier-group create** — API verified fine (201); root cause was the
+   `/companies?type=…&limit=200(+status)` → 400 (limit>100 / unsupported `status`),
+   now fetched as `/companies?type=…&limit=100`. (fix PR) Re-verify on staging after
+   redeploy; the dedicated page (item 1) rebuilds this surface cleanly.
+3. **Collection module configured by the ADMIN, not the client** — the admin sets the
+   collection options/default per client (or per group); the client only uses what the
+   admin allows.
+4. **Provider groups + visibility scope — make it discoverable** — a clear place in the
+   admin to control it (part of item 1), not buried.
+5. **Elegant groups UX** — group creation/config/customization visually + logically
+   distinguished; groups shown as elegant, configurable cards.
+6. **Group reflected on the provider** — a provider's detail page shows the group it
+   belongs to; the providers list shows a **group-name tag** per provider.
+7. **360° admin detail pages (provider AND client)** — complete: all their orders +
+   statuses, history, a timeline, the audit log, and the account statement — everything
+   in one place.
+8. **C1 — heterogeneous consolidated orders** — a consolidated order whose legs can each
+   have a **different truck type + destination + price** (per-leg), across client/admin/
+   carrier. (Currently: N trucks on one shared route.)
+9. **C2 — complete the modules** — PARTIAL collection method + **per-group module
+   defaults** (admin sets a group's default pricing/collection/assignment, not just
+   allow/deny toggles).
+
+Standard for all: professional, best-practice, scalable; English deep-docs polish at the end.
+Also found (lower priority): admin **login page i18n** is broken (`auth.login.*` missing).
+
+---
+
+> آخر تحديث: 2026-10-26 (قائمة طلبات المالك: تنظيم سياسات الأدمن + الطلبات غير المتجانسة + الموديولز)
 >
 > الهدف من هذا الملف: نقطة استئناف واضحة. يلخّص ما تبقّى من الربط/الإصلاحات قبل
 > أن نعتبر النظام جاهزاً لـ release v1.0.

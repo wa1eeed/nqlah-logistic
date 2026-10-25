@@ -33,8 +33,8 @@ export function ClientPoliciesPanel() {
   // Live from the API (admin changes are shared server-side with clients); the
   // Zustand store is a fallback for offline/design runs.
   const { data: groupsData, error: groupsError } = useSWR<unknown>('/policies/groups', fetcher);
-  const { data: clientsData } = useSWR<ApiCompany[]>('/companies?type=CLIENT&limit=200', fetcher);
-  const { data: carriersData } = useSWR<ApiCompany[]>('/companies?type=CARRIER&status=ACTIVE&limit=200', fetcher);
+  const { data: clientsData } = useSWR<ApiCompany[]>('/companies?type=CLIENT&limit=100', fetcher);
+  const { data: carriersData } = useSWR<ApiCompany[]>('/companies?type=CARRIER&limit=100', fetcher);
   const { data: carrierGroupsData } = useSWR<{ id: string; name: string }[]>('/policies/carrier-groups', fetcher);
   const carrierGroups = Array.isArray(carrierGroupsData) ? carrierGroupsData : [];
   const { mutate } = useSWRConfig();
