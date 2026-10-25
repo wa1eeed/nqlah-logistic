@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, ArrowRight, BarChart2, Building2, Check, Crown, FileCheck, FileText, FileX,
   Gauge, Mail, MapPin, MinusCircle, MoreVertical, Package, Phone, PlusCircle, Printer,
-  ShieldCheck, Star, Trash2, TrendingUp, Truck, User as UserIcon, Users, Wallet, X,
+  ShieldCheck, SlidersHorizontal, Star, Trash2, TrendingUp, Truck, User as UserIcon, Users, Wallet, X,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -89,6 +89,14 @@ export default function AdminCompanyDetail() {
   const { data: ordersData } = useSWR<unknown>('/admin/orders', fetcher);
 
   const isCarrier = company?.kind === 'CARRIER';
+  // The group this entity belongs to (carrier → CarrierGroup, client → PolicyGroup).
+  const { data: groupsRaw } = useSWR<Array<{ name: string; carrierIds?: string[]; clientIds?: string[] }>>(
+    company ? (isCarrier ? '/policies/carrier-groups' : '/policies/groups') : null, fetcher);
+  const groupName = (() => {
+    const arr = Array.isArray(groupsRaw) ? groupsRaw : [];
+    const g = arr.find((x) => (isCarrier ? x.carrierIds : x.clientIds)?.includes(company?.id ?? ''));
+    return g?.name;
+  })();
   const apiOrders = normalizeOrderList(ordersData);
   const sourceOrders: Order[] = apiOrders.length > 0 ? apiOrders : ORDERS;
   const orders = company
@@ -148,6 +156,11 @@ export default function AdminCompanyDetail() {
               >
                 {(companyData as { whiteLabelEnabled?: boolean })?.whiteLabelEnabled ? t('detail.whiteLabelOn') : t('detail.whiteLabelOff')}
               </Button>
+            )}
+            {groupName && (
+              <Badge variant="secondary" className="inline-flex items-center gap-1">
+                <SlidersHorizontal className="h-3 w-3" />{groupName}
+              </Badge>
             )}
             <StatusBadge status={company.kycStatus} />
             <Button variant="outline" onClick={() => router.push('/companies')}>

@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Building2, Plus, Search, Truck, User as UserIcon, Users, ShieldCheck, Clock } from 'lucide-react';
+import { Building2, Plus, Search, Truck, User as UserIcon, Users, ShieldCheck, Clock, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,18 @@ export function CompaniesList({ kind }: { kind: 'CLIENT' | 'CARRIER' }) {
   }, [data]);
   const list = useMemo(() => all.filter((c) => c.kind === kind), [all, kind]);
   const entityOf = (c: Company) => (c.accountType === 'INDIVIDUAL' ? 'INDIVIDUAL' : 'COMPANY');
+
+  // Group membership: carriers belong to a CarrierGroup (visibility), clients to
+  // a PolicyGroup. Build a company-id → group-name map to tag each row.
+  const { data: groupsData } = useSWR<Array<{ name: string; carrierIds?: string[]; clientIds?: string[] }>>(
+    isCarrier ? '/policies/carrier-groups' : '/policies/groups', fetcher);
+  const groupOf = useMemo(() => {
+    const map = new Map<string, string>();
+    (Array.isArray(groupsData) ? groupsData : []).forEach((g) => {
+      (isCarrier ? g.carrierIds : g.clientIds)?.forEach((id) => map.set(id, g.name));
+    });
+    return (id: string) => map.get(id);
+  }, [groupsData, isCarrier]);
 
   const counts = {
     ALL: list.length,
@@ -112,9 +124,16 @@ export function CompaniesList({ kind }: { kind: 'CLIENT' | 'CARRIER' }) {
                     </div>
                   </div>
                   <div className="mt-2.5 flex items-center justify-between gap-2">
-                    <Badge variant="outline" className="inline-flex items-center gap-1">
-                      {c.accountType === 'INDIVIDUAL' ? <><UserIcon className="h-3 w-3" />{t('list.individual')}</> : <><Building2 className="h-3 w-3" />{t('list.company')}</>}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant="outline" className="inline-flex items-center gap-1">
+                        {c.accountType === 'INDIVIDUAL' ? <><UserIcon className="h-3 w-3" />{t('list.individual')}</> : <><Building2 className="h-3 w-3" />{t('list.company')}</>}
+                      </Badge>
+                      {groupOf(c.id) && (
+                        <Badge variant="secondary" className="inline-flex items-center gap-1">
+                          <SlidersHorizontal className="h-3 w-3" />{groupOf(c.id)}
+                        </Badge>
+                      )}
+                    </div>
                     <span className="text-xs text-muted-foreground">{localizeCity(c.city)}</span>
                   </div>
                   <div className="mt-1.5 num text-xs text-muted-foreground">{formatDate(c.joinedAt)}</div>
@@ -150,9 +169,16 @@ export function CompaniesList({ kind }: { kind: 'CLIENT' | 'CARRIER' }) {
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="inline-flex items-center gap-1 w-fit">
-                          {c.accountType === 'INDIVIDUAL' ? <><UserIcon className="h-3 w-3" />{t('list.individual')}</> : <><Building2 className="h-3 w-3" />{t('list.company')}</>}
-                        </Badge>
+                        <div className="flex flex-col items-start gap-1">
+                          <Badge variant="outline" className="inline-flex items-center gap-1 w-fit">
+                            {c.accountType === 'INDIVIDUAL' ? <><UserIcon className="h-3 w-3" />{t('list.individual')}</> : <><Building2 className="h-3 w-3" />{t('list.company')}</>}
+                          </Badge>
+                          {groupOf(c.id) && (
+                            <Badge variant="secondary" className="inline-flex items-center gap-1 w-fit">
+                              <SlidersHorizontal className="h-3 w-3" />{groupOf(c.id)}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{localizeCity(c.city)}</TableCell>
                       <TableCell><StatusBadge status={c.kycStatus} /></TableCell>

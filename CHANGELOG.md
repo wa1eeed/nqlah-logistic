@@ -6,7 +6,13 @@
 
 ## [Unreleased] — قيد التطوير
 
-### v0.9.62 — Dedicated Policies & Groups admin page (2026-10-26)
+### v0.9.63 — Group tags on companies (2026-10-26)
+
+- The admin **Carriers** and **Clients** lists now show a **group tag** on each
+  company that belongs to one (carriers → their CarrierGroup, clients → their
+  PolicyGroup), in both the table and the mobile cards.
+- The **company detail** page reflects the group it belongs to (a badge in the
+  header). Verified live. (Backlog item 6.)
 
 - Market organization moves out of the general Settings page into its own
   **Policies & Groups** page (`/policies`, with a dedicated sidebar entry) —
