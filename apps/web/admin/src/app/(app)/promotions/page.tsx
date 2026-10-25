@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Copy, Megaphone, Pause, Play, Plus, Tag, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,19 +18,9 @@ import {
 const STATUS_BADGE: Record<PromoStatus, 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
   ACTIVE: 'success', PAUSED: 'warning', EXPIRED: 'outline', DRAFT: 'default',
 };
-const STATUS_LABEL: Record<PromoStatus, string> = {
-  ACTIVE: 'فعّال', PAUSED: 'متوقّف', EXPIRED: 'منته', DRAFT: 'مسودّة',
-};
-const KIND_LABEL: Record<Promotion['kind'], string> = {
-  PERCENTAGE_OFF: 'نسبة خصم',
-  FIXED_AMOUNT: 'مبلغ ثابت',
-  COMMISSION_WAIVER: 'إعفاء عمولة',
-};
-const AUDIENCE_LABEL: Record<Promotion['audience'], string> = {
-  CLIENT: 'العملاء', CARRIER: 'الناقلون', ALL: 'الجميع',
-};
 
 export default function PromotionsPage() {
+  const t = useTranslations('admin');
   const [items] = useState<Promotion[]>(PROMOTIONS);
 
   const active   = items.filter((p) => p.status === 'ACTIVE').length;
@@ -43,21 +34,21 @@ export default function PromotionsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="النظام"
-        title="الترويج والعروض"
-        subtitle="إدارة أكواد الخصم والحملات الترويجية للعملاء والناقلين"
+        eyebrow={t('promotions.eyebrow')}
+        title={t('promotions.title')}
+        subtitle={t('promotions.subtitle')}
         actions={
           <Button>
-            <Plus className="h-4 w-4" /> حملة جديدة
+            <Plus className="h-4 w-4" /> {t('promotions.newCampaign')}
           </Button>
         }
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard label="إجمالي الحملات" value={items.length} icon={Megaphone} index={0} />
-        <StatsCard label="فعّالة" value={active} icon={Play} tone="success" index={1} />
-        <StatsCard label="إجمالي الاستخدامات" value={totalUse} icon={Tag} index={2} />
-        <StatsCard label="مسودّات" value={drafts} icon={Pause} tone="warning" index={3} />
+        <StatsCard label={t('promotions.totalCampaigns')} value={items.length} icon={Megaphone} index={0} />
+        <StatsCard label={t('promotions.active')} value={active} icon={Play} tone="success" index={1} />
+        <StatsCard label={t('promotions.totalUses')} value={totalUse} icon={Tag} index={2} />
+        <StatsCard label={t('promotions.drafts')} value={drafts} icon={Pause} tone="warning" index={3} />
       </div>
 
       <FadeIn delay={0.1}>
@@ -66,14 +57,14 @@ export default function PromotionsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>الكود</TableHead>
-                <TableHead>الوصف</TableHead>
-                <TableHead>الجمهور</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>القيمة</TableHead>
-                <TableHead>الاستخدام</TableHead>
-                <TableHead>السريان</TableHead>
-                <TableHead>الحالة</TableHead>
+                <TableHead>{t('promotions.col.code')}</TableHead>
+                <TableHead>{t('promotions.col.description')}</TableHead>
+                <TableHead>{t('promotions.col.audience')}</TableHead>
+                <TableHead>{t('promotions.col.type')}</TableHead>
+                <TableHead>{t('promotions.col.value')}</TableHead>
+                <TableHead>{t('promotions.col.usage')}</TableHead>
+                <TableHead>{t('promotions.col.validity')}</TableHead>
+                <TableHead>{t('promotions.col.status')}</TableHead>
                 <TableHead className="w-32" />
               </TableRow>
             </TableHeader>
@@ -84,7 +75,7 @@ export default function PromotionsPage() {
                     <button
                       onClick={() => copy(p.code)}
                       className="inline-flex items-center gap-2 font-mono text-sm bg-muted px-2 py-1 rounded hover:bg-muted/60"
-                      title="نسخ"
+                      title={t('promotions.copy')}
                     >
                       {p.code}
                       <Copy className="h-3 w-3 text-muted-foreground" />
@@ -93,12 +84,12 @@ export default function PromotionsPage() {
                   <TableCell className="max-w-[260px]">
                     <div className="text-sm truncate">{p.description}</div>
                   </TableCell>
-                  <TableCell><Badge variant="outline">{AUDIENCE_LABEL[p.audience]}</Badge></TableCell>
-                  <TableCell className="text-xs">{KIND_LABEL[p.kind]}</TableCell>
+                  <TableCell><Badge variant="outline">{t(`promotions.audience.${p.audience}`)}</Badge></TableCell>
+                  <TableCell className="text-xs">{t(`promotions.kind.${p.kind}`)}</TableCell>
                   <TableCell className="num font-medium">
                     {p.kind === 'PERCENTAGE_OFF' ? `${p.value}%` :
-                     p.kind === 'FIXED_AMOUNT'   ? `${p.value} ر.س` :
-                     'إعفاء كامل'}
+                     p.kind === 'FIXED_AMOUNT'   ? t('promotions.fixedAmount', { value: p.value }) :
+                     t('promotions.fullWaiver')}
                   </TableCell>
                   <TableCell>
                     <div className="text-xs">
@@ -116,19 +107,19 @@ export default function PromotionsPage() {
                   <TableCell className="text-xs text-muted-foreground">
                     {formatDate(p.startsAt, 'd MMM')} ← {formatDate(p.endsAt, 'd MMM yyyy')}
                   </TableCell>
-                  <TableCell><Badge variant={STATUS_BADGE[p.status]}>{STATUS_LABEL[p.status]}</Badge></TableCell>
+                  <TableCell><Badge variant={STATUS_BADGE[p.status]}>{t(`promotions.status.${p.status}`)}</Badge></TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       {p.status === 'ACTIVE' ? (
-                        <Button size="sm" variant="ghost" title="إيقاف">
+                        <Button size="sm" variant="ghost" title={t('promotions.pause')}>
                           <Pause className="h-3.5 w-3.5" />
                         </Button>
                       ) : p.status === 'PAUSED' ? (
-                        <Button size="sm" variant="ghost" title="تفعيل">
+                        <Button size="sm" variant="ghost" title={t('promotions.activate')}>
                           <Play className="h-3.5 w-3.5" />
                         </Button>
                       ) : null}
-                      <Button size="sm" variant="ghost" title="حذف" className="text-destructive hover:text-destructive">
+                      <Button size="sm" variant="ghost" title={t('promotions.delete')} className="text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   AlertTriangle, CheckCircle2, Code2, Facebook, FileText, Globe, Image as ImageIcon,
   Save, Search, Tag, Twitter,
@@ -15,6 +16,7 @@ import { PageHeader } from '@/components/page-header';
 import { useLegalStore } from '@/stores/legal-store';
 
 export default function AdminSeoPage() {
+  const t = useTranslations('admin');
   const seo = useLegalStore((s) => s.seo);
   const update = useLegalStore((s) => s.updateSeo);
   const reset = useLegalStore((s) => s.resetSeo);
@@ -28,16 +30,16 @@ export default function AdminSeoPage() {
   return (
     <>
       <PageHeader
-        eyebrow="قانوني و SEO"
-        title="إعدادات SEO وميتا"
-        subtitle="تحكم في كيفية ظهور الموقع في محركات البحث ووسائل التواصل"
+        eyebrow={t('seo.eyebrow')}
+        title={t('seo.title')}
+        subtitle={t('seo.subtitle')}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => {
-              if (confirm('استرجاع كل إعدادات SEO للقيم الافتراضية؟')) reset();
-            }}>استرجاع الافتراضي</Button>
+              if (confirm(t('seo.confirmReset'))) reset();
+            }}>{t('seo.resetDefault')}</Button>
             <Button onClick={handleSave}>
-              {savedAt ? <><CheckCircle2 className="h-4 w-4" /> حُفظ</> : <><Save className="h-4 w-4" /> حفظ</>}
+              {savedAt ? <><CheckCircle2 className="h-4 w-4" /> {t('seo.saved')}</> : <><Save className="h-4 w-4" /> {t('seo.save')}</>}
             </Button>
           </div>
         }
@@ -45,42 +47,42 @@ export default function AdminSeoPage() {
 
       <Tabs defaultValue="general" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="general"><Globe className="h-4 w-4 me-1.5" /> عام</TabsTrigger>
+          <TabsTrigger value="general"><Globe className="h-4 w-4 me-1.5" /> {t('seo.tabs.general')}</TabsTrigger>
           <TabsTrigger value="social"><Twitter className="h-4 w-4 me-1.5" /> Open Graph + Twitter</TabsTrigger>
           <TabsTrigger value="structured"><Code2 className="h-4 w-4 me-1.5" /> Schema/Structured</TabsTrigger>
-          <TabsTrigger value="verification"><CheckCircle2 className="h-4 w-4 me-1.5" /> التحقق والتحليلات</TabsTrigger>
-          <TabsTrigger value="preview"><Search className="h-4 w-4 me-1.5" /> معاينة SERP</TabsTrigger>
+          <TabsTrigger value="verification"><CheckCircle2 className="h-4 w-4 me-1.5" /> {t('seo.tabs.verification')}</TabsTrigger>
+          <TabsTrigger value="preview"><Search className="h-4 w-4 me-1.5" /> {t('seo.tabs.serpPreview')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
           <Card>
             <CardHeader>
-              <CardTitle>الإعدادات الأساسية</CardTitle>
-              <CardDescription>تظهر في عنوان نتيجة البحث والمتصفح</CardDescription>
+              <CardTitle>{t('seo.general.cardTitle')}</CardTitle>
+              <CardDescription>{t('seo.general.cardDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 max-w-3xl">
               <div className="space-y-2">
-                <Label>اسم الموقع</Label>
+                <Label>{t('seo.general.siteName')}</Label>
                 <Input value={seo.siteName} onChange={(e) => update({ siteName: e.target.value })} />
               </div>
 
               <div className="space-y-2">
-                <Label>العنوان الافتراضي</Label>
+                <Label>{t('seo.general.defaultTitle')}</Label>
                 <Input value={seo.defaultTitle} onChange={(e) => update({ defaultTitle: e.target.value })} />
                 <p className="text-xs text-muted-foreground num">
-                  الطول: {seo.defaultTitle.length} حرف
-                  {seo.defaultTitle.length > 60 && <span className="text-warning ms-1 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> مفضّل تحت 60 حرفا</span>}
+                  {t('seo.general.length', { count: seo.defaultTitle.length })}
+                  {seo.defaultTitle.length > 60 && <span className="text-warning ms-1 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {t('seo.general.preferUnder60')}</span>}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>قالب العنوان (Template)</Label>
-                <Input value={seo.titleTemplate} onChange={(e) => update({ titleTemplate: e.target.value })} placeholder="%s | نقلة" />
-                <p className="text-xs text-muted-foreground">استخدم %s لاسم الصفحة</p>
+                <Label>{t('seo.general.titleTemplate')}</Label>
+                <Input value={seo.titleTemplate} onChange={(e) => update({ titleTemplate: e.target.value })} placeholder={t('seo.general.titleTemplatePlaceholder')} />
+                <p className="text-xs text-muted-foreground">{t('seo.general.templateHint')}</p>
               </div>
 
               <div className="space-y-2">
-                <Label>الوصف الافتراضي (Meta Description)</Label>
+                <Label>{t('seo.general.defaultDescription')}</Label>
                 <textarea
                   value={seo.defaultDescription}
                   onChange={(e) => update({ defaultDescription: e.target.value })}
@@ -88,17 +90,17 @@ export default function AdminSeoPage() {
                   className="w-full p-3 rounded-md border bg-background text-sm leading-relaxed"
                 />
                 <p className="text-xs text-muted-foreground num">
-                  الطول: {seo.defaultDescription.length} حرف
-                  {seo.defaultDescription.length > 160 && <span className="text-warning ms-1 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> مفضّل تحت 160 حرفا</span>}
+                  {t('seo.general.length', { count: seo.defaultDescription.length })}
+                  {seo.defaultDescription.length > 160 && <span className="text-warning ms-1 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {t('seo.general.preferUnder160')}</span>}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>الكلمات المفتاحية (مفصولة بفاصلة)</Label>
+                <Label>{t('seo.general.keywords')}</Label>
                 <Input
                   value={seo.defaultKeywords.join(', ')}
                   onChange={(e) => update({ defaultKeywords: e.target.value.split(',').map((k) => k.trim()).filter(Boolean) })}
-                  placeholder="نقل بضائع, شحن, لوجستيات"
+                  placeholder={t('seo.general.keywordsPlaceholder')}
                 />
                 <div className="flex flex-wrap gap-1 pt-1">
                   {seo.defaultKeywords.map((k) => <Badge key={k} variant="outline" className="text-xs">{k}</Badge>)}
@@ -107,20 +109,20 @@ export default function AdminSeoPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>الرابط الكنسي (Canonical)</Label>
+                  <Label>{t('seo.general.canonical')}</Label>
                   <Input dir="ltr" value={seo.canonicalUrl} onChange={(e) => update({ canonicalUrl: e.target.value })} placeholder="https://naqla.sa" />
                 </div>
                 <div className="space-y-2">
-                  <Label>اللغة والمنطقة (Locale)</Label>
+                  <Label>{t('seo.general.locale')}</Label>
                   <Input dir="ltr" value={seo.locale} onChange={(e) => update({ locale: e.target.value })} placeholder="ar_SA" />
                 </div>
               </div>
 
               <div className="space-y-3 pt-3 border-t">
-                <Label>تعليمات robots.txt</Label>
+                <Label>{t('seo.general.robotsHeading')}</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <ToggleRow label="السماح بالأرشفة (index)" desc="إذا أوقفته لن يظهر الموقع في محركات البحث" checked={seo.robotsIndex} onChange={(v) => update({ robotsIndex: v })} />
-                  <ToggleRow label="السماح بتتبع الروابط (follow)" desc="السماح بزحف الروابط الداخلية والخارجية" checked={seo.robotsFollow} onChange={(v) => update({ robotsFollow: v })} />
+                  <ToggleRow label={t('seo.general.allowIndex')} desc={t('seo.general.allowIndexDesc')} checked={seo.robotsIndex} onChange={(v) => update({ robotsIndex: v })} />
+                  <ToggleRow label={t('seo.general.allowFollow')} desc={t('seo.general.allowFollowDesc')} checked={seo.robotsFollow} onChange={(v) => update({ robotsFollow: v })} />
                 </div>
                 <div className="rounded-md bg-muted/40 p-3 text-xs font-mono" dir="ltr">
                   &lt;meta name="robots" content="{seo.robotsIndex ? 'index' : 'noindex'}, {seo.robotsFollow ? 'follow' : 'nofollow'}" /&gt;
@@ -134,13 +136,13 @@ export default function AdminSeoPage() {
           <Card>
             <CardHeader>
               <CardTitle>Open Graph + Twitter Cards</CardTitle>
-              <CardDescription>تتحكم في كيفية ظهور الموقع عند المشاركة على فيسبوك، تويتر، واتساب</CardDescription>
+              <CardDescription>{t('seo.social.cardDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 max-w-3xl">
               <div className="space-y-2">
-                <Label className="flex items-center gap-1"><ImageIcon className="h-3.5 w-3.5" /> صورة المشاركة (Open Graph Image)</Label>
+                <Label className="flex items-center gap-1"><ImageIcon className="h-3.5 w-3.5" /> {t('seo.social.ogImage')}</Label>
                 <Input dir="ltr" value={seo.ogImage} onChange={(e) => update({ ogImage: e.target.value })} placeholder="https://naqla.sa/og-image.png" />
-                <p className="text-xs text-muted-foreground">المقاس الموصى به: 1200×630 بكسل</p>
+                <p className="text-xs text-muted-foreground">{t('seo.social.ogImageHint')}</p>
               </div>
 
               <div className="space-y-2">
@@ -158,13 +160,13 @@ export default function AdminSeoPage() {
 
               {/* OG preview */}
               <div className="pt-3 border-t">
-                <Label className="mb-2 block">معاينة بطاقة OG</Label>
+                <Label className="mb-2 block">{t('seo.social.ogCardPreview')}</Label>
                 <div className="max-w-md rounded-lg border overflow-hidden bg-card">
                   <div className="aspect-[1200/630] bg-muted grid place-items-center text-muted-foreground text-xs">
                     {seo.ogImage ? (
                       <img src={seo.ogImage} alt="OG" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     ) : (
-                      'صورة OG غير محددة'
+                      t('seo.social.ogImageNotSet')
                     )}
                   </div>
                   <div className="p-3 text-xs space-y-1" dir="ltr">
@@ -182,30 +184,30 @@ export default function AdminSeoPage() {
           <Card>
             <CardHeader>
               <CardTitle>JSON-LD / Structured Data</CardTitle>
-              <CardDescription>بيانات الشركة المنظّمة لـ Google Knowledge Graph</CardDescription>
+              <CardDescription>{t('seo.structured.cardDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 max-w-3xl">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>اسم المنظمة</Label>
+                  <Label>{t('seo.structured.orgName')}</Label>
                   <Input value={seo.organizationName} onChange={(e) => update({ organizationName: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>شعار المنظمة (URL)</Label>
+                  <Label>{t('seo.structured.orgLogo')}</Label>
                   <Input dir="ltr" value={seo.organizationLogo} onChange={(e) => update({ organizationLogo: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>الهاتف</Label>
+                  <Label>{t('seo.structured.phone')}</Label>
                   <Input dir="ltr" value={seo.organizationPhone} onChange={(e) => update({ organizationPhone: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>البريد</Label>
+                  <Label>{t('seo.structured.email')}</Label>
                   <Input dir="ltr" value={seo.organizationEmail} onChange={(e) => update({ organizationEmail: e.target.value })} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>معاينة JSON-LD</Label>
+                <Label>{t('seo.structured.jsonLdPreview')}</Label>
                 <pre className="rounded-md bg-muted/40 p-3 text-xs font-mono overflow-x-auto" dir="ltr">{JSON.stringify({
                   "@context": "https://schema.org",
                   "@type": "Organization",
@@ -228,26 +230,26 @@ export default function AdminSeoPage() {
         <TabsContent value="verification">
           <Card>
             <CardHeader>
-              <CardTitle>التحقّق والتحليلات</CardTitle>
-              <CardDescription>رموز التحقق من ملكية الموقع ومعرفات أدوات التحليل</CardDescription>
+              <CardTitle>{t('seo.verification.cardTitle')}</CardTitle>
+              <CardDescription>{t('seo.verification.cardDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 max-w-3xl">
               <div className="space-y-2">
-                <Label>Google Search Console · رمز التحقق</Label>
+                <Label>{t('seo.verification.googleSearchConsole')}</Label>
                 <Input dir="ltr" value={seo.googleSiteVerification} onChange={(e) => update({ googleSiteVerification: e.target.value })} placeholder="google-site-verification=..." />
               </div>
               <div className="space-y-2">
-                <Label>Bing Webmaster · رمز التحقق</Label>
+                <Label>{t('seo.verification.bingWebmaster')}</Label>
                 <Input dir="ltr" value={seo.bingSiteVerification} onChange={(e) => update({ bingSiteVerification: e.target.value })} placeholder="msvalidate.01=..." />
               </div>
 
               <div className="pt-3 border-t space-y-4">
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-1"><Search className="h-3.5 w-3.5" /> Google Analytics (G-XXXX)</Label>
+                  <Label className="flex items-center gap-1"><Search className="h-3.5 w-3.5" /> {t('seo.verification.googleAnalytics')}</Label>
                   <Input dir="ltr" value={seo.googleAnalyticsId} onChange={(e) => update({ googleAnalyticsId: e.target.value })} placeholder="G-XXXXXXXXXX" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-1"><Facebook className="h-3.5 w-3.5" /> Meta Pixel ID</Label>
+                  <Label className="flex items-center gap-1"><Facebook className="h-3.5 w-3.5" /> {t('seo.verification.metaPixel')}</Label>
                   <Input dir="ltr" value={seo.facebookPixelId} onChange={(e) => update({ facebookPixelId: e.target.value })} placeholder="1234567890" />
                 </div>
               </div>
@@ -258,8 +260,8 @@ export default function AdminSeoPage() {
         <TabsContent value="preview">
           <Card>
             <CardHeader>
-              <CardTitle>كيف يظهر الموقع في Google</CardTitle>
-              <CardDescription>تقريبي، قد يختلف حسب جهاز البحث وكلمات البحث</CardDescription>
+              <CardTitle>{t('seo.serp.cardTitle')}</CardTitle>
+              <CardDescription>{t('seo.serp.cardDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="max-w-2xl rounded-lg border p-4 bg-card font-sans" dir="ltr">
@@ -276,10 +278,10 @@ export default function AdminSeoPage() {
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4 text-xs">
-                <ScoreCard label="طول العنوان" value={seo.defaultTitle.length} max={60} />
-                <ScoreCard label="طول الوصف" value={seo.defaultDescription.length} max={160} />
-                <ScoreCard label="كلمات مفتاحية" value={seo.defaultKeywords.length} max={10} ideal={6} />
-                <ScoreCard label="OG محدّد" value={seo.ogImage ? 1 : 0} max={1} ideal={1} />
+                <ScoreCard label={t('seo.serp.titleLength')} value={seo.defaultTitle.length} max={60} />
+                <ScoreCard label={t('seo.serp.descLength')} value={seo.defaultDescription.length} max={160} />
+                <ScoreCard label={t('seo.serp.keywords')} value={seo.defaultKeywords.length} max={10} ideal={6} />
+                <ScoreCard label={t('seo.serp.ogSet')} value={seo.ogImage ? 1 : 0} max={1} ideal={1} />
               </div>
             </CardContent>
           </Card>

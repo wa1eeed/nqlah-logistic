@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { Filter, Phone, Search, Users } from 'lucide-react';
@@ -38,6 +39,7 @@ type ApiDriver = {
 };
 
 export default function AdminDriversPage() {
+  const t = useTranslations('fleet');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string>('ALL');
 
@@ -66,16 +68,16 @@ export default function AdminDriversPage() {
   return (
     <>
       <PageHeader
-        eyebrow="الأسطول"
-        title="كل السائقين في المنصة"
-        subtitle="قائمة موحّدة للسائقين عبر جميع شركات النقل"
+        eyebrow={t('title')}
+        title={t('adminDrivers.title')}
+        subtitle={t('adminDrivers.subtitle')}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard label="إجمالي السائقين" value={total}   icon={Users} index={0} />
-        <StatsCard label="في رحلة"          value={onTrip}  icon={Users} tone="warning" index={1} />
-        <StatsCard label="متاحون"            value={available} icon={UserCheck} tone="success" index={2} />
-        <StatsCard label="خارج الخدمة"       value={offDuty} icon={UserMinus} index={3} />
+        <StatsCard label={t('adminDrivers.stats.total')} value={total}   icon={Users} index={0} />
+        <StatsCard label={t('adminDrivers.stats.onTrip')}          value={onTrip}  icon={Users} tone="warning" index={1} />
+        <StatsCard label={t('adminDrivers.stats.available')}            value={available} icon={UserCheck} tone="success" index={2} />
+        <StatsCard label={t('adminDrivers.stats.offDuty')}       value={offDuty} icon={UserMinus} index={3} />
       </div>
 
       <FadeIn delay={0.1}>
@@ -87,17 +89,17 @@ export default function AdminDriversPage() {
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="ابحث باسم، هوية، جوال، أو ناقل..."
+                placeholder={t('adminDrivers.searchPlaceholder')}
                 className="pe-10"
               />
             </div>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">كل الحالات</SelectItem>
-                <SelectItem value="AVAILABLE">متاح</SelectItem>
-                <SelectItem value="ON_TRIP">في رحلة</SelectItem>
-                <SelectItem value="OFF_DUTY">خارج الخدمة</SelectItem>
+                <SelectItem value="ALL">{t('adminDrivers.allStatuses')}</SelectItem>
+                <SelectItem value="AVAILABLE">{t('driverStatus.available')}</SelectItem>
+                <SelectItem value="ON_TRIP">{t('driverStatus.onTrip')}</SelectItem>
+                <SelectItem value="OFF_DUTY">{t('driverStatus.offDuty')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -105,15 +107,15 @@ export default function AdminDriversPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>السائق</TableHead>
-                <TableHead>الناقل</TableHead>
-                <TableHead>هوية</TableHead>
-                <TableHead>فئة الرخصة</TableHead>
-                <TableHead>صلاحية الرخصة</TableHead>
-                <TableHead>الرحلات</TableHead>
-                <TableHead>الجوال</TableHead>
-                <TableHead>الطلب الحالي</TableHead>
-                <TableHead>الحالة</TableHead>
+                <TableHead>{t('adminDrivers.table.driver')}</TableHead>
+                <TableHead>{t('adminDrivers.table.carrier')}</TableHead>
+                <TableHead>{t('adminDrivers.table.id')}</TableHead>
+                <TableHead>{t('adminDrivers.table.licenseClass')}</TableHead>
+                <TableHead>{t('adminDrivers.table.licenseExpiry')}</TableHead>
+                <TableHead>{t('adminDrivers.table.trips')}</TableHead>
+                <TableHead>{t('adminDrivers.table.phone')}</TableHead>
+                <TableHead>{t('adminDrivers.table.currentOrder')}</TableHead>
+                <TableHead>{t('adminDrivers.table.status')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -121,7 +123,7 @@ export default function AdminDriversPage() {
                 <TableRow>
                   <TableCell colSpan={9} className="text-center text-muted-foreground py-10">
                     <Filter className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                    لا توجد نتائج
+                    {t('adminDrivers.noResults')}
                   </TableCell>
                 </TableRow>
               ) : (

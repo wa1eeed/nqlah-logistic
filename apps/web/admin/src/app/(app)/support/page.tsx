@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Clock, Filter, Inbox, LifeBuoy, MessageSquare, Search,
 } from 'lucide-react';
@@ -19,18 +20,6 @@ import {
   type SupportTicket, type TicketStatus, type TicketPriority, type TicketCategory,
 } from '@naqla/shared-utils';
 
-const STATUS_LABELS: Record<TicketStatus, string> = {
-  OPEN: 'مفتوحة', IN_PROGRESS: 'قيد المعالجة', WAITING_USER: 'بانتظار العميل',
-  RESOLVED: 'محلولة', CLOSED: 'مغلقة',
-};
-const PRIORITY_LABELS: Record<TicketPriority, string> = {
-  LOW: 'منخفضة', MEDIUM: 'متوسطة', HIGH: 'عالية', URGENT: 'عاجلة',
-};
-const CATEGORY_LABELS: Record<TicketCategory, string> = {
-  ACCOUNT: 'حساب', BILLING: 'فواتير', ORDER: 'طلب',
-  TECHNICAL: 'تقني', KYC: 'KYC', DRIVER: 'سائق', OTHER: 'أخرى',
-};
-
 const STATUS_BADGE: Record<TicketStatus, 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
   OPEN: 'warning', IN_PROGRESS: 'default', WAITING_USER: 'outline',
   RESOLVED: 'success', CLOSED: 'outline',
@@ -40,6 +29,7 @@ const PRIORITY_BADGE: Record<TicketPriority, 'default' | 'success' | 'warning' |
 };
 
 export default function AdminSupportPage() {
+  const t = useTranslations('admin');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string>('ALL');
   const [priority, setPriority] = useState<string>('ALL');
@@ -65,16 +55,16 @@ export default function AdminSupportPage() {
   return (
     <>
       <PageHeader
-        eyebrow="النظام"
-        title="الدعم الفني"
-        subtitle="تذاكر الدعم الواردة من العملاء والناقلين"
+        eyebrow={t('supportAdmin.eyebrow')}
+        title={t('supportAdmin.title')}
+        subtitle={t('supportAdmin.subtitle')}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard label="إجمالي التذاكر" value={total} icon={LifeBuoy} index={0} />
-        <StatsCard label="مفتوحة"          value={open} icon={Inbox} tone="warning" index={1} />
-        <StatsCard label="قيد المعالجة"   value={inProgress} icon={MessageSquare} index={2} />
-        <StatsCard label="عاجلة"            value={urgent} icon={Clock} tone={urgent > 0 ? 'danger' : 'success'} index={3} />
+        <StatsCard label={t('supportAdmin.totalTickets')} value={total} icon={LifeBuoy} index={0} />
+        <StatsCard label={t('supportAdmin.open')}          value={open} icon={Inbox} tone="warning" index={1} />
+        <StatsCard label={t('supportAdmin.inProgress')}   value={inProgress} icon={MessageSquare} index={2} />
+        <StatsCard label={t('supportAdmin.urgent')}            value={urgent} icon={Clock} tone={urgent > 0 ? 'danger' : 'success'} index={3} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
@@ -83,23 +73,23 @@ export default function AdminSupportPage() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث في التذاكر..." className="pe-10" />
+                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('supportAdmin.searchPlaceholder')} className="pe-10" />
               </div>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">كل الحالات</SelectItem>
-                  {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  <SelectItem value="ALL">{t('supportAdmin.allStatuses')}</SelectItem>
+                  {Object.keys(STATUS_BADGE).map((k) => (
+                    <SelectItem key={k} value={k}>{t(`supportAdmin.status.${k}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={priority} onValueChange={setPriority}>
                 <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">كل الأولويات</SelectItem>
-                  {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  <SelectItem value="ALL">{t('supportAdmin.allPriorities')}</SelectItem>
+                  {Object.keys(PRIORITY_BADGE).map((k) => (
+                    <SelectItem key={k} value={k}>{t(`supportAdmin.priority.${k}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -108,13 +98,13 @@ export default function AdminSupportPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الموضوع</TableHead>
-                  <TableHead>المُرسِل</TableHead>
-                  <TableHead>الفئة</TableHead>
-                  <TableHead>الأولوية</TableHead>
-                  <TableHead>المسؤول</TableHead>
-                  <TableHead>آخر تحديث</TableHead>
-                  <TableHead>الحالة</TableHead>
+                  <TableHead>{t('supportAdmin.col.subject')}</TableHead>
+                  <TableHead>{t('supportAdmin.col.sender')}</TableHead>
+                  <TableHead>{t('supportAdmin.col.category')}</TableHead>
+                  <TableHead>{t('supportAdmin.col.priority')}</TableHead>
+                  <TableHead>{t('supportAdmin.col.assignee')}</TableHead>
+                  <TableHead>{t('supportAdmin.col.lastUpdate')}</TableHead>
+                  <TableHead>{t('supportAdmin.col.status')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -122,33 +112,33 @@ export default function AdminSupportPage() {
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
                       <Filter className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                      لا توجد تذاكر مطابقة
+                      {t('supportAdmin.noMatching')}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((t) => {
-                    const c = companyById(t.raisedById);
+                  filtered.map((ticket) => {
+                    const c = companyById(ticket.raisedById);
                     return (
                       <TableRow
-                        key={t.id}
-                        className={`cursor-pointer ${selected?.id === t.id ? 'bg-primary/5' : ''}`}
-                        onClick={() => setSelected(t)}
+                        key={ticket.id}
+                        className={`cursor-pointer ${selected?.id === ticket.id ? 'bg-primary/5' : ''}`}
+                        onClick={() => setSelected(ticket)}
                       >
                         <TableCell>
-                          <div className="font-medium truncate max-w-[280px]">{t.subject}</div>
-                          <div className="text-xs text-muted-foreground font-mono">{t.id} · {t.messageCount} رسالة</div>
+                          <div className="font-medium truncate max-w-[280px]">{ticket.subject}</div>
+                          <div className="text-xs text-muted-foreground font-mono">{ticket.id} · {t('supportAdmin.messagesCount', { count: ticket.messageCount })}</div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm truncate max-w-[140px]">{c?.nameAr ?? '—'}</div>
-                          <div className="text-xs text-muted-foreground">{t.raisedBy === 'CLIENT' ? 'عميل' : 'ناقل'}</div>
+                          <div className="text-xs text-muted-foreground">{ticket.raisedBy === 'CLIENT' ? t('supportAdmin.senderClient') : t('supportAdmin.senderCarrier')}</div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{CATEGORY_LABELS[t.category]}</Badge>
+                          <Badge variant="outline">{t(`supportAdmin.category.${ticket.category}`)}</Badge>
                         </TableCell>
-                        <TableCell><Badge variant={PRIORITY_BADGE[t.priority]}>{PRIORITY_LABELS[t.priority]}</Badge></TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{t.assignedTo ?? 'غير معيّن'}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{formatRelative(t.updatedAt)}</TableCell>
-                        <TableCell><Badge variant={STATUS_BADGE[t.status]}>{STATUS_LABELS[t.status]}</Badge></TableCell>
+                        <TableCell><Badge variant={PRIORITY_BADGE[ticket.priority]}>{t(`supportAdmin.priority.${ticket.priority}`)}</Badge></TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{ticket.assignedTo ?? t('supportAdmin.unassigned')}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{formatRelative(ticket.updatedAt)}</TableCell>
+                        <TableCell><Badge variant={STATUS_BADGE[ticket.status]}>{t(`supportAdmin.status.${ticket.status}`)}</Badge></TableCell>
                       </TableRow>
                     );
                   })
@@ -166,7 +156,7 @@ export default function AdminSupportPage() {
             <Card>
               <CardContent className="py-16 text-center text-sm text-muted-foreground">
                 <Inbox className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                اختر تذكرة لعرض تفاصيلها
+                {t('supportAdmin.selectTicket')}
               </CardContent>
             </Card>
           )}
@@ -177,6 +167,7 @@ export default function AdminSupportPage() {
 }
 
 function TicketDetail({ ticket, onClose }: { ticket: SupportTicket; onClose: () => void }) {
+  const t = useTranslations('admin');
   const company = companyById(ticket.raisedById);
   return (
     <Card>
@@ -184,49 +175,49 @@ function TicketDetail({ ticket, onClose }: { ticket: SupportTicket; onClose: () 
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <Badge variant={PRIORITY_BADGE[ticket.priority]}>{PRIORITY_LABELS[ticket.priority]}</Badge>
-              <Badge variant={STATUS_BADGE[ticket.status]}>{STATUS_LABELS[ticket.status]}</Badge>
+              <Badge variant={PRIORITY_BADGE[ticket.priority]}>{t(`supportAdmin.priority.${ticket.priority}`)}</Badge>
+              <Badge variant={STATUS_BADGE[ticket.status]}>{t(`supportAdmin.status.${ticket.status}`)}</Badge>
             </div>
             <h3 className="font-semibold">{ticket.subject}</h3>
             <div className="text-xs text-muted-foreground font-mono mt-0.5">{ticket.id}</div>
           </div>
-          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="إغلاق">×</button>
+          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label={t('supportAdmin.close')}>×</button>
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-xs pt-2 border-t">
           <div>
-            <div className="text-muted-foreground mb-0.5">المُرسِل</div>
+            <div className="text-muted-foreground mb-0.5">{t('supportAdmin.detail.sender')}</div>
             <div className="font-medium">{company?.nameAr ?? '—'}</div>
           </div>
           <div>
-            <div className="text-muted-foreground mb-0.5">المسؤول</div>
-            <div className="font-medium">{ticket.assignedTo ?? 'غير معيّن'}</div>
+            <div className="text-muted-foreground mb-0.5">{t('supportAdmin.detail.assignee')}</div>
+            <div className="font-medium">{ticket.assignedTo ?? t('supportAdmin.unassigned')}</div>
           </div>
           <div>
-            <div className="text-muted-foreground mb-0.5">الفئة</div>
-            <div className="font-medium">{CATEGORY_LABELS[ticket.category]}</div>
+            <div className="text-muted-foreground mb-0.5">{t('supportAdmin.detail.category')}</div>
+            <div className="font-medium">{t(`supportAdmin.category.${ticket.category}`)}</div>
           </div>
           {ticket.orderId && (
             <div>
-              <div className="text-muted-foreground mb-0.5">الطلب المرتبط</div>
+              <div className="text-muted-foreground mb-0.5">{t('supportAdmin.linkedOrder')}</div>
               <div className="font-mono font-medium text-primary">{ticket.orderId}</div>
             </div>
           )}
         </div>
 
         <div className="pt-2 border-t">
-          <div className="text-xs text-muted-foreground mb-1">الوصف</div>
+          <div className="text-xs text-muted-foreground mb-1">{t('supportAdmin.detail.description')}</div>
           <p className="text-sm leading-relaxed">{ticket.description}</p>
         </div>
 
         <div className="rounded-md bg-muted/30 p-3 text-xs space-y-1">
-          <div className="font-semibold">سجل المحادثة ({ticket.messageCount} رسائل)</div>
-          <p className="text-muted-foreground">عرض المحادثة سيظهر في الواجهة الكاملة للتذكرة.</p>
+          <div className="font-semibold">{t('supportAdmin.conversationLog', { count: ticket.messageCount })}</div>
+          <p className="text-muted-foreground">{t('supportAdmin.conversationHint')}</p>
         </div>
 
         <div className="flex items-center gap-2 pt-2 border-t">
-          <button type="button" className="flex-1 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium">رد على التذكرة</button>
-          <button type="button" className="h-9 px-3 rounded-md border text-sm">إغلاق</button>
+          <button type="button" className="flex-1 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium">{t('supportAdmin.replyToTicket')}</button>
+          <button type="button" className="h-9 px-3 rounded-md border text-sm">{t('supportAdmin.close')}</button>
         </div>
       </CardContent>
     </Card>

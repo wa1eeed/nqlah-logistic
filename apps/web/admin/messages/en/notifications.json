@@ -1,5 +1,13 @@
 {
  "title": "Notifications",
+ "eyebrow": "System",
+ "centerTitle": "Notification Center",
+ "unreadCount": "{count} unread notifications",
+ "viewAll": "View all notifications",
+ "selectAllRead": "Mark all as read",
+ "updateFailed": "Failed to update notification",
+ "allMarkedRead": "All notifications marked as read",
+ "operationFailed": "Operation failed",
  "all": "All",
  "unread": "Unread",
  "markAllRead": "Mark all as read",

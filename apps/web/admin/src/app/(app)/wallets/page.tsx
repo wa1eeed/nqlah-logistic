@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { ArrowLeft, Search, Wallet, Lock } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -18,6 +19,7 @@ import { Currency } from '@/components/currency';
 import { COMPANIES, WALLETS, companyById, formatRelative } from '@naqla/shared-utils';
 
 export default function AdminWalletsPage() {
+  const t = useTranslations('payments');
   const [kind, setKind] = useState<'ALL' | 'CLIENT' | 'CARRIER'>('ALL');
   const [search, setSearch] = useState('');
 
@@ -41,24 +43,24 @@ export default function AdminWalletsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="المالية"
-        title="محافظ الشركات"
-        subtitle="إجمالي الأرصدة والمبالغ المحجوزة عبر محافظ المنصة"
+        eyebrow={t('wallets.eyebrow')}
+        title={t('wallets.title')}
+        subtitle={t('wallets.subtitle')}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <StatsCard
-          label="إجمالي الأرصدة الفعّالة"
+          label={t('wallets.totalActiveBalances')}
           value={<Currency amount={totalBalance} />}
-          hint={`عبر ${WALLETS.length} محفظة`}
+          hint={t('wallets.acrossWallets', { count: WALLETS.length })}
           icon={Wallet}
           tone="default"
           index={0}
         />
         <StatsCard
-          label="محجوز في Escrow"
+          label={t('wallets.heldInEscrow')}
           value={<Currency amount={totalEscrow} />}
-          hint="بانتظار التسليم والإفراج"
+          hint={t('wallets.awaitingRelease')}
           icon={Lock}
           tone="warning"
           index={1}
@@ -68,14 +70,14 @@ export default function AdminWalletsPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <Tabs value={kind} onValueChange={(v) => setKind(v as any)}>
           <TabsList>
-            <TabsTrigger value="ALL">الكل ({WALLETS.length})</TabsTrigger>
-            <TabsTrigger value="CLIENT">العملاء ({WALLETS.filter((w) => companyById(w.companyId)?.kind === 'CLIENT').length})</TabsTrigger>
-            <TabsTrigger value="CARRIER">الناقلون ({WALLETS.filter((w) => companyById(w.companyId)?.kind === 'CARRIER').length})</TabsTrigger>
+            <TabsTrigger value="ALL">{t('wallets.tabAll', { count: WALLETS.length })}</TabsTrigger>
+            <TabsTrigger value="CLIENT">{t('wallets.tabClients', { count: WALLETS.filter((w) => companyById(w.companyId)?.kind === 'CLIENT').length })}</TabsTrigger>
+            <TabsTrigger value="CARRIER">{t('wallets.tabCarriers', { count: WALLETS.filter((w) => companyById(w.companyId)?.kind === 'CARRIER').length })}</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="relative w-full md:w-80">
           <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="ابحث باسم الشركة أو السجل..." value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9" />
+          <Input placeholder={t('wallets.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9" />
         </div>
       </div>
 
@@ -85,11 +87,11 @@ export default function AdminWalletsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>الشركة</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead className="text-end">الرصيد المتاح</TableHead>
-                <TableHead className="text-end">محجوز Escrow</TableHead>
-                <TableHead>آخر تحديث</TableHead>
+                <TableHead>{t('wallets.colCompany')}</TableHead>
+                <TableHead>{t('wallets.colType')}</TableHead>
+                <TableHead className="text-end">{t('wallets.colAvailableBalance')}</TableHead>
+                <TableHead className="text-end">{t('wallets.colEscrowHeld')}</TableHead>
+                <TableHead>{t('wallets.colLastUpdate')}</TableHead>
                 <TableHead className="text-end"></TableHead>
               </TableRow>
             </TableHeader>
@@ -109,7 +111,7 @@ export default function AdminWalletsPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant={company.kind === 'CLIENT' ? 'default' : 'success'}>
-                      {company.kind === 'CLIENT' ? 'عميل' : 'ناقل'}
+                      {company.kind === 'CLIENT' ? t('wallets.client') : t('wallets.carrier')}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-end"><Currency amount={wallet.balance} /></TableCell>
@@ -120,7 +122,7 @@ export default function AdminWalletsPage() {
                   <TableCell className="text-end">
                     <Link href={`/wallets/${company.id}`}>
                       <Button variant="ghost" size="sm">
-                        إدارة المحفظة
+                        {t('wallets.manageWallet')}
                         <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
                       </Button>
                     </Link>

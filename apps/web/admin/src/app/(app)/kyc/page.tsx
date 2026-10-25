@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
 import {
@@ -19,14 +20,15 @@ import { notify } from '@/lib/notify';
 import { COMPANIES, formatRelative, pendingKycCompanies, type Company } from '@naqla/shared-utils';
 
 const REQUIRED_DOCS = [
-  'السجل التجاري',
-  'شهادة الزكاة والدخل',
-  'شهادة الضريبة (VAT)',
-  'بوليصة التأمين',
-  'رخصة نقل البضائع',
+  'commercialRegister',
+  'zakatCertificate',
+  'vatCertificate',
+  'insurancePolicy',
+  'freightLicense',
 ];
 
 export default function KycQueuePage() {
+  const t = useTranslations('compliance');
   // Live company list from admin endpoint. Falls back to mock COMPANIES when
   // the API isn't reachable so the page never goes blank.
   type ApiCompany = Company & { status?: string };
@@ -56,10 +58,10 @@ export default function KycQueuePage() {
     try {
       await api.put(`/admin/companies/${reviewing.id}/status`, { status: 'ACTIVE' });
       await mutate();
-      notify.success('تم الاعتماد', `${reviewing.nameAr} أصبحت نشطة`);
+      notify.success(t('kyc.toast.approvedTitle'), t('kyc.toast.approvedBody', { name: reviewing.nameAr }));
       setReviewing(null);
     } catch (err) {
-      notify.error(err, 'فشل اعتماد الشركة');
+      notify.error(err, t('kyc.toast.approveError'));
     } finally {
       setSubmitting(false);
     }
@@ -74,16 +76,16 @@ export default function KycQueuePage() {
       await api.put(`/admin/companies/${reviewing.id}/status`, { status: 'REJECTED' });
       await mutate();
       notify.success(
-        'تم الرفض',
+        t('kyc.toast.rejectedTitle'),
         rejectReason
-          ? `${reviewing.nameAr}، السبب: ${rejectReason}`
-          : `${reviewing.nameAr} تم رفضها`,
+          ? t('kyc.toast.rejectedBodyWithReason', { name: reviewing.nameAr, reason: rejectReason })
+          : t('kyc.toast.rejectedBody', { name: reviewing.nameAr }),
       );
       setRejectOpen(false);
       setReviewing(null);
       setRejectReason('');
     } catch (err) {
-      notify.error(err, 'فشل رفض الشركة');
+      notify.error(err, t('kyc.toast.rejectError'));
     } finally {
       setSubmitting(false);
     }
@@ -92,27 +94,27 @@ export default function KycQueuePage() {
   return (
     <>
       <PageHeader
-        eyebrow="إدارة المنصة"
-        title="اعتماد الشركات (KYC)"
-        subtitle="طابور الشركات المنتظرة لاعتماد المستندات والمصادقة"
+        eyebrow={t('kyc.eyebrow')}
+        title={t('kyc.title')}
+        subtitle={t('kyc.subtitle')}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard label="إجمالي الشركات" value={total} icon={Building2} index={0} />
-        <StatsCard label="بانتظار الاعتماد" value={pending.length} icon={Clock} tone="warning" index={1} />
-        <StatsCard label="معتمدة" value={approved} icon={ShieldCheck} tone="success" index={2} />
-        <StatsCard label="مرفوضة" value={rejected} icon={X} tone="danger" index={3} />
+        <StatsCard label={t('kyc.stats.total')} value={total} icon={Building2} index={0} />
+        <StatsCard label={t('kyc.stats.pending')} value={pending.length} icon={Clock} tone="warning" index={1} />
+        <StatsCard label={t('kyc.stats.approved')} value={approved} icon={ShieldCheck} tone="success" index={2} />
+        <StatsCard label={t('kyc.stats.rejected')} value={rejected} icon={X} tone="danger" index={3} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>طابور الاعتماد ({pending.length})</CardTitle>
+          <CardTitle>{t('kyc.queueTitle', { count: pending.length })}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {pending.length === 0 ? (
             <div className="py-16 text-center text-muted-foreground">
               <FileCheck2 className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              لا توجد طلبات اعتماد معلّقة
+              {t('kyc.empty')}
             </div>
           ) : (
             pending.map((c) => {
@@ -128,22 +130,22 @@ export default function KycQueuePage() {
                         {c.nameAr}
                       </Link>
                       <Badge variant={c.kind === 'CARRIER' ? 'default' : 'outline'}>
-                        {c.kind === 'CARRIER' ? 'ناقل' : 'عميل'}
+                        {c.kind === 'CARRIER' ? t('kyc.kind.carrier') : t('kyc.kind.client')}
                       </Badge>
                       {c.accountType === 'INDIVIDUAL' && (
-                        <Badge variant="outline">فرد</Badge>
+                        <Badge variant="outline">{t('kyc.accountType.individual')}</Badge>
                       )}
-                      <Badge variant="warning">{c.kycStatus === 'PENDING_VERIFICATION' ? 'بانتظار المراجعة' : 'لم تُقدّم'}</Badge>
+                      <Badge variant="warning">{c.kycStatus === 'PENDING_VERIFICATION' ? t('kyc.reviewStatus.pending') : t('kyc.reviewStatus.notSubmitted')}</Badge>
                     </div>
                     <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                       <span className="font-mono">{c.id}</span>
                       <span>· {c.city}</span>
-                      <span>· سُجّلت {formatRelative(c.joinedAt)}</span>
+                      <span>· {t('kyc.registeredAt', { time: formatRelative(c.joinedAt) })}</span>
                       <span dir="ltr">· {c.contactEmail}</span>
                     </div>
                   </div>
                   <Button variant="outline" onClick={() => setReviewing(c)}>
-                    <FileText className="h-4 w-4" /> مراجعة
+                    <FileText className="h-4 w-4" /> {t('kyc.review')}
                   </Button>
                 </div>
               );
@@ -156,36 +158,36 @@ export default function KycQueuePage() {
       <Dialog open={!!reviewing} onOpenChange={(o) => !o && setReviewing(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>مراجعة مستندات: {reviewing?.nameAr}</DialogTitle>
-            <DialogDescription>راجع المستندات المُرفقة قبل الاعتماد أو الرفض</DialogDescription>
+            <DialogTitle>{t('kyc.reviewDialog.title', { name: reviewing?.nameAr ?? '' })}</DialogTitle>
+            <DialogDescription>{t('kyc.reviewDialog.description')}</DialogDescription>
           </DialogHeader>
           {reviewing && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <Info
-                  label={reviewing.accountType === 'INDIVIDUAL' ? 'رقم الهوية الوطنية' : 'السجل التجاري'}
+                  label={reviewing.accountType === 'INDIVIDUAL' ? t('kyc.fields.nationalId') : t('kyc.fields.crNumber')}
                   value={reviewing.accountType === 'INDIVIDUAL' ? (reviewing.nationalId ?? '—') : (reviewing.crNumber || '—')}
                   mono
                 />
-                <Info label="الرقم الضريبي" value={reviewing.vatNumber} mono />
-                <Info label="المدينة" value={reviewing.city} />
-                <Info label="المنطقة" value={reviewing.region} />
-                <Info label="البريد" value={reviewing.contactEmail} dir="ltr" />
-                <Info label="الجوال" value={reviewing.contactPhone} dir="ltr" />
+                <Info label={t('kyc.fields.vatNumber')} value={reviewing.vatNumber} mono />
+                <Info label={t('kyc.fields.city')} value={reviewing.city} />
+                <Info label={t('kyc.fields.region')} value={reviewing.region} />
+                <Info label={t('kyc.fields.email')} value={reviewing.contactEmail} dir="ltr" />
+                <Info label={t('kyc.fields.phone')} value={reviewing.contactPhone} dir="ltr" />
               </div>
 
               <div className="space-y-2">
-                <div className="text-xs font-semibold text-muted-foreground uppercase">المستندات المطلوبة</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase">{t('kyc.requiredDocs')}</div>
                 {REQUIRED_DOCS.map((doc, i) => (
                   <div key={doc} className="flex items-center justify-between gap-3 p-3 rounded-md bg-muted/30 border">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{doc}</span>
+                      <span className="text-sm">{t(`kyc.docs.${doc}`)}</span>
                     </div>
                     {i < 4 ? (
-                      <Badge variant="success">مرفق</Badge>
+                      <Badge variant="success">{t('kyc.docStatus.attached')}</Badge>
                     ) : (
-                      <Badge variant="destructive">مفقود</Badge>
+                      <Badge variant="destructive">{t('kyc.docStatus.missing')}</Badge>
                     )}
                   </div>
                 ))}
@@ -194,18 +196,18 @@ export default function KycQueuePage() {
               <div className="rounded-md bg-warning/10 border border-warning/30 p-3 flex items-start gap-2 text-sm">
                 <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                 <p className="text-warning-foreground">
-                  مستند واحد مفقود، يمكن طلبه من الشركة عبر تذكرة دعم تلقائية.
+                  {t('kyc.missingDocWarning')}
                 </p>
               </div>
             </div>
           )}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => { setRejectOpen(true); }} disabled={submitting}>
-              <X className="h-4 w-4" /> رفض
+              <X className="h-4 w-4" /> {t('kyc.reject')}
             </Button>
             <Button onClick={approve} disabled={submitting}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              اعتماد
+              {t('kyc.approve')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -215,20 +217,20 @@ export default function KycQueuePage() {
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>سبب الرفض</DialogTitle>
-            <DialogDescription>سيظهر للشركة كي تتمكن من تصحيح المستندات</DialogDescription>
+            <DialogTitle>{t('kyc.rejectDialog.title')}</DialogTitle>
+            <DialogDescription>{t('kyc.rejectDialog.description')}</DialogDescription>
           </DialogHeader>
           <textarea
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="مثال: السجل التجاري غير ساري المفعول..."
+            placeholder={t('kyc.rejectDialog.placeholder')}
             className="w-full min-h-[120px] p-3 rounded-md border bg-background"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={submitting}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={submitting}>{t('actions.cancel')}</Button>
             <Button variant="destructive" onClick={reject} disabled={submitting}>
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              تأكيد الرفض
+              {t('kyc.rejectDialog.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>

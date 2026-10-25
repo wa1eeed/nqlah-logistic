@@ -31,10 +31,287 @@
  "dashboard": {
  "title": "Dashboard",
  "subtitle": "Overview of platform activity",
+ "subtitleFull": "A complete overview of Naqla platform activity",
  "totalCompanies": "Total Companies",
  "totalOrders": "Total Orders",
  "openDisputes": "Open Disputes",
- "platformRevenue": "Platform Revenue"
+ "platformRevenue": "Platform Revenue",
+ "export": "Export",
+ "ordersThisMonth": "Orders This Month",
+ "totalRecorded": "Total recorded",
+ "totalTransactions": "Total Transactions",
+ "commissionEarned": "Commission earned: {amount} SAR",
+ "activeCompanies": "Active Companies",
+ "awaitingKyc": "{count} awaiting KYC",
+ "needsReview": "Needs review",
+ "activeDriversNow": "Drivers Active Now",
+ "onTrip": "On a trip",
+ "latestOrders": "Latest Orders",
+ "latestOrdersDesc": "Last 7 orders on the platform",
+ "all": "All",
+ "col": {
+ "number": "No.",
+ "client": "Client",
+ "route": "Route",
+ "status": "Status",
+ "amount": "Amount"
+ },
+ "urgentTasks": "Urgent Tasks",
+ "urgentTasksDesc": "Requires immediate review",
+ "disputePrefix": "Dispute · {reason}",
+ "kycAwaitingReview": "KYC awaiting review",
+ "escrowReleaseReady": "Escrow release ready",
+ "escrowMeta": "{id} · {amount} SAR",
+ "recentActivity": "Recent Activity",
+ "newOrderPublished": "New order published",
+ "escrowReleased": "Escrow amount released",
+ "escrowReleasedMeta": "{amount} SAR · Yesterday",
+ "orderAwaitingOffer": "Order awaiting offer acceptance",
+ "orderMeta": "{orderNumber} · 2 hours ago",
+ "threeHoursAgo": "3 hours ago"
+ },
+ "audit": {
+ "eyebrow": "System",
+ "title": "Audit Log",
+ "subtitle": "An immutable log of every sensitive action on the platform",
+ "searchPlaceholder": "Search the log...",
+ "allCategories": "All categories",
+ "allRoles": "All roles",
+ "empty": "No matching entries",
+ "category": {
+ "AUTH": "Account",
+ "COMPANY": "Company",
+ "KYC": "KYC",
+ "ORDER": "Order",
+ "PAYMENT": "Payment",
+ "DISPUTE": "Dispute",
+ "SETTINGS": "Settings",
+ "WALLET": "Wallet",
+ "TICKET": "Ticket"
+ },
+ "actor": {
+ "ADMIN": "Admin",
+ "SYSTEM": "System",
+ "CLIENT": "Client",
+ "CARRIER": "Carrier"
+ }
+ },
+ "promotions": {
+ "eyebrow": "System",
+ "title": "Promotions & Offers",
+ "subtitle": "Manage discount codes and promotional campaigns for clients and carriers",
+ "newCampaign": "New Campaign",
+ "totalCampaigns": "Total Campaigns",
+ "active": "Active",
+ "totalUses": "Total Uses",
+ "drafts": "Drafts",
+ "col": {
+ "code": "Code",
+ "description": "Description",
+ "audience": "Audience",
+ "type": "Type",
+ "value": "Value",
+ "usage": "Usage",
+ "validity": "Validity",
+ "status": "Status"
+ },
+ "copy": "Copy",
+ "fixedAmount": "{value} SAR",
+ "fullWaiver": "Full waiver",
+ "pause": "Pause",
+ "activate": "Activate",
+ "delete": "Delete",
+ "status": {
+ "ACTIVE": "Active",
+ "PAUSED": "Paused",
+ "EXPIRED": "Expired",
+ "DRAFT": "Draft"
+ },
+ "kind": {
+ "PERCENTAGE_OFF": "Percentage off",
+ "FIXED_AMOUNT": "Fixed amount",
+ "COMMISSION_WAIVER": "Commission waiver"
+ },
+ "audience": {
+ "CLIENT": "Clients",
+ "CARRIER": "Carriers",
+ "ALL": "Everyone"
+ }
+ },
+ "legal": {
+ "eyebrow": "Legal & SEO",
+ "title": "Legal Pages Management",
+ "subtitle": "Edit and publish the terms of use, privacy policy, and transport terms",
+ "unpublishedDraft": "Unpublished draft",
+ "lastPublished": "Last published: {date}",
+ "draftSaved": "Draft saved: {date}",
+ "savedNow": "Saved just now",
+ "previewOnSite": "Preview on site",
+ "discardDraft": "Discard draft",
+ "publish": "Publish",
+ "editMarkdown": "Edit (Markdown)",
+ "preview": "Preview",
+ "resetDefault": "Reset to default",
+ "confirmReset": "Reset to default content? You will lose all changes and the current published version.",
+ "autoSaveHint": "Automatically saved as a draft. Click \"Publish\" to apply changes.",
+ "confirmPublish": "Confirm Publish",
+ "publishDialogDesc": "The version will be updated from v{from} to v{to} and the new content will be shown to all users immediately.",
+ "reacceptTitle": "Existing users may need to re-accept",
+ "reacceptDesc": "The last acceptance date is recorded for each user, and re-acceptance can be required when the version changes.",
+ "cancel": "Cancel",
+ "publishNow": "Publish now",
+ "charCount": "{count} characters",
+ "doc": {
+ "terms": {
+ "label": "Terms of Use",
+ "description": "The platform end-user agreement"
+ },
+ "privacy": {
+ "label": "Privacy Policy",
+ "description": "How we collect and protect personal data"
+ },
+ "transport": {
+ "label": "Transport Terms & Conditions",
+ "description": "Terms specific to cargo transport operations"
+ }
+ },
+ "editor": {
+ "boldSnippet": "**text**",
+ "italicSnippet": "*text*",
+ "listSnippet": "\n- item",
+ "orderedSnippet": "\n1. item",
+ "linkSnippet": "[text](https://)",
+ "codeSnippet": "`code`"
+ }
+ },
+ "seo": {
+ "eyebrow": "Legal & SEO",
+ "title": "SEO & Meta Settings",
+ "subtitle": "Control how the site appears in search engines and social media",
+ "confirmReset": "Reset all SEO settings to default values?",
+ "resetDefault": "Reset to default",
+ "saved": "Saved",
+ "save": "Save",
+ "tabs": {
+ "general": "General",
+ "verification": "Verification & Analytics",
+ "serpPreview": "SERP Preview"
+ },
+ "general": {
+ "cardTitle": "Basic Settings",
+ "cardDesc": "Appears in the search result title and the browser",
+ "siteName": "Site Name",
+ "defaultTitle": "Default Title",
+ "titleTemplate": "Title Template",
+ "titleTemplatePlaceholder": "%s | Naqla",
+ "templateHint": "Use %s for the page name",
+ "defaultDescription": "Default Description (Meta Description)",
+ "keywords": "Keywords (comma-separated)",
+ "keywordsPlaceholder": "freight transport, shipping, logistics",
+ "canonical": "Canonical URL",
+ "locale": "Language & Region (Locale)",
+ "robotsHeading": "robots.txt directives",
+ "length": "Length: {count} characters",
+ "preferUnder60": "Prefer under 60 characters",
+ "preferUnder160": "Prefer under 160 characters",
+ "allowIndex": "Allow indexing (index)",
+ "allowIndexDesc": "If disabled, the site will not appear in search engines",
+ "allowFollow": "Allow link following (follow)",
+ "allowFollowDesc": "Allow crawling of internal and external links"
+ },
+ "social": {
+ "cardDesc": "Control how the site appears when shared on Facebook, Twitter, WhatsApp",
+ "ogImage": "Share Image (Open Graph Image)",
+ "ogImageHint": "Recommended size: 1200×630 pixels",
+ "twitterHandle": "Twitter Handle",
+ "themeColor": "Theme Color",
+ "ogCardPreview": "OG Card Preview",
+ "ogImageNotSet": "OG image not set"
+ },
+ "structured": {
+ "cardDesc": "Structured company data for the Google Knowledge Graph",
+ "orgName": "Organization Name",
+ "orgLogo": "Organization Logo (URL)",
+ "phone": "Phone",
+ "email": "Email",
+ "jsonLdPreview": "JSON-LD Preview"
+ },
+ "verification": {
+ "cardTitle": "Verification & Analytics",
+ "cardDesc": "Site ownership verification codes and analytics tool identifiers",
+ "googleSearchConsole": "Google Search Console · Verification Code",
+ "bingWebmaster": "Bing Webmaster · Verification Code",
+ "googleAnalytics": "Google Analytics (G-XXXX)",
+ "metaPixel": "Meta Pixel ID"
+ },
+ "serp": {
+ "cardTitle": "How the site appears in Google",
+ "cardDesc": "Approximate; may vary by search device and query",
+ "titleLength": "Title Length",
+ "descLength": "Description Length",
+ "keywords": "Keywords",
+ "ogSet": "OG set"
+ }
+ },
+ "supportAdmin": {
+ "eyebrow": "System",
+ "title": "Technical Support",
+ "subtitle": "Support tickets from clients and carriers",
+ "totalTickets": "Total Tickets",
+ "open": "Open",
+ "inProgress": "In Progress",
+ "urgent": "Urgent",
+ "searchPlaceholder": "Search tickets...",
+ "allStatuses": "All statuses",
+ "allPriorities": "All priorities",
+ "noMatching": "No matching tickets",
+ "selectTicket": "Select a ticket to view its details",
+ "unassigned": "Unassigned",
+ "messagesCount": "{count} message(s)",
+ "senderClient": "Client",
+ "senderCarrier": "Carrier",
+ "close": "Close",
+ "linkedOrder": "Linked Order",
+ "conversationLog": "Conversation log ({count} messages)",
+ "conversationHint": "The conversation will be shown in the full ticket view.",
+ "replyToTicket": "Reply to Ticket",
+ "col": {
+ "subject": "Subject",
+ "sender": "Sender",
+ "category": "Category",
+ "priority": "Priority",
+ "assignee": "Assignee",
+ "lastUpdate": "Last Update",
+ "status": "Status"
+ },
+ "detail": {
+ "sender": "Sender",
+ "assignee": "Assignee",
+ "category": "Category",
+ "description": "Description"
+ },
+ "status": {
+ "OPEN": "Open",
+ "IN_PROGRESS": "In Progress",
+ "WAITING_USER": "Waiting on User",
+ "RESOLVED": "Resolved",
+ "CLOSED": "Closed"
+ },
+ "priority": {
+ "LOW": "Low",
+ "MEDIUM": "Medium",
+ "HIGH": "High",
+ "URGENT": "Urgent"
+ },
+ "category": {
+ "ACCOUNT": "Account",
+ "BILLING": "Billing",
+ "ORDER": "Order",
+ "TECHNICAL": "Technical",
+ "KYC": "KYC",
+ "DRIVER": "Driver",
+ "OTHER": "Other"
+ }
  },
  "settings": {
  "title": "Platform Settings",

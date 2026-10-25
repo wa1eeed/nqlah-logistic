@@ -28,7 +28,7 @@ export function readLocaleFromHeaders(): Locale {
 
 async function buildConfig() {
   const locale = readLocaleFromHeaders();
-  const [common, auth, orders, fleet, payments, notifications, admin, settings, landing] = await Promise.all([
+  const [common, auth, orders, fleet, payments, notifications, admin, companies, compliance, settings, landing] = await Promise.all([
     import(`../messages/${locale}/common.json`).then((m) => m.default),
     import(`../messages/${locale}/auth.json`).then((m) => m.default),
     import(`../messages/${locale}/orders.json`).then((m) => m.default),
@@ -36,12 +36,14 @@ async function buildConfig() {
     import(`../messages/${locale}/payments.json`).then((m) => m.default),
     import(`../messages/${locale}/notifications.json`).then((m) => m.default),
     import(`../messages/${locale}/admin.json`).then((m) => m.default),
+    import(`../messages/${locale}/companies.json`).then((m) => m.default),
+    import(`../messages/${locale}/compliance.json`).then((m) => m.default),
     import(`../messages/${locale}/settings.json`).then((m) => m.default),
     import(`../messages/${locale}/landing.json`).then((m) => m.default),
   ]);
   return {
     locale,
-    messages: { common, auth, orders, fleet, payments, notifications, admin, settings, landing },
+    messages: { common, auth, orders, fleet, payments, notifications, admin, companies, compliance, settings, landing },
     timeZone: 'Asia/Riyadh',
   };
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
@@ -31,16 +32,22 @@ import {
 
 type ResolutionType = 'REFUND_CLIENT' | 'PAY_CARRIER' | 'SPLIT' | 'DISMISS';
 
-const RESOLUTIONS: { value: ResolutionType; label: string; description: string; tone: string }[] = [
-  { value: 'REFUND_CLIENT', label: 'استرداد كامل للعميل',  description: 'يُعاد المبلغ كاملا وتُحمَّل الغرامة على الناقل',     tone: 'text-[hsl(var(--mint))]' },
-  { value: 'PAY_CARRIER',   label: 'إفراج المبلغ للناقل',  description: 'الناقل محقّ، يُصرف المبلغ كما هو متّفق',             tone: 'text-success' },
-  { value: 'SPLIT',         label: 'تقسيم 50/50',          description: 'يُقسَّم المبلغ بين الطرفين بالتساوي',                  tone: 'text-warning' },
-  { value: 'DISMISS',       label: 'رفض النزاع',           description: 'لا يوجد أساس للنزاع، يستمر الإجراء الطبيعي',           tone: 'text-muted-foreground' },
+const RESOLUTION_META: { value: ResolutionType; tone: string }[] = [
+  { value: 'REFUND_CLIENT', tone: 'text-[hsl(var(--mint))]' },
+  { value: 'PAY_CARRIER',   tone: 'text-success' },
+  { value: 'SPLIT',         tone: 'text-warning' },
+  { value: 'DISMISS',       tone: 'text-muted-foreground' },
 ];
 
 export default function AdminDisputeDetail() {
+  const t = useTranslations('compliance');
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const RESOLUTIONS = RESOLUTION_META.map((r) => ({
+    ...r,
+    label: t(`disputeDetail.resolutions.${r.value}.label`),
+    description: t(`disputeDetail.resolutions.${r.value}.description`),
+  }));
   // Live: fetch all admin disputes and pick the one matching the URL. Falls
   // back to the mock when the API doesn't return a match (offline demo mode).
   const { data, mutate } = useSWR<{ items?: Dispute[] } | Dispute[]>('/admin/disputes', fetcher);
@@ -67,11 +74,11 @@ export default function AdminDisputeDetail() {
         status: 'UNDER_REVIEW',
       });
       await mutate();
-      notify.success('تم التعيين', `${assignee} يراجع النزاع الآن`);
+      notify.success(t('disputeDetail.toast.assignedTitle'), t('disputeDetail.toast.assignedBody', { name: assignee }));
       setAssignOpen(false);
       setAssignee('');
     } catch (err) {
-      notify.error(err, 'فشل تعيين عضو الفريق');
+      notify.error(err, t('disputeDetail.toast.assignError'));
     } finally {
       setSubmitting(false);
     }
@@ -87,12 +94,12 @@ export default function AdminDisputeDetail() {
         resolution: `${label}\n\n${resolutionNote.trim()}`,
       });
       await mutate();
-      notify.success('تم حل النزاع', label);
+      notify.success(t('disputeDetail.toast.resolvedTitle'), label);
       setResolveOpen(false);
       setResolution('');
       setResolutionNote('');
     } catch (err) {
-      notify.error(err, 'فشل حل النزاع');
+      notify.error(err, t('disputeDetail.toast.resolveError'));
     } finally {
       setSubmitting(false);
     }
@@ -103,8 +110,8 @@ export default function AdminDisputeDetail() {
       <Card>
         <CardContent className="py-16 text-center">
           <Scale className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-semibold">النزاع غير موجود</h3>
-          <Button onClick={() => router.push('/disputes')} className="mt-4">عودة للنزاعات</Button>
+          <h3 className="font-semibold">{t('disputeDetail.notFound')}</h3>
+          <Button onClick={() => router.push('/disputes')} className="mt-4">{t('disputeDetail.backToDisputes')}</Button>
         </CardContent>
       </Card>
     );
@@ -121,24 +128,24 @@ export default function AdminDisputeDetail() {
   return (
     <>
       <PageHeader
-        eyebrow="تفاصيل النزاع"
-        title={`نزاع ${dispute.id}`}
+        eyebrow={t('disputeDetail.eyebrow')}
+        title={t('disputeDetail.title', { id: dispute.id })}
         subtitle={`${dispute.reason} · ${formatRelative(dispute.createdAt)}`}
         actions={
           <>
             <StatusBadge status={dispute.status} />
             {dispute.status === 'OPEN' && (
               <Button onClick={() => setAssignOpen(true)}>
-                <User className="h-4 w-4" /> تعيين فاحص
+                <User className="h-4 w-4" /> {t('disputeDetail.assignReviewer')}
               </Button>
             )}
             {(dispute.status === 'UNDER_REVIEW' || dispute.status === 'OPEN') && (
               <Button onClick={() => setResolveOpen(true)}>
-                <CheckCircle2 className="h-4 w-4" /> حلّ النزاع
+                <CheckCircle2 className="h-4 w-4" /> {t('disputeDetail.resolveDispute')}
               </Button>
             )}
             <Button variant="outline" onClick={() => router.push('/disputes')}>
-              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('disputeDetail.back')}
             </Button>
           </>
         }
@@ -158,15 +165,15 @@ export default function AdminDisputeDetail() {
                   <CardTitle>{dispute.reason}</CardTitle>
                   <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                     <span className="font-mono">{dispute.id}</span>
-                    <span>· فُتح {formatDateTime(dispute.createdAt)}</span>
-                    {dispute.resolvedAt && <span>· حُلّ {formatDateTime(dispute.resolvedAt)}</span>}
+                    <span>· {t('disputeDetail.openedAt', { date: formatDateTime(dispute.createdAt) })}</span>
+                    {dispute.resolvedAt && <span>· {t('disputeDetail.resolvedAt', { date: formatDateTime(dispute.resolvedAt) })}</span>}
                   </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="rounded-md bg-card border p-4">
-                <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">وصف المشكلة</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">{t('disputeDetail.problemDescription')}</div>
                 <p className="text-sm leading-relaxed">{dispute.description}</p>
               </div>
             </CardContent>
@@ -174,18 +181,18 @@ export default function AdminDisputeDetail() {
 
           {/* Parties */}
           <Card>
-            <CardHeader><CardTitle>أطراف النزاع</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('disputeDetail.parties')}</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <PartyCard
-                title="المُنشئ"
-                badge={dispute.raisedBy === 'CLIENT' ? 'عميل' : 'ناقل'}
+                title={t('disputeDetail.party.creator')}
+                badge={dispute.raisedBy === 'CLIENT' ? t('disputeDetail.roles.client') : t('disputeDetail.roles.carrier')}
                 badgeVariant="default"
                 company={raiser}
                 accent
               />
               <PartyCard
-                title="الطرف الآخر"
-                badge={dispute.raisedBy === 'CLIENT' ? 'ناقل' : 'عميل'}
+                title={t('disputeDetail.party.otherParty')}
+                badge={dispute.raisedBy === 'CLIENT' ? t('disputeDetail.roles.carrier') : t('disputeDetail.roles.client')}
                 badgeVariant="outline"
                 company={otherParty}
               />
@@ -197,7 +204,7 @@ export default function AdminDisputeDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
-                سجل المراسلات
+                {t('disputeDetail.timeline.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -207,31 +214,31 @@ export default function AdminDisputeDetail() {
                   who={raiser?.nameAr ?? '—'}
                   initials={initialsOf(raiser?.nameAr)}
                   at={dispute.createdAt}
-                  text={`فتح النزاع. السبب: ${dispute.reason}`}
+                  text={t('disputeDetail.timeline.opened', { reason: dispute.reason })}
                   variant="raised"
                 />
                 <TimelineEvent
-                  who="فهد العتيبي (الأدمن)"
-                  initials="ف.ع"
+                  who={t('disputeDetail.timeline.adminName')}
+                  initials={t('disputeDetail.timeline.adminInitials')}
                   at={dispute.createdAt}
-                  text="تمّ استلام النزاع وسيُحال للمراجعة"
+                  text={t('disputeDetail.timeline.received')}
                   variant="system"
                 />
                 {dispute.status === 'UNDER_REVIEW' && (
                   <TimelineEvent
-                    who="فهد العتيبي (الأدمن)"
-                    initials="ف.ع"
+                    who={t('disputeDetail.timeline.adminName')}
+                    initials={t('disputeDetail.timeline.adminInitials')}
                     at={dispute.createdAt}
-                    text="بدأت مراجعة النزاع"
+                    text={t('disputeDetail.timeline.reviewStarted')}
                     variant="system"
                   />
                 )}
                 {dispute.resolvedAt && (
                   <TimelineEvent
-                    who="فهد العتيبي (الأدمن)"
-                    initials="ف.ع"
+                    who={t('disputeDetail.timeline.adminName')}
+                    initials={t('disputeDetail.timeline.adminInitials')}
                     at={dispute.resolvedAt}
-                    text="تم إغلاق النزاع"
+                    text={t('disputeDetail.timeline.closed')}
                     variant="system"
                   />
                 )}
@@ -239,14 +246,14 @@ export default function AdminDisputeDetail() {
 
               {/* Reply input */}
               <div className="mt-6 pt-4 border-t space-y-2">
-                <Label>إضافة رد للطرفين</Label>
+                <Label>{t('disputeDetail.replyLabel')}</Label>
                 <textarea
                   rows={3}
                   className="w-full p-3 rounded-md border bg-background text-sm"
-                  placeholder="اكتب ردك..."
+                  placeholder={t('disputeDetail.replyPlaceholder')}
                 />
                 <Button size="sm">
-                  <MessageSquare className="h-3.5 w-3.5" /> إرسال
+                  <MessageSquare className="h-3.5 w-3.5" /> {t('disputeDetail.send')}
                 </Button>
               </div>
             </CardContent>
@@ -261,7 +268,7 @@ export default function AdminDisputeDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Package className="h-4 w-4" />
-                  الطلب المرتبط
+                  {t('disputeDetail.relatedOrder')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
@@ -271,15 +278,15 @@ export default function AdminDisputeDetail() {
                 <div className="text-xs text-muted-foreground">{order.originCity} ← {order.destinationCity}</div>
                 <dl className="pt-2 border-t space-y-1 text-xs">
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">القيمة</dt>
+                    <dt className="text-muted-foreground">{t('disputeDetail.order.value')}</dt>
                     <dd className="font-medium"><Currency amount={order.agreedPrice ?? 0} /></dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">الحالة</dt>
+                    <dt className="text-muted-foreground">{t('disputeDetail.order.status')}</dt>
                     <dd><StatusBadge status={order.status} /></dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">تاريخ الإنشاء</dt>
+                    <dt className="text-muted-foreground">{t('disputeDetail.order.createdAt')}</dt>
                     <dd className="text-xs">{formatDate(order.createdAt)}</dd>
                   </div>
                 </dl>
@@ -292,7 +299,7 @@ export default function AdminDisputeDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShieldCheck className="h-4 w-4" />
-                خيارات الحل
+                {t('disputeDetail.resolutionOptions')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -315,21 +322,21 @@ export default function AdminDisputeDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Clock className="h-4 w-4" />
-                مؤشّر الاستجابة
+                {t('disputeDetail.sla.title')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">الوقت المنقضي</span>
+                <span className="text-muted-foreground">{t('disputeDetail.sla.elapsed')}</span>
                 <span className="font-medium">{formatRelative(dispute.createdAt)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">SLA الموصى</span>
-                <span className="font-medium">24 ساعة</span>
+                <span className="text-muted-foreground">{t('disputeDetail.sla.recommended')}</span>
+                <span className="font-medium">{t('disputeDetail.sla.hours24')}</span>
               </div>
               <div className="rounded-md bg-[hsl(var(--mint))]/10 border border-[hsl(var(--mint))]/30 p-2 text-xs flex items-start gap-2 mt-3">
                 <AlertCircle className="h-3 w-3 text-[hsl(var(--mint))] shrink-0 mt-0.5" />
-                <span className="text-muted-foreground">يجب الرد خلال 24 ساعة لتجنّب تصعيد النزاع</span>
+                <span className="text-muted-foreground">{t('disputeDetail.sla.warning')}</span>
               </div>
             </CardContent>
           </Card>
@@ -340,13 +347,13 @@ export default function AdminDisputeDetail() {
       <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تعيين فاحص للنزاع</DialogTitle>
-            <DialogDescription>اختر عضو فريق الامتثال المسؤول</DialogDescription>
+            <DialogTitle>{t('disputeDetail.assignDialog.title')}</DialogTitle>
+            <DialogDescription>{t('disputeDetail.assignDialog.description')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <Label>الفاحص</Label>
+            <Label>{t('disputeDetail.assignDialog.reviewerLabel')}</Label>
             <Select value={assignee} onValueChange={setAssignee}>
-              <SelectTrigger><SelectValue placeholder="اختر عضو الفريق" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('disputeDetail.assignDialog.placeholder')} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="فهد العتيبي">فهد العتيبي</SelectItem>
                 <SelectItem value="سعد القحطاني">سعد القحطاني</SelectItem>
@@ -356,10 +363,10 @@ export default function AdminDisputeDetail() {
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignOpen(false)} disabled={submitting}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setAssignOpen(false)} disabled={submitting}>{t('actions.cancel')}</Button>
             <Button onClick={handleAssign} disabled={!assignee || submitting}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <User className="h-4 w-4" />}
-              تعيين
+              {t('disputeDetail.assignDialog.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -369,14 +376,14 @@ export default function AdminDisputeDetail() {
       <Dialog open={resolveOpen} onOpenChange={setResolveOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>حلّ النزاع {dispute.id}</DialogTitle>
-            <DialogDescription>القرار سيؤثّر مباشرة على مبلغ Escrow وتقييمات الطرفين.</DialogDescription>
+            <DialogTitle>{t('disputeDetail.resolveDialog.title', { id: dispute.id })}</DialogTitle>
+            <DialogDescription>{t('disputeDetail.resolveDialog.description')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-2">
-              <Label>القرار</Label>
+              <Label>{t('disputeDetail.resolveDialog.decisionLabel')}</Label>
               <Select value={resolution} onValueChange={(v) => setResolution(v as ResolutionType)}>
-                <SelectTrigger><SelectValue placeholder="اختر القرار" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('disputeDetail.resolveDialog.decisionPlaceholder')} /></SelectTrigger>
                 <SelectContent>
                   {RESOLUTIONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                 </SelectContent>
@@ -389,24 +396,24 @@ export default function AdminDisputeDetail() {
             </div>
 
             <div className="space-y-2">
-              <Label>ملاحظة القرار (تُرسل للطرفين)</Label>
+              <Label>{t('disputeDetail.resolveDialog.noteLabel')}</Label>
               <textarea
                 value={resolutionNote}
                 onChange={(e) => setResolutionNote(e.target.value)}
                 rows={4}
                 className="w-full p-3 rounded-md border bg-background text-sm leading-relaxed"
-                placeholder="اشرح القرار وأسبابه..."
+                placeholder={t('disputeDetail.resolveDialog.notePlaceholder')}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setResolveOpen(false)} disabled={submitting}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setResolveOpen(false)} disabled={submitting}>{t('actions.cancel')}</Button>
             <Button
               onClick={handleResolve}
               disabled={!resolution || !resolutionNote.trim() || submitting}
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              تأكيد القرار
+              {t('disputeDetail.resolveDialog.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -424,6 +431,7 @@ function PartyCard({
   company?: ReturnType<typeof companyById>;
   accent?: boolean;
 }) {
+  const t = useTranslations('compliance');
   const initials = company?.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('') ?? '?';
   return (
     <div className={`rounded-lg border p-4 ${accent ? 'border-primary/30 bg-primary/5' : ''}`}>
@@ -443,16 +451,16 @@ function PartyCard({
       {company && (
         <dl className="mt-3 pt-3 border-t space-y-1 text-xs">
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">المدينة</dt>
+            <dt className="text-muted-foreground">{t('disputeDetail.party.city')}</dt>
             <dd>{company.city}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">الهاتف</dt>
+            <dt className="text-muted-foreground">{t('disputeDetail.party.phone')}</dt>
             <dd className="num" dir="ltr">{company.contactPhone}</dd>
           </div>
           {company.rating != null && (
             <div className="flex justify-between">
-              <dt className="text-muted-foreground">التقييم</dt>
+              <dt className="text-muted-foreground">{t('disputeDetail.party.rating')}</dt>
               <dd className="num flex items-center gap-1"><Star className="h-3.5 w-3.5 text-[hsl(var(--mint))]" /> {company.rating.toFixed(1)}</dd>
             </div>
           )}

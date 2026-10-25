@@ -57,5 +57,64 @@
  "licenseExpiry": "License Expiry",
  "phone": "Phone",
  "totalTrips": "Completed Trips"
+ },
+ "adminDrivers": {
+ "title": "All Drivers on the Platform",
+ "subtitle": "A unified list of drivers across all carriers",
+ "stats": {
+ "total": "Total Drivers",
+ "onTrip": "On Trip",
+ "available": "Available",
+ "offDuty": "Off Duty"
+ },
+ "searchPlaceholder": "Search by name, ID, phone, or carrier...",
+ "allStatuses": "All Statuses",
+ "noResults": "No results",
+ "table": {
+ "driver": "Driver",
+ "carrier": "Carrier",
+ "id": "ID",
+ "licenseClass": "License Class",
+ "licenseExpiry": "License Expiry",
+ "trips": "Trips",
+ "phone": "Phone",
+ "currentOrder": "Current Order",
+ "status": "Status"
+ }
+ },
+ "adminTrucks": {
+ "title": "All Trucks on the Platform",
+ "subtitle": "A complete overview of the fleet across all registered carriers",
+ "stats": {
+ "total": "Total Trucks",
+ "onTrip": "On Trip",
+ "available": "Available",
+ "maintenance": "Maintenance"
+ },
+ "searchPlaceholder": "Search by plate, number, or carrier name...",
+ "allStatuses": "All Statuses",
+ "allTypes": "All Types",
+ "capacityValue": "{value} tons",
+ "noResults": "No results",
+ "types": {
+ "SMALL_VAN": "Small Van",
+ "BOX_TRUCK": "Box Truck",
+ "MEDIUM_FLATBED": "Medium Flatbed",
+ "LARGE_FLATBED": "Large Flatbed",
+ "REFRIGERATED": "Refrigerated",
+ "TANKER": "Tanker",
+ "LOWBED": "Lowbed",
+ "CONTAINER_TRAILER": "Container Trailer"
+ },
+ "table": {
+ "plate": "Plate",
+ "carrier": "Carrier",
+ "type": "Type",
+ "capacity": "Capacity",
+ "model": "Model",
+ "driver": "Driver",
+ "lastInspection": "Last Inspection",
+ "status": "Status"
+ }
  }
 }

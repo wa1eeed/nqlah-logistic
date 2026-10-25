@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Building2, Plus, Search, Truck, User as UserIcon, Users, ShieldCheck, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import { fetcher } from '@/lib/api';
 import { COMPANIES, formatDate, normalizeCompanyList, type Company } from '@naqla/shared-utils';
 
 export default function AdminCompaniesPage() {
+  const t = useTranslations('companies');
   const [filter, setFilter] = useState<'ALL' | 'CLIENT' | 'CARRIER'>('ALL');
   const [search, setSearch] = useState('');
 
@@ -56,23 +58,23 @@ export default function AdminCompaniesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="إدارة المنصة"
-        title="الناقلون والعملاء"
-        subtitle="إدارة الكيانات المسجّلة، حالة التحقق والنشاط التجاري"
+        eyebrow={t('list.eyebrow')}
+        title={t('list.title')}
+        subtitle={t('list.subtitle')}
         actions={
           <Button>
             <Plus className="h-4 w-4" />
-            دعوة جديدة
+            {t('list.invite')}
           </Button>
         }
       />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MiniStat label="إجمالي الكيانات" value={counts.ALL} icon={Building2} index={0} />
-        <MiniStat label="ناقلون" value={counts.CARRIER} icon={Truck} tone="success" index={1} />
-        <MiniStat label="معتمدون (KYC)" value={approved} icon={ShieldCheck} tone="success" index={2} />
-        <MiniStat label="بانتظار التحقق" value={pending} icon={Clock} tone="warning" index={3} />
+        <MiniStat label={t('list.kpi.totalEntities')} value={counts.ALL} icon={Building2} index={0} />
+        <MiniStat label={t('list.kpi.carriers')} value={counts.CARRIER} icon={Truck} tone="success" index={1} />
+        <MiniStat label={t('list.kpi.kycApproved')} value={approved} icon={ShieldCheck} tone="success" index={2} />
+        <MiniStat label={t('list.kpi.pendingVerification')} value={pending} icon={Clock} tone="warning" index={3} />
       </div>
 
       {/* Toolbar */}
@@ -81,15 +83,15 @@ export default function AdminCompaniesPage() {
           <TabsList>
             <TabsTrigger value="ALL">
               <Building2 className="h-3.5 w-3.5 me-1.5" />
-              الكل ({counts.ALL})
+              {t('list.tabs.all', { count: String(counts.ALL) })}
             </TabsTrigger>
             <TabsTrigger value="CLIENT">
               <Users className="h-3.5 w-3.5 me-1.5" />
-              العملاء ({counts.CLIENT})
+              {t('list.tabs.clients', { count: String(counts.CLIENT) })}
             </TabsTrigger>
             <TabsTrigger value="CARRIER">
               <Truck className="h-3.5 w-3.5 me-1.5" />
-              الناقلون ({counts.CARRIER})
+              {t('list.tabs.carriers', { count: String(counts.CARRIER) })}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -97,7 +99,7 @@ export default function AdminCompaniesPage() {
         <div className="relative w-full md:w-80">
           <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="ابحث بالاسم، السجل، المدينة..."
+            placeholder={t('list.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="ps-9"
@@ -111,19 +113,19 @@ export default function AdminCompaniesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الشركة</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>المدينة</TableHead>
-                  <TableHead>KYC</TableHead>
-                  <TableHead className="text-end">المؤشر</TableHead>
-                  <TableHead>الانضمام</TableHead>
+                  <TableHead>{t('list.table.company')}</TableHead>
+                  <TableHead>{t('list.table.type')}</TableHead>
+                  <TableHead>{t('list.table.city')}</TableHead>
+                  <TableHead>{t('list.table.kyc')}</TableHead>
+                  <TableHead className="text-end">{t('list.table.indicator')}</TableHead>
+                  <TableHead>{t('list.table.joined')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground py-14">
-                      لا توجد شركات تطابق البحث
+                      {t('list.empty')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -138,7 +140,7 @@ export default function AdminCompaniesPage() {
                             <span className="font-medium hover:text-primary transition-colors">{c.nameAr}</span>
                             <span className="text-xs font-mono text-muted-foreground">
                               {c.accountType === 'INDIVIDUAL'
-                                ? c.nationalId ? `هوية · ${c.nationalId}` : `معرّف · ${c.id}`
+                                ? c.nationalId ? t('list.nationalIdPrefix', { id: c.nationalId }) : t('list.idPrefix', { id: c.id })
                                 : c.crNumber ? `CR · ${c.crNumber}` : c.id}
                             </span>
                           </div>
@@ -147,16 +149,16 @@ export default function AdminCompaniesPage() {
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           <Badge variant={c.kind === 'CLIENT' ? 'default' : 'success'}>
-                            {c.kind === 'CLIENT' ? 'عميل' : 'ناقل'}
+                            {c.kind === 'CLIENT' ? t('kind.client') : t('kind.carrier')}
                           </Badge>
                           {c.accountType === 'INDIVIDUAL' && (
                             <Badge variant="outline" className="inline-flex items-center gap-1 w-fit">
-                              <UserIcon className="h-3 w-3" /> فرد
+                              <UserIcon className="h-3 w-3" /> {t('list.individual')}
                             </Badge>
                           )}
                           {c.kind === 'CARRIER' && (c.accountType ?? 'COMPANY') === 'COMPANY' && (
                             <Badge variant="outline" className="inline-flex items-center gap-1 w-fit">
-                              <Building2 className="h-3 w-3" /> شركة
+                              <Building2 className="h-3 w-3" /> {t('list.company')}
                             </Badge>
                           )}
                         </div>
@@ -166,7 +168,7 @@ export default function AdminCompaniesPage() {
                       <TableCell className="text-end">
                         {c.kind === 'CARRIER' ? (
                           <span className="text-xs text-muted-foreground num">
-                            {(c.completedTrips ?? 0).toLocaleString('en-US')} رحلة
+                            {t('list.trips', { count: (c.completedTrips ?? 0).toLocaleString('en-US') })}
                           </span>
                         ) : c.monthlyVolume ? (
                           <Currency amount={c.monthlyVolume} />

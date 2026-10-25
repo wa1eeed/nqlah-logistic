@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Filter, Search, Truck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -19,13 +20,13 @@ import { FadeIn } from '@/components/ui/fade-in';
 import { Wrench, CheckCircle2 } from 'lucide-react';
 import { TRUCKS, carrierById, driverById, formatDate } from '@naqla/shared-utils';
 
-const TYPE_LABELS: Record<string, string> = {
-  SMALL_VAN: 'فان صغير', BOX_TRUCK: 'صندوق', MEDIUM_FLATBED: 'مسطح متوسط',
-  LARGE_FLATBED: 'مسطح كبير', REFRIGERATED: 'مبرّد', TANKER: 'صهريج',
-  LOWBED: 'لوبد', CONTAINER_TRAILER: 'حاوية',
-};
+const TRUCK_TYPE_KEYS = [
+  'SMALL_VAN', 'BOX_TRUCK', 'MEDIUM_FLATBED', 'LARGE_FLATBED',
+  'REFRIGERATED', 'TANKER', 'LOWBED', 'CONTAINER_TRAILER',
+] as const;
 
 export default function AdminTrucksPage() {
+  const t = useTranslations('fleet');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string>('ALL');
   const [type, setType] = useState<string>('ALL');
@@ -50,16 +51,16 @@ export default function AdminTrucksPage() {
   return (
     <>
       <PageHeader
-        eyebrow="الأسطول"
-        title="كل الشاحنات في المنصة"
-        subtitle="نظرة شاملة على أسطول جميع الناقلين المسجّلين"
+        eyebrow={t('title')}
+        title={t('adminTrucks.title')}
+        subtitle={t('adminTrucks.subtitle')}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard label="إجمالي الشاحنات" value={total} icon={Truck} index={0} />
-        <StatsCard label="في رحلة" value={onTrip} icon={Truck} tone="warning" index={1} />
-        <StatsCard label="متاحة" value={available} icon={CheckCircle2} tone="success" index={2} />
-        <StatsCard label="صيانة" value={maintenance} icon={Wrench} tone="danger" index={3} />
+        <StatsCard label={t('adminTrucks.stats.total')} value={total} icon={Truck} index={0} />
+        <StatsCard label={t('adminTrucks.stats.onTrip')} value={onTrip} icon={Truck} tone="warning" index={1} />
+        <StatsCard label={t('adminTrucks.stats.available')} value={available} icon={CheckCircle2} tone="success" index={2} />
+        <StatsCard label={t('adminTrucks.stats.maintenance')} value={maintenance} icon={Wrench} tone="danger" index={3} />
       </div>
 
       <FadeIn delay={0.1}>
@@ -71,26 +72,26 @@ export default function AdminTrucksPage() {
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="ابحث بلوحة، رقم، أو اسم الناقل..."
+                placeholder={t('adminTrucks.searchPlaceholder')}
                 className="pe-10"
               />
             </div>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">كل الحالات</SelectItem>
-                <SelectItem value="AVAILABLE">متاحة</SelectItem>
-                <SelectItem value="ON_TRIP">في رحلة</SelectItem>
-                <SelectItem value="MAINTENANCE">صيانة</SelectItem>
-                <SelectItem value="OFF_DUTY">خارج الخدمة</SelectItem>
+                <SelectItem value="ALL">{t('adminTrucks.allStatuses')}</SelectItem>
+                <SelectItem value="AVAILABLE">{t('truckStatus.available')}</SelectItem>
+                <SelectItem value="ON_TRIP">{t('truckStatus.onTrip')}</SelectItem>
+                <SelectItem value="MAINTENANCE">{t('truckStatus.maintenance')}</SelectItem>
+                <SelectItem value="OFF_DUTY">{t('truckStatus.offDuty')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={type} onValueChange={setType}>
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">كل الأنواع</SelectItem>
-                {Object.entries(TYPE_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                <SelectItem value="ALL">{t('adminTrucks.allTypes')}</SelectItem>
+                {TRUCK_TYPE_KEYS.map((k) => (
+                  <SelectItem key={k} value={k}>{t(`adminTrucks.types.${k}`)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -99,14 +100,14 @@ export default function AdminTrucksPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>اللوحة</TableHead>
-                <TableHead>الناقل</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>الحمولة</TableHead>
-                <TableHead>الموديل</TableHead>
-                <TableHead>السائق</TableHead>
-                <TableHead>الفحص الأخير</TableHead>
-                <TableHead>الحالة</TableHead>
+                <TableHead>{t('adminTrucks.table.plate')}</TableHead>
+                <TableHead>{t('adminTrucks.table.carrier')}</TableHead>
+                <TableHead>{t('adminTrucks.table.type')}</TableHead>
+                <TableHead>{t('adminTrucks.table.capacity')}</TableHead>
+                <TableHead>{t('adminTrucks.table.model')}</TableHead>
+                <TableHead>{t('adminTrucks.table.driver')}</TableHead>
+                <TableHead>{t('adminTrucks.table.lastInspection')}</TableHead>
+                <TableHead>{t('adminTrucks.table.status')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -114,30 +115,33 @@ export default function AdminTrucksPage() {
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
                     <Filter className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                    لا توجد نتائج
+                    {t('adminTrucks.noResults')}
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((t) => {
-                  const plate = parsePlateString(t.plateNumber);
-                  const carrier = carrierById(t.carrierId);
-                  const drv = driverById(t.assignedDriverId);
+                filtered.map((truck) => {
+                  const plate = parsePlateString(truck.plateNumber);
+                  const carrier = carrierById(truck.carrierId);
+                  const drv = driverById(truck.assignedDriverId);
+                  const typeLabel = (TRUCK_TYPE_KEYS as readonly string[]).includes(truck.truckType)
+                    ? t(`adminTrucks.types.${truck.truckType}`)
+                    : truck.truckType;
                   return (
-                    <TableRow key={t.id}>
+                    <TableRow key={truck.id}>
                       <TableCell>
                         <SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="thumbnail" />
                       </TableCell>
                       <TableCell>
-                        <Link href={`/companies/${t.carrierId}`} className="font-medium hover:text-primary">
+                        <Link href={`/companies/${truck.carrierId}`} className="font-medium hover:text-primary">
                           {carrier?.nameAr ?? '—'}
                         </Link>
                       </TableCell>
-                      <TableCell>{TYPE_LABELS[t.truckType] ?? t.truckType}</TableCell>
-                      <TableCell className="num">{(t.capacityKg / 1000).toFixed(0)} طن</TableCell>
-                      <TableCell className="num">{t.modelYear}</TableCell>
+                      <TableCell>{typeLabel}</TableCell>
+                      <TableCell className="num">{t('adminTrucks.capacityValue', { value: (truck.capacityKg / 1000).toFixed(0) })}</TableCell>
+                      <TableCell className="num">{truck.modelYear}</TableCell>
                       <TableCell className="truncate max-w-[160px]">{drv?.fullName ?? '—'}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{formatDate(t.lastInspection)}</TableCell>
-                      <TableCell><StatusBadge status={t.status} /></TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{formatDate(truck.lastInspection)}</TableCell>
+                      <TableCell><StatusBadge status={truck.status} /></TableCell>
                     </TableRow>
                   );
                 })

@@ -1,0 +1,194 @@
+{
+  "actions": {
+    "cancel": "إلغاء"
+  },
+  "kyc": {
+    "eyebrow": "إدارة المنصة",
+    "title": "اعتماد الشركات (KYC)",
+    "subtitle": "طابور الشركات المنتظرة لاعتماد المستندات والمصادقة",
+    "stats": {
+      "total": "إجمالي الشركات",
+      "pending": "بانتظار الاعتماد",
+      "approved": "معتمدة",
+      "rejected": "مرفوضة"
+    },
+    "queueTitle": "طابور الاعتماد ({count})",
+    "empty": "لا توجد طلبات اعتماد معلّقة",
+    "kind": {
+      "carrier": "ناقل",
+      "client": "عميل"
+    },
+    "accountType": {
+      "individual": "فرد"
+    },
+    "reviewStatus": {
+      "pending": "بانتظار المراجعة",
+      "notSubmitted": "لم تُقدّم"
+    },
+    "registeredAt": "سُجّلت {time}",
+    "review": "مراجعة",
+    "reviewDialog": {
+      "title": "مراجعة مستندات: {name}",
+      "description": "راجع المستندات المُرفقة قبل الاعتماد أو الرفض"
+    },
+    "fields": {
+      "nationalId": "رقم الهوية الوطنية",
+      "crNumber": "السجل التجاري",
+      "vatNumber": "الرقم الضريبي",
+      "city": "المدينة",
+      "region": "المنطقة",
+      "email": "البريد",
+      "phone": "الجوال"
+    },
+    "requiredDocs": "المستندات المطلوبة",
+    "docs": {
+      "commercialRegister": "السجل التجاري",
+      "zakatCertificate": "شهادة الزكاة والدخل",
+      "vatCertificate": "شهادة الضريبة (VAT)",
+      "insurancePolicy": "بوليصة التأمين",
+      "freightLicense": "رخصة نقل البضائع"
+    },
+    "docStatus": {
+      "attached": "مرفق",
+      "missing": "مفقود"
+    },
+    "missingDocWarning": "مستند واحد مفقود، يمكن طلبه من الشركة عبر تذكرة دعم تلقائية.",
+    "approve": "اعتماد",
+    "reject": "رفض",
+    "rejectDialog": {
+      "title": "سبب الرفض",
+      "description": "سيظهر للشركة كي تتمكن من تصحيح المستندات",
+      "placeholder": "مثال: السجل التجاري غير ساري المفعول...",
+      "confirm": "تأكيد الرفض"
+    },
+    "toast": {
+      "approvedTitle": "تم الاعتماد",
+      "approvedBody": "{name} أصبحت نشطة",
+      "approveError": "فشل اعتماد الشركة",
+      "rejectedTitle": "تم الرفض",
+      "rejectedBodyWithReason": "{name}، السبب: {reason}",
+      "rejectedBody": "{name} تم رفضها",
+      "rejectError": "فشل رفض الشركة"
+    }
+  },
+  "disputes": {
+    "eyebrow": "إدارة المنصة",
+    "title": "النزاعات",
+    "subtitle": "إدارة النزاعات بين العملاء والناقلين ومتابعة حلّها",
+    "stats": {
+      "open": "مفتوحة",
+      "openHint": "تحتاج تعيين",
+      "underReview": "قيد المراجعة",
+      "underReviewHint": "فريق الامتثال",
+      "resolved": "محلولة",
+      "resolvedHint": "مغلقة بنجاح"
+    },
+    "tabs": {
+      "all": "الكل ({count})",
+      "open": "مفتوح ({count})",
+      "underReview": "قيد المراجعة ({count})",
+      "resolved": "محلول ({count})"
+    },
+    "empty": "لا توجد نزاعات في هذه الفئة",
+    "raisedBy": {
+      "client": "من العميل",
+      "carrier": "من الناقل"
+    },
+    "orderLabel": "الطلب {number}",
+    "raisedByLabel": "رفعها {name}",
+    "resolvedAtLabel": "حُلّ {date}",
+    "viewDetails": "عرض التفاصيل",
+    "assignReviewer": "تعيين فاحص"
+  },
+  "disputeDetail": {
+    "notFound": "النزاع غير موجود",
+    "backToDisputes": "عودة للنزاعات",
+    "eyebrow": "تفاصيل النزاع",
+    "title": "نزاع {id}",
+    "assignReviewer": "تعيين فاحص",
+    "resolveDispute": "حلّ النزاع",
+    "back": "رجوع",
+    "problemDescription": "وصف المشكلة",
+    "parties": "أطراف النزاع",
+    "roles": {
+      "client": "عميل",
+      "carrier": "ناقل"
+    },
+    "party": {
+      "creator": "المُنشئ",
+      "otherParty": "الطرف الآخر",
+      "city": "المدينة",
+      "phone": "الهاتف",
+      "rating": "التقييم"
+    },
+    "timeline": {
+      "title": "سجل المراسلات",
+      "opened": "فتح النزاع. السبب: {reason}",
+      "adminName": "فهد العتيبي (الأدمن)",
+      "adminInitials": "ف.ع",
+      "received": "تمّ استلام النزاع وسيُحال للمراجعة",
+      "reviewStarted": "بدأت مراجعة النزاع",
+      "closed": "تم إغلاق النزاع"
+    },
+    "replyLabel": "إضافة رد للطرفين",
+    "replyPlaceholder": "اكتب ردك...",
+    "send": "إرسال",
+    "relatedOrder": "الطلب المرتبط",
+    "order": {
+      "value": "القيمة",
+      "status": "الحالة",
+      "createdAt": "تاريخ الإنشاء"
+    },
+    "resolutionOptions": "خيارات الحل",
+    "resolutions": {
+      "REFUND_CLIENT": {
+        "label": "استرداد كامل للعميل",
+        "description": "يُعاد المبلغ كاملا وتُحمَّل الغرامة على الناقل"
+      },
+      "PAY_CARRIER": {
+        "label": "إفراج المبلغ للناقل",
+        "description": "الناقل محقّ، يُصرف المبلغ كما هو متّفق"
+      },
+      "SPLIT": {
+        "label": "تقسيم 50/50",
+        "description": "يُقسَّم المبلغ بين الطرفين بالتساوي"
+      },
+      "DISMISS": {
+        "label": "رفض النزاع",
+        "description": "لا يوجد أساس للنزاع، يستمر الإجراء الطبيعي"
+      }
+    },
+    "sla": {
+      "title": "مؤشّر الاستجابة",
+      "elapsed": "الوقت المنقضي",
+      "recommended": "SLA الموصى",
+      "hours24": "24 ساعة",
+      "warning": "يجب الرد خلال 24 ساعة لتجنّب تصعيد النزاع"
+    },
+    "openedAt": "فُتح {date}",
+    "resolvedAt": "حُلّ {date}",
+    "assignDialog": {
+      "title": "تعيين فاحص للنزاع",
+      "description": "اختر عضو فريق الامتثال المسؤول",
+      "reviewerLabel": "الفاحص",
+      "placeholder": "اختر عضو الفريق",
+      "confirm": "تعيين"
+    },
+    "resolveDialog": {
+      "title": "حلّ النزاع {id}",
+      "description": "القرار سيؤثّر مباشرة على مبلغ Escrow وتقييمات الطرفين.",
+      "decisionLabel": "القرار",
+      "decisionPlaceholder": "اختر القرار",
+      "noteLabel": "ملاحظة القرار (تُرسل للطرفين)",
+      "notePlaceholder": "اشرح القرار وأسبابه...",
+      "confirm": "تأكيد القرار"
+    },
+    "toast": {
+      "assignedTitle": "تم التعيين",
+      "assignedBody": "{name} يراجع النزاع الآن",
+      "assignError": "فشل تعيين عضو الفريق",
+      "resolvedTitle": "تم حل النزاع",
+      "resolveError": "فشل حل النزاع"
+    }
+  }
+}
