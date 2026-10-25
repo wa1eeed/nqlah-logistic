@@ -6,6 +6,24 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.41 — Register + login screens fully bilingual (2026-10-25)
+
+> First slice of the full-platform translation effort: the pre-login flows.
+
+- The **register** wizards (client + carrier) and the **login** pages (client,
+  carrier, admin) now render through next-intl instead of hardcoded Arabic, so
+  they display in English under the English default (and still in Arabic when
+  the locale cookie is `ar`). Every label, step title, placeholder, button,
+  option, KYC-document name, bank name, consent and error message is keyed.
+- Added the `register`/`login` key trees to each app's `messages/{en,ar}/
+  auth.json` (client 132, carrier 218, admin 71 keys — en/ar symmetric).
+- Form logic, validation, OTP, uploads, routing and `dir` were not touched;
+  real data arrays (cities/regions/routes) stay as data.
+- Verified live: the client register wizard and login page render fully in
+  English (LTR); typecheck clean for all three apps.
+- Note: the authenticated dashboards are still hardcoded Arabic — translating
+  them is the larger follow-up (client → carrier → admin).
+
 ### v0.9.40 — 10-hour login sessions (2026-10-25)
 
 - The access-token lifetime default is now **10h** (was 15m) for every portal —
