@@ -6,7 +6,16 @@
 
 ## [Unreleased] — قيد التطوير
 
-### v0.9.61 — Admin reorg: Clients/Carriers pages + individual tabs (2026-10-26)
+### v0.9.62 — Dedicated Policies & Groups admin page (2026-10-26)
+
+- Market organization moves out of the general Settings page into its own
+  **Policies & Groups** page (`/policies`, with a dedicated sidebar entry) —
+  clearer and more professional. Two tabs: **Client groups** (sourcing / pricing
+  / collection / visibility policy) and **Provider groups**.
+- The policies tab is removed from Settings; the panels now live on the
+  dedicated page. (Backlog item 1 of the owner-requested admin UX program.)
+- Builds on the #66 fix so the group member/forced-carrier dropdowns load real
+  companies.
 
 - The admin "Carriers & Clients" page is **split into two sidebar pages** —
   **Clients** (`/clients`) and **Carriers** (`/carriers`) — each with
