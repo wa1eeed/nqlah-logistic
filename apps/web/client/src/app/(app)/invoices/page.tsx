@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { AlertTriangle, CheckCircle, Download, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +18,7 @@ import { fetcher } from '@/lib/api';
 import { CURRENT_CLIENT_ID, formatDate, invoicesForClient } from '@naqla/shared-utils';
 
 export default function ClientInvoicesPage() {
+  const t = useTranslations('payments');
   const [tab, setTab] = useState('ALL');
   // GET /invoices — falls back to mock when API is unreachable.
   const { data } = useSWR<unknown>('/invoices', fetcher);
@@ -36,29 +38,29 @@ export default function ClientInvoicesPage() {
   return (
     <PageTransition>
       <FadeItem>
-        <PageHeader title="الفواتير" subtitle="جميع فواتير شركتك على منصة نقلة" />
+        <PageHeader title={t('invoicesPage.title')} subtitle={t('invoicesPage.subtitle')} />
       </FadeItem>
 
       <FadeItem>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatsCard
-            label="إجمالي مدفوع"
+            label={t('invoicesPage.totalPaid')}
             value={<Currency amount={paid.reduce((s, i) => s + i.total, 0)} />}
-            hint={`${paid.length} فاتورة`}
+            hint={t('invoicesPage.invoiceCount', { count: paid.length })}
             icon={CheckCircle}
             tone="success"
           />
           <StatsCard
-            label="صادر وغير مسدّد"
+            label={t('invoicesPage.issuedUnpaid')}
             value={<Currency amount={issued.reduce((s, i) => s + i.total, 0)} />}
-            hint={`${issued.length} فاتورة`}
+            hint={t('invoicesPage.invoiceCount', { count: issued.length })}
             icon={FileText}
             tone="default"
           />
           <StatsCard
-            label="متأخر السداد"
+            label={t('invoicesPage.overdueAmount')}
             value={<Currency amount={overdue.reduce((s, i) => s + i.total, 0)} />}
-            hint={`${overdue.length} فاتورة`}
+            hint={t('invoicesPage.invoiceCount', { count: overdue.length })}
             icon={AlertTriangle}
             tone="danger"
           />
@@ -68,10 +70,10 @@ export default function ClientInvoicesPage() {
       <FadeItem>
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
-            <TabsTrigger value="ALL">الكل <Badge variant="secondary" className="ms-1">{all.length}</Badge></TabsTrigger>
-            <TabsTrigger value="PAID">مدفوعة <Badge variant="secondary" className="ms-1">{paid.length}</Badge></TabsTrigger>
-            <TabsTrigger value="ISSUED">صادرة <Badge variant="secondary" className="ms-1">{issued.length}</Badge></TabsTrigger>
-            <TabsTrigger value="OVERDUE">متأخرة <Badge variant="secondary" className="ms-1">{overdue.length}</Badge></TabsTrigger>
+            <TabsTrigger value="ALL">{t('invoicesPage.tabAll')} <Badge variant="secondary" className="ms-1">{all.length}</Badge></TabsTrigger>
+            <TabsTrigger value="PAID">{t('invoicesPage.tabPaid')} <Badge variant="secondary" className="ms-1">{paid.length}</Badge></TabsTrigger>
+            <TabsTrigger value="ISSUED">{t('invoicesPage.tabIssued')} <Badge variant="secondary" className="ms-1">{issued.length}</Badge></TabsTrigger>
+            <TabsTrigger value="OVERDUE">{t('invoicesPage.tabOverdue')} <Badge variant="secondary" className="ms-1">{overdue.length}</Badge></TabsTrigger>
           </TabsList>
         </Tabs>
       </FadeItem>
@@ -82,21 +84,21 @@ export default function ClientInvoicesPage() {
             {rows.length === 0 ? (
               <EmptyState
                 icon={FileText}
-                title="لا توجد فواتير"
-                description="لا توجد فواتير في هذه الفئة حتى الآن"
+                title={t('invoicesPage.emptyTitle')}
+                description={t('invoicesPage.emptyDescription')}
               />
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>رقم الفاتورة</TableHead>
-                    <TableHead>الطلب</TableHead>
-                    <TableHead>الإصدار</TableHead>
-                    <TableHead>الاستحقاق</TableHead>
-                    <TableHead className="text-end">المبلغ</TableHead>
-                    <TableHead className="text-end">ضريبة</TableHead>
-                    <TableHead className="text-end">الإجمالي</TableHead>
-                    <TableHead>الحالة</TableHead>
+                    <TableHead>{t('fields.invoiceNumber')}</TableHead>
+                    <TableHead>{t('fields.order')}</TableHead>
+                    <TableHead>{t('fields.issued')}</TableHead>
+                    <TableHead>{t('fields.due')}</TableHead>
+                    <TableHead className="text-end">{t('fields.amount')}</TableHead>
+                    <TableHead className="text-end">{t('fields.vat')}</TableHead>
+                    <TableHead className="text-end">{t('fields.total')}</TableHead>
+                    <TableHead>{t('fields.status')}</TableHead>
                     <TableHead className="text-end"></TableHead>
                   </TableRow>
                 </TableHeader>

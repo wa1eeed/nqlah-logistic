@@ -35,5 +35,60 @@
  "released": "Released",
  "refunded": "Refunded",
  "disputed": "Disputed"
+ },
+ "fields": {
+ "invoiceNumber": "Invoice Number",
+ "no": "No.",
+ "order": "Order",
+ "issued": "Issued",
+ "due": "Due",
+ "amount": "Amount",
+ "vat": "VAT",
+ "total": "Total",
+ "status": "Status",
+ "date": "Date",
+ "type": "Type",
+ "description": "Description",
+ "balanceAfter": "Balance After"
+ },
+ "invoicesPage": {
+ "title": "Invoices",
+ "subtitle": "All your company's invoices on Naqla",
+ "totalPaid": "Total Paid",
+ "issuedUnpaid": "Issued & Unpaid",
+ "overdueAmount": "Overdue",
+ "invoiceCount": "{count} invoices",
+ "tabAll": "All",
+ "tabPaid": "Paid",
+ "tabIssued": "Issued",
+ "tabOverdue": "Overdue",
+ "emptyTitle": "No invoices",
+ "emptyDescription": "There are no invoices in this category yet"
+ },
+ "finance": {
+ "title": "Finance",
+ "subtitle": "Your wallet, statement of account, and invoices",
+ "availableBalance": "Available Balance",
+ "sar": "SAR",
+ "topUp": "Top Up Wallet",
+ "heldInEscrow": "Held in Escrow",
+ "netAvailable": "Net Available to Withdraw",
+ "totalDeposits": "Total Deposits",
+ "totalDeductions": "Total Deductions",
+ "lastTransactions": "Last {count} transactions",
+ "allWalletTransactions": "All transactions on your wallet",
+ "fromDate": "From Date",
+ "toDate": "To Date",
+ "noTransactions": "No transactions in this period",
+ "myInvoices": "My Invoices",
+ "txKind": {
+ "CREDIT": "Deposit",
+ "DEBIT": "Debit",
+ "ESCROW_HOLD": "Escrow Hold",
+ "ESCROW_RELEASE": "Escrow Release",
+ "REFUND": "Refund",
+ "COMMISSION": "Commission",
+ "PAYOUT": "Bank Transfer"
+ }
  }
 }

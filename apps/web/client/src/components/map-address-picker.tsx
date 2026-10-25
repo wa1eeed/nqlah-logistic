@@ -1,16 +1,22 @@
 'use client';
 import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const Impl = dynamic(() => import('./map-address-picker-impl').then((m) => m.MapAddressPickerImpl), {
-  ssr: false,
-  loading: () => (
+function MapLoading() {
+  const t = useTranslations('orders');
+  return (
     <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm border rounded-lg" style={{ height: 280 }}>
       <Loader2 className="h-4 w-4 animate-spin" />
-      جار تحميل الخريطة...
+      {t('map.loading')}
     </div>
-  ),
+  );
+}
+
+const Impl = dynamic(() => import('./map-address-picker-impl').then((m) => m.MapAddressPickerImpl), {
+  ssr: false,
+  loading: () => <MapLoading />,
 });
 
 export interface MapPoint {

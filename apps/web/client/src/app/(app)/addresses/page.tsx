@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import {
   ArrowDownToLine, ArrowUpFromLine, Loader2, MapPin, Pencil, Phone, Plus, Star, Trash2,
@@ -35,10 +36,10 @@ type SavedAddress = {
   isDefault: boolean;
 };
 
-const KIND_META: Record<AddressKind, { label: string; icon: React.ComponentType<{ className?: string }>; tone: string }> = {
-  PICKUP:      { label: 'استلام',  icon: ArrowUpFromLine,   tone: 'bg-info/15 text-info' },
-  DESTINATION: { label: 'تسليم',   icon: ArrowDownToLine,   tone: 'bg-success/15 text-success' },
-  BOTH:        { label: 'الاثنين', icon: MapPin,            tone: 'bg-primary/10 text-primary' },
+const KIND_META: Record<AddressKind, { icon: React.ComponentType<{ className?: string }>; tone: string }> = {
+  PICKUP:      { icon: ArrowUpFromLine,   tone: 'bg-info/15 text-info' },
+  DESTINATION: { icon: ArrowDownToLine,   tone: 'bg-success/15 text-success' },
+  BOTH:        { icon: MapPin,            tone: 'bg-primary/10 text-primary' },
 };
 
 const SAUDI_CITIES = [
@@ -52,6 +53,12 @@ const blank = (): Omit<SavedAddress, 'id' | 'companyId'> => ({
 });
 
 export default function AddressesPage() {
+  const t = useTranslations('client');
+  const kindLabel: Record<AddressKind, string> = {
+    PICKUP: t('addresses.kindPickup'),
+    DESTINATION: t('addresses.kindDestination'),
+    BOTH: t('addresses.kindBoth'),
+  };
   const companyId = useAuthStore((s) => s.user?.companyId);
   const { data: list, mutate, isLoading } = useSWR<SavedAddress[]>(
     companyId ? `/companies/${companyId}/addresses` : null,
@@ -83,15 +90,15 @@ export default function AddressesPage() {
     try {
       if (editing) {
         await api.put(`/companies/${companyId}/addresses/${editing.id}`, form);
-        notify.success('تم تحديث العنوان');
+        notify.success(t('addresses.toastUpdated'));
       } else {
         await api.post(`/companies/${companyId}/addresses`, form);
-        notify.success('تم إضافة العنوان');
+        notify.success(t('addresses.toastAdded'));
       }
       await mutate();
       setOpen(false);
     } catch (err) {
-      notify.error(err, 'فشل حفظ العنوان');
+      notify.error(err, t('addresses.toastSaveFail'));
     } finally {
       setSaving(false);
     }
@@ -102,10 +109,10 @@ export default function AddressesPage() {
     setDeletingId(a.id);
     try {
       await api.delete(`/companies/${companyId}/addresses/${a.id}`);
-      notify.success('تم حذف العنوان');
+      notify.success(t('addresses.toastDeleted'));
       await mutate();
     } catch (err) {
-      notify.error(err, 'فشل حذف العنوان');
+      notify.error(err, t('addresses.toastDeleteFail'));
     } finally {
       setDeletingId(null);
     }
@@ -115,21 +122,21 @@ export default function AddressesPage() {
     if (!companyId) return;
     try {
       await api.post(`/companies/${companyId}/addresses/${a.id}/default`, {});
-      notify.success('تم تعيينه كعنوان افتراضي');
+      notify.success(t('addresses.toastDefaultSet'));
       await mutate();
     } catch (err) {
-      notify.error(err, 'فشل تعيين الافتراضي');
+      notify.error(err, t('addresses.toastDefaultFail'));
     }
   };
 
   return (
     <>
       <PageHeader
-        title="العناوين المحفوظة"
-        subtitle="مواقع الاستلام والتسليم المتكررة — تظهر تلقائيا في نموذج إنشاء الطلب"
+        title={t('addresses.title')}
+        subtitle={t('addresses.subtitleFull')}
         actions={
           <Button onClick={openAdd} disabled={!companyId}>
-            <Plus className="h-4 w-4" /> إضافة عنوان
+            <Plus className="h-4 w-4" /> {t('addresses.addNew')}
           </Button>
         }
       />
@@ -144,10 +151,10 @@ export default function AddressesPage() {
         <Card>
           <CardContent className="py-16 text-center">
             <MapPin className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-            <h3 className="font-semibold">لا توجد عناوين محفوظة</h3>
-            <p className="mt-1 text-sm text-muted-foreground">احفظ عناوينك المتكررة لتسريع إنشاء الطلبات</p>
+            <h3 className="font-semibold">{t('addresses.emptyTitle')}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{t('addresses.emptyDesc')}</p>
             <Button onClick={openAdd} className="mt-4">
-              <Plus className="h-4 w-4" /> إضافة أول عنوان
+              <Plus className="h-4 w-4" /> {t('addresses.addFirst')}
             </Button>
           </CardContent>
         </Card>
@@ -166,12 +173,12 @@ export default function AddressesPage() {
                       </div>
                       <div className="min-w-0">
                         <CardTitle className="text-base truncate">{a.label}</CardTitle>
-                        <div className="text-xs text-muted-foreground">{meta.label}</div>
+                        <div className="text-xs text-muted-foreground">{kindLabel[a.kind]}</div>
                       </div>
                     </div>
                     {a.isDefault && (
                       <Badge variant="default" className="shrink-0">
-                        <Star className="h-3 w-3 me-1 fill-current" /> افتراضي
+                        <Star className="h-3 w-3 me-1 fill-current" /> {t('addresses.default')}
                       </Badge>
                     )}
                   </div>
@@ -194,7 +201,7 @@ export default function AddressesPage() {
                   <div className="flex items-center gap-1 pt-2 border-t">
                     {!a.isDefault && (
                       <Button size="sm" variant="ghost" onClick={() => makeDefault(a)}>
-                        <Star className="h-3.5 w-3.5" /> اجعله افتراضيا
+                        <Star className="h-3.5 w-3.5" /> {t('addresses.makeDefault')}
                       </Button>
                     )}
                     <div className="flex-1" />
@@ -223,56 +230,56 @@ export default function AddressesPage() {
       <Dialog open={open} onOpenChange={(o) => !saving && setOpen(o)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل العنوان' : 'إضافة عنوان جديد'}</DialogTitle>
-            <DialogDescription>اعطِ العنوان اسما واضحا ليسهل اختياره لاحقا</DialogDescription>
+            <DialogTitle>{editing ? t('addresses.editTitle') : t('addresses.addTitle')}</DialogTitle>
+            <DialogDescription>{t('addresses.dialogDesc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label>الاسم المختصر</Label>
-              <Input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="مثال: المستودع الرئيسي" />
+              <Label>{t('addresses.label')}</Label>
+              <Input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder={t('addresses.labelPlaceholder')} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>المدينة</Label>
+                <Label>{t('addresses.city')}</Label>
                 <Select value={form.city} onValueChange={(v) => setForm((f) => ({ ...f, city: v }))}>
-                  <SelectTrigger><SelectValue placeholder="اختر المدينة" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('addresses.selectCity')} /></SelectTrigger>
                   <SelectContent>
                     {SAUDI_CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>النوع</Label>
+                <Label>{t('addresses.kind')}</Label>
                 <Select value={form.kind} onValueChange={(v) => setForm((f) => ({ ...f, kind: v as AddressKind }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BOTH">استلام وتسليم</SelectItem>
-                    <SelectItem value="PICKUP">استلام فقط</SelectItem>
-                    <SelectItem value="DESTINATION">تسليم فقط</SelectItem>
+                    <SelectItem value="BOTH">{t('addresses.kindBothLong')}</SelectItem>
+                    <SelectItem value="PICKUP">{t('addresses.kindPickupOnly')}</SelectItem>
+                    <SelectItem value="DESTINATION">{t('addresses.kindDestinationOnly')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-2">
-              <Label>العنوان التفصيلي</Label>
-              <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="الحي، الشارع، رقم المبنى..." />
+              <Label>{t('addresses.fieldAddress')}</Label>
+              <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder={t('addresses.addressPlaceholder')} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>اسم المسؤول</Label>
-                <Input value={form.contactName ?? ''} onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))} placeholder="اسم الشخص" />
+                <Label>{t('addresses.fieldContactName')}</Label>
+                <Input value={form.contactName ?? ''} onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))} placeholder={t('addresses.contactNamePlaceholder')} />
               </div>
               <div className="space-y-2">
-                <Label>الجوال</Label>
+                <Label>{t('addresses.fieldPhone')}</Label>
                 <Input dir="ltr" value={form.contactPhone ?? ''} onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))} placeholder="+966 5XX XXX XXXX" />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>{t('addresses.cancel')}</Button>
             <Button onClick={save} disabled={saving || !form.label || !form.city || !form.address}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {editing ? 'حفظ التغييرات' : 'إضافة'}
+              {editing ? t('addresses.saveChanges') : t('addresses.add')}
             </Button>
           </DialogFooter>
         </DialogContent>

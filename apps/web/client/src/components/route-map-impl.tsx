@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import L, { type LatLngTuple } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -133,11 +134,11 @@ function FitBounds({ bounds }: { bounds: LatLngTuple[] }) {
   return null;
 }
 
-function fmtDuration(sec: number): string {
+function fmtDuration(sec: number, hourUnit: string, minUnit: string): string {
   const h = Math.floor(sec / 3600);
   const m = Math.round((sec % 3600) / 60);
-  if (h > 0) return `${h} س${m ? ` ${m} د` : ''}`;
-  return `${m} د`;
+  if (h > 0) return `${h} ${hourUnit}${m ? ` ${m} ${minUnit}` : ''}`;
+  return `${m} ${minUnit}`;
 }
 
 /**
@@ -176,10 +177,11 @@ function TruckMarker({ line, progress, label, reference }: {
 
   const { at } = sliceAlong(line, anim);
   const icon = React.useMemo(() => makeTruckIcon(label), [label]);
+  const t = useTranslations('orders');
   return (
     <Marker position={at} icon={icon} zIndexOffset={1000}>
       <Popup>
-        {label ? <strong>شحنة {label}</strong> : <strong>الشاحنة في الطريق</strong>}
+        {label ? <strong>{t('map.shipmentN', { label })}</strong> : <strong>{t('map.truckEnRoute')}</strong>}
         {reference ? <><br /><span className="num" style={{ color: '#6B7280', direction: 'ltr', unicodeBidi: 'plaintext' }}>{reference}</span></> : null}
       </Popup>
     </Marker>
@@ -187,6 +189,7 @@ function TruckMarker({ line, progress, label, reference }: {
 }
 
 export function RouteMapImpl({ origin, destination, progress, trucks, height = 300 }: RouteMapImplProps) {
+  const t = useTranslations('orders');
   const o: LatLngTuple = [origin.lat, origin.lng];
   const d: LatLngTuple = [destination.lat, destination.lng];
 
@@ -256,10 +259,10 @@ export function RouteMapImpl({ origin, destination, progress, trucks, height = 3
         )}
 
         <Marker position={o} icon={ORIGIN_ICON}>
-          <Popup><strong>{origin.label}</strong><br /><span style={{ color: '#6B7280' }}>نقطة الانطلاق</span></Popup>
+          <Popup><strong>{origin.label}</strong><br /><span style={{ color: '#6B7280' }}>{t('map.originPoint')}</span></Popup>
         </Marker>
         <Marker position={d} icon={DEST_ICON}>
-          <Popup><strong>{destination.label}</strong><br /><span style={{ color: '#6B7280' }}>نقطة الوصول</span></Popup>
+          <Popup><strong>{destination.label}</strong><br /><span style={{ color: '#6B7280' }}>{t('map.destPoint')}</span></Popup>
         </Marker>
         {truckList.map((t) => (
           <TruckMarker
@@ -282,9 +285,9 @@ export function RouteMapImpl({ origin, destination, progress, trucks, height = 3
             display: 'flex', gap: 8, alignItems: 'center', pointerEvents: 'none',
           }}
         >
-          <span>{Math.round(info.km).toLocaleString('en-US')} كم</span>
+          <span>{Math.round(info.km).toLocaleString('en-US')} {t('map.kmUnit')}</span>
           <span style={{ opacity: 0.4 }}>·</span>
-          <span>~{fmtDuration(info.sec)}</span>
+          <span>~{fmtDuration(info.sec, t('map.hourUnit'), t('map.minUnit'))}</span>
         </div>
       )}
     </div>

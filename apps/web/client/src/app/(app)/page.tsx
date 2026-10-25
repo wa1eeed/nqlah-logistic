@@ -1,6 +1,7 @@
 'use client';
 import { useMemo } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { motion } from 'framer-motion';
 import {
@@ -21,26 +22,27 @@ import {
   normalizeOrderList, type Order,
 } from '@naqla/shared-utils';
 
-const STATUS_EVENT: Record<string, { label: string; color: string }> = {
-  PUBLISHED:  { label: 'تم نشر طلب جديد',       color: 'bg-primary/10 text-primary' },
-  BIDDING:    { label: 'وصلت عروض جديدة',        color: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
-  ASSIGNED:   { label: 'تم تعيين ناقل',          color: 'bg-success/10 text-success' },
-  IN_TRANSIT: { label: 'الطلب قيد التوصيل',      color: 'bg-primary/10 text-primary' },
-  COMPLETED:  { label: 'تم إتمام الطلب',         color: 'bg-success/10 text-success' },
-  DELIVERED:  { label: 'تم التسليم',             color: 'bg-success/10 text-success' },
+const STATUS_EVENT: Record<string, { color: string }> = {
+  PUBLISHED:  { color: 'bg-primary/10 text-primary' },
+  BIDDING:    { color: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
+  ASSIGNED:   { color: 'bg-success/10 text-success' },
+  IN_TRANSIT: { color: 'bg-primary/10 text-primary' },
+  COMPLETED:  { color: 'bg-success/10 text-success' },
+  DELIVERED:  { color: 'bg-success/10 text-success' },
 };
 
 const QUICK_ACTIONS = [
-  { label: 'طلب نقل جديد',  href: '/orders/new',  Icon: Plus,        color: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
-  { label: 'تتبع طلباتي',   href: '/tracking',    Icon: MapPin,      color: 'bg-primary/10 text-primary' },
-  { label: 'فواتيري',        href: '/invoices',    Icon: FileText,    color: 'bg-success/12 text-success' },
-  { label: 'الدعم',          href: '/support',     Icon: Headphones,  color: 'bg-muted text-muted-foreground' },
+  { key: 'newOrder',    href: '/orders/new',  Icon: Plus,        color: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]' },
+  { key: 'trackOrders', href: '/tracking',    Icon: MapPin,      color: 'bg-primary/10 text-primary' },
+  { key: 'invoices',    href: '/invoices',    Icon: FileText,    color: 'bg-success/12 text-success' },
+  { key: 'support',     href: '/support',     Icon: Headphones,  color: 'bg-muted text-muted-foreground' },
 ];
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 const item      = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 
 export default function ClientDashboard() {
+  const t = useTranslations('client');
   const { data: ordersData, isLoading } = useSWR<unknown>('/orders', fetcher);
   const all: Order[] = useMemo(() => {
     const normalized = normalizeOrderList(ordersData);
@@ -68,7 +70,7 @@ export default function ClientDashboard() {
       .map((o) => ({
         id:    o.id,
         href:  `/orders/${o.id}`,
-        label: STATUS_EVENT[o.status].label,
+        label: t(`dashboard.event.${o.status}`),
         color: STATUS_EVENT[o.status].color,
         sub:   `${o.orderNumber} · ${o.originCity} ← ${o.destinationCity}`,
         time:  formatRelative(o.createdAt),
@@ -93,36 +95,36 @@ export default function ClientDashboard() {
       {/* ── Header ── */}
       <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">مرحبا بعودتك 👋</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t('dashboard.greeting')}</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            <span className="num font-semibold text-foreground">{active.length}</span> طلب نشط
+            <span className="num font-semibold text-foreground">{active.length}</span> {t('dashboard.activeUnit')}
             <span className="mx-1.5 text-border">•</span>
             {overdue.length > 0
-              ? <><span className="num font-semibold text-destructive">{overdue.length}</span> فاتورة متأخرة</>
-              : 'لا فواتير متأخرة'}
+              ? <><span className="num font-semibold text-destructive">{overdue.length}</span> {t('dashboard.overdueUnit')}</>
+              : t('dashboard.noOverdue')}
           </p>
         </div>
         <Link href="/orders/new">
           <Button size="lg" className="rounded-full">
             <Plus className="h-4 w-4" />
-            طلب نقل جديد
+            {t('dashboard.newShipment')}
           </Button>
         </Link>
       </motion.div>
 
       {/* ── Stats ── */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatsCard label="إجمالي الطلبات" value={all.length}        hint="منذ بداية حسابك"  icon={Package}     tone="default" />
-        <StatsCard label="طلبات نشطة"     value={active.length}     hint="قيد التنفيذ"       icon={Clock}       tone="default" />
-        <StatsCard label="مكتملة"          value={completed.length}  hint="تم التسليم"        icon={CheckCircle} tone="success" />
-        <StatsCard label="إجمالي الإنفاق" value={<Currency amount={totalSpent} />} hint="فواتير مدفوعة" icon={Wallet} tone="default" />
+        <StatsCard label={t('dashboard.totalOrders')} value={all.length}        hint={t('dashboard.hintSinceStart')}  icon={Package}     tone="default" />
+        <StatsCard label={t('dashboard.activeOrders')} value={active.length}     hint={t('dashboard.hintInProgress')}  icon={Clock}       tone="default" />
+        <StatsCard label={t('dashboard.completed')}    value={completed.length}  hint={t('dashboard.hintDelivered')}   icon={CheckCircle} tone="success" />
+        <StatsCard label={t('dashboard.totalSpent')}   value={<Currency amount={totalSpent} />} hint={t('dashboard.hintPaidInvoices')} icon={Wallet} tone="default" />
       </motion.div>
 
       {/* ── Quick Actions ── */}
       <motion.div variants={item}>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">إجراءات سريعة</p>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t('dashboard.quickActions')}</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {QUICK_ACTIONS.map(({ label, href, Icon, color }) => (
+          {QUICK_ACTIONS.map(({ key, href, Icon, color }) => (
             <Link key={href} href={href}>
               <motion.div
                 whileHover={{ y: -2 }}
@@ -132,7 +134,7 @@ export default function ClientDashboard() {
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-sm font-semibold">{label}</span>
+                <span className="text-sm font-semibold">{t(`dashboard.action.${key}`)}</span>
                 <ArrowLeft className="ms-auto h-4 w-4 text-muted-foreground/50 rtl:rotate-180" />
               </motion.div>
             </Link>
@@ -147,12 +149,12 @@ export default function ClientDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>آخر طلباتي</CardTitle>
-                <CardDescription className="mt-1">آخر 7 طلبات أنشأتها</CardDescription>
+                <CardTitle>{t('dashboard.recentOrders')}</CardTitle>
+                <CardDescription className="mt-1">{t('dashboard.recentOrdersSubtitle')}</CardDescription>
               </div>
               <Link href="/orders">
                 <Button variant="ghost" size="sm" className="gap-1">
-                  الكل
+                  {t('dashboard.viewAll')}
                   <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
                 </Button>
               </Link>
@@ -162,12 +164,12 @@ export default function ClientDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>رقم</TableHead>
-                  <TableHead>المسار</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="text-center">عروض</TableHead>
-                  <TableHead className="text-end">السعر</TableHead>
+                  <TableHead>{t('dashboard.colNumber')}</TableHead>
+                  <TableHead>{t('dashboard.colRoute')}</TableHead>
+                  <TableHead>{t('dashboard.colType')}</TableHead>
+                  <TableHead>{t('dashboard.colStatus')}</TableHead>
+                  <TableHead className="text-center">{t('dashboard.colBids')}</TableHead>
+                  <TableHead className="text-end">{t('dashboard.colPrice')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -177,7 +179,7 @@ export default function ClientDashboard() {
                     <TableCell>{o.originCity} ← {o.destinationCity}</TableCell>
                     <TableCell>
                       <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'}>
-                        {o.mode === 'OPEN' ? 'مفتوح' : 'مباشر'}
+                        {o.mode === 'OPEN' ? t('dashboard.modeOpen') : t('dashboard.modeDirect')}
                       </Badge>
                     </TableCell>
                     <TableCell><StatusBadge status={o.status} /></TableCell>
@@ -193,14 +195,14 @@ export default function ClientDashboard() {
         {/* Activity Feed timeline */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">آخر الأنشطة</CardTitle>
-            <CardDescription>سجل تحديثات طلباتك</CardDescription>
+            <CardTitle className="text-base">{t('dashboard.recentActivity')}</CardTitle>
+            <CardDescription>{t('dashboard.recentActivitySubtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             {feedEvents.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground flex flex-col items-center gap-2">
                 <CheckCircle className="h-8 w-8 text-success/60" />
-                لا توجد أنشطة حديثة
+                {t('dashboard.noActivity')}
               </div>
             ) : (
               <div className="relative space-y-1">
@@ -243,13 +245,13 @@ export default function ClientDashboard() {
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold">لديك {overdue.length} فاتورة متأخرة</h3>
+                <h3 className="font-semibold">{t('dashboard.overdueAlertTitle', { count: overdue.length })}</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  المجموع المتأخر: <Currency amount={overdue.reduce((s, i) => s + (Number(i.total) || 0), 0)} />
+                  {t('dashboard.overdueTotal')}<Currency amount={overdue.reduce((s, i) => s + (Number(i.total) || 0), 0)} />
                 </p>
               </div>
               <Link href="/invoices">
-                <Button variant="outline" size="sm">عرض الفواتير</Button>
+                <Button variant="outline" size="sm">{t('dashboard.viewInvoices')}</Button>
               </Link>
             </CardContent>
           </Card>

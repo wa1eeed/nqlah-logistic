@@ -6,6 +6,23 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.42 — Client dashboard fully bilingual (2026-10-25)
+
+> Continues the translation effort: the whole authenticated client portal.
+
+- Every client `(app)` page now renders through next-intl instead of hardcoded
+  Arabic: dashboard, orders (list / new-order wizard / detail), tracking,
+  invoices, finance, disputes, support, addresses, notifications — plus the
+  shared chrome (top bar, notification center) and the app-wide **StatusBadge**
+  (status labels centralized under `common.status.*`).
+- Keys added across the client message namespaces (en/ar symmetric): common 92,
+  orders 498, payments 78, client 198, notifications 32.
+- Verified live: the dashboard, top bar and orders list render in English (LTR)
+  with Latin digits; typecheck clean.
+- Still Arabic by design/data: user-entered content (city names, cargo
+  descriptions). Minor follow-ups: date month names and the "ر.س." currency
+  suffix are locale-formatting, not UI strings.
+
 ### v0.9.41 — Register + login screens fully bilingual (2026-10-25)
 
 > First slice of the full-platform translation effort: the pre-login flows.

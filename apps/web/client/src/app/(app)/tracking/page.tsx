@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import Link from 'next/link';
 import {
@@ -20,6 +21,7 @@ import {
 } from '@naqla/shared-utils';
 
 export default function TrackingPage() {
+  const t = useTranslations('orders');
   // Live orders from the API (mock fallback when the backend is down).
   const { data: ordersRaw } = useSWR<unknown>('/orders?mine=true&limit=100', fetcher);
   const inTransit = useMemo(() => {
@@ -33,14 +35,14 @@ export default function TrackingPage() {
   if (inTransit.length === 0) {
     return (
       <>
-        <PageHeader title="التتبع المباشر" subtitle="تابع موقع شحناتك في الوقت الفعلي" />
+        <PageHeader title={t('tracking.title')} subtitle={t('tracking.subtitle')} />
         <Card>
           <CardContent className="py-20 text-center">
             <Truck className="h-14 w-14 mx-auto mb-4 text-muted-foreground/40" />
-            <h3 className="font-semibold">لا توجد شحنات نشطة حاليا</h3>
-            <p className="mt-2 text-sm text-muted-foreground">سيظهر هنا التتبع المباشر فور انطلاق أي شاحنة</p>
+            <h3 className="font-semibold">{t('tracking.empty.title')}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{t('tracking.empty.desc')}</p>
             <Button asChild className="mt-4">
-              <Link href="/orders/new">إنشاء طلب جديد</Link>
+              <Link href="/orders/new">{t('tracking.empty.action')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -51,15 +53,15 @@ export default function TrackingPage() {
   return (
     <>
       <PageHeader
-        title="التتبع المباشر"
-        subtitle={`${inTransit.length} شحنة قيد التنفيذ`}
+        title={t('tracking.title')}
+        subtitle={`${inTransit.length} ${t('tracking.activeCount')}`}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
         {/* Left list */}
         <Card className="lg:order-1 order-2">
           <CardHeader>
-            <CardTitle className="text-base">الشحنات النشطة</CardTitle>
+            <CardTitle className="text-base">{t('tracking.activeShipments')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
             {inTransit.map((o) => {
@@ -98,6 +100,7 @@ export default function TrackingPage() {
 }
 
 function TrackingDetail({ order }: { order: any }) {
+  const t = useTranslations('orders');
   const o = coordsFor(order.originCity);
   const d = coordsFor(order.destinationCity);
   const km = distanceKm(o, d);
@@ -171,10 +174,10 @@ function TrackingDetail({ order }: { order: any }) {
           className="rounded-b-none border-b"
         />
         <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
-          <Stat icon={MapPin} label="إجمالي المسافة" value={<span className="num">{km.toLocaleString('en-US')} كم</span>} />
-          <Stat icon={Truck} label="متبقّي" value={<span className="num text-[hsl(var(--mint))] font-bold">{remaining.toLocaleString('en-US')} كم</span>} />
-          <Stat icon={Clock} label="الوصول المتوقّع" value={duration} />
-          <Stat icon={Navigation} label="الطريق" value={road} />
+          <Stat icon={MapPin} label={t('tracking.stats.totalDistance')} value={<span className="num">{km.toLocaleString('en-US')} {t('tracking.kmUnit')}</span>} />
+          <Stat icon={Truck} label={t('tracking.stats.remaining')} value={<span className="num text-[hsl(var(--mint))] font-bold">{remaining.toLocaleString('en-US')} {t('tracking.kmUnit')}</span>} />
+          <Stat icon={Clock} label={t('tracking.stats.eta')} value={duration} />
+          <Stat icon={Navigation} label={t('tracking.stats.road')} value={road} />
         </CardContent>
       </Card>
 
@@ -182,7 +185,7 @@ function TrackingDetail({ order }: { order: any }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Truck className="h-4 w-4" /> الناقل
+              <Truck className="h-4 w-4" /> {t('tracking.carrier')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -193,7 +196,7 @@ function TrackingDetail({ order }: { order: any }) {
               <div className="min-w-0 flex-1">
                 <div className="font-semibold truncate">{carrier?.nameAr ?? '—'}</div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span className="num">{carrier?.completedTrips}</span> رحلة ·
+                  <span className="num">{carrier?.completedTrips}</span> {t('tracking.tripsWord')} ·
                   <Star className="h-3 w-3 fill-[hsl(var(--mint))] text-[hsl(var(--mint))]" />
                   <span className="num">{carrier?.rating?.toFixed(1)}</span>
                 </div>
@@ -206,20 +209,20 @@ function TrackingDetail({ order }: { order: any }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Package className="h-4 w-4" /> تفاصيل الشحنة
+              <Package className="h-4 w-4" /> {t('tracking.shipmentDetails')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">الوزن</span>
-              <span className="font-medium num">{order.weightKg.toLocaleString('en-US')} كجم</span>
+              <span className="text-muted-foreground">{t('tracking.weight')}</span>
+              <span className="font-medium num">{order.weightKg.toLocaleString('en-US')} {t('tracking.kgUnit')}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">الاستلام</span>
+              <span className="text-muted-foreground">{t('tracking.pickup')}</span>
               <span className="font-medium text-xs">{formatDateTime(order.pickupDate)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">الطلب</span>
+              <span className="text-muted-foreground">{t('tracking.order')}</span>
               <Link href={`/orders/${order.id}`} className="font-mono text-xs text-primary">{order.orderNumber}</Link>
             </div>
           </CardContent>
@@ -231,20 +234,20 @@ function TrackingDetail({ order }: { order: any }) {
         <CardHeader>
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Navigation className="h-4 w-4" /> خط أحداث التتبّع
+              <Navigation className="h-4 w-4" /> {t('tracking.timeline')}
             </CardTitle>
             <div className="flex items-center gap-2">
               {isLive && lastAt && (
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>آخر تحديث <span className="num">{lastUpdate}</span></span>
+                  <span>{t('tracking.lastUpdate')} <span className="num">{lastUpdate}</span></span>
                   {speed != null && (
-                    <span className="num font-medium text-[hsl(var(--mint))]">{speed} كم/س</span>
+                    <span className="num font-medium text-[hsl(var(--mint))]">{speed} {t('tracking.speedUnit')}</span>
                   )}
                 </span>
               )}
               <Badge variant="success" className="flex items-center gap-1">
                 <span className="inline-block h-1.5 w-1.5 bg-success rounded-full animate-pulse" />
-                مباشر
+                {t('tracking.live')}
               </Badge>
             </div>
           </div>
@@ -252,7 +255,7 @@ function TrackingDetail({ order }: { order: any }) {
         <CardContent>
           <div className="mb-5">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-              <span>{isConsolidated ? 'متوسّط تقدّم الشاحنات' : 'التقدّم'}</span>
+              <span>{isConsolidated ? t('tracking.avgProgress') : t('tracking.progress')}</span>
               <span className="num font-medium">{Math.round(overall * 100)}%</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -275,24 +278,25 @@ type TimelineEvent = {
 };
 
 function TrackingTimeline({ order, km, progress, road }: { order: any; km: number; progress: number; road: string }) {
+  const t = useTranslations('orders');
   // Estimate each milestone's time from the pickup time + an average speed.
   const totalMs = (km / 75) * 3_600_000;
   const t0 = new Date(order.pickupDate).getTime();
   const at = (f: number) => formatDateTime(new Date(t0 + totalMs * f).toISOString());
 
   const milestones = [
-    { f: 0,    title: 'تم استلام الشحنة',   place: order.originCity,      icon: Package },
-    { f: 0.05, title: 'انطلقت الرحلة',       place: order.originCity,      icon: Truck },
-    { f: 0.5,  title: 'في منتصف الطريق',     place: road,                  icon: Navigation },
-    { f: 0.85, title: 'الاقتراب من الوجهة',  place: order.destinationCity, icon: MapPin },
-    { f: 1,    title: 'التسليم المتوقّع',    place: order.destinationCity, icon: Flag },
+    { f: 0,    title: t('tracking.milestones.received'),         place: order.originCity,      icon: Package },
+    { f: 0.05, title: t('tracking.milestones.departed'),         place: order.originCity,      icon: Truck },
+    { f: 0.5,  title: t('tracking.milestones.midway'),           place: road,                  icon: Navigation },
+    { f: 0.85, title: t('tracking.milestones.approaching'),      place: order.destinationCity, icon: MapPin },
+    { f: 1,    title: t('tracking.milestones.expectedDelivery'), place: order.destinationCity, icon: Flag },
   ];
 
   const events: TimelineEvent[] = [];
   milestones.filter((m) => m.f <= progress + 1e-9).forEach((m) =>
     events.push({ title: m.title, place: m.place, time: at(m.f), icon: m.icon, state: 'done' }));
   if (progress > 0 && progress < 1) {
-    events.push({ title: 'الموقع الحالي للشاحنة', place: `على ${road}`, time: 'الآن', icon: Navigation, state: 'current' });
+    events.push({ title: t('tracking.currentLocation'), place: t('tracking.onRoad', { road }), time: t('tracking.now'), icon: Navigation, state: 'current' });
   }
   milestones.filter((m) => m.f > progress + 1e-9).forEach((m) =>
     events.push({ title: m.title, place: m.place, time: at(m.f), icon: m.icon, state: 'upcoming' }));
@@ -322,7 +326,7 @@ function TrackingTimeline({ order, km, progress, road }: { order: any; km: numbe
                 <span className={`text-sm font-semibold ${e.state === 'upcoming' ? 'text-muted-foreground' : ''}`}>
                   {e.title}
                 </span>
-                <span className={`shrink-0 text-xs ${e.state === 'current' ? 'font-semibold text-[hsl(var(--mint))]' : 'text-muted-foreground'} ${e.time !== 'الآن' ? 'num' : ''}`}>
+                <span className={`shrink-0 text-xs ${e.state === 'current' ? 'font-semibold text-[hsl(var(--mint))]' : 'text-muted-foreground'} ${e.time !== t('tracking.now') ? 'num' : ''}`}>
                   {e.time}
                 </span>
               </div>

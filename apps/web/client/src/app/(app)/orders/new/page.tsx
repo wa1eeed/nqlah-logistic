@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import {
@@ -87,33 +88,33 @@ interface FormState {
 }
 
 const STEPS = [
-  { id: 1, label: 'الشحنة',           icon: Package },
-  { id: 2, label: 'المسار',           icon: MapPin },
-  { id: 3, label: 'طريقة الإرسال',   icon: Send },
-  { id: 4, label: 'المتطلبات',        icon: Wallet },
-  { id: 5, label: 'مراجعة',           icon: Eye },
+  { id: 1, labelKey: 'wizard.steps.cargo',        icon: Package },
+  { id: 2, labelKey: 'wizard.steps.route',        icon: MapPin },
+  { id: 3, labelKey: 'wizard.steps.dispatch',     icon: Send },
+  { id: 4, labelKey: 'wizard.steps.requirements', icon: Wallet },
+  { id: 5, labelKey: 'wizard.steps.review',       icon: Eye },
 ];
 
 const CARGO_TYPES = [
-  { value: 'GENERAL',      label: 'بضاعة عامة' },
-  { value: 'FRAGILE',      label: 'بضاعة هشّة' },
-  { value: 'PERISHABLE',   label: 'منتجات قابلة للتلف' },
-  { value: 'HAZARDOUS',    label: 'مواد خطرة' },
-  { value: 'OVERSIZED',    label: 'حمولة استثنائية' },
-  { value: 'CONSTRUCTION', label: 'مواد بناء' },
-  { value: 'AUTOMOTIVE',   label: 'مركبات' },
-  { value: 'LIVESTOCK',    label: 'مواشي' },
+  { value: 'GENERAL',      labelKey: 'wizard.cargoTypes.general' },
+  { value: 'FRAGILE',      labelKey: 'wizard.cargoTypes.fragile' },
+  { value: 'PERISHABLE',   labelKey: 'wizard.cargoTypes.perishable' },
+  { value: 'HAZARDOUS',    labelKey: 'wizard.cargoTypes.hazardous' },
+  { value: 'OVERSIZED',    labelKey: 'wizard.cargoTypes.oversized' },
+  { value: 'CONSTRUCTION', labelKey: 'wizard.cargoTypes.construction' },
+  { value: 'AUTOMOTIVE',   labelKey: 'wizard.cargoTypes.automotive' },
+  { value: 'LIVESTOCK',    labelKey: 'wizard.cargoTypes.livestock' },
 ];
 
 const TRUCK_TYPES = [
-  { value: 'SMALL_VAN',         label: 'فان صغير (< 3 طن)' },
-  { value: 'BOX_TRUCK',         label: 'صندوق مغلق (5-10 طن)' },
-  { value: 'MEDIUM_FLATBED',    label: 'مسطح متوسط (12-18 طن)' },
-  { value: 'LARGE_FLATBED',     label: 'مسطح كبير (20-30 طن)' },
-  { value: 'REFRIGERATED',      label: 'مبرّد' },
-  { value: 'TANKER',            label: 'صهريج' },
-  { value: 'LOWBED',            label: 'لوبد' },
-  { value: 'CONTAINER_TRAILER', label: 'حاوية' },
+  { value: 'SMALL_VAN',         labelKey: 'wizard.truckTypes.smallVan' },
+  { value: 'BOX_TRUCK',         labelKey: 'wizard.truckTypes.boxTruck' },
+  { value: 'MEDIUM_FLATBED',    labelKey: 'wizard.truckTypes.mediumFlatbed' },
+  { value: 'LARGE_FLATBED',     labelKey: 'wizard.truckTypes.largeFlatbed' },
+  { value: 'REFRIGERATED',      labelKey: 'wizard.truckTypes.refrigerated' },
+  { value: 'TANKER',            labelKey: 'wizard.truckTypes.tanker' },
+  { value: 'LOWBED',            labelKey: 'wizard.truckTypes.lowbed' },
+  { value: 'CONTAINER_TRAILER', labelKey: 'wizard.truckTypes.containerTrailer' },
 ];
 
 type CatalogCity = { id: string; nameAr: string; nameEn: string; region: string; lat: number; lng: number; active?: boolean };
@@ -122,6 +123,7 @@ type CatalogData = { cities: CatalogCity[] | null; cargoTypes: unknown; truckTyp
 type ApiCarrier = { id: string; nameAr: string; nameEn: string | null; city: string; status: string; kycStatus: string };
 
 export default function NewOrderWizard() {
+  const t = useTranslations('orders');
   const router = useRouter();
   // Admin-configurable policy for this client (gates the available options),
   // resolved server-side so admin changes apply immediately. Falls back to the
@@ -197,15 +199,15 @@ export default function NewOrderWizard() {
   // Resolve a carrier's name from the live list first (ids are API cuids now),
   // then the mock catalog, so the forced-carrier notice shows the real name.
   const carrierName = (id?: string | null) =>
-    (carriersRaw ?? []).find((c) => c.id === id)?.nameAr ?? companyById(id)?.nameAr ?? 'المزوّد المحدّد';
+    (carriersRaw ?? []).find((c) => c.id === id)?.nameAr ?? companyById(id)?.nameAr ?? t('wizard.dispatch.defaultCarrier');
 
   // Resolve catalogs: DB data takes priority, fall back to static constants
   const activeCities: CatalogCity[] = catalog?.cities
     ? catalog.cities.filter((c) => c.active !== false)
     : DEFAULT_CITIES.filter((c) => c.active);
   const truckTypesList: { value: string; label: string }[] = catalog?.truckTypes
-    ? catalog.truckTypes.filter((t) => t.active !== false).map((t) => ({ value: t.id, label: t.nameAr }))
-    : TRUCK_TYPES;
+    ? catalog.truckTypes.filter((tt) => tt.active !== false).map((tt) => ({ value: tt.id, label: tt.nameAr }))
+    : TRUCK_TYPES.map((tt) => ({ value: tt.value, label: t(tt.labelKey) }));
 
   const canNext = useMemo(() => {
     switch (step) {
@@ -288,7 +290,7 @@ export default function NewOrderWizard() {
       const created = res.data?.data ?? res.data;
       const orderId = created?.id;
       if (!orderId) {
-        throw new Error('الـ API رجّع استجابة بدون orderId — تأكّد من حالة الـ Backend');
+        throw new Error(t('wizard.errors.noOrderId'));
       }
       // Publish — required for carriers to see the order. We surface publish
       // failures (don't swallow) because a created-but-not-published order
@@ -297,7 +299,7 @@ export default function NewOrderWizard() {
         await api.post(`/orders/${orderId}/publish`, {});
       } catch (publishErr: unknown) {
         const msg = publishErr instanceof Error ? publishErr.message : String(publishErr);
-        setSubmitError(`الطلب أُنشئ (${created.orderNumber ?? orderId}) لكن فشل نشره: ${msg}`);
+        setSubmitError(t('wizard.errors.publishFailed', { ref: created.orderNumber ?? orderId, msg }));
         setSubmitting(false);
         router.push(`/orders/${orderId}`);
         return;
@@ -306,14 +308,14 @@ export default function NewOrderWizard() {
       router.push(`/orders/${orderId}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setSubmitError(`فشل إنشاء الطلب: ${msg}`);
+      setSubmitError(t('wizard.errors.createFailed', { msg }));
       setSubmitting(false);
     }
   };
 
   return (
     <>
-      <PageHeader title="طلب نقل جديد" subtitle="املأ الخطوات التالية لنشر طلبك" />
+      <PageHeader title={t('wizard.title')} subtitle={t('wizard.subtitle')} />
 
       {/* Stepper — modern */}
       <div className="rounded-2xl border border-border/70 bg-card px-4 py-5 overflow-x-auto">
@@ -341,7 +343,7 @@ export default function NewOrderWizard() {
                     {isDone ? <Check className="h-5 w-5" strokeWidth={3} /> : <Icon className="h-5 w-5" />}
                   </button>
                   <span className={cn('text-center text-xs font-semibold leading-tight', isActive ? 'text-foreground' : 'text-muted-foreground')}>
-                    {s.label}
+                    {t(s.labelKey)}
                   </span>
                 </div>
                 {i < STEPS.length - 1 && (
@@ -359,23 +361,23 @@ export default function NewOrderWizard() {
       <Card>
         <CardContent className="p-6">
           {step === 1 && (
-            <Step title="تفاصيل الشحنة" description="ما الذي تريد نقله؟">
+            <Step title={t('wizard.cargo.title')} description={t('wizard.cargo.description')}>
               {/* Order type: single truck vs consolidated (multi-truck) */}
               <div className="space-y-2">
-                <Label>نوع الطلب</Label>
+                <Label>{t('wizard.cargo.orderType')}</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <OrderTypeCard
                     active={form.orderType === 'SINGLE'}
                     icon={Truck}
-                    title="شاحنة واحدة"
-                    desc="شحنة واحدة على شاحنة واحدة"
+                    title={t('wizard.cargo.singleTitle')}
+                    desc={t('wizard.cargo.singleDesc')}
                     onClick={() => { set('orderType', 'SINGLE'); set('truckCount', 1); }}
                   />
                   <OrderTypeCard
                     active={form.orderType === 'CONSOLIDATED'}
                     icon={Layers}
-                    title="طلب مجمّع"
-                    desc="عدة شاحنات لنفس المسار بفاتورة واحدة"
+                    title={t('wizard.cargo.consolidatedTitle')}
+                    desc={t('wizard.cargo.consolidatedDesc')}
                     onClick={() => { set('orderType', 'CONSOLIDATED'); set('truckCount', Math.max(CONSOLIDATED_MIN, form.truckCount)); }}
                   />
                 </div>
@@ -383,22 +385,22 @@ export default function NewOrderWizard() {
                   <>
                     <div className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3 mt-1">
                       <div>
-                        <div className="text-sm font-semibold">عدد الشاحنات المطلوبة</div>
-                        <div className="text-xs text-muted-foreground">نفس المسار والحمولة · فاتورة مجمّعة برقم طلب واحد</div>
+                        <div className="text-sm font-semibold">{t('wizard.cargo.truckCount')}</div>
+                        <div className="text-xs text-muted-foreground">{t('wizard.cargo.truckCountHint')}</div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <Button
                           type="button" variant="outline" size="icon" className="h-9 w-9"
                           disabled={form.truckCount <= CONSOLIDATED_MIN}
                           onClick={() => set('truckCount', Math.max(CONSOLIDATED_MIN, form.truckCount - 1))}
-                          aria-label="إنقاص"
+                          aria-label={t('wizard.cargo.decrease')}
                         ><Minus className="h-4 w-4" /></Button>
                         <span className="num w-10 text-center text-lg font-bold">{form.truckCount}</span>
                         <Button
                           type="button" variant="outline" size="icon" className="h-9 w-9"
                           disabled={form.truckCount >= CONSOLIDATED_MAX}
                           onClick={() => set('truckCount', Math.min(CONSOLIDATED_MAX, form.truckCount + 1))}
-                          aria-label="زيادة"
+                          aria-label={t('wizard.cargo.increase')}
                         ><Plus className="h-4 w-4" /></Button>
                       </div>
                     </div>
@@ -408,27 +410,27 @@ export default function NewOrderWizard() {
                     <div className="rounded-xl border bg-muted/30 p-3 mt-1 space-y-3">
                       <div className="flex items-center justify-between gap-3 flex-wrap">
                         <div>
-                          <div className="text-sm font-semibold">أرقام مرجعية للشحنات</div>
-                          <div className="text-xs text-muted-foreground">رقم مرجعي لكل شحنة داخل الطلب المجمّع</div>
+                          <div className="text-sm font-semibold">{t('wizard.cargo.legRefs')}</div>
+                          <div className="text-xs text-muted-foreground">{t('wizard.cargo.legRefsHint')}</div>
                         </div>
                         <div className="flex gap-1.5 shrink-0">
                           <Button
                             type="button" size="sm"
                             variant={!form.legReferencesManual ? 'default' : 'outline'}
                             onClick={() => set('legReferencesManual', false)}
-                          >توليد تلقائي</Button>
+                          >{t('wizard.cargo.autoGen')}</Button>
                           <Button
                             type="button" size="sm"
                             variant={form.legReferencesManual ? 'default' : 'outline'}
                             onClick={() => set('legReferencesManual', true)}
-                          >إدخال يدوي</Button>
+                          >{t('wizard.cargo.manual')}</Button>
                         </div>
                       </div>
                       {form.legReferencesManual ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {Array.from({ length: form.truckCount }).map((_, i) => (
                             <div key={i} className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground w-16 shrink-0">شحنة <span className="num">{i + 1}</span></span>
+                              <span className="text-xs text-muted-foreground w-16 shrink-0">{t('wizard.cargo.shipment')} <span className="num">{i + 1}</span></span>
                               <Input
                                 dir="ltr"
                                 value={form.legReferences[i] ?? ''}
@@ -444,7 +446,7 @@ export default function NewOrderWizard() {
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground">
-                          سيُولّد النظام رقمًا مرجعيًا فرعيًا لكل شحنة تلقائيا (مثل ORD-2026-XXXX-L1).
+                          {t('wizard.cargo.autoGenNote')}
                         </p>
                       )}
                     </div>
@@ -454,39 +456,39 @@ export default function NewOrderWizard() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>نوع البضاعة</Label>
+                  <Label>{t('wizard.cargo.cargoType')}</Label>
                   <Select value={form.cargoType} onValueChange={(v) => set('cargoType', v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {CARGO_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      {CARGO_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{t(c.labelKey)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>الوزن (كجم)</Label>
+                  <Label>{t('wizard.cargo.weight')}</Label>
                   <Input
                     type="number"
                     inputMode="numeric"
                     value={form.weightKg || ''}
                     onChange={(e) => set('weightKg', Number(e.target.value))}
-                    placeholder="مثال: 12000"
+                    placeholder={t('wizard.cargo.weightPlaceholder')}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>وصف البضاعة</Label>
+                <Label>{t('wizard.cargo.cargoDescription')}</Label>
                 <Textarea
                   value={form.cargoDescription}
                   onChange={(e) => set('cargoDescription', e.target.value)}
-                  placeholder="مثال: 4 حاويات معدّات صناعية معبأة على طبليّات خشبية"
+                  placeholder={t('wizard.cargo.cargoDescPlaceholder')}
                 />
-                <p className="text-xs text-muted-foreground">وصف مختصر يساعد الناقل على فهم الشحنة</p>
+                <p className="text-xs text-muted-foreground">{t('wizard.cargo.cargoDescHint')}</p>
               </div>
             </Step>
           )}
 
           {step === 2 && (
-            <Step title="مسار الشحن" description="نوع الرحلة، المدن، ومواقع الاستلام والتسليم على الخريطة">
+            <Step title={t('wizard.route.title')} description={t('wizard.route.description')}>
               {/* Trip type selector */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <ChoiceCard
@@ -497,22 +499,22 @@ export default function NewOrderWizard() {
                     set('destinationCity', form.originCity);
                   }}
                   icon={<Building2 className="h-6 w-6" />}
-                  title="داخل المدينة"
-                  description="استلام وتسليم داخل نفس المدينة"
+                  title={t('wizard.route.sameCityTitle')}
+                  description={t('wizard.route.sameCityDesc')}
                 />
                 <ChoiceCard
                   selected={form.tripType === 'INTER_CITY'}
                   onClick={() => set('tripType', 'INTER_CITY')}
                   icon={<Route className="h-6 w-6" />}
-                  title="بين المدن"
-                  description="رحلة طويلة عبر المسافات"
+                  title={t('wizard.route.interCityTitle')}
+                  description={t('wizard.route.interCityDesc')}
                 />
               </div>
 
               {/* Cities */}
               {form.tripType === 'SAME_CITY' ? (
                 <div className="space-y-2">
-                  <Label>المدينة</Label>
+                  <Label>{t('wizard.route.city')}</Label>
                   <Select
                     value={form.originCity}
                     onValueChange={(v) => { set('originCity', v); set('destinationCity', v); }}
@@ -528,7 +530,7 @@ export default function NewOrderWizard() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>مدينة الانطلاق</Label>
+                    <Label>{t('wizard.route.originCity')}</Label>
                     <Select value={form.originCity} onValueChange={(v) => set('originCity', v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -539,7 +541,7 @@ export default function NewOrderWizard() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>مدينة الوصول</Label>
+                    <Label>{t('wizard.route.destinationCity')}</Label>
                     <Select value={form.destinationCity} onValueChange={(v) => set('destinationCity', v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -569,7 +571,7 @@ export default function NewOrderWizard() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>تاريخ الاستلام</Label>
+                  <Label>{t('wizard.route.pickupDate')}</Label>
                   <Input
                     type="date"
                     /* Past dates make no sense — anchor min to today's local date. */
@@ -579,34 +581,34 @@ export default function NewOrderWizard() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>نافذة الاستلام</Label>
+                  <Label>{t('wizard.route.pickupWindow')}</Label>
                   <Select value={form.pickupWindow} onValueChange={(v) => set('pickupWindow', v as PickupWindow)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MORNING">صباحا (8:00 - 12:00)</SelectItem>
-                      <SelectItem value="EVENING">مساء (12:00 - 18:00)</SelectItem>
-                      <SelectItem value="ALL_DAY">طوال اليوم (8:00 - 18:00)</SelectItem>
+                      <SelectItem value="MORNING">{t('wizard.route.windowMorning')}</SelectItem>
+                      <SelectItem value="EVENING">{t('wizard.route.windowEvening')}</SelectItem>
+                      <SelectItem value="ALL_DAY">{t('wizard.route.windowAllDay')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                الناقل سيؤكّد الوقت الدقيق داخل النافذة عند قبول العرض.
+                {t('wizard.route.windowHint')}
               </p>
             </Step>
           )}
 
           {step === 3 && (
-            <Step title="كيف تريد إرسال الطلب؟" description="انشره لكل الناقلين أو أرسله مباشرة لناقل محدد">
+            <Step title={t('wizard.dispatch.title')} description={t('wizard.dispatch.description')}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {policy.allowMarket && (
                   <ChoiceCard
                     selected={form.mode === 'OPEN'}
                     onClick={() => { set('mode', 'OPEN'); set('targetCarrierId', null); }}
                     icon={<Radio className="h-6 w-6" />}
-                    title="نشر للجميع"
-                    description="يظهر طلبك لكل الناقلين المؤهلين وتستقبل عروضا متعددة للمقارنة."
-                    badge="موصى به"
+                    title={t('wizard.dispatch.openTitle')}
+                    description={t('wizard.dispatch.openDesc')}
+                    badge={t('wizard.dispatch.recommended')}
                   />
                 )}
                 {policy.allowDirect && (
@@ -614,31 +616,31 @@ export default function NewOrderWizard() {
                     selected={form.mode === 'DIRECT'}
                     onClick={() => set('mode', 'DIRECT')}
                     icon={<UserSearch className="h-6 w-6" />}
-                    title="إرسال مباشر"
-                    description="اختر ناقلا معتمدا وأرسل له الطلب بشكل مباشر."
+                    title={t('wizard.dispatch.directTitle')}
+                    description={t('wizard.dispatch.directDesc')}
                   />
                 )}
               </div>
 
               {policy.forcedCarrierId && (
                 <div className="rounded-lg border bg-[hsl(var(--mint))]/[0.06] p-3 text-sm">
-                  <span className="font-semibold">إسناد مباشر مُلزَم:</span>{' '}
-                  وفق إعدادات حسابك، تُسنَد طلباتك مباشرة إلى {carrierName(policy.forcedCarrierId)}.
+                  <span className="font-semibold">{t('wizard.dispatch.forcedTitle')}</span>{' '}
+                  {t('wizard.dispatch.forcedText', { name: carrierName(policy.forcedCarrierId) })}
                 </div>
               )}
 
               {form.mode === 'DIRECT' && !policy.forcedCarrierId && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label>اختر ناقلا معتمدا</Label>
+                    <Label>{t('wizard.dispatch.selectCarrier')}</Label>
                     <span className="text-xs text-muted-foreground">
-                      {carriersLoading ? 'جار التحميل...' : `${carriers.length} ناقل متاح`}
+                      {carriersLoading ? t('wizard.dispatch.loading') : `${carriers.length} ${t('wizard.dispatch.carriersAvailable')}`}
                     </span>
                   </div>
                   <div className="relative">
                     <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="ابحث باسم الشركة أو المدينة..."
+                      placeholder={t('wizard.dispatch.carrierSearchPlaceholder')}
                       value={carrierSearch}
                       onChange={(e) => setCarrierSearch(e.target.value)}
                       className="ps-9"
@@ -648,12 +650,12 @@ export default function NewOrderWizard() {
                     {carriersLoading && (
                       <div className="col-span-2 text-center py-8 text-sm text-muted-foreground">
                         <Truck className="h-6 w-6 mx-auto mb-2 animate-pulse" />
-                        جار تحميل الناقلين...
+                        {t('wizard.dispatch.loadingCarriers')}
                       </div>
                     )}
                     {!carriersLoading && carriers.length === 0 && (
                       <div className="col-span-2 text-center py-8 text-sm text-muted-foreground">
-                        لا يوجد ناقلون مطابقون للبحث
+                        {t('wizard.dispatch.noCarriers')}
                       </div>
                     )}
                     {carriers.map((c) => (
@@ -688,15 +690,15 @@ export default function NewOrderWizard() {
 
               {/* Pricing — works with either distribution mode */}
               <div className="rounded-lg border p-4 space-y-3">
-                <Label>التسعير</Label>
+                <Label>{t('wizard.dispatch.pricing')}</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {policy.allowMarketPricing && (
                     <ChoiceCard
                       selected={form.pricingMode === 'MARKET'}
                       onClick={() => { set('pricingMode', 'MARKET'); set('fixedPrice', null); }}
                       icon={<Gavel className="h-6 w-6" />}
-                      title="عروض الناقلين"
-                      description="تستقبل عروض أسعار من الناقلين وتقارن بينها."
+                      title={t('wizard.dispatch.marketTitle')}
+                      description={t('wizard.dispatch.marketDesc')}
                     />
                   )}
                   {policy.allowFixedPricing && (
@@ -704,14 +706,14 @@ export default function NewOrderWizard() {
                       selected={form.pricingMode === 'FIXED'}
                       onClick={() => set('pricingMode', 'FIXED')}
                       icon={<Coins className="h-6 w-6" />}
-                      title="سعر ثابت"
-                      description="تحدّد أنت سعر الطلب، ويقبله الناقل كما هو."
+                      title={t('wizard.dispatch.fixedTitle')}
+                      description={t('wizard.dispatch.fixedDesc')}
                     />
                   )}
                 </div>
                 {form.pricingMode === 'FIXED' && (
                   <div className="space-y-1.5">
-                    <Label htmlFor="fixed-price">السعر الثابت (ريال)</Label>
+                    <Label htmlFor="fixed-price">{t('wizard.dispatch.fixedPrice')}</Label>
                     <Input
                       id="fixed-price"
                       type="number"
@@ -728,15 +730,15 @@ export default function NewOrderWizard() {
 
               {/* Payment method */}
               <div className="rounded-lg border p-4 space-y-3">
-                <Label>طريقة الدفع</Label>
+                <Label>{t('wizard.dispatch.payment')}</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {policy.allowPrepaid && (
                     <ChoiceCard
                       selected={form.paymentMethod === 'PREPAID'}
                       onClick={() => set('paymentMethod', 'PREPAID')}
                       icon={<Wallet className="h-6 w-6" />}
-                      title="دفع مسبق"
-                      description="يُحجز المبلغ في الضمان (Escrow) ويُفرج بعد تأكيد التسليم."
+                      title={t('wizard.dispatch.prepaidTitle')}
+                      description={t('wizard.dispatch.prepaidDesc')}
                     />
                   )}
                   {policy.allowCOD && (
@@ -744,8 +746,8 @@ export default function NewOrderWizard() {
                       selected={form.paymentMethod === 'COD'}
                       onClick={() => set('paymentMethod', 'COD')}
                       icon={<Banknote className="h-6 w-6" />}
-                      title="دفع عند التسليم"
-                      description="يُدفع للناقل مباشرة عند استلام الشحنة."
+                      title={t('wizard.dispatch.codTitle')}
+                      description={t('wizard.dispatch.codDesc')}
                     />
                   )}
                 </div>
@@ -754,81 +756,81 @@ export default function NewOrderWizard() {
           )}
 
           {step === 4 && (
-            <Step title="المتطلبات" description="حدّد نوع الشاحنة والخصائص المطلوبة">
+            <Step title={t('wizard.requirements.title')} description={t('wizard.requirements.description')}>
               <div className="space-y-2">
-                <Label>نوع الشاحنة المطلوبة</Label>
+                <Label>{t('wizard.requirements.truckType')}</Label>
                 <Select value={form.truckType} onValueChange={(v) => set('truckType', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {truckTypesList.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    {truckTypesList.map((tt) => <SelectItem key={tt.value} value={tt.value}>{tt.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  الناقلون سيقدّمون عروضهم بالأسعار التنافسية — لا حاجة لتحديد ميزانية مسبقة.
+                  {t('wizard.requirements.truckTypeHint')}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <ToggleCard
                   icon={<ShieldCheck className="h-5 w-5" />}
-                  title="تأمين شامل على الشحنة"
-                  description="ضمان قيمة البضاعة"
+                  title={t('wizard.requirements.insuranceTitle')}
+                  description={t('wizard.requirements.insuranceDesc')}
                   checked={form.requiresInsurance}
                   onChange={(v) => set('requiresInsurance', v)}
                 />
                 <ToggleCard
                   icon={<Snowflake className="h-5 w-5" />}
-                  title="شاحنة مبرّدة"
-                  description="للمنتجات الحساسة"
+                  title={t('wizard.requirements.refrigerationTitle')}
+                  description={t('wizard.requirements.refrigerationDesc')}
                   checked={form.requiresRefrigeration}
                   onChange={(v) => set('requiresRefrigeration', v)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>تعليمات خاصة (اختياري)</Label>
+                <Label>{t('wizard.requirements.specialInstructions')}</Label>
                 <Textarea value={form.specialInstructions} onChange={(e) => set('specialInstructions', e.target.value)}
-                  placeholder="مثال: التحميل من 7 صباحا، يلزم تصريح دخول" />
+                  placeholder={t('wizard.requirements.specialPlaceholder')} />
               </div>
             </Step>
           )}
 
           {step === 5 && (
-            <Step title="مراجعة وإرسال" description="تأكد من المعلومات قبل النشر">
-              <Section title="الشحنة">
+            <Step title={t('wizard.review.title')} description={t('wizard.review.description')}>
+              <Section title={t('wizard.review.cargo')}>
                 <Row
-                  label="نوع الطلب"
+                  label={t('wizard.review.orderType')}
                   value={form.orderType === 'CONSOLIDATED'
-                    ? <span className="num">طلب مجمّع · {form.truckCount} شاحنات</span>
-                    : 'شاحنة واحدة'}
+                    ? <span className="num">{t('wizard.consolidatedLabel')} · {form.truckCount} {t('wizard.trucksWord')}</span>
+                    : t('wizard.singleLabel')}
                 />
-                <Row label="نوع البضاعة" value={CARGO_TYPES.find((c) => c.value === form.cargoType)?.label} />
-                <Row label="الوزن" value={<span className="num">{form.weightKg.toLocaleString('en-US')} كجم</span>} />
-                <Row label="الوصف" value={form.cargoDescription} />
+                <Row label={t('wizard.review.cargoType')} value={(() => { const c = CARGO_TYPES.find((x) => x.value === form.cargoType); return c ? t(c.labelKey) : undefined; })()} />
+                <Row label={t('wizard.review.weight')} value={<span className="num">{form.weightKg.toLocaleString('en-US')} {t('wizard.kgUnit')}</span>} />
+                <Row label={t('wizard.review.description2')} value={form.cargoDescription} />
               </Section>
               <Separator />
-              <Section title="المسار">
-                <Row label="من" value={`${form.originCity} — ${form.originAddress || '—'}`} />
-                <Row label="إلى" value={`${form.destinationCity} — ${form.destinationAddress || '—'}`} />
-                <Row label="تاريخ الاستلام" value={form.pickupDate || '—'} />
+              <Section title={t('wizard.review.route')}>
+                <Row label={t('wizard.review.from')} value={`${form.originCity} — ${form.originAddress || '—'}`} />
+                <Row label={t('wizard.review.to')} value={`${form.destinationCity} — ${form.destinationAddress || '—'}`} />
+                <Row label={t('wizard.review.pickupDate')} value={form.pickupDate || '—'} />
               </Section>
               <Separator />
-              <Section title="طريقة الإرسال والتسعير">
-                <Row label="التوزيع" value={form.mode === 'OPEN' ? 'نشر للجميع' : 'إرسال مباشر'} />
+              <Section title={t('wizard.review.dispatchPricing')}>
+                <Row label={t('wizard.review.distribution')} value={form.mode === 'OPEN' ? t('wizard.dispatch.openTitle') : t('wizard.dispatch.directTitle')} />
                 {form.mode === 'DIRECT' && form.targetCarrierId && (
-                  <Row label="الناقل" value={carriersRaw?.find((c) => c.id === form.targetCarrierId)?.nameAr ?? '—'} />
+                  <Row label={t('wizard.review.carrier')} value={carriersRaw?.find((c) => c.id === form.targetCarrierId)?.nameAr ?? '—'} />
                 )}
-                <Row label="التسعير" value={form.pricingMode === 'FIXED'
-                  ? `سعر ثابت · ${(form.fixedPrice ?? 0).toLocaleString('en-US')} ريال`
-                  : 'عروض الناقلين'} />
-                <Row label="طريقة الدفع" value={form.paymentMethod === 'COD' ? 'دفع عند التسليم' : 'دفع مسبق (Escrow)'} />
+                <Row label={t('wizard.review.pricing')} value={form.pricingMode === 'FIXED'
+                  ? `${t('wizard.review.fixedValue')} · ${(form.fixedPrice ?? 0).toLocaleString('en-US')} ${t('wizard.sarUnit')}`
+                  : t('wizard.dispatch.marketTitle')} />
+                <Row label={t('wizard.review.payment')} value={form.paymentMethod === 'COD' ? t('wizard.dispatch.codTitle') : t('wizard.review.prepaidValue')} />
               </Section>
               <Separator />
-              <Section title="المتطلبات">
-                <Row label="نوع الشاحنة" value={truckTypesList.find((t) => t.value === form.truckType)?.label} />
-                <Row label="تأمين" value={form.requiresInsurance ? 'نعم' : 'لا'} />
-                <Row label="تبريد" value={form.requiresRefrigeration ? 'نعم' : 'لا'} />
-                {form.specialInstructions && <Row label="تعليمات" value={form.specialInstructions} />}
+              <Section title={t('wizard.review.requirements')}>
+                <Row label={t('wizard.review.truckType')} value={truckTypesList.find((tt) => tt.value === form.truckType)?.label} />
+                <Row label={t('wizard.review.insurance')} value={form.requiresInsurance ? t('wizard.review.yes') : t('wizard.review.no')} />
+                <Row label={t('wizard.review.refrigeration')} value={form.requiresRefrigeration ? t('wizard.review.yes') : t('wizard.review.no')} />
+                {form.specialInstructions && <Row label={t('wizard.review.instructions')} value={form.specialInstructions} />}
               </Section>
             </Step>
           )}
@@ -838,17 +840,17 @@ export default function NewOrderWizard() {
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1}>
           <ChevronRight className="h-4 w-4 rtl:rotate-180" />
-          السابق
+          {t('wizard.nav.prev')}
         </Button>
         {step < STEPS.length ? (
           <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext}>
-            التالي
+            {t('wizard.nav.next')}
             <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
           </Button>
         ) : (
           <Button onClick={submit} disabled={!canNext || submitting}>
             <Send className="h-4 w-4" />
-            {submitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
+            {submitting ? t('wizard.nav.submitting') : t('wizard.nav.submit')}
           </Button>
         )}
       </div>
@@ -868,8 +870,8 @@ export default function NewOrderWizard() {
   );
 }
 
-const WINDOW_LABEL: Record<string, string> = {
-  MORNING: 'صباحا', EVENING: 'مساء', ALL_DAY: 'طوال اليوم',
+const WINDOW_LABEL_KEY: Record<string, string> = {
+  MORNING: 'wizard.windowShort.morning', EVENING: 'wizard.windowShort.evening', ALL_DAY: 'wizard.windowShort.allDay',
 };
 
 function SummaryRow({ icon: Icon, label, value, muted }: { icon: React.ElementType; label: string; value: React.ReactNode; muted?: boolean }) {
@@ -927,86 +929,88 @@ function OrderSummary({
   truckTypes: { value: string; label: string }[];
   carriers: ApiCarrier[];
 }) {
-  const cargoLabel = CARGO_TYPES.find((c) => c.value === form.cargoType)?.label;
+  const t = useTranslations('orders');
+  const cargoTypeRec = CARGO_TYPES.find((c) => c.value === form.cargoType);
+  const cargoLabel = cargoTypeRec ? t(cargoTypeRec.labelKey) : undefined;
   const truckLabel = truckTypes.find((tt) => tt.value === form.truckType)?.label;
   const carrierName = carriers.find((c) => c.id === form.targetCarrierId)?.nameAr;
   const nf = new Intl.NumberFormat('en-US');
   const modeValue = form.mode === 'DIRECT'
-    ? `مباشر${carrierName ? ` · ${carrierName}` : ''}`
-    : form.mode === 'OPEN' ? 'سوق مفتوح للعروض' : null;
+    ? `${t('wizard.summary.directShort')}${carrierName ? ` · ${carrierName}` : ''}`
+    : form.mode === 'OPEN' ? t('wizard.summary.openMarket') : null;
 
   return (
     <div className="sticky top-24 overflow-hidden rounded-2xl border border-border/70 bg-card">
       <div className="border-b border-border/60 bg-secondary/40 px-5 py-3.5">
-        <h3 className="text-sm font-bold">ملخّص الطلب</h3>
-        <p className="num mt-0.5 text-xs text-muted-foreground">الخطوة {nf.format(step)} من {nf.format(STEPS.length)}</p>
+        <h3 className="text-sm font-bold">{t('wizard.summary.title')}</h3>
+        <p className="num mt-0.5 text-xs text-muted-foreground">{t('wizard.summary.step')} {nf.format(step)} {t('wizard.summary.of')} {nf.format(STEPS.length)}</p>
       </div>
       <div className="divide-y divide-border/50 px-5">
         <SummaryRow
           icon={form.orderType === 'CONSOLIDATED' ? Layers : Truck}
-          label="نوع الطلب"
+          label={t('wizard.summary.orderType')}
           value={form.orderType === 'CONSOLIDATED'
-            ? `طلب مجمّع · ${nf.format(form.truckCount)} شاحنات`
-            : 'شاحنة واحدة'}
+            ? `${t('wizard.consolidatedLabel')} · ${nf.format(form.truckCount)} ${t('wizard.trucksWord')}`
+            : t('wizard.singleLabel')}
         />
         <SummaryRow
           icon={MapPin}
-          label="المسار"
+          label={t('wizard.summary.route')}
           muted={!form.originCity || !form.destinationCity}
           value={form.originCity && form.destinationCity
             ? `${form.originCity} ← ${form.destinationCity}`
-            : 'لم يُحدّد بعد'}
+            : t('wizard.summary.notSetM')}
         />
         <SummaryRow
           icon={Package}
-          label="الحمولة"
+          label={t('wizard.summary.cargo')}
           muted={!cargoLabel}
           value={cargoLabel
-            ? `${cargoLabel}${form.weightKg > 0 ? ` · ${nf.format(form.weightKg)} كجم` : ''}`
-            : 'لم تُحدّد بعد'}
+            ? `${cargoLabel}${form.weightKg > 0 ? ` · ${nf.format(form.weightKg)} ${t('wizard.kgUnit')}` : ''}`
+            : t('wizard.summary.notSetF')}
         />
         <SummaryRow
           icon={Clock}
-          label="موعد الاستلام"
+          label={t('wizard.summary.pickupTime')}
           muted={!form.pickupDate}
           value={form.pickupDate
-            ? `${form.pickupDate} · ${WINDOW_LABEL[form.pickupWindow]}`
-            : 'لم يُحدّد بعد'}
+            ? `${form.pickupDate} · ${t(WINDOW_LABEL_KEY[form.pickupWindow])}`
+            : t('wizard.summary.notSetM')}
         />
         <SummaryRow
           icon={form.mode === 'DIRECT' ? UserSearch : Radio}
-          label="طريقة الإرسال"
+          label={t('wizard.summary.dispatch')}
           muted={!modeValue}
-          value={modeValue ?? 'لم تُحدّد بعد'}
+          value={modeValue ?? t('wizard.summary.notSetF')}
         />
         <SummaryRow
           icon={form.pricingMode === 'FIXED' ? Coins : Gavel}
-          label="التسعير"
+          label={t('wizard.summary.pricing')}
           value={form.pricingMode === 'FIXED'
-            ? `سعر ثابت${form.fixedPrice ? ` · ${nf.format(form.fixedPrice)} ريال` : ''}`
-            : 'عروض الناقلين'}
+            ? `${t('wizard.summary.fixedShort')}${form.fixedPrice ? ` · ${nf.format(form.fixedPrice)} ${t('wizard.sarUnit')}` : ''}`
+            : t('wizard.dispatch.marketTitle')}
         />
         <SummaryRow
           icon={form.paymentMethod === 'COD' ? Banknote : Wallet}
-          label="طريقة الدفع"
-          value={form.paymentMethod === 'COD' ? 'عند التسليم' : 'مسبق (Escrow)'}
+          label={t('wizard.summary.payment')}
+          value={form.paymentMethod === 'COD' ? t('wizard.summary.codShort') : t('wizard.summary.prepaidShort')}
         />
         <SummaryRow
           icon={Truck}
-          label="نوع الشاحنة"
+          label={t('wizard.summary.truckType')}
           muted={!truckLabel}
-          value={truckLabel ?? 'لم يُحدّد بعد'}
+          value={truckLabel ?? t('wizard.summary.notSetM')}
         />
         {(form.requiresInsurance || form.requiresRefrigeration) && (
           <div className="flex flex-wrap gap-1.5 py-3">
             {form.requiresInsurance && (
               <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--mint))]/12 px-2.5 py-1 text-[11px] font-semibold text-[hsl(var(--mint))]">
-                <ShieldCheck className="h-3 w-3" /> تأمين شامل
+                <ShieldCheck className="h-3 w-3" /> {t('wizard.summary.insuranceTag')}
               </span>
             )}
             {form.requiresRefrigeration && (
               <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--mint))]/12 px-2.5 py-1 text-[11px] font-semibold text-[hsl(var(--mint))]">
-                <Snowflake className="h-3 w-3" /> تبريد
+                <Snowflake className="h-3 w-3" /> {t('wizard.summary.refrigerationTag')}
               </span>
             )}
           </div>
@@ -1014,7 +1018,7 @@ function OrderSummary({
       </div>
       <div className="border-t border-border/60 bg-secondary/30 px-5 py-3">
         <p className="text-[11px] leading-relaxed text-muted-foreground">
-          بعد النشر يصلك عروض من ناقلين معتمدين، وتُحتجَز أموالك في Escrow حتى تأكيد التسليم.
+          {t('wizard.summary.footer')}
         </p>
       </div>
     </div>
@@ -1046,6 +1050,7 @@ function RouteMapsBlock({
   onOriginPin: (p: MapPoint) => void;
   onDestPin: (p: MapPoint) => void;
 }) {
+  const t = useTranslations('orders');
   const fallback = cities[0] ?? DEFAULT_CITIES[0];
   const originCityRec = cities.find((c) => c.nameAr === originCity) ?? fallback;
   const destCityRec = cities.find((c) => c.nameAr === destinationCity) ?? fallback;
@@ -1055,33 +1060,33 @@ function RouteMapsBlock({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="space-y-2">
-        <Label>موقع الاستلام في {originCity}</Label>
+        <Label>{t('wizard.route.pickupLocation', { city: originCity })}</Label>
         <MapAddressPicker
           center={originCenter}
           value={originPin ?? undefined}
           onChange={onOriginPin}
-          label={`موقع الاستلام في ${originCity}`}
+          label={t('wizard.route.pickupLocation', { city: originCity })}
           cityName={originCity}
         />
         <Input
           value={originAddress}
           onChange={(e) => onOriginAddress(e.target.value)}
-          placeholder="عنوان تفصيلي (اختياري)"
+          placeholder={t('wizard.route.addressPlaceholder')}
         />
       </div>
       <div className="space-y-2">
-        <Label>موقع التسليم في {destinationCity}</Label>
+        <Label>{t('wizard.route.deliveryLocation', { city: destinationCity })}</Label>
         <MapAddressPicker
           center={destCenter}
           value={destinationPin ?? undefined}
           onChange={onDestPin}
-          label={`موقع التسليم في ${destinationCity}`}
+          label={t('wizard.route.deliveryLocation', { city: destinationCity })}
           cityName={destinationCity}
         />
         <Input
           value={destinationAddress}
           onChange={(e) => onDestAddress(e.target.value)}
-          placeholder="عنوان تفصيلي (اختياري)"
+          placeholder={t('wizard.route.addressPlaceholder')}
         />
       </div>
     </div>

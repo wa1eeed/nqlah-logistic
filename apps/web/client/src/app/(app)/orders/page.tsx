@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { MapPin, Package, Plus, Search, X } from 'lucide-react';
@@ -25,6 +26,7 @@ import {
 import { fetcher } from '@/lib/api';
 
 export default function ClientOrdersPage() {
+  const t = useTranslations('orders');
   const [tab, setTab] = useState('ALL');
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('ALL');
@@ -68,25 +70,25 @@ export default function ClientOrdersPage() {
   }, [tab, all, cityFilter, search]);
 
   const TABS = [
-    { key: 'ALL',        label: 'الكل',         count: all.length },
-    { key: 'ACTIVE',     label: 'نشطة',         count: all.filter((o) => ['PUBLISHED', 'BIDDING', 'ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'].includes(o.status)).length },
-    { key: 'BIDDING',    label: 'قيد العروض',   count: all.filter((o) => o.status === 'BIDDING').length },
-    { key: 'IN_TRANSIT', label: 'في الطريق',    count: all.filter((o) => o.status === 'IN_TRANSIT').length },
-    { key: 'COMPLETED',  label: 'مكتملة',       count: all.filter((o) => o.status === 'COMPLETED').length },
-    { key: 'CANCELLED',  label: 'ملغاة',        count: all.filter((o) => o.status === 'CANCELLED').length },
+    { key: 'ALL',        label: t('list.tabs.all'),        count: all.length },
+    { key: 'ACTIVE',     label: t('list.tabs.active'),      count: all.filter((o) => ['PUBLISHED', 'BIDDING', 'ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'].includes(o.status)).length },
+    { key: 'BIDDING',    label: t('list.tabs.bidding'),     count: all.filter((o) => o.status === 'BIDDING').length },
+    { key: 'IN_TRANSIT', label: t('list.tabs.inTransit'),   count: all.filter((o) => o.status === 'IN_TRANSIT').length },
+    { key: 'COMPLETED',  label: t('list.tabs.completed'),   count: all.filter((o) => o.status === 'COMPLETED').length },
+    { key: 'CANCELLED',  label: t('list.tabs.cancelled'),   count: all.filter((o) => o.status === 'CANCELLED').length },
   ];
 
   return (
     <PageTransition>
       <FadeItem>
         <PageHeader
-          title="طلباتي"
-          subtitle="جميع طلبات النقل التي أنشأتها"
+          title={t('list.title')}
+          subtitle={t('list.subtitle')}
           actions={
             <Link href="/orders/new">
               <Button>
                 <Plus className="h-4 w-4" />
-                طلب جديد
+                {t('list.newOrder')}
               </Button>
             </Link>
           }
@@ -111,7 +113,7 @@ export default function ClientOrdersPage() {
           <div className="relative flex-1">
             <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="ابحث برقم الطلب، المدينة، أو وصف الشحنة..."
+              placeholder={t('list.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="ps-9 pe-9"
@@ -121,7 +123,7 @@ export default function ClientOrdersPage() {
                 type="button"
                 onClick={() => setSearch('')}
                 className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
-                aria-label="مسح البحث"
+                aria-label={t('list.clearSearch')}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -131,11 +133,11 @@ export default function ClientOrdersPage() {
             <SelectTrigger className="w-full sm:w-56">
               <span className="flex items-center gap-2 min-w-0">
                 <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <SelectValue placeholder="كل المدن" />
+                <SelectValue placeholder={t('list.allCities')} />
               </span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">كل المدن</SelectItem>
+              <SelectItem value="ALL">{t('list.allCities')}</SelectItem>
               {cities.map((c) => (
                 <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
@@ -151,28 +153,28 @@ export default function ClientOrdersPage() {
               (search.trim() || cityFilter !== 'ALL') ? (
                 <EmptyState
                   icon={Search}
-                  title="لا توجد نتائج مطابقة"
-                  description="جرّب تعديل البحث أو تغيير فلتر المدينة"
+                  title={t('list.noResults.title')}
+                  description={t('list.noResults.desc')}
                 />
               ) : (
                 <EmptyState
                   icon={Package}
-                  title="لا توجد طلبات"
-                  description="لم تنشئ أي طلبات نقل بعد في هذه الفئة"
-                  action={{ label: 'إنشاء طلب جديد', href: '/orders/new' }}
+                  title={t('list.empty.title')}
+                  description={t('list.empty.desc')}
+                  action={{ label: t('list.empty.action'), href: '/orders/new' }}
                 />
               )
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>رقم</TableHead>
-                    <TableHead>المسار</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>الاستلام</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead className="text-center">عروض</TableHead>
-                    <TableHead className="text-end">السعر</TableHead>
+                    <TableHead>{t('list.cols.number')}</TableHead>
+                    <TableHead>{t('list.cols.route')}</TableHead>
+                    <TableHead>{t('list.cols.type')}</TableHead>
+                    <TableHead>{t('list.cols.pickup')}</TableHead>
+                    <TableHead>{t('list.cols.status')}</TableHead>
+                    <TableHead className="text-center">{t('list.cols.bids')}</TableHead>
+                    <TableHead className="text-end">{t('list.cols.price')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -204,7 +206,7 @@ export default function ClientOrdersPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'}>
-                            {o.mode === 'OPEN' ? 'مفتوح' : 'مباشر'}
+                            {o.mode === 'OPEN' ? t('list.modeOpen') : t('list.modeDirect')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatDate(o.pickupDate)}</TableCell>

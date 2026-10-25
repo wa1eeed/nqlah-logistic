@@ -1,51 +1,54 @@
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 
 type Variant = 'default' | 'secondary' | 'destructive' | 'success' | 'warning' | 'outline';
 
 const ACTIVE_STATUSES = new Set(['PUBLISHED', 'IN_TRANSIT', 'BIDDING', 'ASSIGNED']);
 
-const MAP: Record<string, { variant: Variant; label: string }> = {
-  DRAFT:        { variant: 'secondary',   label: 'مسودة' },
-  PUBLISHED:    { variant: 'default',     label: 'منشور' },
-  BIDDING:      { variant: 'default',     label: 'قيد العروض' },
-  ASSIGNED:     { variant: 'default',     label: 'مُسند' },
-  CONFIRMED:    { variant: 'default',     label: 'مؤكد' },
-  IN_TRANSIT:   { variant: 'success',     label: 'في الطريق' },
-  DELIVERED:    { variant: 'success',     label: 'تم التسليم' },
-  COMPLETED:    { variant: 'success',     label: 'مكتمل' },
-  CANCELLED:    { variant: 'destructive', label: 'ملغى' },
-  DISPUTED:     { variant: 'destructive', label: 'نزاع' },
+const MAP: Record<string, Variant> = {
+  DRAFT:        'secondary',
+  PUBLISHED:    'default',
+  BIDDING:      'default',
+  ASSIGNED:     'default',
+  CONFIRMED:    'default',
+  IN_TRANSIT:   'success',
+  DELIVERED:    'success',
+  COMPLETED:    'success',
+  CANCELLED:    'destructive',
+  DISPUTED:     'destructive',
 
-  PENDING_VERIFICATION: { variant: 'secondary',   label: 'بانتظار التحقق' },
-  APPROVED:             { variant: 'success',     label: 'معتمد' },
-  REJECTED:             { variant: 'destructive', label: 'مرفوض' },
-  ACTIVE:               { variant: 'success',     label: 'نشط' },
-  SUSPENDED:            { variant: 'destructive', label: 'موقوف' },
+  PENDING_VERIFICATION: 'secondary',
+  APPROVED:             'success',
+  REJECTED:             'destructive',
+  ACTIVE:               'success',
+  SUSPENDED:            'destructive',
 
-  HELD:     { variant: 'default', label: 'محجوز' },
-  RELEASED: { variant: 'success', label: 'مُفرج' },
-  REFUNDED: { variant: 'default', label: 'مُسترد' },
-  FAILED:   { variant: 'destructive', label: 'فشل' },
+  HELD:     'default',
+  RELEASED: 'success',
+  REFUNDED: 'default',
+  FAILED:   'destructive',
 
-  ISSUED:   { variant: 'default',     label: 'صادرة' },
-  PAID:     { variant: 'success',     label: 'مدفوعة' },
-  OVERDUE:  { variant: 'destructive', label: 'متأخرة' },
+  ISSUED:   'default',
+  PAID:     'success',
+  OVERDUE:  'destructive',
 
-  OPEN:         { variant: 'destructive', label: 'مفتوح' },
-  UNDER_REVIEW: { variant: 'secondary',   label: 'قيد المراجعة' },
-  RESOLVED:     { variant: 'success',     label: 'محلول' },
-  CLOSED:       { variant: 'secondary',   label: 'مغلق' },
+  OPEN:         'destructive',
+  UNDER_REVIEW: 'secondary',
+  RESOLVED:     'success',
+  CLOSED:       'secondary',
 
-  ACCEPTED:  { variant: 'success', label: 'مقبول' },
-  WITHDRAWN: { variant: 'secondary', label: 'مسحوب' },
-  EXPIRED:   { variant: 'destructive', label: 'منتهي' },
+  ACCEPTED:  'success',
+  WITHDRAWN: 'secondary',
+  EXPIRED:   'destructive',
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
-  const m = MAP[status] ?? { variant: 'secondary' as Variant, label: status };
+  const t = useTranslations('common');
+  const variant = MAP[status] ?? ('secondary' as Variant);
+  const resolved = label ?? (status in MAP ? t(`status.${status}`) : status);
   return (
-    <Badge variant={m.variant} pulse={ACTIVE_STATUSES.has(status)}>
-      {label ?? m.label}
+    <Badge variant={variant} pulse={ACTIVE_STATUSES.has(status)}>
+      {resolved}
     </Badge>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { fetcher, api } from '@/lib/api';
@@ -37,21 +38,23 @@ import {
   type DirectProposal, type Order, type ConsolidatedLeg,
 } from '@naqla/shared-utils';
 
+// Maps enum → i18n key path (under the `orders` namespace). A helper resolves
+// the key via `t`, falling back to the raw enum value when unknown.
 const TRUCK_LABELS: Record<string, string> = {
-  SMALL_VAN: 'فان صغير', BOX_TRUCK: 'صندوق مغلق', MEDIUM_FLATBED: 'مسطح متوسط',
-  LARGE_FLATBED: 'مسطح كبير', REFRIGERATED: 'مبرّد', TANKER: 'صهريج',
-  LOWBED: 'لوبد', CONTAINER_TRAILER: 'حاوية',
+  SMALL_VAN: 'detail.truckLabels.SMALL_VAN', BOX_TRUCK: 'detail.truckLabels.BOX_TRUCK', MEDIUM_FLATBED: 'detail.truckLabels.MEDIUM_FLATBED',
+  LARGE_FLATBED: 'detail.truckLabels.LARGE_FLATBED', REFRIGERATED: 'detail.truckLabels.REFRIGERATED', TANKER: 'detail.truckLabels.TANKER',
+  LOWBED: 'detail.truckLabels.LOWBED', CONTAINER_TRAILER: 'detail.truckLabels.CONTAINER_TRAILER',
 };
 const CARGO_LABELS: Record<string, string> = {
-  GENERAL: 'بضاعة عامة', FRAGILE: 'هشّة', PERISHABLE: 'قابلة للتلف',
-  HAZARDOUS: 'مواد خطرة', OVERSIZED: 'حمولة استثنائية', CONSTRUCTION: 'مواد بناء',
-  AUTOMOTIVE: 'مركبات', LIVESTOCK: 'مواشي',
+  GENERAL: 'detail.cargoLabels.GENERAL', FRAGILE: 'detail.cargoLabels.FRAGILE', PERISHABLE: 'detail.cargoLabels.PERISHABLE',
+  HAZARDOUS: 'detail.cargoLabels.HAZARDOUS', OVERSIZED: 'detail.cargoLabels.OVERSIZED', CONSTRUCTION: 'detail.cargoLabels.CONSTRUCTION',
+  AUTOMOTIVE: 'detail.cargoLabels.AUTOMOTIVE', LIVESTOCK: 'detail.cargoLabels.LIVESTOCK',
 };
 const TITLES: Record<string, string> = {
-  CREATED: 'إنشاء الطلب', PUBLISHED: 'نشر الطلب', BID_RECEIVED: 'استلام عروض',
-  BID_ACCEPTED: 'قبول العرض', CONFIRMED: 'تأكيد التحميل', PICKED_UP: 'تم الاستلام',
-  IN_TRANSIT: 'في الطريق', DELIVERED: 'تم التسليم',
-  PAYMENT_RELEASED: 'الإفراج عن المبلغ', COMPLETED: 'إغلاق الطلب', CANCELLED: 'إلغاء',
+  CREATED: 'detail.titles.CREATED', PUBLISHED: 'detail.titles.PUBLISHED', BID_RECEIVED: 'detail.titles.BID_RECEIVED',
+  BID_ACCEPTED: 'detail.titles.BID_ACCEPTED', CONFIRMED: 'detail.titles.CONFIRMED', PICKED_UP: 'detail.titles.PICKED_UP',
+  IN_TRANSIT: 'detail.titles.IN_TRANSIT', DELIVERED: 'detail.titles.DELIVERED',
+  PAYMENT_RELEASED: 'detail.titles.PAYMENT_RELEASED', COMPLETED: 'detail.titles.COMPLETED', CANCELLED: 'detail.titles.CANCELLED',
 };
 
 type SortKey = 'price' | 'rating' | 'days';
@@ -64,6 +67,8 @@ function dayDiff(later: string | Date | undefined, earlier: string | Date | unde
 }
 
 export default function ClientOrderDetail() {
+  const t = useTranslations('orders');
+  const tc = useTranslations('common');
   const params = useParams<{ id: string }>();
   const router = useRouter();
   // Real-API source of truth (with mock fallback via the api interceptor).
@@ -122,8 +127,8 @@ export default function ClientOrderDetail() {
       <Card>
         <CardContent className="py-16 text-center">
           <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-semibold">الطلب غير موجود</h3>
-          <Button onClick={() => router.push('/orders')} className="mt-4">عودة لطلباتي</Button>
+          <h3 className="font-semibold">{t('detail.notFound')}</h3>
+          <Button onClick={() => router.push('/orders')} className="mt-4">{t('detail.backToOrders')}</Button>
         </CardContent>
       </Card>
     );
@@ -152,7 +157,7 @@ export default function ClientOrderDetail() {
               onOpenDispute={() => router.push('/disputes')}
             />
             <Button variant="outline" onClick={() => router.push('/orders')}>
-              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('detail.back')}
             </Button>
           </>
         }
@@ -186,15 +191,15 @@ export default function ClientOrderDetail() {
               <CardHeader>
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <CardTitle>العروض المستلمة</CardTitle>
-                    <p className="mt-1 text-sm text-muted-foreground">{bids.length} عرض — قارن واختر الأنسب</p>
+                    <CardTitle>{t('detail.bids.title')}</CardTitle>
+                    <p className="mt-1 text-sm text-muted-foreground">{bids.length} {t('detail.bids.subtitle')}</p>
                   </div>
                   <div className="flex items-center gap-1 text-xs">
-                    <span className="text-muted-foreground me-1">ترتيب:</span>
+                    <span className="text-muted-foreground me-1">{t('detail.bids.sortBy')}</span>
                     {[
-                      { k: 'price' as const,  l: 'الأرخص' },
-                      { k: 'rating' as const, l: 'الأعلى تقييما' },
-                      { k: 'days' as const,   l: 'الأسرع' },
+                      { k: 'price' as const,  l: t('detail.bids.cheapest') },
+                      { k: 'rating' as const, l: t('detail.bids.topRated') },
+                      { k: 'days' as const,   l: t('detail.bids.fastest') },
                     ].map((s) => (
                       <Button
                         key={s.k}
@@ -230,18 +235,18 @@ export default function ClientOrderDetail() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="font-semibold">{c.nameAr}</h4>
-                            {isBest && <Badge variant="success">الأرخص</Badge>}
-                            {c.insurance && <Badge variant="default">تأمين</Badge>}
+                            {isBest && <Badge variant="success">{t('detail.bids.cheapest')}</Badge>}
+                            {c.insurance && <Badge variant="default">{t('detail.bids.insurance')}</Badge>}
                           </div>
                           <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                             <span className="inline-flex items-center gap-1">
                               <Star className="h-3 w-3 fill-warning text-warning" />
                               <span className="num">{c.rating?.toFixed(1)}</span>
-                              <span>({c.completedTrips} رحلة)</span>
+                              <span>(<span className="num">{c.completedTrips}</span> {t('detail.tripsWord')})</span>
                             </span>
                             <span>· {c.city}</span>
-                            <span>· استجابة {c.responseTimeMins} د</span>
-                            <span>· {TRUCK_LABELS[bid.truckType]}</span>
+                            <span>· {t('detail.bids.responsePrefix')} <span className="num">{c.responseTimeMins}</span> {t('detail.minUnit')}</span>
+                            <span>· {bid.truckType && TRUCK_LABELS[bid.truckType] ? t(TRUCK_LABELS[bid.truckType]) : bid.truckType}</span>
                           </div>
                           {bid.notes && (
                             <p className="mt-2 text-sm bg-muted/50 rounded-md p-2.5">&ldquo;{bid.notes}&rdquo;</p>
@@ -253,14 +258,15 @@ export default function ClientOrderDetail() {
                             <div className="mt-3 rounded-md border-2 border-warning/40 bg-warning/[0.06] p-3 text-sm flex items-start gap-2">
                               <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                               <div>
-                                <span className="font-semibold">موعد استلام آخر تم اقتراحه: </span>
+                                <span className="font-semibold">{t('detail.bids.altPickupProposed')}</span>
                                 {formatDate(bid.proposedPickupDate, 'EEEE d MMM')}
                                 {(() => {
                                   const d = dayDiff(bid.proposedPickupDate, order.pickupDate);
                                   if (d === 0) return null;
+                                  const unit = Math.abs(d) === 1 ? t('detail.unit.day') : t('detail.unit.days');
                                   return (
                                     <span className="ms-1 text-xs text-muted-foreground">
-                                      ({d > 0 ? `بعد ${d} ${d === 1 ? 'يوم' : 'أيام'}` : `قبل ${Math.abs(d)} ${Math.abs(d) === 1 ? 'يوم' : 'أيام'}`} من موعدك)
+                                      {d > 0 ? t('detail.bids.afterYourDate', { count: String(d), unit }) : t('detail.bids.beforeYourDate', { count: String(Math.abs(d)), unit })}
                                     </span>
                                   );
                                 })()}
@@ -271,14 +277,15 @@ export default function ClientOrderDetail() {
                             <div className="mt-2 rounded-md border-2 border-warning/40 bg-warning/[0.06] p-3 text-sm flex items-start gap-2">
                               <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                               <div>
-                                <span className="font-semibold">موعد تسليم آخر تم اقتراحه: </span>
+                                <span className="font-semibold">{t('detail.bids.altDeliveryProposed')}</span>
                                 {formatDate(bid.proposedDeliveryDate, 'EEEE d MMM')}
                                 {(() => {
                                   const d = dayDiff(bid.proposedDeliveryDate, order.deliveryDate);
                                   if (d === 0) return null;
+                                  const unit = Math.abs(d) === 1 ? t('detail.unit.day') : t('detail.unit.days');
                                   return (
                                     <span className="ms-1 text-xs text-muted-foreground">
-                                      ({d > 0 ? `بعد ${d} ${d === 1 ? 'يوم' : 'أيام'}` : `قبل ${Math.abs(d)} ${Math.abs(d) === 1 ? 'يوم' : 'أيام'}`} من موعدك)
+                                      {d > 0 ? t('detail.bids.afterYourDate', { count: String(d), unit }) : t('detail.bids.beforeYourDate', { count: String(Math.abs(d)), unit })}
                                     </span>
                                   );
                                 })()}
@@ -288,14 +295,14 @@ export default function ClientOrderDetail() {
                           {/* ETA card — at-a-glance pickup + delivery */}
                           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs rounded-md border bg-muted/20 p-2.5">
                             <div>
-                              <div className="text-muted-foreground">الاستلام</div>
+                              <div className="text-muted-foreground">{t('detail.bids.pickup')}</div>
                               <div className="font-medium">
                                 {formatDate(bid.proposedPickupDate ?? order.pickupDate, 'EEEE d MMM')}
                                 {order.pickupWindow && <span className="ms-1 text-muted-foreground">· {pickupWindowLabel(order.pickupWindow).split(' ')[1]}</span>}
                               </div>
                             </div>
                             <div>
-                              <div className="text-muted-foreground">التسليم المتوقّع</div>
+                              <div className="text-muted-foreground">{t('detail.bids.expectedDelivery')}</div>
                               <div className="font-medium">
                                 {bid.proposedDeliveryDate
                                   ? formatDate(bid.proposedDeliveryDate, 'EEEE d MMM')
@@ -310,18 +317,18 @@ export default function ClientOrderDetail() {
                                               ),
                                               'EEEE d MMM',
                                             )
-                                          : 'سيُحدَّد لاحقا'))}
+                                          : t('detail.toBeDetermined')))}
                               </div>
                             </div>
                           </div>
                           <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
                             <div className="flex items-baseline gap-3">
                               <div className="text-xl font-bold num">{(bid.price ?? 0).toLocaleString('en-US')}</div>
-                              <span className="text-xs text-muted-foreground">ر.س.</span>
+                              <span className="text-xs text-muted-foreground">{t('detail.sar')}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Button variant="outline" onClick={() => setDetailsBid(bid)}>تفاصيل</Button>
-                              <Button onClick={() => setAcceptBid(bid)}>قبول هذا العرض</Button>
+                              <Button variant="outline" onClick={() => setDetailsBid(bid)}>{t('detail.bids.detailsBtn')}</Button>
+                              <Button onClick={() => setAcceptBid(bid)}>{t('detail.bids.acceptThis')}</Button>
                             </div>
                           </div>
                         </div>
@@ -338,7 +345,7 @@ export default function ClientOrderDetail() {
               the timeline is folded into ShipmentProgressCard above. */}
           {!showBidComparison && !showWaiting && !['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED'].includes(order.status) && (
             <Card>
-              <CardHeader><CardTitle>سجل الأحداث</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t('timeline')}</CardTitle></CardHeader>
               <CardContent>
                 <ol className="relative">
                   {timeline.map((ev, i) => (
@@ -349,7 +356,7 @@ export default function ClientOrderDetail() {
                       </span>
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="text-sm font-medium">{TITLES[ev.kind] ?? ev.kind}</div>
+                          <div className="text-sm font-medium">{TITLES[ev.kind] ? t(TITLES[ev.kind]) : ev.kind}</div>
                           {(ev.note || ev.by) && <div className="text-xs text-muted-foreground mt-0.5">{ev.note} {ev.by && `· ${ev.by}`}</div>}
                         </div>
                         <span className="text-xs text-muted-foreground shrink-0">{formatDate(ev.at, 'd MMM · HH:mm')}</span>
@@ -364,7 +371,7 @@ export default function ClientOrderDetail() {
 
         <div className="space-y-6">
           <Card>
-            <CardHeader><CardTitle>تفاصيل الشحنة</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('detail.shipmentDetails')}</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
                 {/* Defensive `??` everywhere — order shape may originate from the
@@ -372,23 +379,23 @@ export default function ClientOrderDetail() {
                     or the normalizer's pass-through when input fields are missing.
                     Wrapping in `?? 0`/`?? '—'` ensures we never call `.toLocaleString`
                     on undefined or pass an empty key into a labels map. */}
-                <Row label="نوع البضاعة" icon={Package} value={(order.cargoType && CARGO_LABELS[order.cargoType]) || order.cargoType || '—'} />
-                <Row label="الوصف" value={order.cargoDescription || '—'} />
-                <Row label="الوزن" icon={Weight} value={<span className="num">{((order.weightKg ?? 0)).toLocaleString('en-US')} كجم</span>} />
-                <Row label="نوع الشاحنة" icon={Truck} value={(order.truckType && TRUCK_LABELS[order.truckType]) || order.truckType || '—'} />
-                <Row label="تأمين" icon={ShieldCheck} value={order.requiresInsurance ? 'مطلوب' : '—'} />
-                <Row label="تبريد" icon={Snowflake} value={order.requiresRefrigeration ? 'مطلوب' : '—'} />
+                <Row label={t('detail.fields.cargoType')} icon={Package} value={(order.cargoType && CARGO_LABELS[order.cargoType] ? t(CARGO_LABELS[order.cargoType]) : order.cargoType) || '—'} />
+                <Row label={t('detail.fields.description')} value={order.cargoDescription || '—'} />
+                <Row label={t('detail.fields.weight')} icon={Weight} value={<span className="num">{((order.weightKg ?? 0)).toLocaleString('en-US')} {t('tracking.kgUnit')}</span>} />
+                <Row label={t('detail.fields.truckType')} icon={Truck} value={(order.truckType && TRUCK_LABELS[order.truckType] ? t(TRUCK_LABELS[order.truckType]) : order.truckType) || '—'} />
+                <Row label={t('detail.fields.insurance')} icon={ShieldCheck} value={order.requiresInsurance ? t('detail.required') : '—'} />
+                <Row label={t('detail.fields.refrigeration')} icon={Snowflake} value={order.requiresRefrigeration ? t('detail.required') : '—'} />
               </dl>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>المسار</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('detail.routeTitle')}</CardTitle></CardHeader>
             <CardContent>
               <dl className="divide-y">
-                <Row label="من" icon={MapPin} value={`${order.originCity} — ${order.originAddress}`} />
-                <Row label="إلى" icon={MapPin} value={`${order.destinationCity} — ${order.destinationAddress}`} />
-                <Row label="موعد الاستلام" icon={Calendar} value={formatDate(order.pickupDate, 'EEEE d MMM · HH:mm')} />
+                <Row label={t('detail.fields.from')} icon={MapPin} value={`${order.originCity} — ${order.originAddress}`} />
+                <Row label={t('detail.fields.to')} icon={MapPin} value={`${order.destinationCity} — ${order.destinationAddress}`} />
+                <Row label={t('detail.fields.pickupDate')} icon={Calendar} value={formatDate(order.pickupDate, 'EEEE d MMM · HH:mm')} />
               </dl>
             </CardContent>
           </Card>
@@ -399,8 +406,8 @@ export default function ClientOrderDetail() {
       <Dialog open={!!acceptBid} onOpenChange={(o) => !o && setAcceptBid(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد قبول العرض</DialogTitle>
-            <DialogDescription>سيُسند الطلب للناقل ويُحجَز المبلغ في Escrow. تُرفض باقي العروض تلقائيا.</DialogDescription>
+            <DialogTitle>{t('detail.accept.title')}</DialogTitle>
+            <DialogDescription>{t('detail.accept.desc')}</DialogDescription>
           </DialogHeader>
           {acceptBid && (() => {
             const carrier = (acceptBid as typeof acceptBid & { carrier?: { id: string; nameAr: string; logo?: string | null; rating?: number; completedTrips?: number } }).carrier
@@ -415,32 +422,32 @@ export default function ClientOrderDetail() {
                     <div className="min-w-0">
                       <div className="font-semibold">{carrier?.nameAr}</div>
                       <div className="text-xs text-muted-foreground">
-                        <Star className="h-3 w-3 inline fill-warning text-warning" /> {carrier?.rating?.toFixed(1)} · {carrier?.completedTrips} رحلة
+                        <Star className="h-3 w-3 inline fill-warning text-warning" /> {carrier?.rating?.toFixed(1)} · <span className="num">{carrier?.completedTrips}</span> {t('detail.tripsWord')}
                       </div>
                     </div>
                   </div>
                   <dl className="space-y-1.5 text-sm pt-2 border-t">
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">السعر</dt>
+                      <dt className="text-muted-foreground">{t('detail.accept.price')}</dt>
                       <dd className="font-bold"><Currency amount={acceptBid.price} /></dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">المدة المقدّرة</dt>
-                      <dd className="font-medium num">{acceptBid.estimatedDays} {acceptBid.estimatedDays === 1 ? 'يوم' : 'أيام'}</dd>
+                      <dt className="text-muted-foreground">{t('detail.estimatedDuration')}</dt>
+                      <dd className="font-medium num">{acceptBid.estimatedDays} {acceptBid.estimatedDays === 1 ? t('detail.unit.day') : t('detail.unit.days')}</dd>
                     </div>
                   </dl>
                 </div>
                 <div className="rounded-md bg-info/10 border border-info/30 p-3 flex items-start gap-2 text-xs">
                   <ShieldCheck className="h-4 w-4 text-info shrink-0 mt-0.5" />
                   <p className="text-muted-foreground leading-relaxed">
-                    سيُحتجز المبلغ في حساب Escrow الآمن، ولا يُحوّل للناقل إلا بعد تأكيد التسليم.
+                    {t('detail.accept.escrowNote')}
                   </p>
                 </div>
               </div>
             );
           })()}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAcceptBid(null)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setAcceptBid(null)}>{tc('buttons.cancel')}</Button>
             <Button
               onClick={async () => {
                 if (!acceptBid || !order) return;
@@ -451,15 +458,15 @@ export default function ClientOrderDetail() {
                   //   • order → ASSIGNED with agreedPrice + commission
                   //   • Payment row created in HELD state
                   await api.post(`/orders/${order.id}/bids/${acceptBid.id}/accept`, {});
-                  notify.success('تم قبول العرض', 'الطلب انتقل إلى حالة ASSIGNED');
+                  notify.success(t('detail.toast.bidAccepted'), t('detail.toast.bidAcceptedDesc'));
                   await refetchOrder();
                   setAcceptBid(null);
                 } catch (err: unknown) {
-                  notify.error(err, 'فشل قبول العرض');
+                  notify.error(err, t('detail.toast.bidAcceptFailed'));
                 }
               }}
             >
-              <CheckCircle2 className="h-4 w-4" /> تأكيد القبول
+              <CheckCircle2 className="h-4 w-4" /> {t('detail.accept.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -471,8 +478,8 @@ export default function ClientOrderDetail() {
       <Dialog open={!!detailsBid} onOpenChange={(o) => !o && setDetailsBid(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>تفاصيل عرض الناقل</DialogTitle>
-            <DialogDescription>راجع المعلومات قبل القبول أو الرفض.</DialogDescription>
+            <DialogTitle>{t('detail.bidDetails.title')}</DialogTitle>
+            <DialogDescription>{t('detail.bidDetails.desc')}</DialogDescription>
           </DialogHeader>
           {detailsBid && (() => {
             const carrier = (detailsBid as typeof detailsBid & { carrier?: { id: string; nameAr: string; logo?: string | null; rating?: number; completedTrips?: number; city?: string; responseTimeMins?: number; insurance?: boolean } }).carrier
@@ -493,10 +500,10 @@ export default function ClientOrderDetail() {
                         <span className="inline-flex items-center gap-1">
                           <Star className="h-3 w-3 fill-warning text-warning" />
                           <span className="num">{carrier?.rating?.toFixed(1) ?? '—'}</span>
-                          {carrier?.completedTrips != null && <span>({carrier.completedTrips} رحلة)</span>}
+                          {carrier?.completedTrips != null && <span>(<span className="num">{carrier.completedTrips}</span> {t('detail.tripsWord')})</span>}
                         </span>
                         {carrier?.city && <span>· {carrier.city}</span>}
-                        {carrier?.insurance && <Badge variant="default" className="h-4 text-[10px] gap-1"><Shield className="h-3 w-3" /> تأمين</Badge>}
+                        {carrier?.insurance && <Badge variant="default" className="h-4 text-[10px] gap-1"><Shield className="h-3 w-3" /> {t('detail.bids.insurance')}</Badge>}
                       </div>
                     </div>
                   </div>
@@ -504,10 +511,10 @@ export default function ClientOrderDetail() {
 
                 {/* Price row */}
                 <div className="rounded-lg border bg-card p-3 flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">السعر المعروض</span>
+                  <span className="text-sm text-muted-foreground">{t('detail.bidDetails.offeredPrice')}</span>
                   <span className="text-xl font-bold num">
                     {(detailsBid.price ?? 0).toLocaleString('en-US')}
-                    <span className="ms-1 text-xs text-muted-foreground">ر.س</span>
+                    <span className="ms-1 text-xs text-muted-foreground">{t('detail.sar')}</span>
                   </span>
                 </div>
 
@@ -515,27 +522,27 @@ export default function ClientOrderDetail() {
                 <div className="rounded-lg border bg-card p-3 space-y-2 text-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-xs text-muted-foreground">الاستلام</div>
+                      <div className="text-xs text-muted-foreground">{t('detail.bids.pickup')}</div>
                       <div className="font-medium">{formatDate(detailsBid.proposedPickupDate ?? order.pickupDate, 'EEEE d MMM')}</div>
                     </div>
                     {detailsBid.proposedPickupDate && detailsBid.proposedPickupDate !== order.pickupDate && (
                       <Badge variant="warning" className="text-[10px] shrink-0">
-                        موعد بديل {pickupDiff !== 0 && `· ${pickupDiff > 0 ? '+' : ''}${pickupDiff} ${Math.abs(pickupDiff) === 1 ? 'يوم' : 'أيام'}`}
+                        {t('detail.bidDetails.altDate')} {pickupDiff !== 0 && `· ${pickupDiff > 0 ? '+' : ''}${pickupDiff} ${Math.abs(pickupDiff) === 1 ? t('detail.unit.day') : t('detail.unit.days')}`}
                       </Badge>
                     )}
                   </div>
                   <div className="flex items-start justify-between gap-3 pt-2 border-t">
                     <div>
-                      <div className="text-xs text-muted-foreground">التسليم المتوقّع</div>
+                      <div className="text-xs text-muted-foreground">{t('detail.bids.expectedDelivery')}</div>
                       <div className="font-medium">
                         {detailsBid.proposedDeliveryDate
                           ? formatDate(detailsBid.proposedDeliveryDate, 'EEEE d MMM')
-                          : (order.deliveryDate ? formatDate(order.deliveryDate, 'EEEE d MMM') : 'سيُحدَّد لاحقا')}
+                          : (order.deliveryDate ? formatDate(order.deliveryDate, 'EEEE d MMM') : t('detail.toBeDetermined'))}
                       </div>
                     </div>
                     {detailsBid.proposedDeliveryDate && order.deliveryDate && detailsBid.proposedDeliveryDate !== order.deliveryDate && (
                       <Badge variant="warning" className="text-[10px] shrink-0">
-                        موعد بديل {deliveryDiff !== 0 && `· ${deliveryDiff > 0 ? '+' : ''}${deliveryDiff} ${Math.abs(deliveryDiff) === 1 ? 'يوم' : 'أيام'}`}
+                        {t('detail.bidDetails.altDate')} {deliveryDiff !== 0 && `· ${deliveryDiff > 0 ? '+' : ''}${deliveryDiff} ${Math.abs(deliveryDiff) === 1 ? t('detail.unit.day') : t('detail.unit.days')}`}
                       </Badge>
                     )}
                   </div>
@@ -543,7 +550,7 @@ export default function ClientOrderDetail() {
 
                 {detailsBid.notes && (
                   <div className="rounded-md bg-muted/40 p-3 text-sm">
-                    <div className="text-xs text-muted-foreground mb-1">ملاحظات الناقل</div>
+                    <div className="text-xs text-muted-foreground mb-1">{t('detail.bidDetails.carrierNotes')}</div>
                     {detailsBid.notes}
                   </div>
                 )}
@@ -554,9 +561,9 @@ export default function ClientOrderDetail() {
             <Button
               variant="outline"
               onClick={() => setDetailsBid(null)}
-              aria-label="إغلاق"
+              aria-label={tc('buttons.close')}
             >
-              <X className="h-4 w-4" /> إغلاق
+              <X className="h-4 w-4" /> {tc('buttons.close')}
             </Button>
             <Button
               variant="destructive"
@@ -564,15 +571,15 @@ export default function ClientOrderDetail() {
                 if (!detailsBid || !order) return;
                 try {
                   await api.post(`/orders/${order.id}/bids/${detailsBid.id}/reject`, {});
-                  notify.success('تم رفض العرض');
+                  notify.success(t('detail.toast.bidRejected'));
                   await refetchOrder();
                   setDetailsBid(null);
                 } catch (err: unknown) {
-                  notify.error(err, 'فشل رفض العرض');
+                  notify.error(err, t('detail.toast.bidRejectFailed'));
                 }
               }}
             >
-              <X className="h-4 w-4" /> رفض
+              <X className="h-4 w-4" /> {t('detail.reject')}
             </Button>
             <Button
               onClick={() => {
@@ -581,7 +588,7 @@ export default function ClientOrderDetail() {
                 setDetailsBid(null);
               }}
             >
-              <CheckCircle2 className="h-4 w-4" /> قبول
+              <CheckCircle2 className="h-4 w-4" /> {t('detail.acceptShort')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -601,11 +608,11 @@ export default function ClientOrderDetail() {
             await api.post(`/orders/${order.id}/cancel`, {
               reason: cancelReason + (cancelReasonText ? ` — ${cancelReasonText}` : ''),
             });
-            notify.success('تم إلغاء الطلب');
+            notify.success(t('detail.toast.orderCancelled'));
             await refetchOrder();
             setCancelOpen(false);
           } catch (err: unknown) {
-            notify.error(err, 'فشل إلغاء الطلب');
+            notify.error(err, t('detail.toast.orderCancelFailed'));
           }
         }}
       />
@@ -614,35 +621,35 @@ export default function ClientOrderDetail() {
       <Dialog open={confirmDeliveryOpen} onOpenChange={setConfirmDeliveryOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد استلام الشحنة</DialogTitle>
-            <DialogDescription>سيتم إفراج مبلغ Escrow للناقل بعد خصم العمولة.</DialogDescription>
+            <DialogTitle>{t('detail.confirmDelivery.title')}</DialogTitle>
+            <DialogDescription>{t('detail.confirmDelivery.desc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="rounded-lg bg-success/10 border border-success/30 p-3 flex items-start gap-2 text-sm">
               <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
               <p className="text-muted-foreground leading-relaxed">
-                بتأكيدك الاستلام تُقرّ بأن البضاعة وصلت بحالة جيدة. لن يمكنك فتح نزاع بعد التأكيد إلا في حالة عيب خفي يظهر لاحقا.
+                {t('detail.confirmDelivery.note')}
               </p>
             </div>
-            <p className="text-sm">سيُحوّل للناقل: <Currency amount={(order.agreedPrice ?? 0) * 0.92} /> (بعد خصم 8% عمولة)</p>
+            <p className="text-sm">{t('detail.confirmDelivery.payoutPrefix')} <Currency amount={(order.agreedPrice ?? 0) * 0.92} /> {t('detail.confirmDelivery.payoutSuffix')}</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDeliveryOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setConfirmDeliveryOpen(false)}>{tc('buttons.cancel')}</Button>
             <Button
               onClick={async () => {
                 try {
                   // POST /orders/:id/complete → order COMPLETED + Payment RELEASED
                   await api.post(`/orders/${order.id}/complete`, {});
                   playSoundIfEnabled('orderCompleted');
-                  notify.success('تم تأكيد الاستلام', 'سيُفرَج المبلغ للناقل خلال لحظات');
+                  notify.success(t('detail.toast.deliveryConfirmed'), t('detail.toast.deliveryConfirmedDesc'));
                   await refetchOrder();
                   setConfirmDeliveryOpen(false);
                 } catch (err: unknown) {
-                  notify.error(err, 'فشل تأكيد الاستلام');
+                  notify.error(err, t('detail.toast.deliveryConfirmFailed'));
                 }
               }}
             >
-              <CheckCircle2 className="h-4 w-4" /> تأكيد الاستلام
+              <CheckCircle2 className="h-4 w-4" /> {t('detail.confirmDelivery.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -661,6 +668,7 @@ function OrderActionButtons({
   onConfirmDelivery: () => void;
   onOpenDispute: () => void;
 }) {
+  const t = useTranslations('orders');
   const canCancel = ['DRAFT', 'PUBLISHED', 'BIDDING', 'ASSIGNED', 'CONFIRMED'].includes(order.status);
   const canConfirmDelivery = order.status === 'DELIVERED';
   const canDispute = ['IN_TRANSIT', 'DELIVERED'].includes(order.status);
@@ -669,17 +677,17 @@ function OrderActionButtons({
     <>
       {canConfirmDelivery && (
         <Button onClick={onConfirmDelivery} className="bg-success hover:bg-success/90 text-success-foreground">
-          <CheckCircle2 className="h-4 w-4" /> تأكيد الاستلام
+          <CheckCircle2 className="h-4 w-4" /> {t('detail.confirmDelivery.confirm')}
         </Button>
       )}
       {canDispute && (
         <Button variant="outline" onClick={onOpenDispute}>
-          <Shield className="h-4 w-4" /> فتح نزاع
+          <Shield className="h-4 w-4" /> {t('actions.openDispute')}
         </Button>
       )}
       {canCancel && (
         <Button variant="outline" onClick={onCancel} className="text-destructive hover:text-destructive border-destructive/30">
-          <X className="h-4 w-4" /> إلغاء الطلب
+          <X className="h-4 w-4" /> {t('actions.cancel')}
         </Button>
       )}
     </>
@@ -688,13 +696,15 @@ function OrderActionButtons({
 
 // ─── Cancel dialog with rule-based fees ──────────────────────────────
 
+// value stays the canonical Arabic string (what gets submitted to the API,
+// unchanged); the displayed label is translated via `labelKey`.
 const CANCEL_REASONS = [
-  'لم أعد بحاجة للنقل',
-  'وجدت بديلا أرخص',
-  'تغيّر الموعد أو الوجهة',
-  'مشكلة في البضاعة',
-  'الناقل لا يستجيب',
-  'أخرى',
+  { value: 'لم أعد بحاجة للنقل', labelKey: 'detail.cancelReasons.noLongerNeeded' },
+  { value: 'وجدت بديلا أرخص', labelKey: 'detail.cancelReasons.cheaperAlt' },
+  { value: 'تغيّر الموعد أو الوجهة', labelKey: 'detail.cancelReasons.scheduleChanged' },
+  { value: 'مشكلة في البضاعة', labelKey: 'detail.cancelReasons.cargoIssue' },
+  { value: 'الناقل لا يستجيب', labelKey: 'detail.cancelReasons.carrierUnresponsive' },
+  { value: 'أخرى', labelKey: 'detail.cancelReasons.other' },
 ];
 
 function CancelOrderDialog({
@@ -705,6 +715,7 @@ function CancelOrderDialog({
   reasonText: string; setReasonText: (v: string) => void;
   onConfirm: () => void;
 }) {
+  const t = useTranslations('orders');
   // Pull the cancellation policy from the workflow engine (single source of
   // truth: shared-utils/workflow-engine.ts). Renders the appropriate tier-
   // specific summary card.
@@ -722,8 +733,8 @@ function CancelOrderDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>إلغاء الطلب {order.orderNumber}</DialogTitle>
-          <DialogDescription>راجع تفاصيل الإلغاء بحسب الحالة الحالية للطلب</DialogDescription>
+          <DialogTitle>{t('detail.cancelDialog.title', { orderNumber: order.orderNumber })}</DialogTitle>
+          <DialogDescription>{t('detail.cancelDialog.desc')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-2">
@@ -732,8 +743,8 @@ function CancelOrderDialog({
             <div className="rounded-md bg-success/10 border border-success/30 p-3 flex items-start gap-2 text-sm">
               <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold">إلغاء مجاني</p>
-                <p className="mt-1 text-xs text-muted-foreground">لا تُطبَّق رسوم — الطلب لم يُسند لناقل بعد.</p>
+                <p className="font-semibold">{t('detail.cancelDialog.freeTitle')}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('detail.cancelDialog.freeDesc')}</p>
               </div>
             </div>
           )}
@@ -742,21 +753,21 @@ function CancelOrderDialog({
             <div className="rounded-md bg-warning/10 border border-warning/30 p-3 flex items-start gap-2 text-sm">
               <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-semibold">رسوم إلغاء 10%</p>
+                <p className="font-semibold">{t('detail.cancelDialog.fee10Title')}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  تُخصم رسوم تعويضا للناقل الذي خصّص شاحنته وسائقه لهذا الطلب.
+                  {t('detail.cancelDialog.fee10Desc')}
                 </p>
                 <dl className="mt-2 pt-2 border-t border-warning/30 text-xs space-y-1">
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">قيمة الطلب</dt>
+                    <dt className="text-muted-foreground">{t('detail.cancelDialog.orderValue')}</dt>
                     <dd className="font-medium"><Currency amount={total} /></dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">رسوم الإلغاء (10%)</dt>
+                    <dt className="text-muted-foreground">{t('detail.cancelDialog.feeLabel')}</dt>
                     <dd className="font-medium text-destructive">−<Currency amount={fee} /></dd>
                   </div>
                   <div className="flex justify-between pt-1 border-t border-warning/30 font-semibold">
-                    <dt>المبلغ المُسترَد</dt>
+                    <dt>{t('detail.cancelDialog.refund')}</dt>
                     <dd className="text-success"><Currency amount={refund} /></dd>
                   </div>
                 </dl>
@@ -768,9 +779,9 @@ function CancelOrderDialog({
             <div className="rounded-md bg-destructive/10 border border-destructive/30 p-3 flex items-start gap-2 text-sm">
               <X className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold">لا يمكن الإلغاء</p>
+                <p className="font-semibold">{t('detail.cancelDialog.cannotTitle')}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  الشحنة في الطريق. يمكنك فتح نزاع إذا كانت هناك مشكلة.
+                  {t('detail.cancelDialog.cannotDesc')}
                 </p>
               </div>
             </div>
@@ -779,22 +790,22 @@ function CancelOrderDialog({
           {!inTransit && (
             <>
               <div className="space-y-2">
-                <Label>سبب الإلغاء</Label>
+                <Label>{t('detail.cancelDialog.reason')}</Label>
                 <Select value={reason} onValueChange={setReason}>
-                  <SelectTrigger><SelectValue placeholder="اختر السبب" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('detail.cancelDialog.reasonPlaceholder')} /></SelectTrigger>
                   <SelectContent>
-                    {CANCEL_REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    {CANCEL_REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{t(r.labelKey)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>ملاحظات إضافية (اختياري)</Label>
+                <Label>{t('detail.cancelDialog.notes')}</Label>
                 <textarea
                   value={reasonText}
                   onChange={(e) => setReasonText(e.target.value)}
                   rows={3}
                   className="w-full p-3 rounded-md border bg-background text-sm"
-                  placeholder="اشرح السبب بمزيد من التفصيل..."
+                  placeholder={t('detail.cancelDialog.notesPlaceholder')}
                 />
               </div>
             </>
@@ -802,10 +813,10 @@ function CancelOrderDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>تراجع</Button>
+          <Button variant="outline" onClick={onClose}>{t('detail.goBack')}</Button>
           {!inTransit && (
             <Button variant="destructive" onClick={onConfirm} disabled={!reason}>
-              <X className="h-4 w-4" /> تأكيد الإلغاء
+              <X className="h-4 w-4" /> {t('detail.cancelDialog.confirm')}
             </Button>
           )}
         </DialogFooter>
@@ -833,6 +844,7 @@ function Row({ label, value, icon: Icon }: { label: string; value: React.ReactNo
  * without scrolling through bid history.
  */
 function ShipmentProgressCard({ order, bids }: { order: Order; bids: typeof BIDS }) {
+  const t = useTranslations('orders');
   const accepted = bids.find((b) => b.status === 'ACCEPTED');
   const effectivePickup = accepted?.proposedPickupDate ?? order.pickupDate;
   const effectiveDelivery =
@@ -843,11 +855,11 @@ function ShipmentProgressCard({ order, bids }: { order: Order; bids: typeof BIDS
   const events = timelineFor(order.id);
   // Map status → (helper text, which of the 3 steps is the current focus).
   const meta: Record<string, { text: string; step: 1 | 2 | 3; tone: 'info' | 'warning' | 'success' }> = {
-    ASSIGNED:   { text: 'تم إسناد الطلب — الناقل يحضّر للتحميل',  step: 1, tone: 'info' },
-    CONFIRMED:  { text: 'الناقل أكّد الموعد — جار التحرّك للاستلام', step: 1, tone: 'info' },
-    IN_TRANSIT: { text: 'الشحنة في الطريق إلى وجهتها',              step: 2, tone: 'warning' },
-    DELIVERED:  { text: 'تم التسليم — يرجى تأكيد الاستلام',         step: 3, tone: 'warning' },
-    COMPLETED:  { text: 'الطلب مكتمل ',                          step: 3, tone: 'success' },
+    ASSIGNED:   { text: t('detail.progress.assigned'),   step: 1, tone: 'info' },
+    CONFIRMED:  { text: t('detail.progress.confirmed'),  step: 1, tone: 'info' },
+    IN_TRANSIT: { text: t('detail.progress.inTransit'),  step: 2, tone: 'warning' },
+    DELIVERED:  { text: t('detail.progress.delivered'),  step: 3, tone: 'warning' },
+    COMPLETED:  { text: t('detail.progress.completed'),  step: 3, tone: 'success' },
   };
   const m = meta[order.status] ?? meta.ASSIGNED;
   const stepClass = (s: 1 | 2 | 3) =>
@@ -859,7 +871,7 @@ function ShipmentProgressCard({ order, bids }: { order: Order; bids: typeof BIDS
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <CardTitle className="flex items-center gap-2">حالة الشحنة <StatusBadge status={order.status} /></CardTitle>
+            <CardTitle className="flex items-center gap-2">{t('detail.progress.title')} <StatusBadge status={order.status} /></CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">{m.text}</p>
           </div>
         </div>
@@ -868,9 +880,9 @@ function ShipmentProgressCard({ order, bids }: { order: Order; bids: typeof BIDS
         {/* 3-step progress: استلام → في الطريق → تسليم */}
         <div className="flex items-center gap-2">
           {[
-            { s: 1 as const, label: 'الاستلام',  icon: MapPin },
-            { s: 2 as const, label: 'في الطريق', icon: Truck },
-            { s: 3 as const, label: 'التسليم',  icon: CheckCircle2 },
+            { s: 1 as const, label: t('detail.progress.stepPickup'),  icon: MapPin },
+            { s: 2 as const, label: t('detail.progress.stepTransit'), icon: Truck },
+            { s: 3 as const, label: t('detail.progress.stepDelivery'),  icon: CheckCircle2 },
           ].map((step, i, arr) => (
             <div key={step.s} className="flex items-center gap-2 flex-1">
               <div className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${stepClass(step.s)}`}>
@@ -885,21 +897,21 @@ function ShipmentProgressCard({ order, bids }: { order: Order; bids: typeof BIDS
         {/* Pickup + delivery dates */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="text-xs text-muted-foreground">موعد الاستلام</div>
+            <div className="text-xs text-muted-foreground">{t('detail.progress.pickupDate')}</div>
             <div className="mt-0.5 font-medium">
               {effectivePickup ? formatDate(effectivePickup, 'EEEE d MMM') : '—'}
             </div>
             {accepted?.proposedPickupDate && accepted.proposedPickupDate !== order.pickupDate && (
-              <Badge variant="warning" className="mt-1 h-4 text-[10px]">موعد بديل من الناقل</Badge>
+              <Badge variant="warning" className="mt-1 h-4 text-[10px]">{t('detail.progress.altFromCarrier')}</Badge>
             )}
           </div>
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="text-xs text-muted-foreground">موعد التسليم المتوقع</div>
+            <div className="text-xs text-muted-foreground">{t('detail.progress.deliveryDate')}</div>
             <div className="mt-0.5 font-medium">
-              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : 'سيُحدَّد لاحقا'}
+              {effectiveDelivery ? formatDate(effectiveDelivery, 'EEEE d MMM') : t('detail.toBeDetermined')}
             </div>
             {accepted?.proposedDeliveryDate && order.deliveryDate && accepted.proposedDeliveryDate !== order.deliveryDate && (
-              <Badge variant="warning" className="mt-1 h-4 text-[10px]">موعد بديل من الناقل</Badge>
+              <Badge variant="warning" className="mt-1 h-4 text-[10px]">{t('detail.progress.altFromCarrier')}</Badge>
             )}
           </div>
         </div>
@@ -907,7 +919,7 @@ function ShipmentProgressCard({ order, bids }: { order: Order; bids: typeof BIDS
         {/* Tracking events */}
         {events.length > 0 && (
           <div>
-            <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">تتبّع الشحنة</div>
+            <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">{t('detail.progress.tracking')}</div>
             <ol className="relative space-y-3">
               {events.map((ev, i) => (
                 <li key={i} className="relative ps-7">
@@ -917,7 +929,7 @@ function ShipmentProgressCard({ order, bids }: { order: Order; bids: typeof BIDS
                   </span>
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-sm font-medium">{TITLES[ev.kind] ?? ev.kind}</div>
+                      <div className="text-sm font-medium">{TITLES[ev.kind] ? t(TITLES[ev.kind]) : ev.kind}</div>
                       {(ev.note || ev.by) && <div className="text-xs text-muted-foreground mt-0.5">{ev.note} {ev.by && `· ${ev.by}`}</div>}
                     </div>
                     <span className="text-xs text-muted-foreground shrink-0">{formatDate(ev.at, 'd MMM · HH:mm')}</span>
@@ -936,6 +948,7 @@ type ApiCarrier = { id: string; nameAr: string; nameEn?: string; city?: string; 
 type ApiOrderFull = Order & { carrier?: ApiCarrier };
 
 function CarrierInfoCard({ order }: { order: Order }) {
+  const t = useTranslations('orders');
   // Use API-provided carrier data when available, fall back to mock
   const apiOrder = order as ApiOrderFull;
   const carrierFromApi = apiOrder.carrier;
@@ -968,9 +981,9 @@ function CarrierInfoCard({ order }: { order: Order }) {
             <div className="h-8 w-8 rounded-full bg-success/15 text-success grid place-items-center">
               <BadgeCheck className="h-4 w-4" />
             </div>
-            <CardTitle>الناقل المُعتمد</CardTitle>
+            <CardTitle>{t('detail.carrier.title')}</CardTitle>
           </div>
-          <Badge variant="success">تم قبول العرض</Badge>
+          <Badge variant="success">{t('detail.carrier.bidAccepted')}</Badge>
         </div>
       </CardHeader>
 
@@ -983,8 +996,8 @@ function CarrierInfoCard({ order }: { order: Order }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="font-semibold text-base">{carrier.nameAr}</h4>
-              {(carrier as { insurance?: boolean }).insurance && <Badge variant="default">تأمين شامل</Badge>}
-              <Badge variant="outline">موثّق</Badge>
+              {(carrier as { insurance?: boolean }).insurance && <Badge variant="default">{t('detail.carrier.fullInsurance')}</Badge>}
+              <Badge variant="outline">{t('detail.carrier.verified')}</Badge>
             </div>
             <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
               {carrier.rating && (
@@ -992,7 +1005,7 @@ function CarrierInfoCard({ order }: { order: Order }) {
                   <Star className="h-3 w-3 fill-warning text-warning" />
                   <span className="num">{carrier.rating.toFixed(1)}</span>
                   {(carrier as { completedTrips?: number }).completedTrips != null && (
-                    <span>({(carrier as { completedTrips?: number }).completedTrips} رحلة)</span>
+                    <span>(<span className="num">{(carrier as { completedTrips?: number }).completedTrips}</span> {t('detail.tripsWord')})</span>
                   )}
                 </span>
               )}
@@ -1006,14 +1019,14 @@ function CarrierInfoCard({ order }: { order: Order }) {
             {carrier.contactPhone && (
               <Button size="sm" variant="outline" asChild>
                 <a href={`tel:${carrier.contactPhone}`}>
-                  <Phone className="h-3.5 w-3.5" /> اتصال
+                  <Phone className="h-3.5 w-3.5" /> {t('detail.carrier.call')}
                 </a>
               </Button>
             )}
             {carrier.contactEmail && (
               <Button size="sm" variant="ghost" asChild>
                 <a href={`mailto:${carrier.contactEmail}`}>
-                  <MessageSquare className="h-3.5 w-3.5" /> إيميل
+                  <MessageSquare className="h-3.5 w-3.5" /> {t('detail.carrier.email')}
                 </a>
               </Button>
             )}
@@ -1030,7 +1043,7 @@ function CarrierInfoCard({ order }: { order: Order }) {
           <div className="rounded-lg border bg-card p-4">
             <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase mb-3">
               <Truck className="h-3.5 w-3.5" />
-              الشاحنة المخصّصة
+              {t('detail.carrier.assignedTruck')}
             </div>
             {assignedTruck && plate ? (
               <>
@@ -1042,23 +1055,23 @@ function CarrierInfoCard({ order }: { order: Order }) {
                 />
                 <dl className="mt-3 space-y-1.5 text-xs">
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">النوع</dt>
-                    <dd className="font-medium">{TRUCK_LABELS[assignedTruck.truckType]}</dd>
+                    <dt className="text-muted-foreground">{t('detail.carrier.type')}</dt>
+                    <dd className="font-medium">{assignedTruck.truckType && TRUCK_LABELS[assignedTruck.truckType] ? t(TRUCK_LABELS[assignedTruck.truckType]) : assignedTruck.truckType}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">الحمولة</dt>
+                    <dt className="text-muted-foreground">{t('detail.carrier.capacity')}</dt>
                     <dd className="font-medium num">
-                      {(assignedTruck.capacityKg / 1000).toFixed(0)} طن
+                      {(assignedTruck.capacityKg / 1000).toFixed(0)} {t('detail.tonUnit')}
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">الموديل</dt>
+                    <dt className="text-muted-foreground">{t('detail.carrier.model')}</dt>
                     <dd className="font-medium num">{assignedTruck.modelYear}</dd>
                   </div>
                 </dl>
               </>
             ) : (
-              <div className="text-xs text-muted-foreground py-2">سيتم تخصيص الشاحنة قريبا</div>
+              <div className="text-xs text-muted-foreground py-2">{t('detail.carrier.truckSoon')}</div>
             )}
           </div>
 
@@ -1066,7 +1079,7 @@ function CarrierInfoCard({ order }: { order: Order }) {
           <div className="rounded-lg border bg-card p-4">
             <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase mb-3">
               <User className="h-3.5 w-3.5" />
-              السائق
+              {t('detail.carrier.driver')}
             </div>
             {driver ? (
               <>
@@ -1081,17 +1094,17 @@ function CarrierInfoCard({ order }: { order: Order }) {
                 </div>
                 <dl className="mt-3 space-y-1.5 text-xs">
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">الجوال</dt>
+                    <dt className="text-muted-foreground">{t('detail.carrier.mobile')}</dt>
                     <dd className="font-medium num" dir="ltr">{driver.phone}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">الرحلات المنجزة</dt>
+                    <dt className="text-muted-foreground">{t('detail.carrier.completedTrips')}</dt>
                     <dd className="font-medium num">{driver.totalTrips.toLocaleString('en-US')}</dd>
                   </div>
                 </dl>
               </>
             ) : (
-              <div className="text-xs text-muted-foreground py-2">سيتم تخصيص السائق قريبا</div>
+              <div className="text-xs text-muted-foreground py-2">{t('detail.carrier.driverSoon')}</div>
             )}
           </div>
         </div>
@@ -1101,16 +1114,16 @@ function CarrierInfoCard({ order }: { order: Order }) {
         {(order.agreedPrice || acceptedBid) && (
           <div className="grid grid-cols-2 gap-4 pt-4 border-t">
             <div>
-              <div className="text-xs text-muted-foreground">السعر المتّفق عليه</div>
+              <div className="text-xs text-muted-foreground">{t('detail.carrier.agreedPrice')}</div>
               <div className="mt-0.5 text-lg font-bold">
                 <Currency amount={order.agreedPrice ?? acceptedBid?.price ?? 0} />
               </div>
             </div>
             {acceptedBid && (
               <div>
-                <div className="text-xs text-muted-foreground">المدة المقدّرة</div>
+                <div className="text-xs text-muted-foreground">{t('detail.estimatedDuration')}</div>
                 <div className="mt-0.5 text-lg font-bold num">
-                  {acceptedBid.estimatedDays} {acceptedBid.estimatedDays === 1 ? 'يوم' : 'أيام'}
+                  {acceptedBid.estimatedDays} {acceptedBid.estimatedDays === 1 ? t('detail.unit.day') : t('detail.unit.days')}
                 </div>
               </div>
             )}
@@ -1122,6 +1135,7 @@ function CarrierInfoCard({ order }: { order: Order }) {
 }
 
 function MapSection({ order }: { order: any }) {
+  const t = useTranslations('orders');
   const o = coordsFor(order.originCity);
   const d = coordsFor(order.destinationCity);
   const km = distanceKm(o, d);
@@ -1154,9 +1168,9 @@ function MapSection({ order }: { order: any }) {
         className="rounded-b-none border-b"
       />
       <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
-        <RouteStat icon={MapPin} label="المسافة" value={<span className="num">{km.toLocaleString('en-US')} كم</span>} />
-        <RouteStat icon={Timer} label="المدة المتوقعة" value={duration} />
-        <RouteStat icon={Navigation} label="الطريق الرئيسي" value={road} />
+        <RouteStat icon={MapPin} label={t('detail.map.distance')} value={<span className="num">{km.toLocaleString('en-US')} {t('detail.kmUnit')}</span>} />
+        <RouteStat icon={Timer} label={t('detail.map.duration')} value={duration} />
+        <RouteStat icon={Navigation} label={t('detail.map.mainRoad')} value={road} />
       </CardContent>
     </Card>
   );
@@ -1185,6 +1199,8 @@ function RouteStat({ icon: Icon, label, value }: { icon: React.ElementType; labe
 //   3. Negotiation finalised     → success or rejection state
 
 function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () => void }) {
+  const t = useTranslations('orders');
+  const tcDirect = useTranslations('common');
   const proposal = proposalForOrder(order.id);
   const carrier = companyById(order.targetCarrierId);
   const [action, setAction] = useState<null | 'ACCEPT' | 'COUNTER' | 'REJECT'>(null);
@@ -1204,9 +1220,9 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
           <div className="h-14 w-14 rounded-2xl bg-warning/15 text-warning mx-auto grid place-items-center mb-4 animate-pulse">
             <UserSearch className="h-7 w-7" />
           </div>
-          <h3 className="font-semibold text-lg">بانتظار رد الناقل</h3>
+          <h3 className="font-semibold text-lg">{t('detail.direct.waitingTitle')}</h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-            أُرسل الطلب مباشرة إلى <strong>{carrier?.nameAr}</strong>. سيتم إخطارك فور الرد بالقبول أو السعر.
+            {t.rich('detail.direct.waitingDesc', { name: carrier?.nameAr ?? '', b: (c) => <strong>{c}</strong> })}
           </p>
         </CardContent>
       </Card>
@@ -1222,23 +1238,23 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
     try {
       if (action === 'ACCEPT' && activeBidId) {
         await api.post(`/orders/${order.id}/bids/${activeBidId}/accept`, {});
-        notify.success('تم قبول السعر', `الطلب أُسند لـ ${carrier?.nameAr ?? 'الناقل'}`);
+        notify.success(t('detail.toast.priceAccepted'), t('detail.toast.assignedTo', { name: carrier?.nameAr ?? t('detail.carrier.title') }));
         onRefetch();
       } else if (action === 'COUNTER') {
         await api.post(`/orders/${order.id}/bids`, {
           amount: counterPrice,
           notes: counterNote || undefined,
         });
-        notify.success('تم إرسال سعرك المقابل', `${counterPrice.toLocaleString('en-US')} ر.س — بانتظار رد الناقل`);
+        notify.success(t('detail.toast.counterSent'), `${counterPrice.toLocaleString('en-US')} ${t('detail.sar')} — ${t('detail.toast.counterWaiting')}`);
         onRefetch();
       } else if (action === 'REJECT' && activeBidId) {
         await api.post(`/orders/${order.id}/bids/${activeBidId}/reject`, {});
-        notify.success('تم رفض العرض', 'يمكنك اختيار ناقل آخر أو تحويل الطلب للسوق المفتوح');
+        notify.success(t('detail.toast.bidRejected'), t('detail.toast.rejectedDesc'));
         onRefetch();
       }
       setAction(null);
     } catch (err) {
-      notify.error(err, 'فشل تنفيذ الإجراء');
+      notify.error(err, t('detail.toast.actionFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -1251,14 +1267,14 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <CardDescription className="mb-1">
-                {isClientTurn ? `سعر مقترَح من ${carrier?.nameAr}` : `بانتظار رد ${carrier?.nameAr}`}
+                {isClientTurn ? t('detail.direct.proposedFrom', { name: carrier?.nameAr ?? '' }) : t('detail.direct.waitingFrom', { name: carrier?.nameAr ?? '' })}
               </CardDescription>
               {onTable && (
                 <>
                   <CardTitle className="text-3xl"><Currency amount={onTable.price} /></CardTitle>
                   {onTable.days && (
                     <div className="mt-1 text-sm text-muted-foreground">
-                      مدة التنفيذ: <span className="font-medium num">{onTable.days}</span> أيام
+                      {t('detail.direct.leadTime')} <span className="font-medium num">{onTable.days}</span> {t('detail.unit.days')}
                     </div>
                   )}
                 </>
@@ -1266,7 +1282,7 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
             </div>
             {onTable && (
               <div className="text-xs text-muted-foreground text-end">
-                <div>منذ {formatRelative(onTable.at)}</div>
+                <div>{t('detail.direct.since')} {formatRelative(onTable.at)}</div>
                 <div className="mt-0.5">{formatDate(onTable.at, 'd MMM · HH:mm')}</div>
               </div>
             )}
@@ -1286,21 +1302,21 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
       {isClientTurn && (
         <Card>
           <CardHeader>
-            <CardTitle>الإجراءات المتاحة</CardTitle>
-            <CardDescription>اختر ما يناسبك — يصل ردّك للناقل فورا</CardDescription>
+            <CardTitle>{t('detail.direct.actionsTitle')}</CardTitle>
+            <CardDescription>{t('detail.direct.actionsDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <ProposalAction
               icon={CheckCircle2}
-              title="قبول السعر"
-              subtitle={`الإسناد لـ ${carrier?.nameAr} مباشرة`}
+              title={t('detail.direct.acceptPrice')}
+              subtitle={t('detail.direct.acceptPriceSub', { name: carrier?.nameAr ?? '' })}
               tone="success"
               onClick={() => setAction('ACCEPT')}
             />
             <ProposalAction
               icon={MessageSquare}
-              title="اقتراح سعر مقابل"
-              subtitle="إرسال سعرك للناقل"
+              title={t('detail.direct.counter')}
+              subtitle={t('detail.direct.counterSub')}
               tone="warning"
               onClick={() => {
                 setAction('COUNTER');
@@ -1309,8 +1325,8 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
             />
             <ProposalAction
               icon={X}
-              title="رفض العرض"
-              subtitle="اختيار ناقل آخر"
+              title={t('detail.direct.rejectOffer')}
+              subtitle={t('detail.direct.chooseAnother')}
               tone="destructive"
               onClick={() => setAction('REJECT')}
             />
@@ -1324,8 +1340,8 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
             <div className="h-12 w-12 rounded-2xl bg-info/15 text-info mx-auto grid place-items-center mb-3 animate-pulse">
               <MessageSquare className="h-6 w-6" />
             </div>
-            <p className="text-sm font-medium">سعرك المقابل أُرسل للناقل</p>
-            <p className="mt-1 text-xs text-muted-foreground">بانتظار قبوله، رفضه، أو سعر مقابل آخر</p>
+            <p className="text-sm font-medium">{t('detail.direct.counterSent')}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t('detail.direct.counterSentDesc')}</p>
           </CardContent>
         </Card>
       )}
@@ -1335,9 +1351,9 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
           <CardContent className="pt-6 flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-success">تم الاتفاق </h3>
+              <h3 className="font-semibold text-success">{t('detail.direct.agreed')}</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                انتقل الطلب لـ ASSIGNED مع <strong>{carrier?.nameAr}</strong>. سيُجهَّز للاستلام في الموعد المتّفق.
+                {t.rich('detail.direct.agreedDesc', { name: carrier?.nameAr ?? '', b: (c) => <strong>{c}</strong> })}
               </p>
             </div>
           </CardContent>
@@ -1348,11 +1364,11 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
           <CardContent className="pt-6 flex items-start gap-3">
             <X className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-semibold text-destructive">انتهى التفاوض</h3>
-              <p className="mt-1 text-sm text-muted-foreground">يمكنك اختيار ناقل آخر أو تحويل الطلب للسوق المفتوح.</p>
+              <h3 className="font-semibold text-destructive">{t('detail.direct.ended')}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{t('detail.direct.endedDesc')}</p>
               <div className="mt-3 flex items-center gap-2 flex-wrap">
-                <Button size="sm" variant="outline">اختيار ناقل آخر</Button>
-                <Button size="sm">تحويل للسوق المفتوح</Button>
+                <Button size="sm" variant="outline">{t('detail.direct.chooseAnother')}</Button>
+                <Button size="sm">{t('detail.direct.toOpenMarket')}</Button>
               </div>
             </div>
           </CardContent>
@@ -1363,7 +1379,7 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
       {(proposal?.rounds?.length ?? 0) > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">سجل التفاوض</CardTitle>
+            <CardTitle className="text-base">{t('detail.direct.negotiationLog')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ol className="space-y-3">
@@ -1372,18 +1388,18 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
                   <div className={`h-8 w-8 rounded-full grid place-items-center shrink-0 text-xs font-bold ${
                     r.by === 'CLIENT' ? 'bg-primary/10 text-primary' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
                   }`}>
-                    {r.by === 'CLIENT' ? 'أنا' : 'ن'}
+                    {r.by === 'CLIENT' ? t('detail.direct.meInitial') : t('detail.direct.carrierInitial')}
                   </div>
                   <div className="flex-1 min-w-0 rounded-md border bg-card p-3">
                     <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                       <span className="text-sm font-semibold">
-                        {r.by === 'CLIENT' ? 'أنت' : carrier?.nameAr} — {r.kind === 'COUNTER' ? 'اقترح' : r.kind === 'ACCEPT' ? 'قبل' : 'رفض'}
+                        {r.by === 'CLIENT' ? t('detail.direct.you') : carrier?.nameAr} — {r.kind === 'COUNTER' ? t('detail.direct.actionCountered') : r.kind === 'ACCEPT' ? t('detail.direct.actionAccepted') : t('detail.direct.actionRejected')}
                       </span>
                       <span className="text-xs text-muted-foreground">{formatRelative(r.at)}</span>
                     </div>
                     <div className="flex items-baseline gap-2">
                       <span className="text-lg font-bold"><Currency amount={r.price} /></span>
-                      {r.days && <span className="text-xs text-muted-foreground">· {r.days} أيام</span>}
+                      {r.days && <span className="text-xs text-muted-foreground">· {r.days} {t('detail.unit.days')}</span>}
                     </div>
                     {r.notes && <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{r.notes}</p>}
                   </div>
@@ -1398,15 +1414,18 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
       <Dialog open={action === 'ACCEPT'} onOpenChange={(o) => !o && setAction(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>قبول العرض</DialogTitle>
+            <DialogTitle>{t('detail.direct.acceptDialog.title')}</DialogTitle>
             <DialogDescription>
-              سيُسند الطلب لـ <strong>{carrier?.nameAr}</strong> بسعر{' '}
-              <strong><Currency amount={onTable?.price ?? 0} /></strong> ويُحجَز المبلغ في Escrow.
+              {t.rich('detail.direct.acceptDialog.desc', {
+                name: carrier?.nameAr ?? '',
+                b: (c) => <strong>{c}</strong>,
+                price: () => <strong><Currency amount={onTable?.price ?? 0} /></strong>,
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAction(null)}>إلغاء</Button>
-            <Button onClick={submit}><CheckCircle2 className="h-4 w-4" /> تأكيد القبول</Button>
+            <Button variant="outline" onClick={() => setAction(null)}>{tcDirect('buttons.cancel')}</Button>
+            <Button onClick={submit}><CheckCircle2 className="h-4 w-4" /> {t('detail.accept.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1414,28 +1433,28 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
       <Dialog open={action === 'COUNTER'} onOpenChange={(o) => !o && setAction(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>اقتراح سعر مقابل</DialogTitle>
-            <DialogDescription>سيراجعه الناقل ويختار: قبول، اعتذار، أو سعر آخر</DialogDescription>
+            <DialogTitle>{t('detail.direct.counterDialog.title')}</DialogTitle>
+            <DialogDescription>{t('detail.direct.counterDialog.desc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-2">
-              <Label>سعرك المقترح (ر.س)</Label>
+              <Label>{t('detail.direct.counterDialog.priceLabel')}</Label>
               <Input type="number" value={counterPrice || ''} onChange={(e) => setCounterPrice(Number(e.target.value))} />
             </div>
             <div className="space-y-2">
-              <Label>ملاحظة للناقل (اختياري)</Label>
+              <Label>{t('detail.direct.counterDialog.noteLabel')}</Label>
               <textarea
                 rows={3}
                 value={counterNote}
                 onChange={(e) => setCounterNote(e.target.value)}
                 className="w-full p-3 rounded-md border bg-background text-sm"
-                placeholder="مثال: السعر أعلى من ميزانيتنا، نأمل تخفيضا"
+                placeholder={t('detail.direct.counterDialog.notePlaceholder')}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAction(null)}>إلغاء</Button>
-            <Button onClick={submit} disabled={!counterPrice}>إرسال السعر</Button>
+            <Button variant="outline" onClick={() => setAction(null)}>{tcDirect('buttons.cancel')}</Button>
+            <Button onClick={submit} disabled={!counterPrice}>{t('detail.direct.counterDialog.send')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1443,12 +1462,12 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
       <Dialog open={action === 'REJECT'} onOpenChange={(o) => !o && setAction(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>رفض العرض</DialogTitle>
-            <DialogDescription>سيُعلَم الناقل وستتمكّن من اختيار ناقل آخر أو تحويل الطلب للسوق المفتوح</DialogDescription>
+            <DialogTitle>{t('detail.direct.rejectDialog.title')}</DialogTitle>
+            <DialogDescription>{t('detail.direct.rejectDialog.desc')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAction(null)}>تراجع</Button>
-            <Button variant="destructive" onClick={submit}><X className="h-4 w-4" /> تأكيد الرفض</Button>
+            <Button variant="outline" onClick={() => setAction(null)}>{t('detail.goBack')}</Button>
+            <Button variant="destructive" onClick={submit}><X className="h-4 w-4" /> {t('detail.direct.rejectDialog.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1484,7 +1503,7 @@ function ProposalAction({
 }
 
 const LEG_LABEL: Record<ConsolidatedLeg['status'], string> = {
-  PENDING: 'لم تُوزَّع', ASSIGNED: 'موزّعة', IN_TRANSIT: 'في الطريق', DELIVERED: 'سُلّمت',
+  PENDING: 'detail.leg.pending', ASSIGNED: 'detail.leg.assigned', IN_TRANSIT: 'detail.leg.inTransit', DELIVERED: 'detail.leg.delivered',
 };
 const LEG_TONE: Record<ConsolidatedLeg['status'], string> = {
   PENDING: 'bg-muted text-muted-foreground',
@@ -1499,6 +1518,7 @@ type ReadonlyLeg = ConsolidatedLeg & { plateNumber?: string; driverName?: string
 function ConsolidatedReadonly({ order }: {
   order: { id: string; orderNumber: string; truckCount?: number; legs?: ConsolidatedLeg[]; agreedPrice: number | null };
 }) {
+  const t = useTranslations('orders');
   // Live legs from the API (enriched with plate + driver name so the client can
   // render them without fleet access); fall back to the mock order legs.
   const { data: legsData } = useSWR<{ truckCount: number; legs: ReadonlyLeg[] }>(`/orders/${order.id}/legs`, fetcher);
@@ -1512,9 +1532,9 @@ function ConsolidatedReadonly({ order }: {
     <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-          <Layers className="h-3.5 w-3.5" /> طلب مجمّع · {count} شاحنات
+          <Layers className="h-3.5 w-3.5" /> {t('detail.consolidated.label')} · <span className="num">{count}</span> {t('detail.trucksWord')}
         </div>
-        <span className="num text-xs text-muted-foreground">موزّعة {distributed}/{count}</span>
+        <span className="num text-xs text-muted-foreground">{t('detail.consolidated.distributed')} {distributed}/{count}</span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-[hsl(var(--mint))]" style={{ width: `${pct}%` }} />
@@ -1534,25 +1554,25 @@ function ConsolidatedReadonly({ order }: {
                     {leg.reference && <div className="num font-mono text-[11px] text-foreground truncate" dir="ltr">{leg.reference}</div>}
                     {driverName
                       ? <div className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="h-3 w-3" /> {driverName}</div>
-                      : <div className="text-xs text-muted-foreground">بدون سائق</div>}
+                      : <div className="text-xs text-muted-foreground">{t('detail.consolidated.noDriver')}</div>}
                   </div>
                 </>
               ) : (
                 <div className="min-w-0 flex-1">
                   {leg.reference && <div className="num font-mono text-[11px] text-foreground truncate" dir="ltr">{leg.reference}</div>}
-                  <div className="text-xs text-muted-foreground">لم تُوزَّع بعد</div>
+                  <div className="text-xs text-muted-foreground">{t('detail.consolidated.notDistributed')}</div>
                 </div>
               )}
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${LEG_TONE[leg.status]}`}>{LEG_LABEL[leg.status]}</span>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${LEG_TONE[leg.status]}`}>{t(LEG_LABEL[leg.status])}</span>
             </div>
           );
         })}
       </div>
       <div className="rounded-md border bg-card p-3 text-sm">
-        <div className="mb-1 font-semibold">الفاتورة المجمّعة</div>
-        <div className="flex justify-between text-muted-foreground"><span className="num">{count} شاحنات × </span><Currency amount={perLeg} /></div>
-        <div className="mt-1 flex justify-between border-t pt-1 font-semibold"><span>الإجمالي</span><Currency amount={order.agreedPrice ?? 0} /></div>
-        <p className="mt-1 text-[11px] text-muted-foreground">فاتورة واحدة برقم الطلب {order.orderNumber}.</p>
+        <div className="mb-1 font-semibold">{t('detail.consolidated.invoice')}</div>
+        <div className="flex justify-between text-muted-foreground"><span className="num">{count} {t('detail.trucksWord')} × </span><Currency amount={perLeg} /></div>
+        <div className="mt-1 flex justify-between border-t pt-1 font-semibold"><span>{t('detail.consolidated.total')}</span><Currency amount={order.agreedPrice ?? 0} /></div>
+        <p className="mt-1 text-[11px] text-muted-foreground">{t('detail.consolidated.invoiceNote', { orderNumber: order.orderNumber })}</p>
       </div>
     </div>
   );
