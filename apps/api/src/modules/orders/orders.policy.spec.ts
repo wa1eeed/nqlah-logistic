@@ -1,0 +1,75 @@
+import { ForbiddenException } from '@nestjs/common';
+import { OrdersService } from './orders.service';
+import type { CreateOrderDto } from './dto/create-order.dto';
+
+/**
+ * Unit tests for policy-driven sourcing on order creation
+ * (`OrdersService.resolveSourcing`). The default policy allows everything with
+ * no forced carrier, so ungrouped clients behave exactly as before; a group's
+ * policy can pin a carrier or forbid a sourcing/pricing mode.
+ */
+const DEFAULT_POLICY = {
+  allowMarket: true,
+  allowDirect: true,
+  forcedCarrierId: undefined as string | undefined,
+  allowMarketPricing: true,
+  allowFixedPricing: true,
+  allowPrepaid: true,
+  allowCOD: true,
+};
+
+function makeService(policy: typeof DEFAULT_POLICY) {
+  const policies = { effectiveForCompany: jest.fn().mockResolvedValue(policy) };
+  const service = new OrdersService({} as never, {} as never, policies as never);
+  // resolveSourcing is private; exercise it directly for a focused unit test.
+  const resolve = (dto: Partial<CreateOrderDto>) =>
+    (service as unknown as {
+      resolveSourcing(d: CreateOrderDto, companyId: string): Promise<{
+        mode: 'OPEN' | 'DIRECT'; targetCarrierId: string | null; fixedPrice: number | null;
+      }>;
+    }).resolveSourcing(dto as CreateOrderDto, 'client-1');
+  return { resolve, policies };
+}
+
+describe('OrdersService.resolveSourcing', () => {
+  it('leaves an OPEN order untouched under the permissive default', async () => {
+    const { resolve } = makeService(DEFAULT_POLICY);
+    await expect(resolve({ mode: 'OPEN' })).resolves.toEqual({
+      mode: 'OPEN', targetCarrierId: null, fixedPrice: null,
+    });
+  });
+
+  it('keeps a DIRECT order with its target and upfront price', async () => {
+    const { resolve } = makeService(DEFAULT_POLICY);
+    await expect(resolve({ mode: 'DIRECT', targetCarrierId: 'c-9', agreedPriceUpfront: 1500 }))
+      .resolves.toEqual({ mode: 'DIRECT', targetCarrierId: 'c-9', fixedPrice: 1500 });
+  });
+
+  it('forces DIRECT to the pinned carrier when the group sets forcedCarrierId', async () => {
+    const { resolve } = makeService({ ...DEFAULT_POLICY, forcedCarrierId: 'pinned-7' });
+    await expect(resolve({ mode: 'OPEN' })).resolves.toEqual({
+      mode: 'DIRECT', targetCarrierId: 'pinned-7', fixedPrice: null,
+    });
+  });
+
+  it('blocks market posting when allowMarket is false', async () => {
+    const { resolve } = makeService({ ...DEFAULT_POLICY, allowMarket: false });
+    await expect(resolve({ mode: 'OPEN' })).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('blocks direct assignment when allowDirect is false', async () => {
+    const { resolve } = makeService({ ...DEFAULT_POLICY, allowDirect: false });
+    await expect(resolve({ mode: 'DIRECT', targetCarrierId: 'c-9' })).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('blocks a fixed upfront price when allowFixedPricing is false', async () => {
+    const { resolve } = makeService({ ...DEFAULT_POLICY, allowFixedPricing: false });
+    await expect(resolve({ mode: 'DIRECT', targetCarrierId: 'c-9', agreedPriceUpfront: 1500 }))
+      .rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('blocks market pricing when allowMarketPricing is false', async () => {
+    const { resolve } = makeService({ ...DEFAULT_POLICY, allowMarketPricing: false });
+    await expect(resolve({ mode: 'OPEN' })).rejects.toBeInstanceOf(ForbiddenException);
+  });
+});

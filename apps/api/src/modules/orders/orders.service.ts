@@ -7,6 +7,7 @@ import {
 import type { DriverStatus } from '../../generated/prisma';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { PoliciesService } from '../policies/policies.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import {
   AssignDriverDto,
@@ -97,7 +98,11 @@ function buildRoute(dto: CreateOrderDto): { stopRows: StopCreateRow[]; summary: 
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService, private realtime: RealtimeGateway) {}
+  constructor(
+    private prisma: PrismaService,
+    private realtime: RealtimeGateway,
+    private policies: PoliciesService,
+  ) {}
 
   async list(query: PaginationDto & { status?: OrderStatus; mine?: boolean }, actor: AuthUser) {
     const { page = 1, limit = 20, sort = 'createdAt', order = 'desc', search, status, mine } = query;
@@ -208,6 +213,12 @@ export class OrdersService {
     // the Order's origin*/destination* columns stay populated for old consumers.
     const { stopRows, summary } = buildRoute(dto);
 
+    // Resolve the client's effective policy (its group's, else a permissive
+    // default) and apply it to sourcing + pricing. Defaults allow everything,
+    // so ungrouped clients are unaffected; a group can disable market/direct,
+    // pin every order to one carrier, or forbid a pricing mode.
+    const sourcing = await this.resolveSourcing(dto, actor.companyId);
+
     return this.prisma.order.create({
       data: {
         orderNumber,
@@ -216,14 +227,14 @@ export class OrdersService {
         truckCount,
         legReferences,
         stops: { create: stopRows },
-        // v0.6.0 workflow fields — defaults preserve old behavior.
-        mode: dto.mode ?? 'OPEN',
-        targetCarrierId: dto.mode === 'DIRECT' ? dto.targetCarrierId : null,
-        // Pre-seed agreed price for DIRECT orders with upfront price.
-        ...(dto.mode === 'DIRECT' && dto.agreedPriceUpfront ? {
-          agreedPrice:      dto.agreedPriceUpfront,
-          commissionAmount: +(dto.agreedPriceUpfront * 0.08).toFixed(2),
-          carrierAmount:    +(dto.agreedPriceUpfront * 0.92).toFixed(2),
+        // v0.6.0 workflow fields — resolved against the client's policy above.
+        mode: sourcing.mode,
+        targetCarrierId: sourcing.targetCarrierId,
+        // Pre-seed agreed price for DIRECT orders with an allowed upfront price.
+        ...(sourcing.fixedPrice != null ? {
+          agreedPrice:      sourcing.fixedPrice,
+          commissionAmount: +(sourcing.fixedPrice * 0.08).toFixed(2),
+          carrierAmount:    +(sourcing.fixedPrice * 0.92).toFixed(2),
         } : {}),
         tripType: dto.tripType ?? (dto.originCity === dto.destinationCity ? 'SAME_CITY' : 'INTER_CITY'),
         pickupWindow: dto.pickupWindow ?? 'ALL_DAY',
@@ -272,6 +283,15 @@ export class OrdersService {
     }
     if (order.status !== 'DRAFT') {
       throw new BadRequestException({ code: 'INVALID_TRANSITION', message: 'الطلب منشور بالفعل' });
+    }
+    // Re-check the policy at publish: a DRAFT may have been created before its
+    // client's group tightened. Defaults allow everything → no change.
+    const policy = await this.policies.effectiveForCompany(order.clientId);
+    if (order.mode === 'OPEN' && !policy.allowMarket) {
+      throw new ForbiddenException({ code: 'POLICY_MARKET_DISABLED', message: 'النشر في السوق غير مسموح لهذا العميل' });
+    }
+    if (order.mode === 'DIRECT' && !policy.allowDirect) {
+      throw new ForbiddenException({ code: 'POLICY_DIRECT_DISABLED', message: 'الإسناد المباشر غير مسموح لهذا العميل' });
     }
     // DIRECT + pre-agreed price: skip negotiation, assign immediately.
     if (order.mode === 'DIRECT' && order.agreedPrice && order.targetCarrierId) {
@@ -506,6 +526,39 @@ export class OrdersService {
 
   private isAdmin(actor: AuthUser): boolean {
     return actor.role === 'ADMIN' || actor.role === 'SUPER_ADMIN';
+  }
+
+  /**
+   * Resolve a new order's sourcing + pricing against the client's effective
+   * policy. The default policy allows everything with no forced carrier, so an
+   * ungrouped client behaves exactly as before. A group can:
+   *  - pin every order to one provider (`forcedCarrierId` → forces DIRECT),
+   *  - disable market posting (`allowMarket`) or direct assignment (`allowDirect`),
+   *  - forbid fixed upfront pricing (`allowFixedPricing`) or market/bid pricing
+   *    (`allowMarketPricing`).
+   */
+  private async resolveSourcing(dto: CreateOrderDto, companyId: string) {
+    const policy = await this.policies.effectiveForCompany(companyId);
+    let mode: 'OPEN' | 'DIRECT' = dto.mode === 'DIRECT' ? 'DIRECT' : 'OPEN';
+    let targetCarrierId: string | null = mode === 'DIRECT' ? dto.targetCarrierId ?? null : null;
+    if (policy.forcedCarrierId) {
+      mode = 'DIRECT';
+      targetCarrierId = policy.forcedCarrierId;
+    }
+    if (mode === 'OPEN' && !policy.allowMarket) {
+      throw new ForbiddenException({ code: 'POLICY_MARKET_DISABLED', message: 'النشر في السوق غير مسموح لهذا العميل' });
+    }
+    if (mode === 'DIRECT' && !policy.allowDirect) {
+      throw new ForbiddenException({ code: 'POLICY_DIRECT_DISABLED', message: 'الإسناد المباشر غير مسموح لهذا العميل' });
+    }
+    const fixedPrice = mode === 'DIRECT' && dto.agreedPriceUpfront != null ? dto.agreedPriceUpfront : null;
+    if (fixedPrice != null && !policy.allowFixedPricing) {
+      throw new ForbiddenException({ code: 'POLICY_FIXED_PRICING_DISABLED', message: 'التسعير الثابت غير مسموح لهذا العميل' });
+    }
+    if (mode === 'OPEN' && !policy.allowMarketPricing) {
+      throw new ForbiddenException({ code: 'POLICY_MARKET_PRICING_DISABLED', message: 'تسعير السوق غير مسموح لهذا العميل' });
+    }
+    return { mode, targetCarrierId, fixedPrice };
   }
 
   // ─── Consolidated legs ───────────────────────────────────────
