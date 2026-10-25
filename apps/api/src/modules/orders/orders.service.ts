@@ -13,14 +13,87 @@ import {
   AssignOrderDto,
   CancelOrderDto,
   CreateOrderDto,
+  CreateStopDto,
   CreateTrackingEventDto,
   UpdateOrderDto,
+  UpdateStopDto,
 } from './dto/create-order.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import { customAlphabet } from 'nanoid';
 import type { OrderStatus, Prisma } from '../../generated/prisma';
 
 const orderNumberGen = customAlphabet('0123456789', 6);
+
+/// Stop types that count as "the cargo reached a customer" (vs. a logistics
+/// stop like a warehouse transfer or returning an empty container).
+const DELIVERY_STOP_TYPES = ['DELIVERY', 'DROPOFF'] as const;
+
+type StopCreateRow = Prisma.OrderStopCreateWithoutOrderInput;
+type RouteSummary = Pick<
+  Prisma.OrderCreateInput,
+  | 'originCity' | 'originRegion' | 'originAddress' | 'originLat' | 'originLng'
+  | 'destinationCity' | 'destinationRegion' | 'destinationAddress'
+  | 'destinationLat' | 'destinationLng'
+>;
+
+/**
+ * Turn a create-order DTO into the ordered stop rows to persist plus the
+ * denormalized origin/destination summary written onto the Order row.
+ *
+ * - 2+ stops supplied → persist them in order; summary = first PICKUP (else the
+ *   first stop) and last DELIVERY/DROPOFF (else the last stop).
+ * - otherwise → a classic 2-stop route (PICKUP at origin, DELIVERY at
+ *   destination) built from the flat fields; summary = those same fields.
+ */
+function buildRoute(dto: CreateOrderDto): { stopRows: StopCreateRow[]; summary: RouteSummary } {
+  const toRow = (s: CreateStopDto, i: number): StopCreateRow => ({
+    sequence: i + 1,
+    type: s.type,
+    city: s.city,
+    region: s.region,
+    address: s.address,
+    lat: s.lat,
+    lng: s.lng,
+    contactName: s.contactName,
+    contactPhone: s.contactPhone,
+    scheduledAt: s.scheduledAt ? new Date(s.scheduledAt) : undefined,
+    windowStart: s.windowStart ? new Date(s.windowStart) : undefined,
+    windowEnd: s.windowEnd ? new Date(s.windowEnd) : undefined,
+    instructions: s.instructions,
+    containerNo: s.containerNo,
+    isEmptyReturn: s.isEmptyReturn ?? false,
+  });
+
+  if (dto.stops && dto.stops.length >= 2) {
+    const stops = dto.stops;
+    const first = stops.find((s) => s.type === 'PICKUP') ?? stops[0];
+    const lastDelivery = [...stops].reverse().find((s) => DELIVERY_STOP_TYPES.includes(s.type as never));
+    const last = lastDelivery ?? stops[stops.length - 1];
+    return {
+      stopRows: stops.map(toRow),
+      summary: {
+        originCity: first.city, originRegion: first.region, originAddress: first.address,
+        originLat: first.lat, originLng: first.lng,
+        destinationCity: last.city, destinationRegion: last.region, destinationAddress: last.address,
+        destinationLat: last.lat, destinationLng: last.lng,
+      },
+    };
+  }
+
+  // Classic single origin → destination: a 2-stop route.
+  return {
+    stopRows: [
+      { sequence: 1, type: 'PICKUP', city: dto.originCity, region: dto.originRegion, address: dto.originAddress, lat: dto.originLat, lng: dto.originLng },
+      { sequence: 2, type: 'DELIVERY', city: dto.destinationCity, region: dto.destinationRegion, address: dto.destinationAddress, lat: dto.destinationLat, lng: dto.destinationLng },
+    ],
+    summary: {
+      originCity: dto.originCity, originRegion: dto.originRegion, originAddress: dto.originAddress,
+      originLat: dto.originLat, originLng: dto.originLng,
+      destinationCity: dto.destinationCity, destinationRegion: dto.destinationRegion, destinationAddress: dto.destinationAddress,
+      destinationLat: dto.destinationLat, destinationLng: dto.destinationLng,
+    },
+  };
+}
 
 @Injectable()
 export class OrdersService {
@@ -128,6 +201,13 @@ export class OrdersService {
         })
       : [];
 
+    // Multi-stop route. When the client sends 2+ stops we persist them in order
+    // and derive the denormalized origin/destination summary from them (first
+    // PICKUP → origin, last delivery stop → destination). Otherwise we build the
+    // classic 2-stop route from the flat origin/destination fields. Either way
+    // the Order's origin*/destination* columns stay populated for old consumers.
+    const { stopRows, summary } = buildRoute(dto);
+
     return this.prisma.order.create({
       data: {
         orderNumber,
@@ -135,6 +215,7 @@ export class OrdersService {
         orderType: isConsolidated ? 'CONSOLIDATED' : 'SINGLE',
         truckCount,
         legReferences,
+        stops: { create: stopRows },
         // v0.6.0 workflow fields — defaults preserve old behavior.
         mode: dto.mode ?? 'OPEN',
         targetCarrierId: dto.mode === 'DIRECT' ? dto.targetCarrierId : null,
@@ -151,16 +232,7 @@ export class OrdersService {
         weight: dto.weight,
         pallets: dto.pallets,
         volume: dto.volume,
-        originCity: dto.originCity,
-        originRegion: dto.originRegion,
-        originAddress: dto.originAddress,
-        originLat: dto.originLat,
-        originLng: dto.originLng,
-        destinationCity: dto.destinationCity,
-        destinationRegion: dto.destinationRegion,
-        destinationAddress: dto.destinationAddress,
-        destinationLat: dto.destinationLat,
-        destinationLng: dto.destinationLng,
+        ...summary,
         requiredTruckType: dto.requiredTruckType,
         requiresRefrigeration: dto.requiresRefrigeration ?? false,
         requiresInsurance: dto.requiresInsurance ?? false,
@@ -542,6 +614,110 @@ export class OrdersService {
     if (status !== order.status) {
       await this.prisma.order.update({ where: { id: orderId }, data: { status } });
       this.realtime.emitOrderStatus(orderId, { status });
+    }
+  }
+
+  // ─── Multi-stop route ────────────────────────────────────────
+
+  /**
+   * The ordered stops of an order's route. Old orders created before the
+   * multi-stop feature have no OrderStop rows, so we synthesize a 2-stop route
+   * (PICKUP at origin, DELIVERY at destination) from the summary columns. The
+   * synthesized stops carry string ids `virtual-1/2` and cannot be executed —
+   * they exist only so legacy orders still render a route.
+   */
+  async getStops(id: string, actor: AuthUser) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { stops: { orderBy: { sequence: 'asc' } } },
+    });
+    if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
+    this.assertViewAccess(order, actor);
+
+    if (order.stops.length > 0) {
+      return { orderId: order.id, orderNumber: order.orderNumber, status: order.status, virtual: false, stops: order.stops };
+    }
+    const virtual = [
+      { id: 'virtual-1', sequence: 1, type: 'PICKUP', status: order.actualPickupAt ? 'COMPLETED' : 'PENDING',
+        city: order.originCity, region: order.originRegion, address: order.originAddress, lat: order.originLat, lng: order.originLng,
+        isEmptyReturn: false, arrivedAt: null, completedAt: order.actualPickupAt, proofPhotos: [] as string[], proofNote: null,
+        contactName: null, contactPhone: null, scheduledAt: order.pickupDate, windowStart: null, windowEnd: null, instructions: null, containerNo: null },
+      { id: 'virtual-2', sequence: 2, type: 'DELIVERY', status: order.actualDeliveryAt ? 'COMPLETED' : 'PENDING',
+        city: order.destinationCity, region: order.destinationRegion, address: order.destinationAddress, lat: order.destinationLat, lng: order.destinationLng,
+        isEmptyReturn: false, arrivedAt: null, completedAt: order.actualDeliveryAt, proofPhotos: [] as string[], proofNote: null,
+        contactName: null, contactPhone: null, scheduledAt: order.deliveryDate, windowStart: null, windowEnd: null, instructions: null, containerNo: null },
+    ];
+    return { orderId: order.id, orderNumber: order.orderNumber, status: order.status, virtual: true, stops: virtual };
+  }
+
+  /**
+   * Carrier / driver (or admin override) advancing one stop. Admins may set any
+   * state (including SKIPPED) as an override; non-admins move a stop forward
+   * through its execution states. Completing a stop stamps `completedAt`,
+   * arriving stamps `arrivedAt`, then the order status is re-derived.
+   */
+  async setStopStatus(id: string, stopId: string, dto: UpdateStopDto, actor: AuthUser) {
+    const order = await this.requireOrder(id);
+    const allowed =
+      order.carrierId === actor.companyId ||
+      actor.role === 'DRIVER' ||
+      this.isAdmin(actor);
+    if (!allowed) throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
+
+    const stop = await this.prisma.orderStop.findFirst({ where: { id: stopId, orderId: id } });
+    if (!stop) throw new NotFoundException({ code: 'STOP_NOT_FOUND', message: 'المحطة غير موجودة' });
+
+    const now = new Date();
+    await this.prisma.orderStop.update({
+      where: { id: stopId },
+      data: {
+        ...(dto.status ? { status: dto.status } : {}),
+        ...(dto.status === 'ARRIVED' && !stop.arrivedAt ? { arrivedAt: now } : {}),
+        ...(dto.status === 'COMPLETED' ? { completedAt: now, ...(stop.arrivedAt ? {} : { arrivedAt: now }) } : {}),
+        ...(dto.lat !== undefined ? { lat: dto.lat } : {}),
+        ...(dto.lng !== undefined ? { lng: dto.lng } : {}),
+        ...(dto.proofPhotos ? { proofPhotos: dto.proofPhotos } : {}),
+        ...(dto.proofNote !== undefined ? { proofNote: dto.proofNote } : {}),
+      },
+    });
+    await this.rollupStops(id);
+    return this.getStops(id, actor);
+  }
+
+  /**
+   * Derive an order's status from its stop progress (forward-only), keeping the
+   * cargo-delivery vs. trip-completion split: the order becomes DELIVERED once
+   * every cargo stop (DELIVERY/DROPOFF) is done even if an empty-container
+   * return is still pending; IN_TRANSIT once the first stop is completed. The
+   * final COMPLETED/escrow-release transition stays with `complete()`.
+   */
+  private async rollupStops(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { stops: true },
+    });
+    if (!order || order.stops.length === 0) return;
+    const stops = order.stops;
+    const done = (s: { status: string }) => s.status === 'COMPLETED' || s.status === 'SKIPPED';
+    const cargoStops = stops.filter((s) => DELIVERY_STOP_TYPES.includes(s.type as never));
+    const anyStarted = stops.some((s) => s.status !== 'PENDING');
+
+    let status = order.status;
+    const data: Prisma.OrderUpdateInput = {};
+    if (cargoStops.length > 0 && cargoStops.every(done)) {
+      if (!['DELIVERED', 'COMPLETED', 'CANCELLED', 'DISPUTED'].includes(order.status)) status = 'DELIVERED';
+      const lastDelivery = cargoStops.filter((s) => s.completedAt).sort((a, b) => +a.completedAt! - +b.completedAt!).pop();
+      if (!order.actualDeliveryAt && lastDelivery?.completedAt) data.actualDeliveryAt = lastDelivery.completedAt;
+    } else if (anyStarted && ['ASSIGNED', 'CONFIRMED'].includes(order.status)) {
+      status = 'IN_TRANSIT';
+      const firstPickup = stops.find((s) => s.type === 'PICKUP' && s.completedAt);
+      if (!order.actualPickupAt && firstPickup?.completedAt) data.actualPickupAt = firstPickup.completedAt;
+    }
+
+    if (status !== order.status) data.status = status as OrderStatus;
+    if (Object.keys(data).length > 0) {
+      await this.prisma.order.update({ where: { id: orderId }, data });
+      if (data.status) this.realtime.emitOrderStatus(orderId, { status });
     }
   }
 }

@@ -450,6 +450,7 @@ model Order {
   bids           Bid[]
   orderTrucks    OrderTruck[]
   orderDrivers   OrderDriver[]
+  stops          OrderStop[]
   trackingEvents TrackingEvent[]
   payment        Payment?
   invoice        Invoice?
@@ -461,6 +462,64 @@ model Order {
   @@index([status])
   @@index([pickupDate])
   @@index([originCity, destinationCity])
+}
+
+/// A single stop on an order's route. The route is an ordered list of stops;
+/// a legacy single origin→destination order is a 2-stop route (PICKUP at the
+/// origin, DELIVERY at the destination), synthesized on read for old rows and
+/// persisted for new ones. A CONSOLIDATED order's trucks all share this one
+/// route ("same trip"). Backwards-compatible: Order keeps its origin and
+/// destination columns as a denormalized summary (first PICKUP / last delivery).
+model OrderStop {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  /// 1-based position in the route.
+  sequence      Int
+  type          StopType
+  /// "PENDING" | "EN_ROUTE" | "ARRIVED" | "COMPLETED" | "SKIPPED".
+  /// String (not enum) to mirror OrderTruck.status and add states migration-free.
+  status        String    @default("PENDING")
+
+  city          String
+  region        String
+  address       String
+  lat           Float?
+  lng           Float?
+
+  contactName   String?
+  contactPhone  String?
+  scheduledAt   DateTime?
+  windowStart   DateTime?
+  windowEnd     DateTime?
+  instructions  String?
+
+  /// Container handling at this stop (for CONTAINER_* trucks / empty return).
+  containerNo   String?
+  /// True when this stop is the empty-container return that keeps the trip
+  /// open after the cargo is delivered (cargo-delivery vs trip-completion).
+  isEmptyReturn Boolean   @default(false)
+
+  arrivedAt     DateTime?
+  completedAt   DateTime?
+  proofPhotos   String[]  @default([])
+  proofNote     String?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([orderId, sequence])
+  @@index([orderId])
+}
+
+enum StopType {
+  PICKUP
+  DELIVERY
+  DROPOFF
+  WAREHOUSE
+  RETURN_EMPTY
+  EXCHANGE
 }
 
 model Bid {
