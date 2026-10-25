@@ -49,6 +49,9 @@ export type TripType = 'SAME_CITY' | 'INTER_CITY';
  *                  across its own trucks/drivers.
  */
 export type OrderKind = 'SINGLE' | 'CONSOLIDATED';
+export type RouteStopType = 'PICKUP' | 'DROPOFF' | 'WAREHOUSE' | 'RETURN_EMPTY' | 'EXCHANGE';
+/** An optional intermediate stop between the pickup origin and the final delivery. */
+export interface RouteStop { type: RouteStopType; city: string; address: string; instructions: string; }
 
 /** Allowed truck count range for a consolidated order. */
 const CONSOLIDATED_MIN = 2;
@@ -72,6 +75,8 @@ interface FormState {
   destinationAddress: string;
   /** Precise delivery location set via the map. */
   destinationPin: MapPoint | null;
+  /** Optional ordered intermediate stops (between pickup and final delivery). */
+  stops: RouteStop[];
   pickupDate: string;
   pickupWindow: PickupWindow;
   mode: 'OPEN' | 'DIRECT' | null;
@@ -79,13 +84,22 @@ interface FormState {
   /** MARKET = carriers bid; FIXED = client sets the price. */
   pricingMode: 'MARKET' | 'FIXED';
   fixedPrice: number | null;
-  /** PREPAID = Escrow; COD = cash/transfer on delivery. */
-  paymentMethod: 'PREPAID' | 'COD';
+  /** Collection method — gated by the client's policy (allowPrepaid/allowCOD).
+   *  ESCROW is always available; wallet/gateway need prepaid; COD needs COD. */
+  collectionMethod: 'ESCROW' | 'PREPAID_WALLET' | 'PREPAID_GATEWAY' | 'COD';
   truckType: string;
   requiresInsurance: boolean;
   requiresRefrigeration: boolean;
   specialInstructions: string;
 }
+
+/** Collection method → the `wizard.dispatch.*` title key used to label it. */
+const COLLECTION_TITLE_KEY: Record<FormState['collectionMethod'], string> = {
+  ESCROW: 'escrowTitle',
+  PREPAID_WALLET: 'walletTitle',
+  PREPAID_GATEWAY: 'gatewayTitle',
+  COD: 'codTitle',
+};
 
 const STEPS = [
   { id: 1, labelKey: 'wizard.steps.cargo',        icon: Package },
@@ -157,6 +171,7 @@ export default function NewOrderWizard() {
     destinationCity: 'جدة',
     destinationAddress: '',
     destinationPin: null,
+    stops: [],
     pickupDate: '',
     pickupWindow: 'ALL_DAY',
     // Initial selections honour the client's policy (pre-pick when only one option).
@@ -164,7 +179,7 @@ export default function NewOrderWizard() {
     targetCarrierId: policy.forcedCarrierId ?? null,
     pricingMode: policy.allowMarketPricing ? 'MARKET' : 'FIXED',
     fixedPrice: null,
-    paymentMethod: policy.allowPrepaid ? 'PREPAID' : 'COD',
+    collectionMethod: 'ESCROW',
     truckType: 'LARGE_FLATBED',
     requiresInsurance: false,
     requiresRefrigeration: false,
@@ -189,8 +204,9 @@ export default function NewOrderWizard() {
       }
       if (s.pricingMode === 'MARKET' && !policy.allowMarketPricing) next.pricingMode = 'FIXED';
       if (s.pricingMode === 'FIXED' && !policy.allowFixedPricing) next.pricingMode = 'MARKET';
-      if (s.paymentMethod === 'PREPAID' && !policy.allowPrepaid) next.paymentMethod = 'COD';
-      if (s.paymentMethod === 'COD' && !policy.allowCOD) next.paymentMethod = 'PREPAID';
+      // ESCROW is always valid; fall back to it if the chosen method is now disallowed.
+      if ((s.collectionMethod === 'PREPAID_WALLET' || s.collectionMethod === 'PREPAID_GATEWAY') && !policy.allowPrepaid) next.collectionMethod = 'ESCROW';
+      if (s.collectionMethod === 'COD' && !policy.allowCOD) next.collectionMethod = 'ESCROW';
       return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -280,10 +296,38 @@ export default function NewOrderWizard() {
         ...(form.originPin?.lng   != null ? { originLng: form.originPin.lng }     : {}),
         ...(form.destinationPin?.lat != null ? { destinationLat: form.destinationPin.lat } : {}),
         ...(form.destinationPin?.lng != null ? { destinationLng: form.destinationPin.lng } : {}),
+        // Multi-stop route: only sent when the client added intermediate stops;
+        // otherwise omitted so the server builds the classic 2-stop route.
+        ...(form.stops.length > 0 ? {
+          stops: [
+            {
+              type: 'PICKUP', city: form.originCity, region: origin?.region ?? form.originCity,
+              address: form.originAddress || form.originPin?.address || form.originCity,
+              ...(form.originPin?.lat != null ? { lat: form.originPin.lat } : {}),
+              ...(form.originPin?.lng != null ? { lng: form.originPin.lng } : {}),
+            },
+            ...form.stops.map((s) => {
+              const c = activeCities.find((x) => x.nameAr === s.city);
+              return {
+                type: s.type, city: s.city, region: c?.region ?? s.city,
+                address: s.address || s.city,
+                ...(s.instructions ? { instructions: s.instructions } : {}),
+              };
+            }),
+            {
+              type: 'DELIVERY', city: form.destinationCity, region: dest?.region ?? form.destinationCity,
+              address: form.destinationAddress || form.destinationPin?.address || form.destinationCity,
+              ...(form.destinationPin?.lat != null ? { lat: form.destinationPin.lat } : {}),
+              ...(form.destinationPin?.lng != null ? { lng: form.destinationPin.lng } : {}),
+            },
+          ],
+        } : {}),
         ...(form.specialInstructions ? { specialInstructions: form.specialInstructions } : {}),
-        // Note: pricingMode / paymentMethod are UI-only and not part of the API
-        // schema (FIXED pricing is sent via agreedPriceUpfront below), so they
-        // are intentionally NOT included — the strict API rejects unknown keys.
+        // Collection method is validated server-side against the client's policy.
+        collectionMethod: form.collectionMethod,
+        // Note: pricingMode is UI-only (FIXED pricing is sent via
+        // agreedPriceUpfront below), so it is intentionally NOT included —
+        // the strict API rejects unknown keys.
         // DIRECT-mode only field
         ...(form.mode === 'DIRECT' && form.targetCarrierId
           ? { targetCarrierId: form.targetCarrierId }
@@ -576,6 +620,63 @@ export default function NewOrderWizard() {
                 onDestPin={(p) => { set('destinationPin', p); set('destinationAddress', p.address); }}
               />
 
+              {/* Optional intermediate stops → a multi-stop trip. Omitted entirely
+                  when empty, so a plain pickup→delivery order is unchanged. */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Route className="h-4 w-4 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <Label>{t('wizard.route.stopsTitle')}</Label>
+                      <p className="text-xs text-muted-foreground">{t('wizard.route.stopsHint')}</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button" variant="outline" size="sm" className="shrink-0"
+                    onClick={() => set('stops', [...form.stops, { type: 'DROPOFF', city: form.destinationCity, address: '', instructions: '' }])}
+                  >
+                    <Plus className="h-4 w-4" /> {t('wizard.route.addStop')}
+                  </Button>
+                </div>
+                {form.stops.map((s, i) => (
+                  <div key={i} className="rounded-md border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground">{t('wizard.route.stopN', { n: i + 1 })}</span>
+                      <Button
+                        type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                        onClick={() => set('stops', form.stops.filter((_, j) => j !== i))}
+                        aria-label={t('wizard.route.removeStop')}
+                      ><Minus className="h-4 w-4" /></Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Select value={s.type} onValueChange={(v) => set('stops', form.stops.map((x, j) => (j === i ? { ...x, type: v as RouteStopType } : x)))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="DROPOFF">{t('wizard.route.stopTypes.DROPOFF')}</SelectItem>
+                          <SelectItem value="PICKUP">{t('wizard.route.stopTypes.PICKUP')}</SelectItem>
+                          <SelectItem value="WAREHOUSE">{t('wizard.route.stopTypes.WAREHOUSE')}</SelectItem>
+                          <SelectItem value="RETURN_EMPTY">{t('wizard.route.stopTypes.RETURN_EMPTY')}</SelectItem>
+                          <SelectItem value="EXCHANGE">{t('wizard.route.stopTypes.EXCHANGE')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={s.city} onValueChange={(v) => set('stops', form.stops.map((x, j) => (j === i ? { ...x, city: v } : x)))}>
+                        <SelectTrigger><SelectValue placeholder={t('wizard.route.stopCity')} /></SelectTrigger>
+                        <SelectContent>
+                          {activeCities.map((c) => (
+                            <SelectItem key={c.id} value={c.nameAr}>{localizeCity(c.nameAr, undefined, activeCities)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Input
+                      value={s.address}
+                      onChange={(e) => set('stops', form.stops.map((x, j) => (j === i ? { ...x, address: e.target.value } : x)))}
+                      placeholder={t('wizard.route.stopAddress')}
+                    />
+                  </div>
+                ))}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('wizard.route.pickupDate')}</Label>
@@ -739,19 +840,36 @@ export default function NewOrderWizard() {
               <div className="rounded-lg border p-4 space-y-3">
                 <Label>{t('wizard.dispatch.payment')}</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* ESCROW is always available (platform default). */}
+                  <ChoiceCard
+                    selected={form.collectionMethod === 'ESCROW'}
+                    onClick={() => set('collectionMethod', 'ESCROW')}
+                    icon={<Wallet className="h-6 w-6" />}
+                    title={t('wizard.dispatch.escrowTitle')}
+                    description={t('wizard.dispatch.escrowDesc')}
+                  />
                   {policy.allowPrepaid && (
                     <ChoiceCard
-                      selected={form.paymentMethod === 'PREPAID'}
-                      onClick={() => set('paymentMethod', 'PREPAID')}
+                      selected={form.collectionMethod === 'PREPAID_WALLET'}
+                      onClick={() => set('collectionMethod', 'PREPAID_WALLET')}
                       icon={<Wallet className="h-6 w-6" />}
-                      title={t('wizard.dispatch.prepaidTitle')}
-                      description={t('wizard.dispatch.prepaidDesc')}
+                      title={t('wizard.dispatch.walletTitle')}
+                      description={t('wizard.dispatch.walletDesc')}
+                    />
+                  )}
+                  {policy.allowPrepaid && (
+                    <ChoiceCard
+                      selected={form.collectionMethod === 'PREPAID_GATEWAY'}
+                      onClick={() => set('collectionMethod', 'PREPAID_GATEWAY')}
+                      icon={<Wallet className="h-6 w-6" />}
+                      title={t('wizard.dispatch.gatewayTitle')}
+                      description={t('wizard.dispatch.gatewayDesc')}
                     />
                   )}
                   {policy.allowCOD && (
                     <ChoiceCard
-                      selected={form.paymentMethod === 'COD'}
-                      onClick={() => set('paymentMethod', 'COD')}
+                      selected={form.collectionMethod === 'COD'}
+                      onClick={() => set('collectionMethod', 'COD')}
                       icon={<Banknote className="h-6 w-6" />}
                       title={t('wizard.dispatch.codTitle')}
                       description={t('wizard.dispatch.codDesc')}
@@ -830,7 +948,7 @@ export default function NewOrderWizard() {
                 <Row label={t('wizard.review.pricing')} value={form.pricingMode === 'FIXED'
                   ? `${t('wizard.review.fixedValue')} · ${(form.fixedPrice ?? 0).toLocaleString('en-US')} ${t('wizard.sarUnit')}`
                   : t('wizard.dispatch.marketTitle')} />
-                <Row label={t('wizard.review.payment')} value={form.paymentMethod === 'COD' ? t('wizard.dispatch.codTitle') : t('wizard.review.prepaidValue')} />
+                <Row label={t('wizard.review.payment')} value={t(`wizard.dispatch.${COLLECTION_TITLE_KEY[form.collectionMethod]}`)} />
               </Section>
               <Separator />
               <Section title={t('wizard.review.requirements')}>
@@ -998,9 +1116,9 @@ function OrderSummary({
             : t('wizard.dispatch.marketTitle')}
         />
         <SummaryRow
-          icon={form.paymentMethod === 'COD' ? Banknote : Wallet}
+          icon={form.collectionMethod === 'COD' ? Banknote : Wallet}
           label={t('wizard.summary.payment')}
-          value={form.paymentMethod === 'COD' ? t('wizard.summary.codShort') : t('wizard.summary.prepaidShort')}
+          value={t(`wizard.dispatch.${COLLECTION_TITLE_KEY[form.collectionMethod]}`)}
         />
         <SummaryRow
           icon={Truck}

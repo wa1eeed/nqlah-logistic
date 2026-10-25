@@ -6,6 +6,20 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.51 — Client route builder + collection-method selector (2026-10-25)
+
+- **Collection method:** the new-order wizard's payment step now offers the full
+  set — Escrow / Pay from wallet / Pay online / Cash on delivery — gated by the
+  client's live policy (`/policies/mine`: `allowPrepaid` / `allowCOD`; Escrow is
+  always available). Sent as `collectionMethod`, validated server-side (phase 4).
+  Replaces the previous coarse Prepaid/COD toggle.
+- **Multi-stop route builder:** the route step now lets the client add optional
+  ordered **intermediate stops** (drop-off / additional pickup / warehouse /
+  return empty container / exchange, each with a city + address). On submit the
+  wizard builds the full `stops[]` (PICKUP → … → DELIVERY). Omitted entirely
+  when no stops are added, so a plain pickup→delivery order is unchanged.
+- Review + summary rows updated; en/ar strings added for both features.
+
 ### v0.9.50 — Admin control: provider visibility + carrier groups (2026-10-25)
 
 - The admin **client-policies panel** now exposes **provider visibility scope**
