@@ -39,6 +39,8 @@ RUN apk add --no-cache wget \
  && addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 nextjs
 
+# PORT defaults to 3006 but the platform (Coolify) may inject its own; the
+# server and the healthcheck both honor $PORT so they always agree.
 ENV NODE_ENV=production
 ENV PORT=3006
 ENV HOSTNAME=0.0.0.0
@@ -52,6 +54,6 @@ WORKDIR /app/apps/web/driver
 EXPOSE 3006
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD wget -qO /dev/null http://localhost:3006/ || exit 1
+  CMD wget -qO /dev/null "http://localhost:${PORT:-3006}/" || exit 1
 
 CMD ["node", "server.js"]
