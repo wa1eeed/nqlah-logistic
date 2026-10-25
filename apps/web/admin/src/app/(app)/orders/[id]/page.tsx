@@ -599,12 +599,15 @@ function ConsolidatedReadonly({ order }: {
   };
   // Live legs from the API (enriched with plate + driver name); fall back to the
   // mock order legs.
-  const { data: legsData } = useSWR<{ truckCount: number; legs: ReadonlyLeg[] }>(`/orders/${order.id}/legs`, fetcher);
+  const { data: legsData } = useSWR<{ truckCount: number; heterogeneous?: boolean; legs: ReadonlyLeg[] }>(`/orders/${order.id}/legs`, fetcher);
   const apiLegs = Array.isArray(legsData?.legs) ? legsData!.legs : null;
   const legs: ReadonlyLeg[] = apiLegs ?? (order.legs ?? []);
   const count = (apiLegs ? legsData!.truckCount : order.truckCount) ?? legs.length;
   const distributed = legs.filter((l) => l.truckId).length;
+  const heterogeneous = !!legsData?.heterogeneous;
+  const legPriceSum = legs.reduce((s, l) => s + (l.price ?? 0), 0);
   const perLeg = Math.round((order.agreedPrice ?? 0) / Math.max(1, count));
+  const invoiceTotal = heterogeneous && legPriceSum > 0 ? legPriceSum : (order.agreedPrice ?? 0);
   const pct = count > 0 ? Math.round((distributed / count) * 100) : 0;
   return (
     <div className="mb-4 space-y-3 rounded-lg border bg-muted/30 p-4">
@@ -630,6 +633,12 @@ function ConsolidatedReadonly({ order }: {
                   <div className="w-[100px] shrink-0"><SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="fill" /></div>
                   <div className="min-w-0 flex-1">
                     {leg.reference && <div className="num font-mono text-[11px] text-foreground truncate" dir="ltr">{leg.reference}</div>}
+                    {heterogeneous && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                        <Truck className="h-3 w-3" />{leg.requiredTruckType}
+                        {leg.destinationCity && <>· <MapPin className="h-3 w-3" />{localizeCity(leg.destinationCity)}</>}
+                      </div>
+                    )}
                     {driverName
                       ? <div className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="h-3 w-3" /> {driverName}</div>
                       : <div className="text-xs text-muted-foreground">{t('adminDetail.noDriver')}</div>}
@@ -638,8 +647,17 @@ function ConsolidatedReadonly({ order }: {
               ) : (
                 <div className="min-w-0 flex-1">
                   {leg.reference && <div className="num font-mono text-[11px] text-foreground truncate" dir="ltr">{leg.reference}</div>}
+                  {heterogeneous && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                      <Truck className="h-3 w-3" />{leg.requiredTruckType}
+                      {leg.destinationCity && <>· <MapPin className="h-3 w-3" />{localizeCity(leg.destinationCity)}</>}
+                    </div>
+                  )}
                   <div className="text-xs text-muted-foreground">{t('adminDetail.notAssignedYet')}</div>
                 </div>
+              )}
+              {heterogeneous && leg.price != null && (
+                <span className="shrink-0 text-xs font-semibold"><Currency amount={leg.price} /></span>
               )}
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${LEG_TONE[leg.status]}`}>{LEG_LABEL[leg.status]}</span>
             </div>
@@ -648,8 +666,12 @@ function ConsolidatedReadonly({ order }: {
       </div>
       <div className="rounded-md border bg-background p-3 text-sm">
         <div className="mb-1 font-semibold">{t('adminDetail.consolidatedInvoice')}</div>
-        <div className="flex justify-between text-muted-foreground"><span className="num">{t('adminDetail.trucksMultiplier', { count: String(count) })}</span><Currency amount={perLeg} /></div>
-        <div className="mt-1 flex justify-between border-t pt-1 font-semibold"><span>{t('adminDetail.total')}</span><Currency amount={order.agreedPrice ?? 0} /></div>
+        {heterogeneous ? (
+          <div className="flex justify-between text-muted-foreground"><span className="num">{count}</span><span className="text-[11px]">{t('adminDetail.perLegPricing')}</span></div>
+        ) : (
+          <div className="flex justify-between text-muted-foreground"><span className="num">{t('adminDetail.trucksMultiplier', { count: String(count) })}</span><Currency amount={perLeg} /></div>
+        )}
+        <div className="mt-1 flex justify-between border-t pt-1 font-semibold"><span>{t('adminDetail.total')}</span><Currency amount={invoiceTotal} /></div>
         <p className="mt-1 text-[11px] text-muted-foreground">{t('adminDetail.singleInvoice', { orderNumber: order.orderNumber })}</p>
       </div>
     </div>

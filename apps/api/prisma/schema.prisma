@@ -481,6 +481,7 @@ model Order {
 
   bids           Bid[]
   orderTrucks    OrderTruck[]
+  orderLegs      OrderLeg[]
   orderDrivers   OrderDriver[]
   stops          OrderStop[]
   trackingEvents TrackingEvent[]
@@ -619,6 +620,40 @@ model OrderDriver {
   assignedAt DateTime @default(now())
 
   @@unique([orderId, driverId])
+}
+
+/// The per-leg SPEC of a CONSOLIDATED order — what makes its legs heterogeneous.
+/// Each leg can carry a different truck type, a different destination, and its own
+/// price, all sharing the order's single pickup origin, client and invoice. One
+/// row per leg (sequence 1..truckCount), created at order creation. This is the
+/// plan; the actual truck/driver assignment stays on `OrderTruck` (same
+/// `(orderId, sequence)`). Homogeneous legacy orders have no rows and fall back to
+/// the order's own truck type / destination / price.
+model OrderLeg {
+  id       String @id @default(cuid())
+  orderId  String
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// 1-based leg index, aligned with OrderTruck.sequence and legReferences[idx-1].
+  sequence Int
+
+  reference         String?
+  requiredTruckType TruckType
+
+  /// Per-leg destination (origin is shared with the order's pickup).
+  destinationCity    String
+  destinationRegion  String
+  destinationAddress String
+  destinationLat     Float?
+  destinationLng     Float?
+
+  /// Per-leg price; the order total is the sum of its legs' prices.
+  price Decimal? @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orderId, sequence])
+  @@index([orderId])
 }
 
 model TrackingEvent {

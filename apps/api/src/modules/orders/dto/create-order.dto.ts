@@ -48,6 +48,19 @@ export class CreateStopDto {
   @IsOptional() @IsBoolean() isEmptyReturn?: boolean;
 }
 
+/// One leg of a heterogeneous CONSOLIDATED order: its own truck type,
+/// destination and price. Origin/cargo/client stay shared with the order.
+export class CreateOrderLegDto {
+  @IsEnum(TRUCKS) requiredTruckType!: (typeof TRUCKS)[number];
+  @IsString() destinationCity!: string;
+  @IsString() destinationRegion!: string;
+  @IsString() destinationAddress!: string;
+  @IsOptional() @IsNumber() destinationLat?: number;
+  @IsOptional() @IsNumber() destinationLng?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) price?: number;
+  @IsOptional() @IsString() reference?: string;
+}
+
 export class CreateOrderDto {
   @IsEnum(CARGO) cargoType!: (typeof CARGO)[number];
   @IsString() cargoDescription!: string;
@@ -104,6 +117,12 @@ export class CreateOrderDto {
   /// Consolidated only — a shipment reference per leg, in leg order. Omit (or
   /// send an empty array) to have the server auto-generate `<orderNumber>-L<n>`.
   @IsOptional() @IsArray() @IsString({ each: true }) legReferences?: string[];
+  /// Consolidated only — the per-leg spec for a HETEROGENEOUS order: each leg's
+  /// own truck type, destination and price. When provided, `truckCount` is the
+  /// number of legs. Omit for a homogeneous consolidated order (every leg shares
+  /// the order's truck type, destination and price).
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => CreateOrderLegDto)
+  legs?: CreateOrderLegDto[];
 
   /// Multi-stop route (2+ stops, in travel order). Omit for a classic
   /// single origin→destination order — the server then builds a 2-stop route

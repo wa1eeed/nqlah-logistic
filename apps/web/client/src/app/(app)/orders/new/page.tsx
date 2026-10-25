@@ -6,7 +6,7 @@ import useSWR from 'swr';
 import {
   Banknote, Check, ChevronLeft, ChevronRight, Clock, Coins, Eye, Gavel, Layers, MapPin, Minus,
   Package, Plus, Radio, Search, Send, ShieldCheck, Snowflake, Truck, UserSearch, Wallet,
-  Building2, Route, Lock,
+  Building2, Route, Lock, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -57,10 +57,24 @@ export interface RouteStop { type: RouteStopType; city: string; address: string;
 const CONSOLIDATED_MIN = 2;
 const CONSOLIDATED_MAX = 20;
 
+/** One leg's spec in a HETEROGENEOUS consolidated order (client-authored). */
+interface LegSpecForm {
+  truckType: string;
+  destinationCity: string;
+  destinationAddress: string;
+  price: string;
+  reference: string;
+}
+
 interface FormState {
   tripType: TripType;
   orderType: OrderKind;
   truckCount: number;
+  /** Consolidated legs: SAME = every leg shares the order's truck type +
+   *  destination + price; MIXED = each leg has its own (heterogeneous). */
+  legMode: 'SAME' | 'MIXED';
+  /** The per-leg spec when `legMode === 'MIXED'`. */
+  legSpecs: LegSpecForm[];
   /** Consolidated: client types a reference per leg; off = system auto-generates. */
   legReferencesManual: boolean;
   legReferences: string[];
@@ -169,6 +183,8 @@ export default function NewOrderWizard() {
     tripType: 'INTER_CITY',
     orderType: 'SINGLE',
     truckCount: 1,
+    legMode: 'SAME',
+    legSpecs: [],
     legReferencesManual: false,
     legReferences: [],
     cargoType: 'GENERAL',
@@ -197,6 +213,37 @@ export default function NewOrderWizard() {
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
+
+  // ── Heterogeneous leg helpers (consolidated, legMode === 'MIXED') ──
+  const blankLeg = (): LegSpecForm => ({
+    truckType: form.truckType || 'LARGE_FLATBED',
+    destinationCity: form.destinationCity || '',
+    destinationAddress: '',
+    price: '',
+    reference: '',
+  });
+  /** Grow/shrink the per-leg specs to `n` entries, keeping existing rows. */
+  const resizeLegSpecs = (specs: LegSpecForm[], n: number): LegSpecForm[] => {
+    const next = specs.slice(0, n);
+    while (next.length < n) next.push(blankLeg());
+    return next;
+  };
+  const enterMixedMode = () => setForm((s) => ({
+    ...s,
+    legMode: 'MIXED',
+    legSpecs: resizeLegSpecs(s.legSpecs, Math.max(CONSOLIDATED_MIN, s.truckCount)),
+    truckCount: Math.max(CONSOLIDATED_MIN, s.truckCount),
+  }));
+  const setLeg = (i: number, patch: Partial<LegSpecForm>) => setForm((s) => {
+    const arr = s.legSpecs.map((l, idx) => (idx === i ? { ...l, ...patch } : l));
+    return { ...s, legSpecs: arr };
+  });
+  const addLeg = () => setForm((s) => s.truckCount >= CONSOLIDATED_MAX ? s : ({
+    ...s, legSpecs: [...s.legSpecs, blankLeg()], truckCount: s.truckCount + 1,
+  }));
+  const removeLeg = (i: number) => setForm((s) => s.truckCount <= CONSOLIDATED_MIN ? s : ({
+    ...s, legSpecs: s.legSpecs.filter((_, idx) => idx !== i), truckCount: s.truckCount - 1,
+  }));
 
   // On first policy load, seed the form with the group's admin-set module
   // defaults (assignment / pricing / collection). On every policy change, clamp
@@ -262,19 +309,28 @@ export default function NewOrderWizard() {
     ? catalog.truckTypes.filter((tt) => tt.active !== false).map((tt) => ({ value: tt.id, label: tt.nameAr }))
     : TRUCK_TYPES.map((tt) => ({ value: tt.value, label: t(tt.labelKey) }));
 
+  const mixedLegs = form.orderType === 'CONSOLIDATED' && form.legMode === 'MIXED';
   const canNext = useMemo(() => {
     switch (step) {
-      case 1: return !!form.cargoType && form.cargoDescription.length > 3 && form.weightKg > 0
-        && (form.orderType === 'SINGLE' || form.truckCount >= CONSOLIDATED_MIN);
+      case 1: {
+        const base = !!form.cargoType && form.cargoDescription.length > 3 && form.weightKg > 0;
+        if (form.orderType === 'SINGLE') return base;
+        if (!mixedLegs) return base && form.truckCount >= CONSOLIDATED_MIN;
+        // Heterogeneous: every leg needs a truck type, destination and address.
+        return base && form.legSpecs.length >= CONSOLIDATED_MIN
+          && form.legSpecs.every((l) => l.truckType && l.destinationCity && l.destinationAddress.trim());
+      }
       case 2: return !!form.originCity && !!form.destinationCity && !!form.pickupDate;
       case 3: return (
         (form.mode === 'OPEN' || (form.mode === 'DIRECT' && !!form.targetCarrierId)) &&
-        (form.pricingMode === 'MARKET' || (form.fixedPrice != null && form.fixedPrice > 0))
+        // Heterogeneous orders price per leg, so the single fixed-price field
+        // is not required here.
+        (mixedLegs || form.pricingMode === 'MARKET' || (form.fixedPrice != null && form.fixedPrice > 0))
       );
       case 4: return !!form.truckType;
       default: return true;
     }
-  }, [step, form]);
+  }, [step, form, mixedLegs]);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -295,14 +351,37 @@ export default function NewOrderWizard() {
       const origin = activeCities.find((c) => c.nameAr === form.originCity);
       const dest = activeCities.find((c) => c.nameAr === form.destinationCity);
 
+      // Heterogeneous consolidated order: build the per-leg spec payload. The
+      // order's summary destination + truck type come from the first leg so the
+      // single-valued Order columns stay coherent.
+      const mixed = form.orderType === 'CONSOLIDATED' && form.legMode === 'MIXED';
+      const legsPayload = mixed
+        ? form.legSpecs.map((l) => {
+            const c = activeCities.find((x) => x.nameAr === l.destinationCity);
+            return {
+              requiredTruckType: l.truckType,
+              destinationCity: l.destinationCity,
+              destinationRegion: c?.region ?? l.destinationCity,
+              destinationAddress: l.destinationAddress || l.destinationCity,
+              ...(l.price ? { price: Number(l.price) } : {}),
+              ...(l.reference.trim() ? { reference: l.reference.trim() } : {}),
+            };
+          })
+        : null;
+      const firstLeg = legsPayload?.[0] ?? null;
+
       const body = {
         mode: form.mode ?? 'OPEN',
         tripType: form.tripType,
         orderType: form.orderType,
-        ...(form.orderType === 'CONSOLIDATED' ? { truckCount: form.truckCount } : {}),
-        // Manual per-leg references (blanks are auto-filled server-side); omit
-        // entirely when auto so the server generates every sub-reference.
-        ...(form.orderType === 'CONSOLIDATED' && form.legReferencesManual
+        // Heterogeneous → send the per-leg `legs` spec (truckCount is derived);
+        // homogeneous consolidated → send the truck count.
+        ...(mixed
+          ? { legs: legsPayload }
+          : (form.orderType === 'CONSOLIDATED' ? { truckCount: form.truckCount } : {})),
+        // Manual per-leg references (homogeneous only; heterogeneous legs carry
+        // their own reference). Blanks are auto-filled server-side.
+        ...(form.orderType === 'CONSOLIDATED' && !mixed && form.legReferencesManual
           ? { legReferences: Array.from({ length: form.truckCount }, (_, i) => (form.legReferences[i] ?? '').trim()) }
           : {}),
         pickupWindow: form.pickupWindow,
@@ -312,10 +391,10 @@ export default function NewOrderWizard() {
         originCity: form.originCity,
         originRegion: origin?.region ?? form.originCity,
         originAddress: form.originAddress || form.originPin?.address || form.originCity,
-        destinationCity: form.destinationCity,
-        destinationRegion: dest?.region ?? form.destinationCity,
-        destinationAddress: form.destinationAddress || form.destinationPin?.address || form.destinationCity,
-        requiredTruckType: form.truckType,
+        destinationCity: firstLeg?.destinationCity ?? form.destinationCity,
+        destinationRegion: firstLeg?.destinationRegion ?? (dest?.region ?? form.destinationCity),
+        destinationAddress: firstLeg?.destinationAddress ?? (form.destinationAddress || form.destinationPin?.address || form.destinationCity),
+        requiredTruckType: firstLeg?.requiredTruckType ?? form.truckType,
         requiresRefrigeration: form.requiresRefrigeration,
         requiresInsurance: form.requiresInsurance,
         pickupDate: form.pickupDate,
@@ -362,8 +441,10 @@ export default function NewOrderWizard() {
         ...(form.mode === 'DIRECT' && form.targetCarrierId
           ? { targetCarrierId: form.targetCarrierId }
           : {}),
-        // Client-set fixed price (works with OPEN or DIRECT)
-        ...(form.pricingMode === 'FIXED' && form.fixedPrice
+        // Client-set fixed price (works with OPEN or DIRECT). For a heterogeneous
+        // order the price comes from the per-leg prices (summed server-side), so
+        // the single upfront price is not sent.
+        ...(!mixed && form.pricingMode === 'FIXED' && form.fixedPrice
           ? { agreedPriceUpfront: form.fixedPrice }
           : {}),
       };
@@ -464,6 +545,33 @@ export default function NewOrderWizard() {
                 </div>
                 {form.orderType === 'CONSOLIDATED' && (
                   <>
+                    {/* Legs: all identical (one route, one truck type, split price)
+                        or heterogeneous (each leg its own type/destination/price). */}
+                    <div className="rounded-xl border bg-muted/30 p-3 mt-1 space-y-1">
+                      <div className="text-sm font-semibold">{t('wizard.cargo.legModeTitle')}</div>
+                      <div className="text-xs text-muted-foreground">{t('wizard.cargo.legModeHint')}</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1.5">
+                        <Button
+                          type="button" variant={form.legMode === 'SAME' ? 'default' : 'outline'}
+                          className="justify-start h-auto py-2.5"
+                          onClick={() => set('legMode', 'SAME')}
+                        >
+                          <Layers className="h-4 w-4 me-2 shrink-0" />
+                          <span className="text-start"><span className="block text-sm font-semibold">{t('wizard.cargo.legSame')}</span><span className="block text-[11px] opacity-80">{t('wizard.cargo.legSameHint')}</span></span>
+                        </Button>
+                        <Button
+                          type="button" variant={form.legMode === 'MIXED' ? 'default' : 'outline'}
+                          className="justify-start h-auto py-2.5"
+                          onClick={enterMixedMode}
+                        >
+                          <Route className="h-4 w-4 me-2 shrink-0" />
+                          <span className="text-start"><span className="block text-sm font-semibold">{t('wizard.cargo.legMixed')}</span><span className="block text-[11px] opacity-80">{t('wizard.cargo.legMixedHint')}</span></span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {form.legMode === 'SAME' ? (
+                    <>
                     <div className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3 mt-1">
                       <div>
                         <div className="text-sm font-semibold">{t('wizard.cargo.truckCount')}</div>
@@ -531,6 +639,82 @@ export default function NewOrderWizard() {
                         </p>
                       )}
                     </div>
+                    </>
+                    ) : (
+                    /* Heterogeneous per-leg editor: each leg its own truck type,
+                       destination and price. */
+                    <div className="space-y-2.5 mt-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-semibold">{t('wizard.cargo.legsEditorTitle')}</div>
+                          <div className="text-xs text-muted-foreground">{t('wizard.cargo.legsEditorHint')}</div>
+                        </div>
+                        <Button
+                          type="button" size="sm" variant="outline" className="shrink-0"
+                          disabled={form.truckCount >= CONSOLIDATED_MAX} onClick={addLeg}
+                        ><Plus className="h-4 w-4 me-1" />{t('wizard.cargo.addLeg')}</Button>
+                      </div>
+                      {form.legSpecs.map((leg, i) => (
+                        <div key={i} className="rounded-xl border bg-muted/20 p-3 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold inline-flex items-center gap-1.5">
+                              <span className="grid place-items-center h-5 w-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold num">{i + 1}</span>
+                              {t('wizard.cargo.leg')} <span className="num">{i + 1}</span>
+                            </span>
+                            <Button
+                              type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive"
+                              disabled={form.truckCount <= CONSOLIDATED_MIN} onClick={() => removeLeg(i)}
+                              aria-label={t('wizard.cargo.removeLeg')}
+                            ><Trash2 className="h-4 w-4" /></Button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div className="space-y-1">
+                              <Label className="text-xs">{t('wizard.cargo.legTruckType')}</Label>
+                              <Select value={leg.truckType} onValueChange={(v) => setLeg(i, { truckType: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {truckTypesList.map((tt) => <SelectItem key={tt.value} value={tt.value}>{tt.label}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">{t('wizard.cargo.legDestination')}</Label>
+                              <Select value={leg.destinationCity || undefined} onValueChange={(v) => setLeg(i, { destinationCity: v })}>
+                                <SelectTrigger><SelectValue placeholder={t('wizard.cargo.legDestinationPlaceholder')} /></SelectTrigger>
+                                <SelectContent>
+                                  {activeCities.map((c) => <SelectItem key={c.id} value={c.nameAr}>{localizeCity(c.nameAr)}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">{t('wizard.cargo.legAddress')}</Label>
+                            <Input value={leg.destinationAddress} placeholder={t('wizard.cargo.legAddressPlaceholder')}
+                              onChange={(e) => setLeg(i, { destinationAddress: e.target.value })} />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div className="space-y-1">
+                              <Label className="text-xs">{t('wizard.cargo.legPrice')}</Label>
+                              <Input type="number" dir="ltr" min={0} placeholder="0.00" className="text-end"
+                                value={leg.price} onChange={(e) => setLeg(i, { price: e.target.value })} />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">{t('wizard.cargo.legReference')}</Label>
+                              <Input dir="ltr" value={leg.reference} placeholder={`REF-${i + 1}`}
+                                onChange={(e) => setLeg(i, { reference: e.target.value })} />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {/* Live total of the per-leg prices. */}
+                      {form.legSpecs.some((l) => l.price) && (
+                        <div className="flex items-center justify-between rounded-lg bg-primary/5 px-3 py-2 text-sm">
+                          <span className="text-muted-foreground">{t('wizard.cargo.legsTotal')}</span>
+                          <span className="font-bold num">{form.legSpecs.reduce((s, l) => s + (Number(l.price) || 0), 0).toLocaleString('en-US')} {t('wizard.cargo.sar')}</span>
+                        </div>
+                      )}
+                    </div>
+                    )}
                   </>
                 )}
               </div>
