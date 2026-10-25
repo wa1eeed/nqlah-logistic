@@ -66,12 +66,25 @@
       "drivers": "Drivers",
       "financial": "Financial",
       "statement": "Statement",
+      "activity": "Activity",
       "profile": "Profile & KYC",
       "team": "Team"
     },
     "orders": {
       "title": "Orders for This Company",
       "empty": "No orders"
+    },
+    "activity": {
+      "title": "Activity & Audit Log",
+      "subtitle": "Full timeline of administrative actions and account events",
+      "empty": "No recorded activity",
+      "actions": {
+        "admin.company.status_change": "Account status changed",
+        "admin.company.accountNote": "Account note issued",
+        "admin.dispute.update": "Dispute updated",
+        "admin.settings.update": "Settings updated",
+        "admin.wallet.manualTx": "Manual wallet transaction"
+      }
     },
     "overview": {
       "totalOrders": "Total Orders",

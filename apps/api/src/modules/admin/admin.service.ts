@@ -220,6 +220,35 @@ export class AdminService {
     });
   }
 
+  /**
+   * A company's activity timeline — audit-log entries by its users, on the
+   * company itself, and on its orders (most recent first). Powers the 360°
+   * detail page's Activity tab.
+   */
+  async companyAudit(companyId: string) {
+    const [users, orders] = await Promise.all([
+      this.prisma.user.findMany({ where: { companyId }, select: { id: true } }),
+      this.prisma.order.findMany({
+        where: { OR: [{ clientId: companyId }, { carrierId: companyId }] },
+        select: { id: true },
+      }),
+    ]);
+    const userIds = users.map((u) => u.id);
+    const orderIds = orders.map((o) => o.id);
+    return this.prisma.auditLog.findMany({
+      where: {
+        OR: [
+          ...(userIds.length ? [{ userId: { in: userIds } }] : []),
+          { AND: [{ resourceType: 'Company' }, { resourceId: companyId }] },
+          ...(orderIds.length ? [{ AND: [{ resourceType: 'Order' }, { resourceId: { in: orderIds } }] }] : []),
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: { user: { select: { firstName: true, lastName: true } } },
+    });
+  }
+
   /** The company's account statement: wallet balance, credit/debit totals, ledger. */
   async companyStatement(companyId: string) {
     const company = await this.prisma.company.findUnique({

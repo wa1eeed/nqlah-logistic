@@ -178,6 +178,7 @@ export default function AdminCompanyDetail() {
           {isCarrier && <TabsTrigger value="drivers"><UserIcon className="h-4 w-4 me-1.5" /> {t('detail.tabs.drivers')}</TabsTrigger>}
           <TabsTrigger value="financial"><Wallet className="h-4 w-4 me-1.5" /> {t('detail.tabs.financial')}</TabsTrigger>
           <TabsTrigger value="statement"><FileText className="h-4 w-4 me-1.5" /> {t('detail.tabs.statement')}</TabsTrigger>
+          <TabsTrigger value="activity"><Activity className="h-4 w-4 me-1.5" /> {t('detail.tabs.activity')}</TabsTrigger>
           <TabsTrigger value="profile"><Building2 className="h-4 w-4 me-1.5" /> {t('detail.tabs.profile')}</TabsTrigger>
           <TabsTrigger value="team"><Users className="h-4 w-4 me-1.5" /> {t('detail.tabs.team')}</TabsTrigger>
         </TabsList>
@@ -239,6 +240,10 @@ export default function AdminCompanyDetail() {
         {/* ─── Account statement ─── */}
         <TabsContent value="statement">
           <StatementTab companyId={company.id} companyName={company.nameAr} />
+        </TabsContent>
+
+        <TabsContent value="activity">
+          <ActivityTab companyId={company.id} />
         </TabsContent>
 
         {/* ─── Profile + KYC ─── */}
@@ -736,6 +741,56 @@ interface StatementLine {
 }
 interface Statement {
   companyName: string; walletBalance: number; totalCredits: number; totalDebits: number; lines: StatementLine[];
+}
+
+type AuditEntry = {
+  id: string; action: string; resourceType: string; resourceId: string | null; createdAt: string;
+  user?: { firstName: string; lastName: string } | null;
+};
+
+/** 360° activity timeline for a company — its audit-log history. */
+function ActivityTab({ companyId }: { companyId: string }) {
+  const t = useTranslations('companies');
+  const { data } = useSWR<AuditEntry[]>(`/admin/companies/${companyId}/audit`, fetcher);
+  const entries = Array.isArray(data) ? data : [];
+  // Humanize the raw action key (e.g. "admin.company.status_change") into a
+  // readable label, preferring a translated string when one exists; never show
+  // the raw resource cuid.
+  const label = (action: string) => {
+    const key = `detail.activity.actions.${action}`;
+    if (t.has(key)) return t(key);
+    const tail = action.split('.').slice(-2).join(' ');
+    return tail.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('detail.activity.title')}</CardTitle>
+        <CardDescription>{t('detail.activity.subtitle')}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {entries.length === 0 ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">{t('detail.activity.empty')}</div>
+        ) : (
+          <ol className="relative ms-2 border-s ps-6 space-y-5">
+            {entries.map((e) => (
+              <li key={e.id} className="relative">
+                <span className="absolute -start-[1.72rem] top-1 h-3 w-3 rounded-full border-2 border-background bg-primary" />
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-sm font-medium">{label(e.action)}</span>
+                  <span className="num text-xs text-muted-foreground">{formatDate(e.createdAt, 'd MMM yyyy · HH:mm')}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <span>{e.resourceType}</span>
+                  {e.user && <> — {[e.user.firstName, e.user.lastName].filter(Boolean).join(' ')}</>}
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function StatementTab({ companyId, companyName }: { companyId: string; companyName: string }) {
