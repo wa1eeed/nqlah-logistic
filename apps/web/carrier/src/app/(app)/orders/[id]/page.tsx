@@ -32,6 +32,7 @@ import {
 import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 import { OwnershipBadge } from '@/components/fleet-bits';
 import { ConsolidatedPanel } from '@/components/consolidated-panel';
+import { StopsPanel } from '@/components/stops-panel';
 import { useFleetStore } from '@/stores/fleet-store';
 import { useConsolidatedStore } from '@/stores/consolidated-store';
 import { useFreelancerStore } from '@/stores/freelancer-store';
@@ -186,6 +187,14 @@ export default function CarrierOrderDetail() {
               fromCarrierBid={!!(myAcceptedBid?.proposedDeliveryDate || myAcceptedBid?.proposedPickupDate)}
               events={timeline}
               titles={TITLES}
+            />
+          )}
+
+          {showShipmentCard && params?.id && (
+            <StopsPanel
+              orderId={params.id as string}
+              canExecute={showActions}
+              payment={(order as { payment?: { id: string; collectionMethod: string; collectedAt: string | null } }).payment}
             />
           )}
 
