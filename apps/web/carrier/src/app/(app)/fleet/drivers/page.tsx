@@ -43,7 +43,7 @@ export default function CarrierFleetDrivers() {
   const driverStatusMap = useFleetStore((s) => s.driverStatus);
 
   // Live fleet from the API (mock fallback when the backend is down).
-  const { data: driversRaw } = useSWR<unknown>('/fleet/drivers', fetcher);
+  const { data: driversRaw, mutate: mutateDrivers } = useSWR<unknown>('/fleet/drivers', fetcher);
   const { data: trucksRaw } = useSWR<unknown>('/fleet/trucks', fetcher);
   const srcDrivers = useMemo<Driver[]>(() => {
     const apiRows = normalizeDriverList<Driver>(driversRaw);
@@ -85,20 +85,30 @@ export default function CarrierFleetDrivers() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     fullName: '', phone: '', nationalId: '',
-    licenseNumber: '', licenseExpiry: '', licenseType: 'حمولة ثقيلة',
+    licenseNumber: '', licenseExpiry: '', licenseType: 'حمولة ثقيلة', password: '',
   });
+  // Login details to show once after a successful add (phone + password), so
+  // the carrier can hand them to the driver for the driver app.
+  const [creds, setCreds] = useState<{ phone: string; password: string } | null>(null);
 
   const addDriver = async () => {
     if (!form.fullName || !form.phone || !form.licenseExpiry || saving) return;
+    const typedPwd = form.password.trim();
     setSaving(true);
     try {
-      await api.post('/fleet/drivers/invite', form);
+      const res = await api.post('/fleet/drivers/invite', { ...form, password: typedPwd || undefined });
+      const d = (res.data?.data ?? res.data) as { loginPhone?: string; tempPassword?: string };
       notify.success(t('driversList.addedTitle'), t('driversList.addedDesc'));
-    } catch {
-      notify.success(t('driversList.createdTitle'), t('driversList.createdDesc'));
-    } finally {
       setOpen(false);
-      setForm({ fullName: '', phone: '', nationalId: '', licenseNumber: '', licenseExpiry: '', licenseType: 'حمولة ثقيلة' });
+      setForm({ fullName: '', phone: '', nationalId: '', licenseNumber: '', licenseExpiry: '', licenseType: 'حمولة ثقيلة', password: '' });
+      await mutateDrivers();
+      // Surface the login credentials once.
+      const pwd = typedPwd || d?.tempPassword;
+      if (d?.loginPhone && pwd) setCreds({ phone: d.loginPhone, password: pwd });
+    } catch (e) {
+      // Real failure — surface it instead of pretending success.
+      notify.error(e, t('driversList.addError'));
+    } finally {
       setSaving(false);
     }
   };
@@ -264,12 +274,46 @@ export default function CarrierFleetDrivers() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>{t('driversList.passwordLabel')}</Label>
+              <Input
+                dir="ltr"
+                type="text"
+                value={form.password}
+                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                placeholder="••••••••"
+              />
+              <p className="text-xs text-muted-foreground">{t('driversList.passwordHint')}</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>{t('cancel')}</Button>
             <Button onClick={addDriver} disabled={saving || !form.fullName || !form.phone || !form.licenseExpiry}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />} {t('driversList.addBtn')}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Driver login credentials (shown once after a successful add) */}
+      <Dialog open={!!creds} onOpenChange={(o) => !o && setCreds(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t('driversList.credsTitle')}</DialogTitle>
+            <DialogDescription>{t('driversList.credsDesc')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 p-3">
+              <span className="text-sm text-muted-foreground">{t('driversList.credsPhone')}</span>
+              <span dir="ltr" className="font-mono text-sm font-semibold">{creds?.phone}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 p-3">
+              <span className="text-sm text-muted-foreground">{t('driversList.credsPassword')}</span>
+              <span dir="ltr" className="font-mono text-sm font-semibold">{creds?.password}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setCreds(null)}>{t('driversList.credsDone')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

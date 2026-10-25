@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
 
 // Must stay in sync with Prisma enum `TruckType` in apps/api/prisma/schema.prisma.
 // The carrier UI's truck-types catalog (DEFAULT_TRUCK_TYPES) is the source of
@@ -48,6 +48,9 @@ export class InviteDriverDto {
   @IsString() licenseType!: string;
   @IsOptional() @IsEnum(OWNERSHIP) ownership?: (typeof OWNERSHIP)[number];
   @IsOptional() @IsString() photo?: string;
+  /// Driver-portal login password. Optional — omitted → server generates a
+  /// temporary one and returns it once so the carrier can share it.
+  @IsOptional() @IsString() @MinLength(8) password?: string;
 }
 
 export class LocationDto {

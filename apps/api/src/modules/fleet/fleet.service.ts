@@ -1,4 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+import { normalizeSaudiPhone } from '@naqla/shared-utils';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateDriverDto, CreateTruckDto, InviteDriverDto, LocationDto, UpdateTruckDto } from './dto/fleet.dto';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
@@ -6,6 +8,14 @@ import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 type TruckStatusValue = 'AVAILABLE' | 'ON_TRIP' | 'MAINTENANCE' | 'OFF_DUTY';
 type DriverStatusValue = 'AVAILABLE' | 'ON_TRIP' | 'OFF_DUTY';
+
+/** A readable temporary login password handed to a newly-invited driver. */
+function genTempPassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let s = '';
+  for (let i = 0; i < 8; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return `Nq${s}`; // ≥ 8 chars, mixed case + digits
+}
 
 /** Truck status → the status its linked driver should take. */
 function truckStatusToDriver(status: TruckStatusValue): DriverStatusValue {
@@ -164,15 +174,26 @@ export class FleetService {
 
   async inviteDriver(dto: InviteDriverDto, actor: AuthUser) {
     if (!actor.companyId) throw new BadRequestException({ code: 'NO_COMPANY', message: 'لا توجد شركة' });
-    const existing = await this.prisma.user.findFirst({ where: { phone: dto.phone } });
+    // Normalize the phone exactly as login does, so the driver can sign in to
+    // the driver portal afterwards.
+    const phone = normalizeSaudiPhone(dto.phone);
+    const existing = await this.prisma.user.findFirst({ where: { phone } });
     if (existing) {
       throw new BadRequestException({ code: 'PHONE_TAKEN', message: 'رقم الهاتف مستخدم بالفعل' });
     }
-    return this.prisma.$transaction(async (tx) => {
+    // The carrier sets the driver's login password, or we generate a temporary
+    // one to hand over. The phone is carrier-vouched, so it starts verified.
+    const generated = !dto.password;
+    const plainPassword = dto.password ?? genTempPassword();
+    const passwordHash = await bcrypt.hash(plainPassword, Number(process.env.BCRYPT_ROUNDS ?? 12));
+
+    const profile = await this.prisma.$transaction(async (tx) => {
       const [firstName, ...rest] = dto.fullName.trim().split(' ');
       const user = await tx.user.create({
         data: {
-          phone: dto.phone,
+          phone,
+          passwordHash,
+          isPhoneVerified: true,
           firstName: firstName ?? dto.fullName,
           lastName: rest.join(' ') || '',
           role: 'DRIVER',
@@ -195,6 +216,9 @@ export class FleetService {
         include: { user: { select: { id: true, firstName: true, lastName: true, phone: true } } },
       });
     });
+    // Return the login details once so the carrier can hand them to the driver;
+    // `tempPassword` is present only when the system generated it.
+    return { ...profile, loginPhone: phone, ...(generated ? { tempPassword: plainPassword } : {}) };
   }
 
   async getAvailableDrivers(actor: AuthUser) {

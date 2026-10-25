@@ -252,10 +252,18 @@
  "createdTitle": "Driver created",
  "createdDesc": "They will appear in the list after syncing",
  "addTitle": "Add New Driver",
- "addDesc": "A driver account will be created and an activation link sent to them",
+ "addDesc": "A driver account is created with login credentials for the driver app",
  "namePlaceholder": "e.g. Mohammed Al-Ghamdi",
  "phone": "Phone Number",
  "licenseExpiry": "License Expiry Date",
- "addBtn": "Add"
+ "passwordLabel": "Login password (optional)",
+ "passwordHint": "Leave blank to auto-generate a temporary password you can share.",
+ "addBtn": "Add",
+ "addError": "Could not add the driver",
+ "credsTitle": "Driver login details",
+ "credsDesc": "Share these with the driver to sign in to the driver app. Shown once.",
+ "credsPhone": "Phone",
+ "credsPassword": "Password",
+ "credsDone": "Done"
  }
 }

@@ -6,7 +6,23 @@
 
 ## [Unreleased] — قيد التطوير
 
-### v0.9.57 — Driver web portal (2026-10-25)
+### v0.9.58 — Driver login credentials + invite fix (2026-10-26)
+
+- **Driver login now works.** Adding a driver (`POST /fleet/drivers/invite`) now
+  sets a login password and normalizes the phone the same way login does, and
+  marks the phone verified — so the driver can sign in to the driver portal with
+  phone + password. The carrier either types a password or the server generates
+  a temporary one and returns it once (`loginPhone` + `tempPassword`).
+  Previously invited drivers had no password and a non-normalized phone, so they
+  could never log in.
+- **Carrier UI:** the Add-Driver dialog takes an optional password and, after a
+  successful add, shows the driver's login details once (phone + password). It
+  also **surfaces real errors** instead of the previous catch that reported
+  success even when the invite failed — which is why drivers sometimes never got
+  created (and then didn't appear in the admin drivers page).
+- The admin drivers page/endpoint were correct; they were empty only because no
+  drivers had actually persisted. Verified end-to-end (carrier invite → driver
+  login → `/driver/me` → admin listing returns the driver).
 
 - New Next.js 14 web app `apps/web/driver` (`@naqla/driver-web`, dev port 3006)
   — the driver-facing portal that consumes the `/driver` API. Mobile-first
