@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
+import { toNum } from '../../common/money/money';
 import { SubmitKycDto, UpdateCompanyDto } from './dto/update-company.dto';
 import type { KYCStatus, Prisma } from '../../generated/prisma';
 
@@ -135,9 +136,9 @@ export class CompaniesService {
     const cancelledOrders = countOf('CANCELLED');
     const disputedOrders = countOf('DISPUTED');
 
-    const gmv = finishedAgg._sum.agreedPrice ?? 0;
-    const carrierRevenue = finishedAgg._sum.carrierAmount ?? 0;
-    const commission = finishedAgg._sum.commissionAmount ?? 0;
+    const gmv = toNum(finishedAgg._sum.agreedPrice);
+    const carrierRevenue = toNum(finishedAgg._sum.carrierAmount);
+    const commission = toNum(finishedAgg._sum.commissionAmount);
 
     // 6-month trend (orders + GMV), bucketed by YYYY-MM.
     const months: { key: string; label: string; orders: number; revenue: number }[] = [];
@@ -153,11 +154,11 @@ export class CompaniesService {
       const i = idxByKey.get(k);
       if (i == null) continue;
       months[i].orders += 1;
-      if (o.status === 'DELIVERED' || o.status === 'COMPLETED') months[i].revenue += o.agreedPrice ?? 0;
+      if (o.status === 'DELIVERED' || o.status === 'COMPLETED') months[i].revenue += toNum(o.agreedPrice);
     }
 
-    const freelancerDue = freelancerByStatus.find((f) => f.status === 'DUE')?._sum.amount ?? 0;
-    const freelancerPaid = freelancerByStatus.find((f) => f.status === 'PAID')?._sum.amount ?? 0;
+    const freelancerDue = toNum(freelancerByStatus.find((f) => f.status === 'DUE')?._sum.amount);
+    const freelancerPaid = toNum(freelancerByStatus.find((f) => f.status === 'PAID')?._sum.amount);
     const freelancerCount = freelancerByStatus.reduce((n, f) => n + f._count, 0);
 
     return {

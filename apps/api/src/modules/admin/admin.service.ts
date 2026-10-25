@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
+import { money, round2, toNum } from '../../common/money/money';
 import type { CompanyStatus, DisputeStatus, Prisma } from '../../generated/prisma';
 
 @Injectable()
@@ -185,8 +186,8 @@ export class AdminService {
   ) {
     const company = await this.prisma.company.findUnique({ where: { id: companyId } });
     if (!company) throw new Error('شركة غير موجودة');
-    const delta = dto.kind === 'DEBIT' ? -dto.amount : dto.amount;
-    const newBalance = company.walletBalance + delta;
+    const delta = money(dto.amount).mul(dto.kind === 'DEBIT' ? -1 : 1);
+    const newBalance = round2(money(company.walletBalance).add(delta));
     return this.prisma.$transaction(async (tx) => {
       await tx.company.update({ where: { id: companyId }, data: { walletBalance: newBalance } });
       return tx.transaction.create({
@@ -231,8 +232,8 @@ export class AdminService {
       orderBy: { createdAt: 'desc' },
       take: 300,
     });
-    const totalCredits = lines.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0);
-    const totalDebits = lines.filter((l) => l.amount < 0).reduce((s, l) => s + Math.abs(l.amount), 0);
+    const totalCredits = lines.reduce((s, l) => (toNum(l.amount) > 0 ? s + toNum(l.amount) : s), 0);
+    const totalDebits = lines.reduce((s, l) => (toNum(l.amount) < 0 ? s + Math.abs(toNum(l.amount)) : s), 0);
     return {
       companyName: company.nameAr,
       walletBalance: company.walletBalance,
@@ -256,8 +257,8 @@ export class AdminService {
     const year = new Date().getFullYear();
     const seq = Math.floor(100000 + Math.random() * 900000);
     const reference = `${dto.type === 'CREDIT' ? 'CN' : 'DN'}-${year}-${seq}`;
-    const delta = dto.type === 'DEBIT' ? -dto.amount : dto.amount;
-    const newBalance = company.walletBalance + delta;
+    const delta = money(dto.amount).mul(dto.type === 'DEBIT' ? -1 : 1);
+    const newBalance = round2(money(company.walletBalance).add(delta));
     return this.prisma.$transaction(async (tx) => {
       await tx.company.update({ where: { id: companyId }, data: { walletBalance: newBalance } });
       return tx.transaction.create({
@@ -361,8 +362,8 @@ export class AdminService {
         }),
       ]);
 
-    const gmv = completedAgg._sum.agreedPrice ?? 0;
-    const commission = completedAgg._sum.commissionAmount ?? 0;
+    const gmv = toNum(completedAgg._sum.agreedPrice);
+    const commission = toNum(completedAgg._sum.commissionAmount);
     const completedCount = completedAgg._count._all;
     const takeRate = gmv > 0 ? (commission / gmv) * 100 : 0;
     const completionRate =
@@ -400,11 +401,11 @@ export class AdminService {
       statusCounts.set(o.status, (statusCounts.get(o.status) ?? 0) + 1);
       const rKey = `${o.originCity}→${o.destinationCity}`;
       const rv = routeMap.get(rKey) ?? { count: 0, gmv: 0 };
-      rv.count++; rv.gmv += o.agreedPrice ?? 0;
+      rv.count++; rv.gmv += toNum(o.agreedPrice);
       routeMap.set(rKey, rv);
       if (o.carrierId && (o.status === 'COMPLETED' || o.status === 'DELIVERED')) {
         const cv = carrierRevMap.get(o.carrierId) ?? { revenue: 0, count: 0 };
-        cv.revenue += o.agreedPrice ?? 0; cv.count++;
+        cv.revenue += toNum(o.agreedPrice); cv.count++;
         carrierRevMap.set(o.carrierId, cv);
       }
     }
@@ -459,19 +460,19 @@ export class AdminService {
       }),
     ]);
 
-    const gmv = completedAgg._sum.agreedPrice ?? 0;
-    const revenue = completedAgg._sum.commissionAmount ?? 0;
+    const gmv = toNum(completedAgg._sum.agreedPrice);
+    const revenue = toNum(completedAgg._sum.commissionAmount);
     const orderCount = completedAgg._count._all;
-    const prevGmv = prevAgg._sum.agreedPrice ?? 0;
-    const prevRevenue = prevAgg._sum.commissionAmount ?? 0;
+    const prevGmv = toNum(prevAgg._sum.agreedPrice);
+    const prevRevenue = toNum(prevAgg._sum.commissionAmount);
     const vat = revenue * 0.15;
     const avgOrderValue = orderCount > 0 ? gmv / orderCount : 0;
     const gmvGrowth = prevGmv > 0 ? ((gmv - prevGmv) / prevGmv) * 100 : 0;
     const revenueGrowth = prevRevenue > 0 ? ((revenue - prevRevenue) / prevRevenue) * 100 : 0;
     const takeRate = gmv > 0 ? (revenue / gmv) * 100 : 0;
 
-    const gmvRows = completedOrders.map((o) => ({ createdAt: o.createdAt, value: o.agreedPrice ?? 0 }));
-    const revRows = completedOrders.map((o) => ({ createdAt: o.createdAt, value: o.commissionAmount ?? 0 }));
+    const gmvRows = completedOrders.map((o) => ({ createdAt: o.createdAt, value: toNum(o.agreedPrice) }));
+    const revRows = completedOrders.map((o) => ({ createdAt: o.createdAt, value: toNum(o.commissionAmount) }));
     const gmvTrend = this.buildDailyTrend(gmvRows, from, buckets, bucketDays);
     const revTrend = this.buildDailyTrend(revRows, from, buckets, bucketDays);
 
@@ -553,8 +554,8 @@ export class AdminService {
         }),
       ]);
 
-    const gmvNow = ordersGmvNow._sum.agreedPrice ?? 0;
-    const gmvPrev = ordersGmvPrev._sum.agreedPrice ?? 0;
+    const gmvNow = toNum(ordersGmvNow._sum.agreedPrice);
+    const gmvPrev = toNum(ordersGmvPrev._sum.agreedPrice);
     const clientsMoM = prevClients > 0 ? ((newClients - prevClients) / prevClients) * 100 : 0;
     const carriersMoM = prevCarriers > 0 ? ((newCarriers - prevCarriers) / prevCarriers) * 100 : 0;
     const ordersMoM = ordersPrev > 0 ? ((ordersNow - ordersPrev) / ordersPrev) * 100 : 0;
@@ -598,7 +599,7 @@ export class AdminService {
         }),
       ]);
 
-    const totalSpend = clientSpend.reduce((s, c) => s + (c._sum.agreedPrice ?? 0), 0);
+    const totalSpend = clientSpend.reduce((s, c) => s + toNum(c._sum.agreedPrice), 0);
     const ltv = totalClients > 0 ? totalSpend / totalClients : 0;
 
     // Cohort retention: clients who placed order in prev period AND current period

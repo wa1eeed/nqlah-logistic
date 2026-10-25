@@ -34,11 +34,11 @@ enum CompanyType {
 /// company features they can access. Different from UserRole (which is the
 /// platform-wide kind: admin / client_admin / carrier_admin / driver).
 enum CompanyRole {
-  OWNER     // single per company; created at signup
-  ADMIN     // full access except cannot remove the owner
-  STAFF     // (client side) operations: create/track orders
-  DISPATCH  // (carrier side) accept orders, manage fleet
-  FINANCE   // read-only on invoices/payments + export
+  OWNER // single per company; created at signup
+  ADMIN // full access except cannot remove the owner
+  STAFF // (client side) operations: create/track orders
+  DISPATCH // (carrier side) accept orders, manage fleet
+  FINANCE // read-only on invoices/payments + export
 }
 
 enum CompanyStatus {
@@ -193,29 +193,29 @@ enum FleetOwnership {
 // ─── MODELS ───────────────────────────────────────────────────────
 
 model User {
-  id              String   @id @default(cuid())
-  email           String?  @unique
-  phone           String   @unique
-  passwordHash    String?
-  role            UserRole
-  firstName       String
-  lastName        String
-  avatar          String?
-  isActive        Boolean  @default(true)
-  isEmailVerified Boolean  @default(false)
-  isPhoneVerified Boolean  @default(false)
+  id                String      @id @default(cuid())
+  email             String?     @unique
+  phone             String      @unique
+  passwordHash      String?
+  role              UserRole
+  firstName         String
+  lastName          String
+  avatar            String?
+  isActive          Boolean     @default(true)
+  isEmailVerified   Boolean     @default(false)
+  isPhoneVerified   Boolean     @default(false)
   /// Preferred UI language — 'ar' or 'en'. Used to render every interface on sign-in.
-  preferredLanguage String  @default("ar")
+  preferredLanguage String      @default("ar")
   nationalId        String?
   /// Per-company role inside the user's company account.
   /// Only meaningful for users that belong to a company (CLIENT/CARRIER).
   companyRole       CompanyRole @default(STAFF)
-  lastLoginAt     DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  lastLoginAt       DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
-  company       Company? @relation(fields: [companyId], references: [id])
-  companyId     String?
+  company   Company? @relation(fields: [companyId], references: [id])
+  companyId String?
 
   driverProfile DriverProfile?
   notifications Notification[]
@@ -228,55 +228,55 @@ model User {
 }
 
 model Company {
-  id                 String        @id @default(cuid())
-  type               CompanyType
-  status             CompanyStatus @default(PENDING_VERIFICATION)
-  kycStatus          KYCStatus     @default(NOT_SUBMITTED)
+  id              String        @id @default(cuid())
+  type            CompanyType
+  status          CompanyStatus @default(PENDING_VERIFICATION)
+  kycStatus       KYCStatus     @default(NOT_SUBMITTED)
   /// Company-default UI language for transactional emails/SMS templates and
   /// new team members. Individual users can still override via `User.preferredLanguage`.
-  defaultLanguage    String        @default("ar")
+  defaultLanguage String        @default("ar")
 
-  nameAr             String
-  nameEn             String?
-  crNumber           String?       @unique
-  vatNumber          String?
-  logo               String?
+  nameAr    String
+  nameEn    String?
+  crNumber  String? @unique
+  vatNumber String?
+  logo      String?
 
-  city               String
-  region             String
-  address            String?
+  city    String
+  region  String
+  address String?
 
-  contactPhone       String
-  contactEmail       String
-  website            String?
+  contactPhone String
+  contactEmail String
+  website      String?
 
-  commissionRate     Float         @default(0.08)
-  creditLimit        Float         @default(0)
-  walletBalance      Float         @default(0)
+  commissionRate Decimal @default(0.08) @db.Decimal(5, 4)
+  creditLimit    Decimal @default(0) @db.Decimal(12, 2)
+  walletBalance  Decimal @default(0) @db.Decimal(12, 2)
 
-  subscriptionPlan   String        @default("basic")
+  subscriptionPlan   String    @default("basic")
   subscriptionEndsAt DateTime?
 
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  users           User[]
-  trucks          Truck[]
-  drivers         DriverProfile[]
+  users   User[]
+  trucks  Truck[]
+  drivers DriverProfile[]
 
-  ordersAsClient        Order[] @relation("ClientOrders")
-  ordersAsCarrier       Order[] @relation("CarrierOrders")
+  ordersAsClient         Order[] @relation("ClientOrders")
+  ordersAsCarrier        Order[] @relation("CarrierOrders")
   ordersDirectlyTargeted Order[] @relation("TargetCarrierOrders")
 
-  bids             Bid[]
-  invoicesIssued   Invoice[]     @relation("IssuerInvoices")
-  invoicesReceived Invoice[]     @relation("ReceiverInvoices")
-  kycDocuments     KYCDocument[]
-  transactions     Transaction[]
-  reviews          Review[]      @relation("ReviewedCompany")
-  reviewsGiven     Review[]      @relation("ReviewerCompany")
-  supportTickets   SupportTicket[]
-  savedAddresses   SavedAddress[]
+  bids               Bid[]
+  invoicesIssued     Invoice[]           @relation("IssuerInvoices")
+  invoicesReceived   Invoice[]           @relation("ReceiverInvoices")
+  kycDocuments       KYCDocument[]
+  transactions       Transaction[]
+  reviews            Review[]            @relation("ReviewedCompany")
+  reviewsGiven       Review[]            @relation("ReviewerCompany")
+  supportTickets     SupportTicket[]
+  savedAddresses     SavedAddress[]
   freelancerInvoices FreelancerInvoice[] @relation("CarrierFreelancerInvoices")
 
   @@index([type, status])
@@ -284,9 +284,9 @@ model Company {
 }
 
 model KYCDocument {
-  id         String    @id @default(cuid())
-  companyId  String
-  company    Company   @relation(fields: [companyId], references: [id])
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
 
   type       String
   fileUrl    String
@@ -295,73 +295,73 @@ model KYCDocument {
   reviewedBy String?
   reviewedAt DateTime?
 
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Truck {
-  id               String    @id @default(cuid())
-  companyId        String
-  company          Company   @relation(fields: [companyId], references: [id])
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
 
-  plateNumber      String    @unique
-  type             TruckType
-  capacity         Float
-  length           Float?
-  width            Float?
-  height           Float?
+  plateNumber String    @unique
+  type        TruckType
+  capacity    Float
+  length      Float?
+  width       Float?
+  height      Float?
 
-  make             String?
-  model            String?
-  year             Int?
+  make  String?
+  model String?
+  year  Int?
 
-  hasRefrigeration Boolean   @default(false)
-  hasGPS           Boolean   @default(false)
-  isActive         Boolean   @default(true)
+  hasRefrigeration Boolean @default(false)
+  hasGPS           Boolean @default(false)
+  isActive         Boolean @default(true)
 
-  ownership        FleetOwnership @default(OWNED)
-  status           TruckStatus    @default(AVAILABLE)
+  ownership FleetOwnership @default(OWNED)
+  status    TruckStatus    @default(AVAILABLE)
 
-  photos           String[]
-  documents        String[]
+  photos    String[]
+  documents String[]
 
-  currentDriverId  String?
-  currentDriver    DriverProfile? @relation(fields: [currentDriverId], references: [id])
+  currentDriverId String?
+  currentDriver   DriverProfile? @relation(fields: [currentDriverId], references: [id])
 
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  orderTrucks      OrderTruck[]
+  orderTrucks OrderTruck[]
 
   @@index([companyId])
   @@index([type])
 }
 
 model DriverProfile {
-  id              String       @id @default(cuid())
-  userId          String       @unique
-  user            User         @relation(fields: [userId], references: [id])
-  companyId       String
-  company         Company      @relation(fields: [companyId], references: [id])
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id])
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
 
-  licenseNumber   String       @unique
-  licenseExpiry   DateTime
-  licenseType     String
+  licenseNumber String   @unique
+  licenseExpiry DateTime
+  licenseType   String
 
-  status          DriverStatus   @default(OFF_DUTY)
-  ownership       FleetOwnership @default(OWNED)
-  currentLat      Float?
-  currentLng      Float?
-  lastLocationAt  DateTime?
+  status         DriverStatus   @default(OFF_DUTY)
+  ownership      FleetOwnership @default(OWNED)
+  currentLat     Float?
+  currentLng     Float?
+  lastLocationAt DateTime?
 
-  rating          Float        @default(0)
-  totalTrips      Int          @default(0)
+  rating     Float @default(0)
+  totalTrips Int   @default(0)
 
-  photo           String?
-  isActive        Boolean      @default(true)
+  photo    String?
+  isActive Boolean @default(true)
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   assignedTrucks  Truck[]
   orderDrivers    OrderDriver[]
@@ -369,83 +369,83 @@ model DriverProfile {
 }
 
 model Order {
-  id                    String      @id @default(cuid())
-  orderNumber           String      @unique @default(cuid())
-  status                OrderStatus @default(DRAFT)
+  id          String      @id @default(cuid())
+  orderNumber String      @unique @default(cuid())
+  status      OrderStatus @default(DRAFT)
 
   /// "OPEN" → all carriers can bid; "DIRECT" → only targetCarrier sees it.
   /// String (not enum) so we can add modes without a migration; validated at the DTO.
-  mode                  String      @default("OPEN")
-  targetCarrierId       String?
-  targetCarrier         Company?    @relation("TargetCarrierOrders", fields: [targetCarrierId], references: [id])
+  mode            String   @default("OPEN")
+  targetCarrierId String?
+  targetCarrier   Company? @relation("TargetCarrierOrders", fields: [targetCarrierId], references: [id])
 
   /// "SAME_CITY" | "INTER_CITY" — drives Wizard UI + distance/route assumptions.
-  tripType              String      @default("INTER_CITY")
+  tripType     String @default("INTER_CITY")
   /// "MORNING" (8-12) | "EVENING" (12-18) | "ALL_DAY" (8-18) — client's preferred pickup band.
-  pickupWindow          String      @default("ALL_DAY")
+  pickupWindow String @default("ALL_DAY")
 
   /// "SINGLE" | "CONSOLIDATED" — a consolidated order ships `truckCount` trucks
   /// along the same route; its legs are OrderTruck rows (String, no migration to
   /// add a type). truckCount is null for single orders.
-  orderType             String      @default("SINGLE")
-  truckCount            Int?
+  orderType     String   @default("SINGLE")
+  truckCount    Int?
   /// Per-leg shipment reference numbers for a consolidated order, ordered by
   /// leg sequence (index 1..truckCount → legReferences[0..truckCount-1]). Set
   /// by the client at creation, or auto-generated as `<orderNumber>-L<n>`.
-  legReferences         String[]    @default([])
+  legReferences String[] @default([])
 
-  clientId              String
-  client                Company     @relation("ClientOrders", fields: [clientId], references: [id])
-  carrierId             String?
-  carrier               Company?    @relation("CarrierOrders", fields: [carrierId], references: [id])
+  clientId  String
+  client    Company  @relation("ClientOrders", fields: [clientId], references: [id])
+  carrierId String?
+  carrier   Company? @relation("CarrierOrders", fields: [carrierId], references: [id])
 
-  cargoType             CargoType
-  cargoDescription      String
-  weight                Float
-  pallets               Int?
-  volume                Float?
+  cargoType        CargoType
+  cargoDescription String
+  weight           Float
+  pallets          Int?
+  volume           Float?
 
-  originCity            String
-  originRegion          String
-  originAddress         String
-  originLat             Float?
-  originLng             Float?
+  originCity    String
+  originRegion  String
+  originAddress String
+  originLat     Float?
+  originLng     Float?
 
-  destinationCity       String
-  destinationRegion     String
-  destinationAddress    String
-  destinationLat        Float?
-  destinationLng        Float?
+  destinationCity    String
+  destinationRegion  String
+  destinationAddress String
+  destinationLat     Float?
+  destinationLng     Float?
 
   requiredTruckType     TruckType
-  requiresRefrigeration Boolean     @default(false)
-  requiresInsurance     Boolean     @default(false)
+  requiresRefrigeration Boolean   @default(false)
+  requiresInsurance     Boolean   @default(false)
   specialInstructions   String?
 
-  pickupDate            DateTime
-  deliveryDate          DateTime?
-  bidDeadline           DateTime?
+  pickupDate   DateTime
+  deliveryDate DateTime?
+  bidDeadline  DateTime?
 
-  clientBudget          Float?
-  agreedPrice           Float?
-  commissionAmount      Float?
-  carrierAmount         Float?
+  clientBudget     Decimal? @db.Decimal(12, 2)
+  agreedPrice      Decimal? @db.Decimal(12, 2)
+  commissionAmount Decimal? @db.Decimal(12, 2)
+  carrierAmount    Decimal? @db.Decimal(12, 2)
 
-  actualPickupAt        DateTime?
-  actualDeliveryAt      DateTime?
+  actualPickupAt   DateTime?
+  actualDeliveryAt DateTime?
 
-  poNumber              String?
-  bolNumber             String?
-  documents             String[]
+  poNumber  String?
+  bolNumber String?
+  documents String[]
 
-  clientRating          Int?
-  carrierRating         Int?
+  clientRating  Int?
+  carrierRating Int?
 
-  notes                 String?
-  cancelReason          String?
+  notes        String?
+  cancelReason String?
 
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   bids           Bid[]
   orderTrucks    OrderTruck[]
@@ -523,32 +523,32 @@ enum StopType {
 }
 
 model Bid {
-  id            String    @id @default(cuid())
-  orderId       String
-  order         Order     @relation(fields: [orderId], references: [id])
-  carrierId     String
-  carrier       Company   @relation(fields: [carrierId], references: [id])
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  carrierId String
+  carrier   Company @relation(fields: [carrierId], references: [id])
 
-  amount        Float
-  status        BidStatus @default(PENDING)
+  amount Decimal   @db.Decimal(12, 2)
+  status BidStatus @default(PENDING)
 
   /// Legacy ETA fields — kept on the model for back-compat with any older
   /// bids but no longer collected via the carrier form (v0.8.x replaced
   /// them with an explicit `proposedDeliveryDate` date picker).
-  estimatedDays Int @default(0)
-  estimatedHours Int?
+  estimatedDays        Int       @default(0)
+  estimatedHours       Int?
   /// If the carrier wants a different pickup date than what the client
   /// requested, they set this. Empty = bid agrees with `order.pickupDate`.
-  proposedPickupDate DateTime?
+  proposedPickupDate   DateTime?
   /// Carrier's concrete proposed delivery date. Replaces the older
   /// days/hours duration fields. If null, falls back to `order.deliveryDate`
   /// when displaying "expected delivery" on the order detail page.
   proposedDeliveryDate DateTime?
-  notes         String?
+  notes                String?
 
-  expiresAt     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@unique([orderId, carrierId])
   @@index([orderId, status])
@@ -560,15 +560,15 @@ model Bid {
 /// ("ASSIGNED" | "IN_TRANSIT" | "DELIVERED") as a String (no migration to add a
 /// status). `driverId` is the leg's driver (resolved against the fleet).
 model OrderTruck {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-  truckId   String
-  truck     Truck    @relation(fields: [truckId], references: [id])
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+  truckId String
+  truck   Truck  @relation(fields: [truckId], references: [id])
 
-  driverId  String?
-  sequence  Int      @default(0)
-  status    String   @default("ASSIGNED")
+  driverId String?
+  sequence Int     @default(0)
+  status   String  @default("ASSIGNED")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -578,90 +578,90 @@ model OrderTruck {
 }
 
 model OrderDriver {
-  id         String        @id @default(cuid())
-  orderId    String
-  order      Order         @relation(fields: [orderId], references: [id])
-  driverId   String
-  driver     DriverProfile @relation(fields: [driverId], references: [id])
+  id       String        @id @default(cuid())
+  orderId  String
+  order    Order         @relation(fields: [orderId], references: [id])
+  driverId String
+  driver   DriverProfile @relation(fields: [driverId], references: [id])
 
-  assignedAt DateTime      @default(now())
+  assignedAt DateTime @default(now())
 
   @@unique([orderId, driverId])
 }
 
 model TrackingEvent {
-  id          String   @id @default(cuid())
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id])
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
 
   status      String
   description String
 
-  lat         Float?
-  lng         Float?
-  city        String?
+  lat  Float?
+  lng  Float?
+  city String?
 
-  photos      String[]
-  signature   String?
-  notes       String?
+  photos    String[]
+  signature String?
+  notes     String?
 
-  createdBy   String
-  createdAt   DateTime @default(now())
+  createdBy String
+  createdAt DateTime @default(now())
 
   @@index([orderId])
 }
 
 model LocationHistory {
-  id         String        @id @default(cuid())
-  driverId   String
-  driver     DriverProfile @relation(fields: [driverId], references: [id])
+  id       String        @id @default(cuid())
+  driverId String
+  driver   DriverProfile @relation(fields: [driverId], references: [id])
 
-  lat        Float
-  lng        Float
-  speed      Float?
+  lat   Float
+  lng   Float
+  speed Float?
 
-  recordedAt DateTime      @default(now())
+  recordedAt DateTime @default(now())
 
   @@index([driverId, recordedAt])
 }
 
 model Payment {
-  id               String        @id @default(cuid())
-  orderId          String        @unique
-  order            Order         @relation(fields: [orderId], references: [id])
+  id      String @id @default(cuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id])
 
   status           PaymentStatus @default(PENDING)
-  totalAmount      Float
-  commissionAmount Float
-  carrierAmount    Float
+  totalAmount      Decimal       @db.Decimal(12, 2)
+  commissionAmount Decimal       @db.Decimal(12, 2)
+  carrierAmount    Decimal       @db.Decimal(12, 2)
 
-  paymentMethod    String?
-  transactionRef   String?
+  paymentMethod  String?
+  transactionRef String?
 
-  paidAt           DateTime?
-  heldAt           DateTime?
-  releasedAt       DateTime?
+  paidAt     DateTime?
+  heldAt     DateTime?
+  releasedAt DateTime?
 
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
 
-  type        String
-  amount      Float
-  balance     Float
+  type    String
+  amount  Decimal @db.Decimal(12, 2)
+  balance Decimal @db.Decimal(12, 2)
 
   reference   String?
   description String
 
-  orderId     String?
-  invoiceId   String?
+  orderId   String?
+  invoiceId String?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([companyId, createdAt])
 }
@@ -671,29 +671,29 @@ model Invoice {
   invoiceNumber String        @unique @default(cuid())
   status        InvoiceStatus @default(DRAFT)
 
-  orderId       String?       @unique
-  order         Order?        @relation(fields: [orderId], references: [id])
+  orderId String? @unique
+  order   Order?  @relation(fields: [orderId], references: [id])
 
-  issuerId      String
-  issuer        Company       @relation("IssuerInvoices", fields: [issuerId], references: [id])
-  receiverId    String
-  receiver      Company       @relation("ReceiverInvoices", fields: [receiverId], references: [id])
+  issuerId   String
+  issuer     Company @relation("IssuerInvoices", fields: [issuerId], references: [id])
+  receiverId String
+  receiver   Company @relation("ReceiverInvoices", fields: [receiverId], references: [id])
 
-  amount        Float
-  vatAmount     Float         @default(0)
-  totalAmount   Float
+  amount      Decimal @db.Decimal(12, 2)
+  vatAmount   Decimal @default(0) @db.Decimal(12, 2)
+  totalAmount Decimal @db.Decimal(12, 2)
 
-  vatNumber     String?
-  crNumber      String?
+  vatNumber String?
+  crNumber  String?
 
-  notes         String?
-  pdfUrl        String?
+  notes  String?
+  pdfUrl String?
 
-  dueDate       DateTime?
-  paidAt        DateTime?
+  dueDate DateTime?
+  paidAt  DateTime?
 
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /// Per-trip fee a provider (carrier) owes a FREELANCER truck/driver. Issued
@@ -712,8 +712,8 @@ model FreelancerInvoice {
   truckId     String
   driverId    String?
 
-  amount       Float
-  orderRevenue Float?
+  amount       Decimal                 @db.Decimal(12, 2)
+  orderRevenue Decimal?                @db.Decimal(12, 2)
   status       FreelancerInvoiceStatus @default(DUE)
 
   issuedAt  DateTime  @default(now())
@@ -726,84 +726,84 @@ model FreelancerInvoice {
 }
 
 model Dispute {
-  id          String        @id @default(cuid())
-  orderId     String        @unique
-  order       Order         @relation(fields: [orderId], references: [id])
+  id      String @id @default(cuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id])
 
   status      DisputeStatus @default(OPEN)
   reason      String
   description String
 
-  openedBy    String
-  assignedTo  String?
+  openedBy   String
+  assignedTo String?
 
-  resolution  String?
-  resolvedAt  DateTime?
+  resolution String?
+  resolvedAt DateTime?
 
   attachments String[]
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Review {
-  id             String   @id @default(cuid())
-  orderId        String   @unique
-  order          Order    @relation(fields: [orderId], references: [id])
+  id      String @id @default(cuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id])
 
-  reviewerId     String
-  reviewer       Company  @relation("ReviewerCompany", fields: [reviewerId], references: [id])
-  reviewedId     String
-  reviewed       Company  @relation("ReviewedCompany", fields: [reviewedId], references: [id])
+  reviewerId String
+  reviewer   Company @relation("ReviewerCompany", fields: [reviewerId], references: [id])
+  reviewedId String
+  reviewed   Company @relation("ReviewedCompany", fields: [reviewedId], references: [id])
 
-  rating         Int
-  comment        String?
+  rating  Int
+  comment String?
 
   onTime         Boolean?
   cargoCondition Boolean?
   communication  Boolean?
 
-  createdAt      DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([reviewedId])
 }
 
 model Notification {
-  id        String           @id @default(cuid())
-  userId    String
-  user      User             @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  type      NotificationType
-  titleAr   String
-  titleEn   String?
-  bodyAr    String
-  bodyEn    String?
+  type    NotificationType
+  titleAr String
+  titleEn String?
+  bodyAr  String
+  bodyEn  String?
 
-  isRead    Boolean          @default(false)
-  readAt    DateTime?
+  isRead Boolean   @default(false)
+  readAt DateTime?
 
-  data      Json?
+  data Json?
 
-  createdAt DateTime         @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
 }
 
 model AuditLog {
-  id           String   @id @default(cuid())
-  userId       String?
-  user         User?    @relation(fields: [userId], references: [id])
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
 
   action       String
   resourceType String
   resourceId   String?
 
-  ipAddress    String?
-  userAgent    String?
-  metadata     Json?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([resourceType, resourceId])
@@ -811,12 +811,12 @@ model AuditLog {
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  token     String   @unique
-  isRevoked Boolean  @default(false)
+  token     String    @unique
+  isRevoked Boolean   @default(false)
   revokedAt DateTime?
 
   expiresAt DateTime
@@ -826,17 +826,17 @@ model RefreshToken {
 }
 
 model ApiKey {
-  id         String    @id @default(cuid())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   name       String
   key        String    @unique
   isActive   Boolean   @default(true)
   lastUsedAt DateTime?
 
-  createdAt  DateTime  @default(now())
-  expiresAt  DateTime?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
 }
 
 model Setting {
@@ -851,23 +851,23 @@ model Setting {
 /// most one group (via `clientIds`); clients in no group use the defaults
 /// (everything enabled). `forcedCarrierId` locks direct-assign to one carrier.
 model PolicyGroup {
-  id                 String   @id @default(cuid())
-  name               String
-  description        String?
+  id          String  @id @default(cuid())
+  name        String
+  description String?
 
-  allowMarket        Boolean  @default(true)
-  allowDirect        Boolean  @default(true)
+  allowMarket        Boolean @default(true)
+  allowDirect        Boolean @default(true)
   forcedCarrierId    String?
-  allowMarketPricing Boolean  @default(true)
-  allowFixedPricing  Boolean  @default(true)
-  allowPrepaid       Boolean  @default(true)
-  allowCOD           Boolean  @default(true)
+  allowMarketPricing Boolean @default(true)
+  allowFixedPricing  Boolean @default(true)
+  allowPrepaid       Boolean @default(true)
+  allowCOD           Boolean @default(true)
 
   /// Client company ids governed by this group.
-  clientIds          String[]
+  clientIds String[]
 
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model SupportTicket {
@@ -879,9 +879,9 @@ model SupportTicket {
 
   // The user who opened the ticket. Company optional — staff users have a
   // company, but internal admins may open tickets without one.
-  openedBy    String
-  companyId   String?
-  company     Company?              @relation(fields: [companyId], references: [id])
+  openedBy  String
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
 
   attachments String[]
   // Plain text response from support; richer thread later if needed.
@@ -889,8 +889,8 @@ model SupportTicket {
   resolvedAt  DateTime?
   assignedTo  String?
 
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([companyId])
   @@index([status])
