@@ -40,7 +40,7 @@ with today's behavior as the first registered strategies (no behavior change):
 6. 🟡 Dashboards (in progress):
    - 6a ✅ **Admin control** — provider-visibility scope in the client-policies panel + a carrier-groups panel (`/settings` policies tab). (This PR.)
    - 6b ✅ Client — **collection-method selector** (Escrow/Wallet/Gateway/COD, policy-gated) + multi-stop **route builder** (optional intermediate stops → `stops[]`). (PR #53.)
-   - 6c ⏳ Carrier (+admin) — route **stop execution** view (per-stop status + proof) and COD collect.
+   - 6c ✅ Carrier (+admin) — route **stop execution** panel (per-stop status, advance arrived→completed) + COD collect. (PR #54.)
    - Note: the admin settings policy panels are Arabic-hardcoded (missed in the i18n pass) — needs an i18n follow-up.
 7. ⏳ Provider-owned clients (sub-tenancy).
 8. ⏳ Individual-driver portal + unified driver app (consumes stop execution).

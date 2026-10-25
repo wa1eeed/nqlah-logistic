@@ -6,6 +6,17 @@
  "details": "تفاصيل الطلب",
  "timeline": "سجل الأحداث",
  "noOrders": "لا توجد طلبات",
+ "route": {
+   "title": "مسار الرحلة",
+   "virtualNote": "مسار قديم (استلام ← تسليم). تنفيذ المحطّات متاح على الطلبات متعدّدة المحطّات الجديدة.",
+   "markArrived": "تحديد: وصل",
+   "markCompleted": "تحديد: اكتمل",
+   "codHint": "دفع عند التسليم — سجّله بعد التحصيل.",
+   "collectCod": "تسجيل تحصيل الدفع",
+   "codCollected": "تم تسجيل التحصيل",
+   "status": { "PENDING": "قيد الانتظار", "EN_ROUTE": "في الطريق", "ARRIVED": "وصل", "COMPLETED": "اكتمل", "SKIPPED": "تم التخطّي" },
+   "types": { "PICKUP": "استلام", "DELIVERY": "تسليم", "DROPOFF": "تسليم جزئي", "WAREHOUSE": "مستودع", "RETURN_EMPTY": "إرجاع حاوية فارغة", "EXCHANGE": "تبادل" }
+ },
  "status": {
  "draft": "مسودة",
  "published": "منشور",

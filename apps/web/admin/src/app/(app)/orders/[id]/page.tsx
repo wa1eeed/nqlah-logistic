@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
+import { StopsPanel } from '@/components/stops-panel';
 import useSWR from 'swr';
 import { useTranslations } from 'next-intl';
 import { fetcher } from '@/lib/api';
@@ -125,6 +126,14 @@ export default function AdminOrderDetail() {
               effectivePickup={effectivePickup}
               effectiveDelivery={effectiveDelivery}
               fromCarrierBid={!!(accepted?.proposedDeliveryDate || accepted?.proposedPickupDate)}
+            />
+          )}
+
+          {showShipmentCard && params?.id && (
+            <StopsPanel
+              orderId={params.id as string}
+              canExecute
+              payment={(order as { payment?: { id: string; collectionMethod: string; collectedAt: string | null } }).payment}
             />
           )}
 

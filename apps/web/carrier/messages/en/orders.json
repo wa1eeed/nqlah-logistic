@@ -99,6 +99,17 @@
  "notFoundTitle": "Order not found",
  "notFoundBack": "Back",
  "back": "Back",
+ "route": {
+   "title": "Trip route",
+   "virtualNote": "Legacy route (pickup → delivery). Per-stop execution is available on new multi-stop orders.",
+   "markArrived": "Mark arrived",
+   "markCompleted": "Mark completed",
+   "codHint": "Cash on delivery — record once collected.",
+   "collectCod": "Record cash collected",
+   "codCollected": "Collection recorded",
+   "status": { "PENDING": "Pending", "EN_ROUTE": "En route", "ARRIVED": "Arrived", "COMPLETED": "Completed", "SKIPPED": "Skipped" },
+   "types": { "PICKUP": "Pickup", "DELIVERY": "Delivery", "DROPOFF": "Drop-off", "WAREHOUSE": "Warehouse", "RETURN_EMPTY": "Return empty container", "EXCHANGE": "Exchange" }
+ },
  "tripActions": "Trip Actions",
  "assignedNote": "The order has been assigned to you. Confirm pickup when you reach the loading point.",
  "confirmPickup": "Confirm Pickup",

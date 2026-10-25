@@ -6,6 +6,18 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.52 — Stop execution (carrier + admin) (2026-10-25)
+
+- A **trip-route panel** now renders the order's multi-stop route on the carrier
+  and admin order-detail pages: each stop with its type, location and status.
+- The assigned **carrier** (and **admin** as override) advances each stop
+  (mark arrived → completed) via `PATCH /orders/:id/stops/:stopId`; legacy
+  orders show a read-only synthesized route.
+- **COD collection:** for a cash-on-delivery order, a "record cash collected"
+  action (`POST /payments/:id/collect`) appears until recorded — required before
+  the order can complete (phase 4).
+- Shared `StopsPanel` component in both apps; en/ar strings added.
+
 ### v0.9.51 — Client route builder + collection-method selector (2026-10-25)
 
 - **Collection method:** the new-order wizard's payment step now offers the full
