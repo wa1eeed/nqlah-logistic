@@ -155,6 +155,37 @@ export default function ClientSupportPage() {
                 {t('support.ticketsEmpty')}
               </div>
             ) : (
+             <>
+              {/* Mobile: app-like card list */}
+              <div className="md:hidden divide-y">
+                {myTickets.map((ticket) => {
+                  const tk = ticket as Partial<ReturnType<typeof ticketsFor>[number]> & ApiTicket;
+                  const priority = tk.priority ?? 'MEDIUM';
+                  return (
+                    <div key={tk.id} className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-sm font-medium">{tk.subject}</span>
+                        <Badge variant={STATUS_BADGE[tk.status] ?? 'default'}>{STATUS_LABELS[tk.status] ?? tk.status}</Badge>
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground font-mono">
+                        {tk.id}
+                        {tk.messageCount != null && <> · {t('support.messageCount', { count: tk.messageCount })}</>}
+                        {tk.orderId && <> · <Link href={`/orders/${tk.orderId}`} className="text-primary">{tk.orderId}</Link></>}
+                      </div>
+                      <div className="mt-2.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{CATEGORY_LABELS[tk.category] ?? tk.category}</Badge>
+                          <Badge variant={PRIORITY_BADGE[priority]}>{PRIORITY_LABELS[priority]}</Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground"><Clock className="h-3 w-3 inline me-1" />{formatRelative(tk.updatedAt)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -192,6 +223,8 @@ export default function ClientSupportPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
+             </>
             )}
           </CardContent>
         </Card>

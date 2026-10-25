@@ -119,6 +119,41 @@ export default function CarrierFleetTrucks() {
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
+          {/* Mobile: app-like card list */}
+          <div className="md:hidden divide-y">
+            {rows.map((row) => {
+              const drv = srcDrivers.find((d) => d.id === row.driverId);
+              const parsed = parsePlateString(row.plateNumber ?? '');
+              const tons = (row.capacityKg ?? 0) / 1000;
+              return (
+                <Link key={row.id} href={`/fleet/trucks/${row.id}`} className="block p-4 transition-colors active:bg-muted/60">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><Hash className="h-3 w-3" />{row.code}</span>
+                    <StatusBadge status={row.status} />
+                  </div>
+                  <div className="mt-2">
+                    <SaudiLicensePlate letters={parsed.letters} numbers={parsed.numbers} plateType="transport" size="thumbnail" />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{TRUCK_LABELS[row.truckType] ?? row.truckType ?? '—'}</span>
+                    <OwnershipBadge ownership={row.ownership} />
+                  </div>
+                  <div className="mt-1 text-sm">
+                    {drv ? drv.fullName : <span className="text-muted-foreground">{t('trucksList.noDriver')}</span>}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="num">{tons.toFixed(0)} {t('tons')}</span>
+                    <span className="inline-flex items-center gap-2">
+                      {row.lastInspection ? formatDate(row.lastInspection) : '—'}
+                      <ExpiryBadge date={nextInspection(row.lastInspection)} />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+          {/* Desktop: table */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -165,6 +200,7 @@ export default function CarrierFleetTrucks() {
               })}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </>

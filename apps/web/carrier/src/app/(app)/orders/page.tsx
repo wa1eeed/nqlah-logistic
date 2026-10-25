@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -73,6 +74,33 @@ export default function CarrierOrdersPage() {
                 description={t('list.emptyDesc')}
               />
             ) : (
+             <>
+              {/* Mobile: app-like card list */}
+              <div className="md:hidden divide-y">
+                {isLoading && !data ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="p-4"><div className="h-20 rounded-xl bg-muted animate-pulse" /></div>
+                  ))
+                ) : (
+                  rows.map((o) => (
+                    <Link key={o.id} href={`/orders/${o.id}`} className="block p-4 transition-colors active:bg-muted/60">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs font-medium">{o.orderNumber}</span>
+                        <StatusBadge status={o.status} />
+                      </div>
+                      <div className="mt-1.5 text-sm font-medium">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</div>
+                      <div className="text-xs text-muted-foreground truncate">{o.cargoDescription}</div>
+                      <div className="mt-2.5 flex items-center justify-between gap-2">
+                        <span className="num text-xs text-muted-foreground">{formatDate(o.pickupDate)}</span>
+                        <span className="text-sm font-semibold"><Currency amount={o.carrierAmount} /></span>
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -115,6 +143,8 @@ export default function CarrierOrdersPage() {
                   }
                 </TableBody>
               </Table>
+              </div>
+             </>
             )}
           </CardContent>
         </Card>

@@ -157,6 +157,29 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
+            {/* Mobile: app-like card list */}
+            <div className="md:hidden divide-y">
+              {recentOrders.slice(0, 7).map((o) => (
+                <Link
+                  key={o.id}
+                  href={`/orders/${o.id}`}
+                  className="block p-4 transition-colors active:bg-muted/60"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs text-muted-foreground">{o.orderNumber}</span>
+                    <StatusBadge status={o.status} />
+                  </div>
+                  <div className="mt-1.5 text-sm font-medium">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground truncate">{companyById(o.clientId)?.nameAr ?? '—'}</span>
+                    <span className="text-sm font-semibold"><Currency amount={o.agreedPrice ?? o.clientBudget} /></span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -183,6 +206,7 @@ export default function AdminDashboard() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 

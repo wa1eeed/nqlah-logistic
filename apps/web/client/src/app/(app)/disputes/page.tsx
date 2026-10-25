@@ -116,6 +116,29 @@ export default function ClientDisputesPage() {
               <Shield className="h-12 w-12 mx-auto mb-3 opacity-40" />
               {t('disputes.empty')}             </div>
           ) : (
+           <>
+            {/* Mobile: app-like card list */}
+            <div className="md:hidden divide-y">
+              {myDisputes.map((d) => (
+                <Link key={d.id} href={`/orders/${d.orderId}`} className="block p-4 transition-colors active:bg-muted/60">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs text-primary">{d.order?.orderNumber ?? d.orderId}</span>
+                    <StatusBadge status={d.status} />
+                  </div>
+                  <div className="mt-1.5 text-sm font-medium">{d.reason}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-2">{d.description}</div>
+                  <div className="mt-2.5 flex items-center justify-between gap-2">
+                    <Badge variant={('raisedBy' in d ? d.raisedBy : 'CLIENT') === 'CLIENT' ? 'default' : 'outline'}>
+                      {('raisedBy' in d ? d.raisedBy : 'CLIENT') === 'CLIENT' ? t('disputes.raisedByYou') : t('disputes.raisedByCarrier')}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{formatRelative(d.createdAt)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -150,6 +173,8 @@ export default function ClientDisputesPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
+           </>
           )}
         </CardContent>
       </Card>

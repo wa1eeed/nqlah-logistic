@@ -529,6 +529,34 @@ function TrucksTab({ companyId }: { companyId: string }) {
         </div>
       </CardHeader>
       <CardContent className="p-0">
+        {/* Mobile: app-like card list */}
+        <div className="md:hidden divide-y">
+          {data.map((tk) => {
+            const plate = parsePlateString(tk.plateNumber);
+            const driver = tk.currentDriver ? `${tk.currentDriver.user.firstName} ${tk.currentDriver.user.lastName}`.trim() : '—';
+            return (
+              <div key={tk.id} className="p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="w-[96px]">
+                    <SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" size="fill" />
+                  </div>
+                  <StatusBadge status={tk.status} />
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{t.has(`detail.trucks.types.${tk.type}`) ? t(`detail.trucks.types.${tk.type}`) : tk.type}</span>
+                  <Badge variant={tk.ownership === 'OWNED' ? 'secondary' : 'outline'}>{tk.ownership === 'OWNED' ? t('detail.trucks.owned') : t('detail.trucks.independent')}</Badge>
+                </div>
+                <div className="mt-1.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="num">{t('detail.trucks.capacityValue', { value: tk.capacity.toLocaleString('en-US') })}</span>
+                  <span className="truncate max-w-[160px]">{driver}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -557,6 +585,7 @@ function TrucksTab({ companyId }: { companyId: string }) {
             })}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -584,6 +613,43 @@ function DriversTab({ companyId }: { companyId: string }) {
         </div>
       </CardHeader>
       <CardContent className="p-0">
+        {/* Mobile: app-like card list */}
+        <div className="md:hidden divide-y">
+          {data.map((d) => {
+            const exp = new Date(d.licenseExpiry).getTime();
+            const days = Math.round((exp - now) / 86400000);
+            const expState = days < 0 ? 'expired' : days < 60 ? 'soon' : 'ok';
+            return (
+              <div key={d.id} className="p-4">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8"><AvatarFallback>{`${d.user.firstName?.[0] ?? ''}${d.user.lastName?.[0] ?? ''}`}</AvatarFallback></Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium truncate">{d.user.firstName} {d.user.lastName}</span>
+                      <StatusBadge status={d.status} />
+                    </div>
+                    <span className="num text-xs text-muted-foreground" dir="ltr">{d.user.phone}</span>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-col gap-0.5">
+                  <span className="num text-xs" dir="ltr">{d.licenseNumber} · {d.licenseType}</span>
+                  <span className={`text-[11px] ${expState === 'expired' ? 'text-destructive font-medium' : expState === 'soon' ? 'text-warning' : 'text-muted-foreground'}`}>
+                    {expState === 'expired' ? t('detail.drivers.expired') : expState === 'soon' ? t('detail.drivers.expiresIn', { days: days.toLocaleString('en-US') }) : t('detail.drivers.validUntil', { date: formatDate(d.licenseExpiry, 'MMM yyyy') })}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <Badge variant={d.ownership === 'OWNED' ? 'secondary' : 'outline'}>{d.ownership === 'OWNED' ? t('detail.drivers.employed') : t('detail.drivers.freelance')}</Badge>
+                  <span className="num text-xs text-muted-foreground">
+                    {t('detail.drivers.trips')}: {d.totalTrips} · {t('detail.drivers.rating')}: {d.rating > 0 ? d.rating.toFixed(1) : '—'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -627,6 +693,7 @@ function DriversTab({ companyId }: { companyId: string }) {
             })}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -700,6 +767,28 @@ function StatementTab({ companyId, companyName }: { companyId: string; companyNa
           {data.lines.length === 0 ? (
             <p className="text-sm text-muted-foreground py-10 text-center">{t('detail.statement.noTransactions')}</p>
           ) : (
+            <>
+            {/* Mobile: app-like card list */}
+            <div className="md:hidden divide-y">
+              {data.lines.map((l) => (
+                <div key={l.id} className="p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{txLabel(l.type)}</span>
+                    <span className={`num font-medium ${l.amount >= 0 ? 'text-success' : 'text-destructive'}`}>
+                      {l.amount >= 0 ? '+' : '−'}<Currency amount={Math.abs(l.amount)} />
+                    </span>
+                  </div>
+                  <div className="mt-1.5 text-sm">{l.description}</div>
+                  <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="num">{formatDate(l.createdAt, 'd MMM yyyy')}{l.reference ? <span className="font-mono"> · {l.reference}</span> : null}</span>
+                    <span className="num">{t('detail.statement.balanceCol')}: <Currency amount={l.balance} /></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -726,6 +815,8 @@ function StatementTab({ companyId, companyName }: { companyId: string; companyNa
                 ))}
               </TableBody>
             </Table>
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

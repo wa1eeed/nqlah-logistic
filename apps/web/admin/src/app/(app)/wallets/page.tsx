@@ -84,6 +84,41 @@ export default function AdminWalletsPage() {
       <FadeIn delay={0.08}>
       <Card>
         <CardContent className="p-0">
+          {/* Mobile: app-like card list */}
+          <div className="md:hidden divide-y">
+            {rows.map(({ wallet, company }) => (
+              <Link key={wallet.id} href={`/wallets/${company.id}`} className="block p-4 transition-colors active:bg-muted/60">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarFallback>{company.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('')}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium truncate">{company.nameAr}</span>
+                      <Badge variant={company.kind === 'CLIENT' ? 'default' : 'success'}>
+                        {company.kind === 'CLIENT' ? t('wallets.client') : t('wallets.carrier')}
+                      </Badge>
+                    </div>
+                    <div className="text-xs font-mono text-muted-foreground truncate">{wallet.id}</div>
+                  </div>
+                </div>
+                <div className="mt-2.5 flex items-center justify-between gap-2">
+                  <span className="num text-xs text-muted-foreground">{formatRelative(wallet.updatedAt)}</span>
+                  <div className="text-end">
+                    <div className="text-sm font-semibold"><Currency amount={wallet.balance} /></div>
+                    {wallet.escrowHeld > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        {t('wallets.colEscrowHeld')}: <Currency amount={wallet.escrowHeld} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -131,6 +166,7 @@ export default function AdminWalletsPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
       </FadeIn>

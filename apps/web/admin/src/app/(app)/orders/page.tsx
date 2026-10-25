@@ -112,6 +112,38 @@ export default function AdminOrdersPage() {
       <FadeIn delay={0.08}>
       <Card>
         <CardContent className="p-0">
+          {/* Mobile: app-like card list */}
+          <div className="md:hidden divide-y">
+            {rows.length === 0 ? (
+              <div className="text-center text-muted-foreground py-10">{t('noOrders')}</div>
+            ) : (
+              rows.map((o) => (
+                <Link key={o.id} href={`/orders/${o.id}`} className="block p-4 transition-colors active:bg-muted/60">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs text-primary">{o.orderNumber}</span>
+                    <StatusBadge status={o.status} />
+                  </div>
+                  <div className="mt-1.5 text-sm font-medium">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {companyById(o.clientId)?.nameAr ?? '—'}
+                    {companyById(o.carrierId)?.nameAr ? ` · ${companyById(o.carrierId)?.nameAr}` : ''}
+                  </div>
+                  <div className="mt-2.5 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'}>
+                        {o.mode === 'OPEN' ? t('adminList.modeOpen') : t('adminList.modeDirect')}
+                      </Badge>
+                      <span className="num text-xs text-muted-foreground">{formatDate(o.createdAt)}</span>
+                    </div>
+                    <span className="text-sm font-semibold"><Currency amount={o.agreedPrice ?? o.clientBudget} /></span>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -156,6 +188,7 @@ export default function AdminOrdersPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
       </FadeIn>

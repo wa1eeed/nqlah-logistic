@@ -132,6 +132,27 @@ export default function ClientFinancePage() {
           <Card>
             <CardHeader><CardTitle>{t('finance.lastTransactions', { count: 5 })}</CardTitle></CardHeader>
             <CardContent className="p-0">
+              {/* Mobile: app-like card list */}
+              <div className="md:hidden divide-y">
+                {txs.slice(0, 5).map((tx) => {
+                  const isIn = TX_IN.includes(tx.kind);
+                  return (
+                    <div key={tx.id} className="p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant={isIn ? 'success' : 'destructive'}>{txLabel(tx.kind)}</Badge>
+                        <span className={`text-sm font-semibold num ${isIn ? 'text-success' : 'text-destructive'}`}>
+                          {isIn ? '+ ' : '- '}{tx.amount.toLocaleString('en-US')}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 text-sm">{tx.description}</div>
+                      <div className="mt-1 num text-xs text-muted-foreground">{formatDate(tx.at, 'd MMM · HH:mm')}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -157,6 +178,7 @@ export default function ClientFinancePage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -198,6 +220,35 @@ export default function ClientFinancePage() {
                 <StatMini icon={Wallet}         label={t('balance')}   value={wallet?.balance ?? 0} tone="default" />
               </div>
 
+              {/* Mobile: app-like card list */}
+              <div className="md:hidden -mx-6 border-t divide-y">
+                {filteredTxs.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-10">{t('finance.noTransactions')}</div>
+                ) : (
+                  filteredTxs.map((tx) => {
+                    const isIn = TX_IN.includes(tx.kind);
+                    return (
+                      <div key={tx.id} className="px-6 py-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge variant={isIn ? 'success' : 'destructive'}>{txLabel(tx.kind)}</Badge>
+                          <span className={`text-sm font-semibold num ${isIn ? 'text-success' : 'text-destructive'}`}>
+                            {isIn ? '+ ' : '- '}{tx.amount.toLocaleString('en-US')}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 text-sm">{tx.description}</div>
+                        {tx.note && <div className="text-xs text-muted-foreground mt-0.5">{tx.note}</div>}
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <span className="num text-xs text-muted-foreground">{formatDate(tx.at, 'd MMM · HH:mm')}</span>
+                          <span className="num text-xs text-muted-foreground">{t('fields.balanceAfter')}: {tx.balanceAfter.toLocaleString('en-US')}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -232,6 +283,7 @@ export default function ClientFinancePage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -241,6 +293,31 @@ export default function ClientFinancePage() {
           <Card>
             <CardHeader><CardTitle>{t('finance.myInvoices')}</CardTitle></CardHeader>
             <CardContent className="p-0">
+              {/* Mobile: app-like card list */}
+              <div className="md:hidden divide-y">
+                {invoices.map((i) => (
+                  <div key={i.id} className="p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs font-medium">{i.invoiceNumber}</span>
+                      <StatusBadge status={i.status} />
+                    </div>
+                    <div className="mt-1 font-mono text-xs text-muted-foreground">{i.orderId}</div>
+                    <div className="mt-2.5 flex items-center justify-between gap-2">
+                      <span className="num text-xs text-muted-foreground">{formatDate(i.dueAt)}</span>
+                      <span className="text-sm font-semibold"><Currency amount={i.total} /></span>
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <Button variant="ghost" size="sm">
+                        <FileText className="h-3.5 w-3.5" />
+                        PDF
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -272,6 +349,7 @@ export default function ClientFinancePage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

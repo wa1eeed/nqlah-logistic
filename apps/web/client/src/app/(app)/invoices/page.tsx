@@ -88,6 +88,32 @@ export default function ClientInvoicesPage() {
                 description={t('invoicesPage.emptyDescription')}
               />
             ) : (
+             <>
+              {/* Mobile: app-like card list */}
+              <div className="md:hidden divide-y">
+                {rows.map((i) => (
+                  <div key={i.id} className="p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs font-medium">{i.invoiceNumber}</span>
+                      <StatusBadge status={i.status} />
+                    </div>
+                    <div className="mt-1 font-mono text-xs text-muted-foreground">{i.orderId}</div>
+                    <div className="mt-2.5 flex items-center justify-between gap-2">
+                      <span className="num text-xs text-muted-foreground">{formatDate(i.dueAt)}</span>
+                      <span className="text-sm font-semibold"><Currency amount={i.total} /></span>
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <Button variant="ghost" size="sm">
+                        <Download className="h-3.5 w-3.5" />
+                        PDF
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -123,6 +149,8 @@ export default function ClientInvoicesPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
+             </>
             )}
           </CardContent>
         </Card>

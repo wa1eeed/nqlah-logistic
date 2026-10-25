@@ -247,6 +247,35 @@ export default function AdminWalletDetailPage() {
           <CardDescription className="mt-1">{t('walletDetail.sinceOpening', { count: txs.length })}</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
+          {/* Mobile: app-like card list */}
+          <div className="md:hidden divide-y">
+            {txs.length === 0 ? (
+              <div className="text-center text-muted-foreground py-10">{t('walletDetail.noTransactions')}</div>
+            ) : (
+              txs.map((tx) => {
+                const dir = TX_DIRECTION[tx.kind];
+                return (
+                  <div key={tx.id} className="p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge variant={dir === 'in' ? 'success' : 'destructive'}>{TX_LABEL[tx.kind]}</Badge>
+                      <span className={`font-medium num ${dir === 'in' ? 'text-success' : 'text-destructive'}`}>
+                        {dir === 'in' ? '+ ' : '- '}{tx.amount.toLocaleString('en-US')}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 text-sm">{tx.description}</div>
+                    {tx.note && <div className="text-xs text-muted-foreground mt-0.5">{tx.note}</div>}
+                    <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span className="font-mono">{tx.id} · {formatDate(tx.at, 'd MMM · HH:mm')}</span>
+                      <span className="num">{t('walletDetail.colBalanceAfter')}: {tx.balanceAfter.toLocaleString('en-US')}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -285,6 +314,7 @@ export default function AdminWalletDetailPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </>
