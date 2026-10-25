@@ -14,6 +14,12 @@ class CompanyStatusDto {
   status!: CompanyStatus;
 }
 
+class AccountNoteDto {
+  @IsIn(['CREDIT', 'DEBIT']) type!: 'CREDIT' | 'DEBIT';
+  @IsNumber() @Min(0.01) amount!: number;
+  @IsString() reason!: string;
+}
+
 class DisputeUpdateDto {
   @IsOptional() @IsIn(['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED']) status?: DisputeStatus;
   @IsOptional() @IsString() resolution?: string;
@@ -64,6 +70,29 @@ export class AdminController {
   @Get('drivers')
   drivers(@Query() q: PaginationDto) {
     return this.admin.listDrivers(q);
+  }
+
+  // ─── Per-company fleet + account statement (provider 360° view) ──────
+
+  @Get('companies/:id/trucks')
+  companyTrucks(@Param('id') id: string) {
+    return this.admin.companyTrucks(id);
+  }
+
+  @Get('companies/:id/drivers')
+  companyDrivers(@Param('id') id: string) {
+    return this.admin.companyDrivers(id);
+  }
+
+  @Get('companies/:id/statement')
+  companyStatement(@Param('id') id: string) {
+    return this.admin.companyStatement(id);
+  }
+
+  @Post('companies/:id/notes')
+  @Audit({ action: 'admin.company.accountNote', resourceType: 'Company', idFrom: 'param', idKey: 'id' })
+  issueAccountNote(@Param('id') id: string, @Body() dto: AccountNoteDto) {
+    return this.admin.issueAccountNote(id, dto);
   }
 
   @Get('orders')

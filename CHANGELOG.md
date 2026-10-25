@@ -6,6 +6,24 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.39 — Carrier profile: fleet tabs + account statement (2026-10-25)
+
+> Builds on the 360° page (v0.9.37).
+
+- **API (admin, per company):** `GET /admin/companies/:id/trucks`,
+  `GET /admin/companies/:id/drivers`, `GET /admin/companies/:id/statement`
+  (wallet balance + credit/debit totals + ledger), and
+  `POST /admin/companies/:id/notes` to issue a credit or debit note (recorded as
+  a wallet Transaction with a `CN-`/`DN-` reference; updates the balance).
+- **Carrier company page** gained three tabs: **الشاحنات** (fleet — Saudi plate,
+  type, capacity, ownership, current driver, status), **السائقون** (name, phone,
+  license with an expiry warning, ownership, trips, rating, status), and **كشف
+  الحساب** (summary cards + ledger, an "إصدار إشعار" dialog for credit/debit
+  notes, and a print/PDF export of the statement).
+- Verified live: the endpoints return the carrier's 5 trucks / 5 drivers, a
+  credit note issues with a `CN-2026-…` reference and raises the balance, and
+  all three tabs render.
+
 ### v0.9.38 — Search + city filter on client orders (2026-10-25)
 
 - The client "My orders" page gained a search box (order number, route cities,
