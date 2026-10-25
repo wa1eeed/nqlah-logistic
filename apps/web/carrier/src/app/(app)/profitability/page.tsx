@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR, { useSWRConfig } from 'swr';
 import { BadgeCheck, Coins, HandCoins, RotateCcw, TrendingUp, Wallet } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +47,7 @@ type ApiInvoice = {
 };
 
 export default function CarrierProfitabilityPage() {
+  const t = useTranslations('payments');
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -110,7 +112,7 @@ export default function CarrierProfitabilityPage() {
     } else {
       storeMarkPaid(id);
     }
-    notify.success('تم تسجيل دفع الفاتورة');
+    notify.success(t('profitability.toastPaymentRecorded'));
   };
   const doMarkDue = async (id: string) => {
     if (apiMode) {
@@ -124,7 +126,7 @@ export default function CarrierProfitabilityPage() {
   if (!mounted) {
     return (
       <PageTransition>
-        <PageHeader title="الربحية" subtitle="إيراد الطلبات مقابل فواتير الفري‑لانسر" />
+        <PageHeader title={t('profitability.title')} subtitle={t('profitability.subtitle')} />
         <div className="h-64 rounded-xl border bg-muted/20 animate-pulse" />
       </PageTransition>
     );
@@ -135,13 +137,13 @@ export default function CarrierProfitabilityPage() {
       <FadeItem>
         <div className="flex items-start justify-between gap-4">
           <PageHeader
-            title="الربحية"
-            subtitle="ربح المزوّد على الطلبات المُسندة للفري‑لانسر = إيراد العميل ناقص أجرة الرحلة"
+            title={t('profitability.title')}
+            subtitle={t('profitability.subtitleFull')}
           />
           {offline && (
             <Button variant="outline" size="sm" className="shrink-0 gap-2" onClick={() => setConfirmReset(true)}>
               <RotateCcw className="h-4 w-4" />
-              إعادة الضبط
+              {t('profitability.reset')}
             </Button>
           )}
         </div>
@@ -149,38 +151,38 @@ export default function CarrierProfitabilityPage() {
 
       <FadeItem>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatsCard label="إيراد الطلبات" value={<Currency amount={totals.revenue} />} hint="من العملاء" icon={Wallet} tone="default" />
-          <StatsCard label="تكلفة الفري‑لانسر" value={<Currency amount={totals.cost} />} hint="أجرة الرحلات" icon={HandCoins} tone="warning" />
-          <StatsCard label="صافي الربح" value={<Currency amount={totals.profit} />} hint="إيراد ناقص التكلفة" icon={TrendingUp} tone="success" />
-          <StatsCard label="مستحقّ للفري‑لانسر" value={<Currency amount={totals.due} />} hint="فواتير غير مدفوعة" icon={Coins} tone="danger" />
+          <StatsCard label={t('profitability.orderRevenue')} value={<Currency amount={totals.revenue} />} hint={t('profitability.fromClients')} icon={Wallet} tone="default" />
+          <StatsCard label={t('profitability.freelancerCost')} value={<Currency amount={totals.cost} />} hint={t('profitability.tripFares')} icon={HandCoins} tone="warning" />
+          <StatsCard label={t('profitability.netProfit')} value={<Currency amount={totals.profit} />} hint={t('profitability.revenueMinusCost')} icon={TrendingUp} tone="success" />
+          <StatsCard label={t('profitability.dueToFreelancer')} value={<Currency amount={totals.due} />} hint={t('profitability.unpaidInvoices')} icon={Coins} tone="danger" />
         </div>
       </FadeItem>
 
       <FadeItem>
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle className="text-base">فواتير الرحلات للفري‑لانسر</CardTitle>
+            <CardTitle className="text-base">{t('profitability.invoicesTitle')}</CardTitle>
             <CardDescription>
-              كل رحلة تُسند لشاحنة أو سائق فري‑لانسر تُنشئ فاتورة بأجرة الرحلة. الربح هو الفرق بين إيراد العميل وأجرة الرحلة.
+              {t('profitability.invoicesDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {rows.length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
-                لا توجد فواتير فري‑لانسر بعد. أسند طلبا لشاحنة فري‑لانسر لإنشاء فاتورة.
+                {t('profitability.noInvoices')}
               </div>
             ) : (
               <div className="-mx-6 overflow-x-auto px-6">
               <Table className="min-w-[640px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-start">الطلب</TableHead>
-                    <TableHead className="text-start">الفري‑لانسر</TableHead>
-                    <TableHead className="text-start">إيراد العميل</TableHead>
-                    <TableHead className="text-start">أجرة الرحلة</TableHead>
-                    <TableHead className="text-start">الربح</TableHead>
-                    <TableHead className="text-start">الحالة</TableHead>
-                    <TableHead className="text-end">إجراء</TableHead>
+                    <TableHead className="text-start">{t('fields.order')}</TableHead>
+                    <TableHead className="text-start">{t('profitability.colFreelancer')}</TableHead>
+                    <TableHead className="text-start">{t('profitability.colClientRevenue')}</TableHead>
+                    <TableHead className="text-start">{t('profitability.colTripFare')}</TableHead>
+                    <TableHead className="text-start">{t('profitability.colProfit')}</TableHead>
+                    <TableHead className="text-start">{t('fields.status')}</TableHead>
+                    <TableHead className="text-end">{t('profitability.colAction')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -191,7 +193,7 @@ export default function CarrierProfitabilityPage() {
                         <TableCell className="align-top">
                           <div className="font-medium num" dir="ltr">{r.orderNumber}</div>
                           <div className="text-xs text-muted-foreground mt-0.5">
-                            صدرت {formatDate(r.issuedAt)}
+                            {t('profitability.issuedOn', { date: formatDate(r.issuedAt) })}
                           </div>
                         </TableCell>
                         <TableCell className="align-top">
@@ -222,25 +224,25 @@ export default function CarrierProfitabilityPage() {
                           {r.status === 'PAID' ? (
                             <Badge variant="outline" className="gap-1 border-success/30 bg-success/10 text-success">
                               <BadgeCheck className="h-3 w-3" />
-                              مدفوعة
+                              {t('profitability.paid')}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning">
-                              مستحقّة
+                              {t('profitability.due')}
                             </Badge>
                           )}
                           {r.status === 'PAID' && r.paidAt && (
-                            <div className="text-xs text-muted-foreground mt-1">دُفعت {formatDate(r.paidAt)}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{t('profitability.paidOn', { date: formatDate(r.paidAt) })}</div>
                           )}
                         </TableCell>
                         <TableCell className="align-top text-end">
                           {r.status === 'DUE' ? (
                             <Button size="sm" onClick={() => setPayTarget(r)}>
-                              تسجيل الدفع
+                              {t('profitability.recordPayment')}
                             </Button>
                           ) : (
                             <Button size="sm" variant="ghost" onClick={() => doMarkDue(r.id)}>
-                              إعادة فتح
+                              {t('profitability.reopen')}
                             </Button>
                           )}
                         </TableCell>
@@ -258,13 +260,13 @@ export default function CarrierProfitabilityPage() {
       <ConfirmDialog
         open={!!payTarget}
         onOpenChange={(o) => !o && setPayTarget(null)}
-        title="تسجيل دفع الفاتورة"
+        title={t('profitability.payDialogTitle')}
         description={
           payTarget
-            ? `تأكيد دفع أجرة الرحلة للفري‑لانسر عن الطلب ${payTarget.orderNumber} بمبلغ ${payTarget.amount.toLocaleString('en-US')} ر.س.`
+            ? t('profitability.payDialogDesc', { order: payTarget.orderNumber, amount: payTarget.amount.toLocaleString('en-US') })
             : ''
         }
-        confirmLabel="تأكيد الدفع"
+        confirmLabel={t('profitability.confirmPay')}
         onConfirm={() => {
           if (payTarget) {
             doMarkPaid(payTarget.id);
@@ -277,12 +279,12 @@ export default function CarrierProfitabilityPage() {
         open={confirmReset}
         onOpenChange={setConfirmReset}
         destructive
-        title="إعادة ضبط فواتير الفري‑لانسر"
-        description="سيحذف هذا كل الفواتير المُنشأة في هذه الجلسة ويعيد الحالات إلى البيانات الأساسية."
-        confirmLabel="إعادة الضبط"
+        title={t('profitability.resetTitle')}
+        description={t('profitability.resetDesc')}
+        confirmLabel={t('profitability.reset')}
         onConfirm={() => {
           resetInvoices();
-          notify.success('تمت إعادة ضبط الفواتير');
+          notify.success(t('profitability.toastInvoicesReset'));
           setConfirmReset(false);
         }}
       />

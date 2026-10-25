@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, CheckCircle2, Loader2, Save, Truck, Upload, X } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -41,6 +42,7 @@ const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: currentYear - 2000 + 1 }, (_, i) => String(currentYear - i)); // newest first
 
 export default function NewTruckPage() {
+  const t = useTranslations('fleet');
   const router = useRouter();
   const brands = useBrandsStore((s) => s.brands);
   const truckTypes = useTruckTypesStore((s) => s.types.filter((t) => t.active));
@@ -142,10 +144,10 @@ export default function NewTruckPage() {
         hasRefrigeration: form.hasRefrigeration,
         photos: photoUrls.length > 0 ? photoUrls : undefined,
       });
-      notify.success('تم تسجيل الشاحنة', `اللوحة: ${plateNumber}`);
+      notify.success(t('newTruck.createdTitle'), t('newTruck.createdDesc', { plate: plateNumber }));
       router.push('/fleet/trucks');
     } catch (err) {
-      notify.error(err, 'فشل تسجيل الشاحنة');
+      notify.error(err, t('newTruck.createError'));
       setSubmitting(false);
     }
   };
@@ -153,11 +155,11 @@ export default function NewTruckPage() {
   return (
     <>
       <PageHeader
-        title="إضافة شاحنة جديدة"
-        subtitle="سجّل شاحنة جديدة في أسطولك مع توليد لوحة سعودية رسمية"
+        title={t('newTruck.title')}
+        subtitle={t('newTruck.subtitle')}
         actions={
           <Button variant="outline" onClick={() => router.push('/fleet/trucks')}>
-            <ArrowRight className="h-4 w-4 rtl:rotate-180" /> رجوع
+            <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('back')}
           </Button>
         }
       />
@@ -168,8 +170,8 @@ export default function NewTruckPage() {
           {/* Registration type */}
           <Card>
             <CardHeader>
-              <CardTitle>نوع التسجيل</CardTitle>
-              <CardDescription className="mt-1">يحدّد لون شريط اللوحة الجانبي</CardDescription>
+              <CardTitle>{t('registrationType.label')}</CardTitle>
+              <CardDescription className="mt-1">{t('newTruck.regTypeHint')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -177,14 +179,14 @@ export default function NewTruckPage() {
                   selected={form.registrationType === 'light'}
                   onClick={() => set('registrationType', 'light')}
                   color="#1B3A6B"
-                  title="نقل خفيف"
+                  title={t('registrationType.light')}
                   subtitle="Light Transport"
                 />
                 <RegTypeCard
                   selected={form.registrationType === 'public'}
                   onClick={() => set('registrationType', 'public')}
                   color="#F5C518"
-                  title="نقل عام"
+                  title={t('registrationType.public')}
                   subtitle="Public Transport"
                 />
               </div>
@@ -194,16 +196,16 @@ export default function NewTruckPage() {
           {/* Plate number */}
           <Card>
             <CardHeader>
-              <CardTitle>رقم اللوحة</CardTitle>
-              <CardDescription className="mt-1">اختر حتى 3 حروف وأدخل حتى 4 أرقام</CardDescription>
+              <CardTitle>{t('plateNumber')}</CardTitle>
+              <CardDescription className="mt-1">{t('newTruck.plateHint')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap items-end gap-2">
-                <LetterSelect label="الحرف 1" value={form.letter1} onChange={(v) => set('letter1', v)} />
-                <LetterSelect label="الحرف 2" value={form.letter2} onChange={(v) => set('letter2', v)} />
-                <LetterSelect label="الحرف 3" value={form.letter3} onChange={(v) => set('letter3', v)} />
+                <LetterSelect label={t('newTruck.letterN', { n: 1 })} value={form.letter1} onChange={(v) => set('letter1', v)} />
+                <LetterSelect label={t('newTruck.letterN', { n: 2 })} value={form.letter2} onChange={(v) => set('letter2', v)} />
+                <LetterSelect label={t('newTruck.letterN', { n: 3 })} value={form.letter3} onChange={(v) => set('letter3', v)} />
                 <div className="space-y-2">
-                  <Label htmlFor="plate-num">الأرقام</Label>
+                  <Label htmlFor="plate-num">{t('newTruck.numbers')}</Label>
                   <Input
                     id="plate-num"
                     type="text"
@@ -222,14 +224,14 @@ export default function NewTruckPage() {
 
           {/* Truck info */}
           <Card>
-            <CardHeader><CardTitle>معلومات الشاحنة</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('newTruck.truckInfo')}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>الملكية</Label>
+                <Label>{t('ownership.label')}</Label>
                 <div className="grid grid-cols-2 gap-3">
                   {([
-                    { v: 'OWNED', label: 'شاحنة تابعة', hint: 'ضمن أسطول الشركة' },
-                    { v: 'FREELANCER', label: 'فري‑لانسر', hint: 'متعاقدة بأجرة لكل رحلة' },
+                    { v: 'OWNED', label: t('ownership.ownedLabel'), hint: t('ownership.ownedHint') },
+                    { v: 'FREELANCER', label: t('ownership.freelancerLabel'), hint: t('ownership.freelancerHint') },
                   ] as const).map((opt) => (
                     <button
                       key={opt.v}
@@ -250,22 +252,22 @@ export default function NewTruckPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>نوع الشاحنة</Label>
+                  <Label>{t('truckType.label')}</Label>
                   <Select value={form.truckType} onValueChange={onTruckTypeChange}>
-                    <SelectTrigger><SelectValue placeholder="اختر النوع..." /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t('newTruck.selectType')} /></SelectTrigger>
                     <SelectContent>
-                      {truckTypes.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          <span className="me-1">{t.icon}</span>
-                          {t.nameAr}
-                          <span className="text-xs text-muted-foreground ms-2 num">({(t.capacityKg / 1000).toFixed(0)} طن)</span>
+                      {truckTypes.map((tt) => (
+                        <SelectItem key={tt.id} value={tt.id}>
+                          <span className="me-1">{tt.icon}</span>
+                          {tt.nameAr}
+                          <span className="text-xs text-muted-foreground ms-2 num">({(tt.capacityKg / 1000).toFixed(0)} {t('tons')})</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="capacity">الطاقة الاستيعابية</Label>
+                  <Label htmlFor="capacity">{t('capacity')}</Label>
                   <div className="relative">
                     <Input
                       id="capacity"
@@ -276,12 +278,12 @@ export default function NewTruckPage() {
                       placeholder="20"
                       className="pe-12"
                     />
-                    <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">طن</span>
+                    <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">{t('tons')}</span>
                   </div>
                   {selectedType && (
                     <p className="text-xs text-success flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3" />
-                      مُلئت تلقائيا من النوع المُختار، يمكنك تعديلها
+                      {t('newTruck.capacityAutofill')}
                     </p>
                   )}
                 </div>
@@ -316,7 +318,7 @@ export default function NewTruckPage() {
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h4 className="font-semibold">{selectedType.nameAr}</h4>
                         <Badge variant="default" className="num">
-                          سعة {(selectedType.capacityKg / 1000).toFixed(0)} طن
+                          {t('newTruck.capacityBadge', { tons: (selectedType.capacityKg / 1000).toFixed(0) })}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">
@@ -329,13 +331,13 @@ export default function NewTruckPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>البراند</Label>
+                  <Label>{t('make')}</Label>
                   <Select
                     value={form.brandId}
                     onValueChange={(v) => { set('brandId', v); set('modelId', ''); }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={brands.length ? 'اختر البراند' : 'لا توجد براندات'} />
+                      <SelectValue placeholder={brands.length ? t('newTruck.selectBrand') : t('newTruck.noBrands')} />
                     </SelectTrigger>
                     <SelectContent>
                       {brands.map((b) => (
@@ -348,7 +350,7 @@ export default function NewTruckPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>الموديل</Label>
+                  <Label>{t('model')}</Label>
                   <Select
                     value={form.modelId}
                     onValueChange={(v) => set('modelId', v)}
@@ -358,10 +360,10 @@ export default function NewTruckPage() {
                       <SelectValue
                         placeholder={
                           !form.brandId
-                            ? 'اختر البراند أولا'
+                            ? t('newTruck.selectBrandFirst')
                             : availableModels.length === 0
-                            ? 'لا توجد موديلات لهذا البراند'
-                            : 'اختر الموديل'
+                            ? t('newTruck.noModels')
+                            : t('newTruck.selectModel')
                         }
                       />
                     </SelectTrigger>
@@ -371,9 +373,9 @@ export default function NewTruckPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>سنة الصنع</Label>
+                  <Label>{t('year')}</Label>
                   <Select value={form.year} onValueChange={(v) => set('year', v)}>
-                    <SelectTrigger><SelectValue placeholder="السنة" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t('newTruck.yearPlaceholder')} /></SelectTrigger>
                     <SelectContent>
                       {YEARS.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
                     </SelectContent>
@@ -386,24 +388,24 @@ export default function NewTruckPage() {
           {/* Dimensions */}
           <Card>
             <CardHeader>
-              <CardTitle>الأبعاد</CardTitle>
-              <CardDescription className="mt-1">بالأمتار · اختياري</CardDescription>
+              <CardTitle>{t('newTruck.dimensions')}</CardTitle>
+              <CardDescription className="mt-1">{t('newTruck.dimensionsHint')}</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <DimensionInput label="الطول" id="length" value={form.length} onChange={(v) => set('length', v)} />
-              <DimensionInput label="العرض" id="width"  value={form.width}  onChange={(v) => set('width',  v)} />
-              <DimensionInput label="الارتفاع" id="height" value={form.height} onChange={(v) => set('height', v)} />
+              <DimensionInput label={t('newTruck.length')} unit={t('newTruck.meterUnit')} id="length" value={form.length} onChange={(v) => set('length', v)} />
+              <DimensionInput label={t('newTruck.width')} unit={t('newTruck.meterUnit')} id="width"  value={form.width}  onChange={(v) => set('width',  v)} />
+              <DimensionInput label={t('newTruck.height')} unit={t('newTruck.meterUnit')} id="height" value={form.height} onChange={(v) => set('height', v)} />
             </CardContent>
           </Card>
 
           {/* Equipment toggles */}
           <Card>
-            <CardHeader><CardTitle>التجهيزات</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('newTruck.equipment')}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                 <div className="space-y-0.5">
-                  <Label htmlFor="gps">مجهّز بـ GPS</Label>
-                  <p className="text-xs text-muted-foreground">للتتبع اللحظي على الخريطة</p>
+                  <Label htmlFor="gps">{t('hasGPS')}</Label>
+                  <p className="text-xs text-muted-foreground">{t('newTruck.gpsHint')}</p>
                 </div>
                 <Switch id="gps" checked={form.hasGPS} onCheckedChange={(v) => set('hasGPS', v)} />
               </div>
@@ -411,8 +413,8 @@ export default function NewTruckPage() {
               {form.truckType === 'REFRIGERATED' && (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div className="space-y-0.5">
-                    <Label htmlFor="refrig">مجهّز بنظام تبريد</Label>
-                    <p className="text-xs text-muted-foreground">يدعم درجات حرارة منخفضة</p>
+                    <Label htmlFor="refrig">{t('newTruck.refrigLabel')}</Label>
+                    <p className="text-xs text-muted-foreground">{t('newTruck.refrigHint')}</p>
                   </div>
                   <Switch id="refrig" checked={form.hasRefrigeration} onCheckedChange={(v) => set('hasRefrigeration', v)} />
                 </div>
@@ -423,14 +425,14 @@ export default function NewTruckPage() {
           {/* Photos */}
           <Card>
             <CardHeader>
-              <CardTitle>صور الشاحنة</CardTitle>
-              <CardDescription className="mt-1">حتى 5 صور · اختياري</CardDescription>
+              <CardTitle>{t('newTruck.photos')}</CardTitle>
+              <CardDescription className="mt-1">{t('newTruck.photosHint')}</CardDescription>
             </CardHeader>
             <CardContent>
               <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed cursor-pointer hover:bg-muted/30 transition-colors">
                 <Upload className="h-6 w-6 text-muted-foreground" />
-                <span className="text-sm font-medium">اضغط لرفع الصور</span>
-                <span className="text-xs text-muted-foreground">PNG, JPG حتى 5 ميغابايت</span>
+                <span className="text-sm font-medium">{t('newTruck.uploadPrompt')}</span>
+                <span className="text-xs text-muted-foreground">{t('newTruck.uploadHint')}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -460,10 +462,10 @@ export default function NewTruckPage() {
 
           {/* Submit */}
           <div className="flex items-center justify-end gap-2">
-            <Button variant="outline" onClick={() => router.push('/fleet/trucks')} disabled={submitting}>إلغاء</Button>
+            <Button variant="outline" onClick={() => router.push('/fleet/trucks')} disabled={submitting}>{t('cancel')}</Button>
             <Button onClick={submit} disabled={!isValid || submitting}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {submitting ? 'جاري الحفظ...' : 'حفظ الشاحنة'}
+              {submitting ? t('newTruck.saving') : t('newTruck.save')}
             </Button>
           </div>
         </div>
@@ -473,8 +475,8 @@ export default function NewTruckPage() {
           <div className="lg:sticky lg:top-24 space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">معاينة اللوحة</CardTitle>
-                <CardDescription className="mt-1">تتحدث لحظيا مع التعديل</CardDescription>
+                <CardTitle className="text-base">{t('newTruck.platePreview')}</CardTitle>
+                <CardDescription className="mt-1">{t('newTruck.platePreviewHint')}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center gap-4 py-8">
                 <SaudiPlate
@@ -485,7 +487,7 @@ export default function NewTruckPage() {
                 />
                 {form.registrationType && (
                   <Badge variant={form.registrationType === 'light' ? 'default' : 'warning'}>
-                    {form.registrationType === 'light' ? 'نقل خفيف' : 'نقل عام'}
+                    {form.registrationType === 'light' ? t('registrationType.light') : t('registrationType.public')}
                   </Badge>
                 )}
               </CardContent>
@@ -493,15 +495,15 @@ export default function NewTruckPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">قائمة التحقق</CardTitle>
+                <CardTitle className="text-base">{t('newTruck.checklist')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <CheckRow label="نوع التسجيل"      ok={validation.registrationType} />
-                <CheckRow label="حرف واحد على الأقل" ok={validation.letters} />
-                <CheckRow label="رقم واحد على الأقل" ok={validation.numbers} />
-                <CheckRow label="نوع الشاحنة"      ok={validation.truckType} />
-                <CheckRow label="الطاقة الاستيعابية" ok={validation.capacity} />
-                <CheckRow label="سنة الصنع"          ok={validation.year} />
+                <CheckRow label={t('registrationType.label')}      ok={validation.registrationType} />
+                <CheckRow label={t('newTruck.checkLetter')} ok={validation.letters} />
+                <CheckRow label={t('newTruck.checkNumber')} ok={validation.numbers} />
+                <CheckRow label={t('truckType.label')}      ok={validation.truckType} />
+                <CheckRow label={t('capacity')} ok={validation.capacity} />
+                <CheckRow label={t('year')}          ok={validation.year} />
               </CardContent>
             </Card>
           </div>
@@ -538,13 +540,14 @@ function RegTypeCard({
 function LetterSelect({
   label, value, onChange,
 }: { label: string; value: string; onChange: (v: string) => void }) {
+  const t = useTranslations('fleet');
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
       <Select value={value || '__empty__'} onValueChange={(v) => onChange(v === '__empty__' ? '' : v)}>
-        <SelectTrigger className="w-[100px] h-11"><SelectValue placeholder="حرف" /></SelectTrigger>
+        <SelectTrigger className="w-[100px] h-11"><SelectValue placeholder={t('newTruck.letterPlaceholder')} /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="__empty__">بلا</SelectItem>
+          <SelectItem value="__empty__">{t('newTruck.none')}</SelectItem>
           {SAUDI_PLATE_LETTERS.map((l) => (
             <SelectItem key={l.ar} value={l.ar}>
               <span className="num me-2">{l.en}</span>
@@ -557,13 +560,13 @@ function LetterSelect({
   );
 }
 
-function DimensionInput({ label, id, value, onChange }: { label: string; id: string; value: string; onChange: (v: string) => void }) {
+function DimensionInput({ label, unit, id, value, onChange }: { label: string; unit: string; id: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       <div className="relative">
         <Input id={id} type="number" inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0.0" className="pe-12" />
-        <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">م</span>
+        <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">{unit}</span>
       </div>
     </div>
   );

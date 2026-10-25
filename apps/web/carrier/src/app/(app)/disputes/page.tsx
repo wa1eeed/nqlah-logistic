@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { AlertCircle, Loader2, Plus, Shield } from 'lucide-react';
@@ -27,17 +28,18 @@ import {
   type Dispute,
 } from '@naqla/shared-utils';
 
-const DISPUTE_REASONS = [
-  'تأخّر العميل في الاستلام',
-  'موقع التحميل غير مهيّأ',
-  'رسوم إضافية غير مدفوعة',
-  'تعديل في الوجهة دون إخطار',
-  'سلوك العميل/المستلم',
-  'تأخّر السماح بالتفريغ',
-  'أخرى',
+const DISPUTE_REASONS: { value: string; key: string }[] = [
+  { value: 'تأخّر العميل في الاستلام',        key: 'delayedPickup' },
+  { value: 'موقع التحميل غير مهيّأ',          key: 'unpreparedSite' },
+  { value: 'رسوم إضافية غير مدفوعة',          key: 'unpaidFees' },
+  { value: 'تعديل في الوجهة دون إخطار',       key: 'destinationChange' },
+  { value: 'سلوك العميل/المستلم',             key: 'clientBehavior' },
+  { value: 'تأخّر السماح بالتفريغ',           key: 'unloadingDelay' },
+  { value: 'أخرى',                            key: 'other' },
 ];
 
 export default function CarrierDisputesPage() {
+  const t = useTranslations('carrier');
   type ApiDispute = Dispute & { order?: { orderNumber: string; clientId: string; carrierId?: string } };
   const { data: disputesData, mutate: mutateDisputes } = useSWR<ApiDispute[]>('/disputes', fetcher);
   const myDisputes: ApiDispute[] = useMemo(() => {
@@ -73,11 +75,11 @@ export default function CarrierDisputesPage() {
         description: form.description.trim(),
       });
       await mutateDisputes();
-      notify.success('تم فتح النزاع', 'سيراجعه فريق الدعم خلال 24 ساعة');
+      notify.success(t('disputes.toastSuccessTitle'), t('disputes.toastSuccessBody'));
       setCreateOpen(false);
       setForm({ orderId: '', reason: '', description: '' });
     } catch (err) {
-      notify.error(err, 'فشل فتح النزاع');
+      notify.error(err, t('disputes.toastErrorTitle'));
     } finally {
       setSubmitting(false);
     }
@@ -86,41 +88,41 @@ export default function CarrierDisputesPage() {
   return (
     <>
       <PageHeader
-        title="النزاعات"
-        subtitle="فتح ومتابعة النزاعات المتعلقة برحلاتك"
+        title={t('disputes.title')}
+        subtitle={t('disputes.subtitle')}
         actions={
           <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" /> فتح نزاع جديد
+            <Plus className="h-4 w-4" /> {t('disputes.newDispute')}
           </Button>
         }
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatsCard label="إجمالي النزاعات" value={myDisputes.length} icon={Shield} />
-        <StatsCard label="مفتوحة" value={open} icon={AlertCircle} tone="warning" />
-        <StatsCard label="قيد المراجعة" value={review} icon={Shield} />
-        <StatsCard label="محلولة" value={resolved} icon={Shield} tone="success" />
+        <StatsCard label={t('disputes.statTotal')} value={myDisputes.length} icon={Shield} />
+        <StatsCard label={t('disputes.statOpen')} value={open} icon={AlertCircle} tone="warning" />
+        <StatsCard label={t('disputes.statUnderReview')} value={review} icon={Shield} />
+        <StatsCard label={t('disputes.statResolved')} value={resolved} icon={Shield} tone="success" />
       </div>
 
       <Card>
-        <CardHeader><CardTitle>قائمة النزاعات</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t('disputes.listTitle')}</CardTitle></CardHeader>
         <CardContent className="p-0">
           {myDisputes.length === 0 ? (
             <div className="py-16 text-center text-muted-foreground">
               <Shield className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              لا توجد نزاعات
+              {t('disputes.empty')}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>رقم النزاع</TableHead>
-                  <TableHead>الطلب</TableHead>
-                  <TableHead>السبب</TableHead>
-                  <TableHead>الوصف</TableHead>
-                  <TableHead>المُنشِئ</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>الحالة</TableHead>
+                  <TableHead>{t('disputes.colId')}</TableHead>
+                  <TableHead>{t('disputes.colOrder')}</TableHead>
+                  <TableHead>{t('disputes.colReason')}</TableHead>
+                  <TableHead>{t('disputes.colDescription')}</TableHead>
+                  <TableHead>{t('disputes.colRaisedBy')}</TableHead>
+                  <TableHead>{t('disputes.colDate')}</TableHead>
+                  <TableHead>{t('disputes.colStatus')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -136,7 +138,7 @@ export default function CarrierDisputesPage() {
                     <TableCell className="text-xs text-muted-foreground max-w-[280px] truncate">{d.description}</TableCell>
                     <TableCell>
                       <Badge variant={('raisedBy' in d ? d.raisedBy : 'CARRIER') === 'CARRIER' ? 'default' : 'outline'}>
-                        {('raisedBy' in d ? d.raisedBy : 'CARRIER') === 'CARRIER' ? 'أنت' : 'العميل'}
+                        {('raisedBy' in d ? d.raisedBy : 'CARRIER') === 'CARRIER' ? t('disputes.raisedByYou') : t('disputes.raisedByClient')}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatRelative(d.createdAt)}</TableCell>
@@ -152,14 +154,14 @@ export default function CarrierDisputesPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>فتح نزاع جديد</DialogTitle>
-            <DialogDescription>سيُراجع فريق الدعم النزاع خلال 24 ساعة</DialogDescription>
+            <DialogTitle>{t('disputes.dialogTitle')}</DialogTitle>
+            <DialogDescription>{t('disputes.dialogDescription')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label>الطلب المُتعلّق</Label>
+              <Label>{t('disputes.relatedOrder')}</Label>
               <Select value={form.orderId} onValueChange={(v) => setForm({ ...form, orderId: v })}>
-                <SelectTrigger><SelectValue placeholder="اختر الطلب" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('disputes.selectOrder')} /></SelectTrigger>
                 <SelectContent>
                   {myOrders.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
@@ -170,32 +172,32 @@ export default function CarrierDisputesPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>السبب</Label>
+              <Label>{t('disputes.reason')}</Label>
               <Select value={form.reason} onValueChange={(v) => setForm({ ...form, reason: v })}>
-                <SelectTrigger><SelectValue placeholder="اختر السبب" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('disputes.selectReason')} /></SelectTrigger>
                 <SelectContent>
-                  {DISPUTE_REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  {DISPUTE_REASONS.map((r) => <SelectItem key={r.key} value={r.value}>{t(`disputes.reasons.${r.key}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>الوصف التفصيلي</Label>
+              <Label>{t('disputes.description')}</Label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="اشرح المشكلة بتفصيل واضح..."
+                placeholder={t('disputes.descriptionPlaceholder')}
                 className="w-full min-h-[120px] p-3 rounded-md border bg-background text-sm"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={submitting}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={submitting}>{t('disputes.cancel')}</Button>
             <Button
               onClick={submit}
               disabled={!form.orderId || !form.reason || !form.description.trim() || submitting}
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              فتح النزاع
+              {t('disputes.submit')}
             </Button>
           </DialogFooter>
         </DialogContent>

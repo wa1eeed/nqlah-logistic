@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import {
   ArrowLeft, Calendar, Compass, MapPin, Radio, Search, ShieldCheck, Snowflake, Truck, UserSearch, Weight,
@@ -24,6 +25,7 @@ import {
 } from '@naqla/shared-utils';
 
 export default function CarrierOpportunitiesPage() {
+  const t = useTranslations('orders');
   const [tab, setTab] = useState<'OPEN' | 'DIRECT'>('OPEN');
   const authedCompanyId = useAuthStore((s) => s.user?.companyId);
   const myCompanyId = authedCompanyId ?? CURRENT_CARRIER_ID;
@@ -107,18 +109,18 @@ export default function CarrierOpportunitiesPage() {
 
   return (
     <>
-      <PageHeader title="سوق الفرص" subtitle="جميع طلبات النقل المتاحة لشركتك" />
+      <PageHeader title={t('opportunities.title')} subtitle={t('opportunities.subtitle')} />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as 'OPEN' | 'DIRECT')}>
         <TabsList>
           <TabsTrigger value="OPEN" className="gap-2">
             <Radio className="h-3.5 w-3.5 me-0.5" />
-            طلبات السوق المفتوح
+            {t('opportunities.tabOpen')}
             {openCount > 0 && <PulsingBadge count={openCount} tone="red" />}
           </TabsTrigger>
           <TabsTrigger value="DIRECT" className="gap-2">
             <UserSearch className="h-3.5 w-3.5 me-0.5" />
-            طلبات خاصة
+            {t('opportunities.tabDirect')}
             {directCount > 0 && <PulsingBadge count={directCount} tone="amber" />}
           </TabsTrigger>
         </TabsList>
@@ -127,21 +129,21 @@ export default function CarrierOpportunitiesPage() {
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="ابحث عن مدينة، نوع بضاعة، رقم طلب..." value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9" />
+          <Input placeholder={t('opportunities.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9" />
         </div>
         <Select value={city} onValueChange={setCity}>
-          <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="كل المدن" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder={t('opportunities.allCities')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">كل المدن</SelectItem>
+            <SelectItem value="ALL">{t('opportunities.allCities')}</SelectItem>
             {SAUDI_CITIES.slice(0, 20).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={setSort}>
           <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">الأحدث أولا</SelectItem>
-            <SelectItem value="weight">الأثقل وزنا</SelectItem>
-            <SelectItem value="pickup">الأقرب استلاما</SelectItem>
+            <SelectItem value="newest">{t('opportunities.sortNewest')}</SelectItem>
+            <SelectItem value="weight">{t('opportunities.sortWeight')}</SelectItem>
+            <SelectItem value="pickup">{t('opportunities.sortPickup')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -149,8 +151,8 @@ export default function CarrierOpportunitiesPage() {
       {filtered.length === 0 ? (
         <EmptyState
           icon={Compass}
-          title="لا توجد فرص متاحة"
-          description="لم تُنشر أي فرص نقل حاليا، تحقق لاحقا"
+          title={t('opportunities.emptyTitle')}
+          description={t('opportunities.emptyDesc')}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -168,7 +170,7 @@ export default function CarrierOpportunitiesPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold">{o.originCity} ← {o.destinationCity}</h3>
                         <Badge variant={isDirect ? 'warning' : 'success'}>
-                          {isDirect ? <><UserSearch className="h-3 w-3" /> موجّه لك</> : <><Radio className="h-3 w-3" /> سوق مفتوح</>}
+                          {isDirect ? <><UserSearch className="h-3 w-3" /> {t('opportunities.directedToYou')}</> : <><Radio className="h-3 w-3" /> {t('opportunities.openMarket')}</>}
                         </Badge>
                       </div>
                       <div className="mt-0.5 text-xs font-mono text-muted-foreground">{o.orderNumber}</div>
@@ -179,7 +181,7 @@ export default function CarrierOpportunitiesPage() {
                   <p className="text-sm text-muted-foreground leading-relaxed">{o.cargoDescription}</p>
 
                   <div className="grid grid-cols-2 gap-3 text-xs">
-                    <Tag icon={<Weight className="h-3.5 w-3.5" />} label={`${o.weightKg.toLocaleString('en-US')} كجم`} />
+                    <Tag icon={<Weight className="h-3.5 w-3.5" />} label={`${o.weightKg.toLocaleString('en-US')} ${t('units.kg')}`} />
                     <Tag icon={<Truck className="h-3.5 w-3.5" />} label={o.truckType} />
                     <Tag icon={<Calendar className="h-3.5 w-3.5" />} label={formatDate(o.pickupDate)} />
                     <Tag icon={<MapPin className="h-3.5 w-3.5" />} label={o.originAddress.split('،')[0] ?? '—'} />
@@ -189,32 +191,32 @@ export default function CarrierOpportunitiesPage() {
                     {o.requiresInsurance && (
                       <Badge variant="default" className="gap-1">
                         <ShieldCheck className="h-3 w-3" />
-                        تأمين
+                        {t('opportunities.insurance')}
                       </Badge>
                     )}
                     {o.requiresRefrigeration && (
                       <Badge variant="default" className="gap-1">
                         <Snowflake className="h-3 w-3" />
-                        تبريد
+                        {t('opportunities.refrigeration')}
                       </Badge>
                     )}
                   </div>
 
                   <div className="pt-4 border-t flex items-center justify-between gap-3 flex-wrap">
                     <div className="min-w-0">
-                      <div className="text-xs text-muted-foreground">العميل</div>
+                      <div className="text-xs text-muted-foreground">{t('opportunities.client')}</div>
                       <div className="text-sm font-medium truncate max-w-[220px]">{client?.nameAr ?? '—'}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
-                        {isPending ? 'عرضك قيد المراجعة لدى العميل'
-                          : isRejected ? 'تم رفض عرضك السابق، يمكنك إعادة المحاولة'
-                          : 'قدّم سعرك التنافسي'}
+                        {isPending ? t('opportunities.bidPending')
+                          : isRejected ? t('opportunities.bidRejected')
+                          : t('opportunities.bidPrompt')}
                       </div>
                     </div>
                     <Link href={`/opportunities/${o.id}`}>
                       <Button size="sm" variant={isPending ? 'outline' : 'default'}>
-                        {isPending ? 'تفاصيل'
-                          : isRejected ? 'إعادة تقديم'
-                          : 'قدّم عرضا'}
+                        {isPending ? t('opportunities.ctaDetails')
+                          : isRejected ? t('opportunities.ctaResubmit')
+                          : t('opportunities.ctaBid')}
                         <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
                       </Button>
                     </Link>

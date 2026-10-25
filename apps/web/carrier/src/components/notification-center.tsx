@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import {
   AlertCircle, Bell, Check, FileText, Inbox, Package, ShieldCheck, Sparkles, Truck, Wallet,
@@ -29,6 +30,7 @@ export interface NotificationCenterProps {
 }
 
 export function NotificationCenter({ audience }: NotificationCenterProps) {
+  const t = useTranslations('notifications');
   const items = React.useMemo(() => notificationsFor(audience), [audience]);
   const [open, setOpen] = React.useState(false);
   const [readIds, setReadIds] = React.useState<Set<string>>(
@@ -53,7 +55,7 @@ export function NotificationCenter({ audience }: NotificationCenterProps) {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="relative" aria-label="الإشعارات">
+        <Button variant="outline" size="icon" className="relative" aria-label={t('title')}>
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <span className="absolute top-1 end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
@@ -64,10 +66,10 @@ export function NotificationCenter({ audience }: NotificationCenterProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[360px] p-0">
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <DropdownMenuLabel className="p-0 text-base">الإشعارات</DropdownMenuLabel>
+          <DropdownMenuLabel className="p-0 text-base">{t('title')}</DropdownMenuLabel>
           {unreadCount > 0 && (
             <button onClick={markAllRead} className="text-xs text-primary hover:underline">
-              تحديد الكل كمقروء
+              {t('selectAllRead')}
             </button>
           )}
         </div>
@@ -76,7 +78,7 @@ export function NotificationCenter({ audience }: NotificationCenterProps) {
           {items.length === 0 ? (
             <div className="py-10 text-center text-sm text-muted-foreground">
               <Bell className="h-8 w-8 mx-auto mb-2 opacity-40" />
-              لا توجد إشعارات
+              {t('noNotifications')}
             </div>
           ) : (
             items.map((n) => <Row key={n.id} n={n} read={readIds.has(n.id)} onClick={() => { markRead(n.id); setOpen(false); }} />)
@@ -87,7 +89,7 @@ export function NotificationCenter({ audience }: NotificationCenterProps) {
         <div className="p-2">
           <Link href="/notifications" className="block">
             <Button variant="ghost" className="w-full justify-center text-sm" size="sm" onClick={() => setOpen(false)}>
-              عرض كل الإشعارات
+              {t('viewAll')}
             </Button>
           </Link>
         </div>

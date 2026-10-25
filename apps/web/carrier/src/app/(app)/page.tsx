@@ -1,5 +1,6 @@
 'use client';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { motion } from 'framer-motion';
@@ -22,25 +23,26 @@ import {
   normalizeOrderList, type Order,
 } from '@naqla/shared-utils';
 
-const STATUS_EVENT: Record<string, { label: string; color: string }> = {
-  ASSIGNED:   { label: 'تم تعيينك على طلب',      color: 'bg-success/10 text-success' },
-  CONFIRMED:  { label: 'تم تأكيد الطلب',          color: 'bg-primary/10 text-primary' },
-  IN_TRANSIT: { label: 'طلب قيد التوصيل',         color: 'bg-warning/10 text-warning' },
-  COMPLETED:  { label: 'تم إتمام الطلب',          color: 'bg-success/10 text-success' },
-  DELIVERED:  { label: 'تم التسليم والاستلام',    color: 'bg-success/10 text-success' },
+const STATUS_EVENT: Record<string, { labelKey: string; color: string }> = {
+  ASSIGNED:   { labelKey: 'dashboard.statusEvent.ASSIGNED',   color: 'bg-success/10 text-success' },
+  CONFIRMED:  { labelKey: 'dashboard.statusEvent.CONFIRMED',  color: 'bg-primary/10 text-primary' },
+  IN_TRANSIT: { labelKey: 'dashboard.statusEvent.IN_TRANSIT', color: 'bg-warning/10 text-warning' },
+  COMPLETED:  { labelKey: 'dashboard.statusEvent.COMPLETED',  color: 'bg-success/10 text-success' },
+  DELIVERED:  { labelKey: 'dashboard.statusEvent.DELIVERED',  color: 'bg-success/10 text-success' },
 };
 
 const QUICK_ACTIONS = [
-  { label: 'استكشف الفرص',  href: '/opportunities',    Icon: Compass,   color: 'bg-primary/10 text-primary' },
-  { label: 'أسطولي',         href: '/fleet/trucks',     Icon: Truck,     color: 'bg-success/10 text-success' },
-  { label: 'المستندات',      href: '/documents',        Icon: FileText,  color: 'bg-warning/10 text-warning' },
-  { label: 'التقارير',       href: '/reports',          Icon: BarChart2, color: 'bg-muted text-muted-foreground' },
+  { labelKey: 'dashboard.quickActionOpportunities', href: '/opportunities',    Icon: Compass,   color: 'bg-primary/10 text-primary' },
+  { labelKey: 'dashboard.quickActionFleet',          href: '/fleet/trucks',     Icon: Truck,     color: 'bg-success/10 text-success' },
+  { labelKey: 'dashboard.quickActionDocuments',      href: '/documents',        Icon: FileText,  color: 'bg-warning/10 text-warning' },
+  { labelKey: 'dashboard.quickActionReports',        href: '/reports',          Icon: BarChart2, color: 'bg-muted text-muted-foreground' },
 ];
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 const item      = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 
 export default function CarrierDashboard() {
+  const t = useTranslations('carrier');
   const me = companyById(CURRENT_CARRIER_ID)!;
 
   const { data: oppsData, isLoading }   = useSWR<unknown>('/orders', fetcher);
@@ -85,12 +87,12 @@ export default function CarrierDashboard() {
       .map((o) => ({
         id:    o.id,
         href:  `/orders/${o.id}`,
-        label: STATUS_EVENT[o.status].label,
+        label: t(STATUS_EVENT[o.status].labelKey),
         color: STATUS_EVENT[o.status].color,
         sub:   `${o.orderNumber} · ${o.originCity} ← ${o.destinationCity}`,
         time:  formatRelative(o.createdAt),
       }));
-  }, [myOrders]);
+  }, [myOrders, t]);
 
   // First load with nothing from the API yet: show the dashboard shape as a
   // skeleton instead of flashing fallback data that then jumps to real values.
@@ -110,45 +112,45 @@ export default function CarrierDashboard() {
       {/* ── Header ── */}
       <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">مرحبا بعودتك 👋</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t('dashboard.welcomeBack')}</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            <span className="num font-semibold text-foreground">{opps.length}</span> فرصة متاحة
+            <span className="num font-semibold text-foreground">{opps.length}</span> {t('dashboard.heroOpportunities')}
             <span className="mx-1.5 text-border">•</span>
-            <span className="num font-semibold text-foreground">{activeOrders.length}</span> طلب نشط
+            <span className="num font-semibold text-foreground">{activeOrders.length}</span> {t('dashboard.heroActiveOrders')}
           </p>
         </div>
         <Link href="/opportunities">
           <Button size="lg" className="rounded-full">
             <Compass className="h-4 w-4" />
-            استكشف الفرص
+            {t('dashboard.exploreOpportunities')}
           </Button>
         </Link>
       </motion.div>
 
       {/* ── Stats ── */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatsCard label="فرص متاحة"      value={opps.length}        hint="مفتوحة + موجّهة لشركتك"  icon={Compass} tone="default" />
-        <StatsCard label="طلباتي النشطة"  value={activeOrders.length} hint="قيد التنفيذ"             icon={Package} tone="warning" />
-        <StatsCard label="شاحنات متاحة"   value={`${available}/${trucks.length}`} hint={`${DRIVERS.length} سائق`} icon={Truck} tone="default" />
-        <StatsCard label="أرباح الشهر"    value={<Currency amount={monthlyNet} />} hint="صافي بعد العمولة" icon={Wallet} tone="success" />
+        <StatsCard label={t('dashboard.statOpportunities')}      value={opps.length}        hint={t('dashboard.statOpportunitiesHint')}  icon={Compass} tone="default" />
+        <StatsCard label={t('dashboard.statActiveOrders')}  value={activeOrders.length} hint={t('dashboard.statActiveOrdersHint')}             icon={Package} tone="warning" />
+        <StatsCard label={t('dashboard.statAvailableTrucks')}   value={`${available}/${trucks.length}`} hint={`${DRIVERS.length} ${t('dashboard.driversUnit')}`} icon={Truck} tone="default" />
+        <StatsCard label={t('dashboard.statMonthlyEarnings')}    value={<Currency amount={monthlyNet} />} hint={t('dashboard.statMonthlyEarningsHint')} icon={Wallet} tone="success" />
       </motion.div>
 
       {/* ── KPI band ── */}
       <motion.div variants={item}>
         <Card>
           <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-3 gap-5 divide-y sm:divide-y-0 sm:divide-x rtl:divide-x-reverse">
-            <Kpi icon={Star}       label="تقييم الشركة"       value={(me.rating ?? 0).toFixed(1)}                           hint={`${(me.completedTrips ?? 0).toLocaleString('en-US')} رحلة`} />
-            <Kpi icon={TrendingUp} label="رحلات منجزة"        value={(me.completedTrips ?? 0).toLocaleString('en-US')}       hint="على المنصة" />
-            <Kpi icon={Clock}      label="متوسّط الاستجابة"   value={`${me.responseTimeMins} دقيقة`}                         hint="من نشر الطلب" />
+            <Kpi icon={Star}       label={t('dashboard.kpiRating')}       value={(me.rating ?? 0).toFixed(1)}                           hint={`${(me.completedTrips ?? 0).toLocaleString('en-US')} ${t('dashboard.tripsUnit')}`} />
+            <Kpi icon={TrendingUp} label={t('dashboard.kpiCompletedTrips')}        value={(me.completedTrips ?? 0).toLocaleString('en-US')}       hint={t('dashboard.kpiCompletedTripsHint')} />
+            <Kpi icon={Clock}      label={t('dashboard.kpiResponseTime')}   value={`${me.responseTimeMins} ${t('dashboard.minutesUnit')}`}                         hint={t('dashboard.kpiResponseTimeHint')} />
           </CardContent>
         </Card>
       </motion.div>
 
       {/* ── Quick Actions ── */}
       <motion.div variants={item}>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">إجراءات سريعة</p>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t('dashboard.quickActions')}</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {QUICK_ACTIONS.map(({ label, href, Icon, color }) => (
+          {QUICK_ACTIONS.map(({ labelKey, href, Icon, color }) => (
             <Link key={href} href={href}>
               <motion.div
                 whileHover={{ y: -3, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
@@ -158,7 +160,7 @@ export default function CarrierDashboard() {
                 <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-sm font-medium text-center">{label}</span>
+                <span className="text-sm font-medium text-center">{t(labelKey)}</span>
               </motion.div>
             </Link>
           ))}
@@ -173,12 +175,12 @@ export default function CarrierDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>فرص نقل جديدة</CardTitle>
-                <CardDescription className="mt-1">{opps.length} فرصة متاحة الآن</CardDescription>
+                <CardTitle>{t('dashboard.newOpportunities')}</CardTitle>
+                <CardDescription className="mt-1">{t('dashboard.opportunitiesNow', { count: opps.length })}</CardDescription>
               </div>
               <Link href="/opportunities">
                 <Button variant="ghost" size="sm" className="gap-1">
-                  الكل
+                  {t('dashboard.viewAll')}
                   <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
                 </Button>
               </Link>
@@ -188,9 +190,9 @@ export default function CarrierDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>المسار</TableHead>
-                  <TableHead>الاستلام</TableHead>
-                  <TableHead className="text-end">الوزن</TableHead>
+                  <TableHead>{t('dashboard.colRoute')}</TableHead>
+                  <TableHead>{t('dashboard.colPickup')}</TableHead>
+                  <TableHead className="text-end">{t('dashboard.colWeight')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -203,7 +205,7 @@ export default function CarrierDashboard() {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDate(o.pickupDate)}</TableCell>
-                    <TableCell className="text-end num text-sm">{o.weightKg.toLocaleString('en-US')} كجم</TableCell>
+                    <TableCell className="text-end num text-sm">{o.weightKg.toLocaleString('en-US')} {t('dashboard.weightUnit')}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -216,12 +218,12 @@ export default function CarrierDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>طلباتي الجارية</CardTitle>
-                <CardDescription className="mt-1">{myOrders.length} طلب</CardDescription>
+                <CardTitle>{t('dashboard.myOngoingOrders')}</CardTitle>
+                <CardDescription className="mt-1">{t('dashboard.ordersCount', { count: myOrders.length })}</CardDescription>
               </div>
               <Link href="/orders">
                 <Button variant="ghost" size="sm" className="gap-1">
-                  الكل
+                  {t('dashboard.viewAll')}
                   <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
                 </Button>
               </Link>
@@ -231,10 +233,10 @@ export default function CarrierDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>رقم</TableHead>
-                  <TableHead>المسار</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="text-end">الأجرة</TableHead>
+                  <TableHead>{t('dashboard.colNumber')}</TableHead>
+                  <TableHead>{t('dashboard.colRoute')}</TableHead>
+                  <TableHead>{t('dashboard.colStatus')}</TableHead>
+                  <TableHead className="text-end">{t('dashboard.colFare')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -254,14 +256,14 @@ export default function CarrierDashboard() {
         {/* Activity Feed timeline */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">آخر الأنشطة</CardTitle>
-            <CardDescription>تحديثات طلباتك الأخيرة</CardDescription>
+            <CardTitle className="text-base">{t('dashboard.recentActivity')}</CardTitle>
+            <CardDescription>{t('dashboard.recentActivitySubtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             {feedEvents.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground flex flex-col items-center gap-2">
                 <Package className="h-8 w-8 text-muted-foreground/40" />
-                لا توجد أنشطة حديثة
+                {t('dashboard.noRecentActivity')}
               </div>
             ) : (
               <div className="relative space-y-1">

@@ -1,58 +1,58 @@
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 type Variant = 'default' | 'secondary' | 'destructive' | 'success' | 'warning' | 'outline';
 
-const MAP: Record<string, { variant: Variant; label: string }> = {
-  // Carrier-facing labels: framed around what the carrier is waiting for.
-  DRAFT:        { variant: 'secondary',   label: 'مسودة' },
-  // PUBLISHED on carrier side = a brand-new opportunity (no bids yet).
-  PUBLISHED:    { variant: 'default',     label: 'جديد' },
-  // BIDDING from carrier's view = "I or someone bid; client hasn't decided yet"
-  BIDDING:      { variant: 'warning',     label: 'بإنتظار موافقة العميل' },
-  ASSIGNED:     { variant: 'warning',     label: 'مُسند' },
-  CONFIRMED:    { variant: 'default',     label: 'مؤكد' },
-  IN_TRANSIT:   { variant: 'success',     label: 'في الطريق' },
-  DELIVERED:    { variant: 'success',     label: 'تم التسليم' },
-  COMPLETED:    { variant: 'success',     label: 'مكتمل' },
-  CANCELLED:    { variant: 'destructive', label: 'ملغى' },
-  DISPUTED:     { variant: 'warning',     label: 'نزاع' },
+// Carrier-facing variant mapping. Labels resolve via `common.status.<code>`
+// so the same status codes render in the active locale (English default).
+const MAP: Record<string, Variant> = {
+  DRAFT:        'secondary',
+  PUBLISHED:    'default',
+  BIDDING:      'warning',
+  ASSIGNED:     'warning',
+  CONFIRMED:    'default',
+  IN_TRANSIT:   'success',
+  DELIVERED:    'success',
+  COMPLETED:    'success',
+  CANCELLED:    'destructive',
+  DISPUTED:     'warning',
 
-  PENDING_VERIFICATION: { variant: 'warning',     label: 'بانتظار التحقق' },
-  APPROVED:             { variant: 'success',     label: 'معتمد' },
-  REJECTED:             { variant: 'destructive', label: 'مرفوض' },
-  ACTIVE:               { variant: 'success',     label: 'نشط' },
-  SUSPENDED:            { variant: 'destructive', label: 'موقوف' },
+  PENDING_VERIFICATION: 'warning',
+  APPROVED:             'success',
+  REJECTED:             'destructive',
+  ACTIVE:               'success',
+  SUSPENDED:            'destructive',
 
-  HELD:     { variant: 'warning', label: 'محجوز' },
-  RELEASED: { variant: 'success', label: 'مُفرج' },
-  REFUNDED: { variant: 'default', label: 'مُسترد' },
-  FAILED:   { variant: 'destructive', label: 'فشل' },
+  HELD:     'warning',
+  RELEASED: 'success',
+  REFUNDED: 'default',
+  FAILED:   'destructive',
 
-  ISSUED:   { variant: 'default',     label: 'صادرة' },
-  PAID:     { variant: 'success',     label: 'مدفوعة' },
-  OVERDUE:  { variant: 'destructive', label: 'متأخرة' },
+  ISSUED:   'default',
+  PAID:     'success',
+  OVERDUE:  'destructive',
 
-  OPEN:         { variant: 'destructive', label: 'مفتوح' },
-  UNDER_REVIEW: { variant: 'warning',     label: 'قيد المراجعة' },
-  RESOLVED:     { variant: 'success',     label: 'محلول' },
-  CLOSED:       { variant: 'secondary',   label: 'مغلق' },
+  OPEN:         'destructive',
+  UNDER_REVIEW: 'warning',
+  RESOLVED:     'success',
+  CLOSED:       'secondary',
 
-  ACCEPTED:  { variant: 'success', label: 'مقبول' },
-  WITHDRAWN: { variant: 'secondary', label: 'مسحوب' },
-  EXPIRED:   { variant: 'destructive', label: 'منتهي' },
+  ACCEPTED:  'success',
+  WITHDRAWN: 'secondary',
+  EXPIRED:   'destructive',
 
   // Fleet — truck statuses
-  AVAILABLE:   { variant: 'success',   label: 'متاحة' },
-  ON_TRIP:     { variant: 'default',   label: 'في رحلة' },
-  MAINTENANCE: { variant: 'warning',   label: 'صيانة' },
-  OFFLINE:     { variant: 'secondary', label: 'غير متصلة' },
-  INACTIVE:    { variant: 'secondary', label: 'غير نشطة' },
+  AVAILABLE:   'success',
+  ON_TRIP:     'default',
+  MAINTENANCE: 'warning',
+  OFFLINE:     'secondary',
+  INACTIVE:    'secondary',
 
   // Fleet — driver statuses
-  ON_DUTY:   { variant: 'success',   label: 'على رأس العمل' },
-  OFF_DUTY:  { variant: 'secondary', label: 'خارج الدوام' },
-  ON_LEAVE:  { variant: 'warning',   label: 'في إجازة' },
+  ON_DUTY:  'success',
+  OFF_DUTY: 'secondary',
+  ON_LEAVE: 'warning',
 };
 
 const PULSE_STATUSES = new Set(['PUBLISHED', 'IN_TRANSIT', 'BIDDING', 'ASSIGNED']);
@@ -67,28 +67,30 @@ const PULSE_COLOR: Record<string, string> = {
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
-  const m = MAP[status] ?? { variant: 'secondary' as Variant, label: status };
+  const t = useTranslations('common');
+  const variant = MAP[status] ?? ('secondary' as Variant);
+  const resolved = label ?? (status in MAP ? t(`status.${status}`) : status);
   const showPulse = PULSE_STATUSES.has(status);
 
   return (
-    <Badge variant={m.variant} className="gap-1.5">
+    <Badge variant={variant} className="gap-1.5">
       {showPulse && (
         <span className="relative flex h-2 w-2 shrink-0">
           <span
             className={cn(
               'animate-ping absolute inline-flex h-full w-full rounded-full opacity-75',
-              PULSE_COLOR[m.variant] ?? 'bg-primary',
+              PULSE_COLOR[variant] ?? 'bg-primary',
             )}
           />
           <span
             className={cn(
               'relative inline-flex rounded-full h-2 w-2',
-              PULSE_COLOR[m.variant] ?? 'bg-primary',
+              PULSE_COLOR[variant] ?? 'bg-primary',
             )}
           />
         </span>
       )}
-      {label ?? m.label}
+      {resolved}
     </Badge>
   );
 }

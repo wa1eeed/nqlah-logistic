@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
 import {
@@ -27,43 +28,38 @@ import {
   type TicketStatus, type TicketPriority, type TicketCategory,
 } from '@naqla/shared-utils';
 
-const STATUS_LABELS: Record<string, string> = {
-  OPEN: 'مفتوحة', IN_PROGRESS: 'قيد المعالجة', WAITING_USER: 'بانتظار ردك',
-  RESOLVED: 'محلولة', CLOSED: 'مغلقة',
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  OPEN: 'support.status.OPEN', IN_PROGRESS: 'support.status.IN_PROGRESS', WAITING_USER: 'support.status.WAITING_USER',
+  RESOLVED: 'support.status.RESOLVED', CLOSED: 'support.status.CLOSED',
 };
 const STATUS_BADGE: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
   OPEN: 'warning', IN_PROGRESS: 'default', WAITING_USER: 'destructive',
   RESOLVED: 'success', CLOSED: 'outline',
 };
-const PRIORITY_LABELS: Record<string, string> = {
-  LOW: 'منخفضة', MEDIUM: 'متوسطة', HIGH: 'عالية', URGENT: 'عاجلة',
+const PRIORITY_LABEL_KEYS: Record<string, string> = {
+  LOW: 'support.priority.LOW', MEDIUM: 'support.priority.MEDIUM', HIGH: 'support.priority.HIGH', URGENT: 'support.priority.URGENT',
 };
 const PRIORITY_BADGE: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
   LOW: 'outline', MEDIUM: 'default', HIGH: 'warning', URGENT: 'destructive',
 };
-const CATEGORY_LABELS: Record<string, string> = {
-  ACCOUNT: 'حساب', BILLING: 'فواتير ومدفوعات', ORDER: 'طلب',
-  TECHNICAL: 'مشكلة تقنية', KYC: 'اعتماد KYC', DRIVER: 'سائق', OTHER: 'أخرى',
-  GENERAL: 'استفسار عام',
+const CATEGORY_LABEL_KEYS: Record<string, string> = {
+  ACCOUNT: 'support.categoryLabels.ACCOUNT', BILLING: 'support.categoryLabels.BILLING', ORDER: 'support.categoryLabels.ORDER',
+  TECHNICAL: 'support.categoryLabels.TECHNICAL', KYC: 'support.categoryLabels.KYC', DRIVER: 'support.categoryLabels.DRIVER', OTHER: 'support.categoryLabels.OTHER',
+  GENERAL: 'support.categoryLabels.GENERAL',
 };
-const API_CATEGORIES: { value: string; label: string }[] = [
-  { value: 'TECHNICAL', label: 'مشكلة تقنية' },
-  { value: 'BILLING',   label: 'فواتير ومدفوعات' },
-  { value: 'ACCOUNT',   label: 'حساب' },
-  { value: 'ORDER',     label: 'طلب' },
-  { value: 'GENERAL',   label: 'استفسار عام' },
+const API_CATEGORIES: { value: string; labelKey: string }[] = [
+  { value: 'TECHNICAL', labelKey: 'support.categoryLabels.TECHNICAL' },
+  { value: 'BILLING',   labelKey: 'support.categoryLabels.BILLING' },
+  { value: 'ACCOUNT',   labelKey: 'support.categoryLabels.ACCOUNT' },
+  { value: 'ORDER',     labelKey: 'support.categoryLabels.ORDER' },
+  { value: 'GENERAL',   labelKey: 'support.categoryLabels.GENERAL' },
 ];
 type ApiTicket = { id: string; subject: string; category: string; status: string; createdAt: string; updatedAt: string };
 
-const FAQ = [
-  { q: 'متى يُفرَج عن المبلغ بعد التسليم؟',  a: 'يُفرَج عن المبلغ من Escrow خلال 3 أيام عمل من تأكيد التسليم وعدم وجود نزاع.' },
-  { q: 'كيف أرفع وثائق شركتي؟',             a: 'من صفحة "الوثائق" يمكنك رفع السجل التجاري والتأمين ورخصة النقل وغيرها، ومتابعة صلاحيتها.' },
-  { q: 'ما نسبة العمولة على كل رحلة؟',       a: 'نسبة العمولة الافتراضية 8% من قيمة الطلب، وتظهر بشفافية في تفاصيل كل عملية.' },
-  { q: 'كيف أضيف سائق أو شاحنة جديدة؟',    a: 'من قسم "الأسطول": شاحنات أو سائقون، ثم زر "إضافة". تظهر الشاحنة فورا في الأسطول وقابلة لقبول الطلبات.' },
-  { q: 'هل يمكنني سحب عرض بعد تقديمه؟',    a: 'نعم، طالما لم يُقبل بعد. من سجل العروض اختر العرض ثم "سحب".' },
-];
+const FAQ_KEYS = ['q1', 'q2', 'q3', 'q4', 'q5'];
 
 export default function CarrierSupportPage() {
+  const t = useTranslations('carrier');
   const { data: ticketsData, mutate: mutateTickets } = useSWR<ApiTicket[]>('/support/tickets', fetcher);
   const myTickets = useMemo<(ApiTicket | ReturnType<typeof ticketsFor>[number])[]>(() => {
     if (Array.isArray(ticketsData) && ticketsData.length > 0) return ticketsData;
@@ -84,11 +80,11 @@ export default function CarrierSupportPage() {
         description: form.description.trim(),
       });
       await mutateTickets();
-      notify.success('تم إنشاء التذكرة', 'سيردّ عليك فريق الدعم قريبا');
+      notify.success(t('support.toastCreatedTitle'), t('support.toastCreatedBody'));
       setCreateOpen(false);
       setForm({ subject: '', category: '', description: '' });
     } catch (err) {
-      notify.error(err, 'فشل إنشاء التذكرة');
+      notify.error(err, t('support.toastErrorTitle'));
     } finally {
       setSubmitting(false);
     }
@@ -97,11 +93,11 @@ export default function CarrierSupportPage() {
   return (
     <>
       <PageHeader
-        title="مركز الدعم"
-        subtitle="استفسارات، شكاوى، ومساعدة فنية"
+        title={t('support.title')}
+        subtitle={t('support.subtitle')}
         actions={
           <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" /> تذكرة جديدة
+            <Plus className="h-4 w-4" /> {t('support.newTicket')}
           </Button>
         }
       />
@@ -109,22 +105,22 @@ export default function CarrierSupportPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <ChannelCard
           icon={MessageSquare}
-          title="محادثة فورية"
-          subtitle="رد فوري خلال دقائق · 24/7"
-          cta="بدء محادثة"
+          title={t('support.channelChatTitle')}
+          subtitle={t('support.channelChatSubtitle')}
+          cta={t('support.channelChatCta')}
           tone="bg-primary/10 text-primary"
         />
         <ChannelCard
           icon={Phone}
-          title="اتصال هاتفي"
-          subtitle="السبت إلى الخميس، 8 ص إلى 8 م"
+          title={t('support.channelPhoneTitle')}
+          subtitle={t('support.channelPhoneSubtitle')}
           cta="+966 920 000 000"
           tone="bg-info/15 text-info"
         />
         <ChannelCard
           icon={Mail}
-          title="بريد إلكتروني"
-          subtitle="رد خلال 12 ساعة عمل"
+          title={t('support.channelEmailTitle')}
+          subtitle={t('support.channelEmailSubtitle')}
           cta="support@naqla.sa"
           tone="bg-success/15 text-success"
         />
@@ -133,29 +129,29 @@ export default function CarrierSupportPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>تذاكري</CardTitle>
-            <CardDescription>{myTickets.length} تذكرة · سجل كامل</CardDescription>
+            <CardTitle>{t('support.myTickets')}</CardTitle>
+            <CardDescription>{t('support.ticketsCount', { count: myTickets.length })}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             {myTickets.length === 0 ? (
               <div className="py-16 text-center text-muted-foreground">
                 <LifeBuoy className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                لا توجد تذاكر، ابدأ بإنشاء واحدة عند الحاجة
+                {t('support.emptyTickets')}
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>الموضوع</TableHead>
-                    <TableHead>الفئة</TableHead>
-                    <TableHead>الأولوية</TableHead>
-                    <TableHead>آخر تحديث</TableHead>
-                    <TableHead>الحالة</TableHead>
+                    <TableHead>{t('support.colSubject')}</TableHead>
+                    <TableHead>{t('support.colCategory')}</TableHead>
+                    <TableHead>{t('support.colPriority')}</TableHead>
+                    <TableHead>{t('support.colLastUpdate')}</TableHead>
+                    <TableHead>{t('support.colStatus')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {myTickets.map((t) => {
-                    const tk = t as Partial<ReturnType<typeof ticketsFor>[number]> & ApiTicket;
+                  {myTickets.map((ticket) => {
+                    const tk = ticket as Partial<ReturnType<typeof ticketsFor>[number]> & ApiTicket;
                     const priority = tk.priority ?? 'MEDIUM';
                     return (
                       <TableRow key={tk.id}>
@@ -163,16 +159,16 @@ export default function CarrierSupportPage() {
                           <div className="font-medium text-sm">{tk.subject}</div>
                           <div className="text-xs text-muted-foreground font-mono">
                             {tk.id}
-                            {tk.messageCount != null && <> · {tk.messageCount} رسالة</>}
+                            {tk.messageCount != null && <> · {t('support.messagesCount', { count: tk.messageCount })}</>}
                             {tk.orderId && <> · <Link href={`/orders/${tk.orderId}`} className="text-primary">{tk.orderId}</Link></>}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{CATEGORY_LABELS[tk.category] ?? tk.category}</Badge>
+                          <Badge variant="outline">{CATEGORY_LABEL_KEYS[tk.category] ? t(CATEGORY_LABEL_KEYS[tk.category]) : tk.category}</Badge>
                         </TableCell>
-                        <TableCell><Badge variant={PRIORITY_BADGE[priority]}>{PRIORITY_LABELS[priority]}</Badge></TableCell>
+                        <TableCell><Badge variant={PRIORITY_BADGE[priority]}>{PRIORITY_LABEL_KEYS[priority] ? t(PRIORITY_LABEL_KEYS[priority]) : priority}</Badge></TableCell>
                         <TableCell className="text-xs text-muted-foreground"><Clock className="h-3 w-3 inline me-1" />{formatRelative(tk.updatedAt)}</TableCell>
-                        <TableCell><Badge variant={STATUS_BADGE[tk.status] ?? 'default'}>{STATUS_LABELS[tk.status] ?? tk.status}</Badge></TableCell>
+                        <TableCell><Badge variant={STATUS_BADGE[tk.status] ?? 'default'}>{STATUS_LABEL_KEYS[tk.status] ? t(STATUS_LABEL_KEYS[tk.status]) : tk.status}</Badge></TableCell>
                       </TableRow>
                     );
                   })}
@@ -188,14 +184,14 @@ export default function CarrierSupportPage() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <HelpCircle className="h-4 w-4" />
-                أسئلة شائعة
+                {t('support.faqTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {FAQ.map((item, i) => (
-                <details key={i} className="text-sm">
-                  <summary className="font-medium cursor-pointer hover:text-primary py-1">{item.q}</summary>
-                  <p className="text-muted-foreground text-xs mt-1 ps-3 leading-relaxed">{item.a}</p>
+              {FAQ_KEYS.map((k) => (
+                <details key={k} className="text-sm">
+                  <summary className="font-medium cursor-pointer hover:text-primary py-1">{t(`support.faq.${k}`)}</summary>
+                  <p className="text-muted-foreground text-xs mt-1 ps-3 leading-relaxed">{t(`support.faq.${k.replace('q', 'a')}`)}</p>
                 </details>
               ))}
             </CardContent>
@@ -206,43 +202,43 @@ export default function CarrierSupportPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تذكرة دعم جديدة</DialogTitle>
-            <DialogDescription>صف المشكلة بوضوح ليتمكّن الفريق من المساعدة بسرعة</DialogDescription>
+            <DialogTitle>{t('support.dialogTitle')}</DialogTitle>
+            <DialogDescription>{t('support.dialogDescription')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label>موضوع التذكرة</Label>
-              <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="ملخص قصير..." />
+              <Label>{t('support.subject')}</Label>
+              <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder={t('support.subjectPlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>الفئة</Label>
+              <Label>{t('support.category')}</Label>
               <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                <SelectTrigger><SelectValue placeholder="اختر الفئة" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('support.selectCategory')} /></SelectTrigger>
                 <SelectContent>
                   {API_CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    <SelectItem key={c.value} value={c.value}>{t(c.labelKey)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>التفاصيل</Label>
+              <Label>{t('support.details')}</Label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="اشرح المشكلة بتفصيل واضح..."
+                placeholder={t('support.detailsPlaceholder')}
                 className="w-full min-h-[120px] p-3 rounded-md border bg-background text-sm"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={submitting}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={submitting}>{t('support.cancel')}</Button>
             <Button
               onClick={submit}
               disabled={!form.subject || !form.category || !form.description.trim() || submitting}
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              إرسال
+              {t('support.send')}
             </Button>
           </DialogFooter>
         </DialogContent>

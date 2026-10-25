@@ -6,6 +6,22 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.43 — Carrier dashboard fully bilingual (2026-10-25)
+
+> Continues the translation effort: the whole authenticated carrier portal.
+
+- Every carrier `(app)` page now renders through next-intl instead of hardcoded
+  Arabic: dashboard, orders (list / detail), opportunities (list / detail),
+  bids, fleet (trucks list / new / detail, drivers list / detail), finance,
+  earnings, profitability, reports, documents, disputes, support, notifications
+  — plus the shared chrome (top bar, notification center) and the app-wide
+  StatusBadge (status labels under `common.status.*`, incl. fleet statuses).
+- Keys added across the carrier namespaces (en/ar symmetric): common 99,
+  orders 383, fleet 227, payments 148, carrier 212, notifications 32.
+- Typecheck clean for the carrier app; every namespace is en/ar symmetric.
+- Same scope rules as the client phase: only display text; real data and
+  API-payload enum values unchanged.
+
 ### v0.9.42 — Client dashboard fully bilingual (2026-10-25)
 
 > Continues the translation effort: the whole authenticated client portal.

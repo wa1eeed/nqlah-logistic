@@ -1,5 +1,6 @@
 'use client';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { ArrowDownRight, Calendar, ShieldCheck, TrendingUp, Wallet } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +25,7 @@ type ApiPayment = ReturnType<typeof paymentsForCarrier>[number] & {
 };
 
 export default function CarrierEarningsPage() {
+  const t = useTranslations('payments');
   // GET /payments — role-aware (carrier sees only their own payments).
   // normalizePaymentList aliases Prisma fields (status/totalAmount/
   // commissionAmount) to the mock shape (state/amount/commission) and zeroes
@@ -53,15 +55,15 @@ export default function CarrierEarningsPage() {
   return (
     <PageTransition>
       <FadeItem>
-        <PageHeader title="الأرباح" subtitle="تتبّع مدفوعاتك + الإفراج بعد التسليم" />
+        <PageHeader title={t('earnings.title')} subtitle={t('earnings.subtitle')} />
       </FadeItem>
 
       <FadeItem>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatsCard label="صافي مستلم" value={<Currency amount={totalNet} />} hint={`${released.length} عملية`} icon={ArrowDownRight} tone="success" />
-          <StatsCard label="بانتظار التسليم" value={<Currency amount={totalPending} />} hint={`${held.length} في Escrow`} icon={ShieldCheck} tone="warning" />
-          <StatsCard label="عمولات المنصة" value={<Currency amount={totalCommission} />} hint="على المكتملة" icon={TrendingUp} tone="default" />
-          <StatsCard label="إجمالي الرحلات" value={released.length + held.length} hint="مدفوعة + Escrow" icon={Wallet} tone="default" />
+          <StatsCard label={t('earnings.netReceived')} value={<Currency amount={totalNet} />} hint={t('earnings.operationsCount', { count: released.length })} icon={ArrowDownRight} tone="success" />
+          <StatsCard label={t('earnings.awaitingDelivery')} value={<Currency amount={totalPending} />} hint={t('earnings.inEscrowCount', { count: held.length })} icon={ShieldCheck} tone="warning" />
+          <StatsCard label={t('earnings.platformCommissions')} value={<Currency amount={totalCommission} />} hint={t('earnings.onCompleted')} icon={TrendingUp} tone="default" />
+          <StatsCard label={t('earnings.totalTrips')} value={released.length + held.length} hint={t('earnings.paidPlusEscrow')} icon={Wallet} tone="default" />
         </div>
       </FadeItem>
 
@@ -70,12 +72,12 @@ export default function CarrierEarningsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>كشف الحركة</CardTitle>
-                <CardDescription className="mt-1">جميع المعاملات المالية على حسابك</CardDescription>
+                <CardTitle>{t('earnings.movementStatement')}</CardTitle>
+                <CardDescription className="mt-1">{t('earnings.movementDesc')}</CardDescription>
               </div>
               <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Calendar className="h-3.5 w-3.5" />
-                آخر 30 يوما
+                {t('earnings.last30Days')}
               </span>
             </div>
           </CardHeader>
@@ -83,14 +85,14 @@ export default function CarrierEarningsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>العملية</TableHead>
-                  <TableHead>الطلب</TableHead>
-                  <TableHead>العميل</TableHead>
-                  <TableHead className="text-end">السعر</TableHead>
-                  <TableHead className="text-end">العمولة</TableHead>
-                  <TableHead className="text-end">صافي</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>التاريخ</TableHead>
+                  <TableHead>{t('fields.operation')}</TableHead>
+                  <TableHead>{t('fields.order')}</TableHead>
+                  <TableHead>{t('fields.client')}</TableHead>
+                  <TableHead className="text-end">{t('fields.price')}</TableHead>
+                  <TableHead className="text-end">{t('fields.commission')}</TableHead>
+                  <TableHead className="text-end">{t('fields.net')}</TableHead>
+                  <TableHead>{t('fields.status')}</TableHead>
+                  <TableHead>{t('fields.date')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
