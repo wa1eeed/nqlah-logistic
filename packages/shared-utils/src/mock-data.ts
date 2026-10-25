@@ -505,6 +505,15 @@ export interface ClientPolicy {
   allowPrepaid: boolean;
   /** Payment: cash/transfer on delivery. */
   allowCOD: boolean;
+  /** Per-group module defaults (set by the admin, not the client). */
+  /** Default sourcing module when the client doesn't choose: open market or direct. */
+  defaultAssignment?: 'MARKET' | 'DIRECT';
+  /** Default pricing module: carrier bids (market) or a fixed client price. */
+  defaultPricing?: 'MARKET' | 'FIXED';
+  /** Default collection (payment) method for this group's orders. */
+  defaultCollectionMethod?: 'ESCROW' | 'PREPAID_WALLET' | 'PREPAID_GATEWAY' | 'COD';
+  /** When true, the admin fixes the collection method and the client cannot override it. */
+  enforceCollectionMethod?: boolean;
   /** Which providers this group's clients can see: whole market, a provider
    *  group, or only the forced carrier. Defaults to ALL. */
   visibilityScope?: 'ALL' | 'GROUP' | 'CARRIER';

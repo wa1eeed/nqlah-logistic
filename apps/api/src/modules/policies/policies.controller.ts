@@ -20,6 +20,12 @@ export class PoliciesController {
     return this.policies.effectiveForCompany(actor.companyId);
   }
 
+  /** The carriers the acting client may target for a DIRECT order (visible subset). */
+  @Get('visible-carriers')
+  visibleCarriers(@CurrentUser() actor: AuthUser) {
+    return this.policies.visibleCarriersForClient(actor.companyId);
+  }
+
   // ─── Admin: group management ─────────────────────────────────
   @Get('groups')
   @Roles('ADMIN', 'SUPER_ADMIN')

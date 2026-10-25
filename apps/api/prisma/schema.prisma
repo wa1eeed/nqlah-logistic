@@ -903,6 +903,19 @@ model PolicyGroup {
   allowPrepaid       Boolean @default(true)
   allowCOD           Boolean @default(true)
 
+  /// ─── Per-group module defaults (set by the admin, not the client) ───
+  /// The group's default sourcing module: "MARKET" (open) | "DIRECT" | null
+  /// (no default → open market). Applied when the client doesn't choose.
+  defaultAssignment String?
+  /// The group's default pricing module: "MARKET" (bids) | "FIXED" | null.
+  defaultPricing String?
+  /// The group's default collection (payment) method — one of the
+  /// CollectionMethod values. Null → ESCROW fallback.
+  defaultCollectionMethod String?
+  /// When true, the collection method is fixed by the admin: the client cannot
+  /// override it and `defaultCollectionMethod` is enforced on every order.
+  enforceCollectionMethod Boolean @default(false)
+
   /// Which providers this group's clients can see/deal with:
   /// "ALL" (whole marketplace) | "GROUP" (only `visibleCarrierGroupId`'s carriers)
   /// | "CARRIER" (only `forcedCarrierId`). Default ALL = today's open market.

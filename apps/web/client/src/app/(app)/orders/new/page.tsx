@@ -1,12 +1,12 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import {
   Banknote, Check, ChevronLeft, ChevronRight, Clock, Coins, Eye, Gavel, Layers, MapPin, Minus,
   Package, Plus, Radio, Search, Send, ShieldCheck, Snowflake, Truck, UserSearch, Wallet,
-  Building2, Route,
+  Building2, Route, Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -100,6 +100,12 @@ const COLLECTION_TITLE_KEY: Record<FormState['collectionMethod'], string> = {
   PREPAID_GATEWAY: 'gatewayTitle',
   COD: 'codTitle',
 };
+const COLLECTION_DESC_KEY: Record<FormState['collectionMethod'], string> = {
+  ESCROW: 'escrowDesc',
+  PREPAID_WALLET: 'walletDesc',
+  PREPAID_GATEWAY: 'gatewayDesc',
+  COD: 'codDesc',
+};
 
 const STEPS = [
   { id: 1, labelKey: 'wizard.steps.cargo',        icon: Package },
@@ -145,8 +151,11 @@ export default function NewOrderWizard() {
   const { data: apiPolicy } = useSWR<ClientPolicy>('/policies/mine', fetcher);
   const policy = apiPolicy ?? policyForClient(CURRENT_CLIENT_ID);
   const { data: catalog } = useSWR<CatalogData>('/settings/catalogs', fetcher);
+  // Only the providers this client is allowed to reach (visibility scope),
+  // resolved server-side, so the DIRECT picker never offers a carrier the
+  // server would reject.
   const { data: carriersRaw, isLoading: carriersLoading } =
-    useSWR<ApiCarrier[]>('/companies?type=CARRIER&status=ACTIVE&limit=100', fetcher);
+    useSWR<ApiCarrier[]>('/policies/visible-carriers', fetcher);
   const [step, setStep] = useState(1);
 
   // Reset scroll to the top of the page whenever the step changes, so a new
@@ -189,26 +198,47 @@ export default function NewOrderWizard() {
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
 
-  // When the policy loads (or an admin changes it), clamp any now-disallowed
-  // selections to a valid option so the form always matches the live policy.
+  // On first policy load, seed the form with the group's admin-set module
+  // defaults (assignment / pricing / collection). On every policy change, clamp
+  // any now-disallowed selection to a valid one and re-apply an enforced
+  // collection method, so the form always matches the live policy.
+  const seededRef = useRef(false);
   useEffect(() => {
     if (!apiPolicy) return;
+    const firstLoad = !seededRef.current;
     setForm((s) => {
       const next = { ...s };
+
+      // Sourcing mode.
       if (policy.forcedCarrierId) {
         next.mode = 'DIRECT';
         next.targetCarrierId = policy.forcedCarrierId;
       } else {
-        if (s.mode === null && !policy.allowMarket) next.mode = policy.allowDirect ? 'DIRECT' : null;
-        if (s.mode === 'DIRECT' && !policy.allowDirect) next.mode = policy.allowMarket ? null : null;
+        if (firstLoad && next.mode === null && policy.defaultAssignment) {
+          next.mode = policy.defaultAssignment === 'DIRECT' ? 'DIRECT' : 'OPEN';
+        }
+        if (next.mode === null && !policy.allowMarket) next.mode = policy.allowDirect ? 'DIRECT' : null;
+        if (next.mode === 'DIRECT' && !policy.allowDirect) next.mode = policy.allowMarket ? 'OPEN' : null;
+        if (next.mode === 'OPEN' && !policy.allowMarket) next.mode = policy.allowDirect ? 'DIRECT' : null;
       }
-      if (s.pricingMode === 'MARKET' && !policy.allowMarketPricing) next.pricingMode = 'FIXED';
-      if (s.pricingMode === 'FIXED' && !policy.allowFixedPricing) next.pricingMode = 'MARKET';
-      // ESCROW is always valid; fall back to it if the chosen method is now disallowed.
-      if ((s.collectionMethod === 'PREPAID_WALLET' || s.collectionMethod === 'PREPAID_GATEWAY') && !policy.allowPrepaid) next.collectionMethod = 'ESCROW';
-      if (s.collectionMethod === 'COD' && !policy.allowCOD) next.collectionMethod = 'ESCROW';
+
+      // Pricing mode.
+      if (firstLoad && policy.defaultPricing) next.pricingMode = policy.defaultPricing;
+      if (next.pricingMode === 'MARKET' && !policy.allowMarketPricing) next.pricingMode = 'FIXED';
+      if (next.pricingMode === 'FIXED' && !policy.allowFixedPricing) next.pricingMode = 'MARKET';
+
+      // Collection method: an enforced method is always re-applied (locked);
+      // otherwise seed the group default once, then clamp to an allowed method.
+      if (policy.enforceCollectionMethod && policy.defaultCollectionMethod) {
+        next.collectionMethod = policy.defaultCollectionMethod;
+      } else if (firstLoad && policy.defaultCollectionMethod) {
+        next.collectionMethod = policy.defaultCollectionMethod;
+      }
+      if ((next.collectionMethod === 'PREPAID_WALLET' || next.collectionMethod === 'PREPAID_GATEWAY') && !policy.allowPrepaid) next.collectionMethod = 'ESCROW';
+      if (next.collectionMethod === 'COD' && !policy.allowCOD) next.collectionMethod = 'ESCROW';
       return next;
     });
+    seededRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiPolicy]);
 
@@ -836,46 +866,62 @@ export default function NewOrderWizard() {
                 )}
               </div>
 
-              {/* Payment method */}
+              {/* Payment method — locked to the admin's choice when enforced. */}
               <div className="rounded-lg border p-4 space-y-3">
                 <Label>{t('wizard.dispatch.payment')}</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* ESCROW is always available (platform default). */}
-                  <ChoiceCard
-                    selected={form.collectionMethod === 'ESCROW'}
-                    onClick={() => set('collectionMethod', 'ESCROW')}
-                    icon={<Wallet className="h-6 w-6" />}
-                    title={t('wizard.dispatch.escrowTitle')}
-                    description={t('wizard.dispatch.escrowDesc')}
-                  />
-                  {policy.allowPrepaid && (
+                {policy.enforceCollectionMethod && policy.defaultCollectionMethod ? (
+                  <>
+                    <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                      <Lock className="h-3.5 w-3.5 shrink-0" />
+                      {t('wizard.dispatch.paymentLocked')}
+                    </div>
                     <ChoiceCard
-                      selected={form.collectionMethod === 'PREPAID_WALLET'}
-                      onClick={() => set('collectionMethod', 'PREPAID_WALLET')}
+                      selected
+                      onClick={() => {}}
+                      icon={form.collectionMethod === 'COD' ? <Banknote className="h-6 w-6" /> : <Wallet className="h-6 w-6" />}
+                      title={t(`wizard.dispatch.${COLLECTION_TITLE_KEY[form.collectionMethod]}`)}
+                      description={t(`wizard.dispatch.${COLLECTION_DESC_KEY[form.collectionMethod]}`)}
+                    />
+                  </>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* ESCROW is always available (platform default). */}
+                    <ChoiceCard
+                      selected={form.collectionMethod === 'ESCROW'}
+                      onClick={() => set('collectionMethod', 'ESCROW')}
                       icon={<Wallet className="h-6 w-6" />}
-                      title={t('wizard.dispatch.walletTitle')}
-                      description={t('wizard.dispatch.walletDesc')}
+                      title={t('wizard.dispatch.escrowTitle')}
+                      description={t('wizard.dispatch.escrowDesc')}
                     />
-                  )}
-                  {policy.allowPrepaid && (
-                    <ChoiceCard
-                      selected={form.collectionMethod === 'PREPAID_GATEWAY'}
-                      onClick={() => set('collectionMethod', 'PREPAID_GATEWAY')}
-                      icon={<Wallet className="h-6 w-6" />}
-                      title={t('wizard.dispatch.gatewayTitle')}
-                      description={t('wizard.dispatch.gatewayDesc')}
-                    />
-                  )}
-                  {policy.allowCOD && (
-                    <ChoiceCard
-                      selected={form.collectionMethod === 'COD'}
-                      onClick={() => set('collectionMethod', 'COD')}
-                      icon={<Banknote className="h-6 w-6" />}
-                      title={t('wizard.dispatch.codTitle')}
-                      description={t('wizard.dispatch.codDesc')}
-                    />
-                  )}
-                </div>
+                    {policy.allowPrepaid && (
+                      <ChoiceCard
+                        selected={form.collectionMethod === 'PREPAID_WALLET'}
+                        onClick={() => set('collectionMethod', 'PREPAID_WALLET')}
+                        icon={<Wallet className="h-6 w-6" />}
+                        title={t('wizard.dispatch.walletTitle')}
+                        description={t('wizard.dispatch.walletDesc')}
+                      />
+                    )}
+                    {policy.allowPrepaid && (
+                      <ChoiceCard
+                        selected={form.collectionMethod === 'PREPAID_GATEWAY'}
+                        onClick={() => set('collectionMethod', 'PREPAID_GATEWAY')}
+                        icon={<Wallet className="h-6 w-6" />}
+                        title={t('wizard.dispatch.gatewayTitle')}
+                        description={t('wizard.dispatch.gatewayDesc')}
+                      />
+                    )}
+                    {policy.allowCOD && (
+                      <ChoiceCard
+                        selected={form.collectionMethod === 'COD'}
+                        onClick={() => set('collectionMethod', 'COD')}
+                        icon={<Banknote className="h-6 w-6" />}
+                        title={t('wizard.dispatch.codTitle')}
+                        description={t('wizard.dispatch.codDesc')}
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             </Step>
           )}

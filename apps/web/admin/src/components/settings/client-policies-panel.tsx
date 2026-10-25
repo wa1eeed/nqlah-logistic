@@ -1,7 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
-import { Building2, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
+import {
+  Building2, Pencil, Plus, Trash2, Users, X,
+  Store, Send, Gavel, Tag, Wallet, HandCoins, Lock, Eye, Route,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,14 +23,27 @@ import { COMPANIES, type ClientPolicy, type PolicyGroup } from '@naqla/shared-ut
 type Co = { id: string; nameAr: string };
 type ApiCompany = { id: string; nameAr: string };
 
-const POLICY_KEYS: { key: keyof ClientPolicy; label: string; hint: string }[] = [
-  { key: 'allowMarket',        label: 'النشر في السوق',   hint: 'عرض الطلب لكل الناقلين' },
-  { key: 'allowDirect',        label: 'الإسناد المباشر',   hint: 'إرسال الطلب لناقل محدد' },
-  { key: 'allowMarketPricing', label: 'عروض الناقلين',     hint: 'استقبال عروض أسعار' },
-  { key: 'allowFixedPricing',  label: 'سعر ثابت',          hint: 'العميل يحدد السعر' },
-  { key: 'allowPrepaid',       label: 'دفع مسبق',          hint: 'حجز في الضمان' },
-  { key: 'allowCOD',           label: 'دفع عند التسليم',   hint: 'الدفع عند الاستلام' },
+type ToggleDef = { key: keyof ClientPolicy; label: string; hint: string };
+
+const ASSIGN_DEFAULTS = [
+  { value: 'none',   label: 'بدون افتراضي (السوق)' },
+  { value: 'MARKET', label: 'السوق المفتوح' },
+  { value: 'DIRECT', label: 'إسناد مباشر' },
 ];
+const PRICING_DEFAULTS = [
+  { value: 'none',   label: 'بدون افتراضي' },
+  { value: 'MARKET', label: 'عروض الناقلين' },
+  { value: 'FIXED',  label: 'سعر ثابت' },
+];
+const COLLECTION_DEFAULTS = [
+  { value: 'none',            label: 'بدون افتراضي (ضمان)' },
+  { value: 'ESCROW',          label: 'ضمان (Escrow)' },
+  { value: 'PREPAID_WALLET',  label: 'محفظة مسبقة الدفع' },
+  { value: 'PREPAID_GATEWAY', label: 'بوابة دفع إلكترونية' },
+  { value: 'COD',             label: 'الدفع عند التسليم' },
+];
+const COLLECTION_LABEL: Record<string, string> =
+  Object.fromEntries(COLLECTION_DEFAULTS.filter((o) => o.value !== 'none').map((o) => [o.value, o.label]));
 
 export function ClientPoliciesPanel() {
   // Live from the API (admin changes are shared server-side with clients); the
@@ -188,6 +204,73 @@ export function ClientPoliciesPanel() {
   );
 }
 
+/** A toggle row inside a module section: label + hint + switch. */
+function ToggleRow({ def, value, onChange }: { def: ToggleDef; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-center justify-between gap-3 cursor-pointer">
+      <span className="min-w-0">
+        <span className="text-sm font-medium">{def.label}</span>
+        <span className="block text-xs text-muted-foreground">{def.hint}</span>
+      </span>
+      <Switch checked={value} onCheckedChange={onChange} />
+    </label>
+  );
+}
+
+/** One visually-distinct module block (icon header + body). */
+function ModuleSection({
+  icon: Icon, title, desc, tone, children,
+}: {
+  icon: typeof Store; title: string; desc: string;
+  tone: 'assign' | 'pricing' | 'collection' | 'visibility';
+  children: ReactNode;
+}) {
+  const tones: Record<string, string> = {
+    assign: 'border-s-sky-400 bg-sky-50/40 dark:bg-sky-950/20',
+    pricing: 'border-s-amber-400 bg-amber-50/40 dark:bg-amber-950/20',
+    collection: 'border-s-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20',
+    visibility: 'border-s-violet-400 bg-violet-50/40 dark:bg-violet-950/20',
+  };
+  const iconTones: Record<string, string> = {
+    assign: 'text-sky-600 dark:text-sky-400',
+    pricing: 'text-amber-600 dark:text-amber-400',
+    collection: 'text-emerald-600 dark:text-emerald-400',
+    visibility: 'text-violet-600 dark:text-violet-400',
+  };
+  return (
+    <div className={`rounded-lg border border-s-[3px] p-3.5 space-y-3 ${tones[tone]}`}>
+      <div className="flex items-center gap-2">
+        <Icon className={`h-4 w-4 shrink-0 ${iconTones[tone]}`} />
+        <div className="min-w-0">
+          <div className="text-sm font-semibold leading-tight">{title}</div>
+          <div className="text-xs text-muted-foreground">{desc}</div>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** A labelled default-selector row within a module section. */
+function DefaultRow({
+  label, value, options, onChange, disabled,
+}: {
+  label: string; value: string; options: { value: string; label: string }[];
+  onChange: (v: string) => void; disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="h-8 w-[190px] shrink-0 text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 function GroupCard({
   group, clients, carriers, carrierGroups, clientName, onEdit, onDelete, onPolicyChange, onAssign,
 }: {
@@ -202,78 +285,137 @@ function GroupCard({
   onAssign: (clientId: string, groupId: string | null) => void;
 }) {
   const p = group.policy;
-  const toggle = (key: keyof ClientPolicy, val: boolean) => onPolicyChange({ ...p, [key]: val });
-  const setForcedCarrier = (id: string | undefined) => onPolicyChange({ ...p, forcedCarrierId: id });
+  const set = (patch: Partial<ClientPolicy>) => onPolicyChange({ ...p, ...patch });
+  const toggle = (key: keyof ClientPolicy) => (val: boolean) => set({ [key]: val } as Partial<ClientPolicy>);
+  const opt = (v: string | undefined) => v ?? 'none';
   const scope = p.visibilityScope ?? 'ALL';
-  const setScope = (v: 'ALL' | 'GROUP' | 'CARRIER') => onPolicyChange({ ...p, visibilityScope: v });
-  const setVisibleGroup = (id: string | undefined) => onPolicyChange({ ...p, visibleCarrierGroupId: id });
   const unassigned = clients.filter((c) => !group.clientIds.includes(c.id));
 
+  // Summary chips: the group's effective module defaults at a glance.
+  const chips: { icon: typeof Store; label: string; locked?: boolean }[] = [
+    { icon: p.defaultAssignment === 'DIRECT' ? Send : Store,
+      label: p.defaultAssignment === 'DIRECT' ? 'افتراضي: مباشر' : 'افتراضي: السوق' },
+    ...(p.defaultPricing ? [{ icon: p.defaultPricing === 'FIXED' ? Tag : Gavel,
+      label: p.defaultPricing === 'FIXED' ? 'تسعير: ثابت' : 'تسعير: عروض' }] : []),
+    { icon: p.defaultCollectionMethod === 'COD' ? HandCoins : Wallet,
+      label: `تحصيل: ${COLLECTION_LABEL[p.defaultCollectionMethod ?? 'ESCROW'] ?? 'ضمان (Escrow)'}`,
+      locked: p.enforceCollectionMethod },
+    ...(scope !== 'ALL' ? [{ icon: Eye, label: scope === 'CARRIER' ? 'ظهور: مزوّد واحد' : 'ظهور: مجموعة' }] : []),
+  ];
+
   return (
-    <div className="rounded-lg border p-4 space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-semibold">{group.name}</div>
-          {group.description && <div className="text-xs text-muted-foreground mt-0.5">{group.description}</div>}
-        </div>
-        <div className="flex gap-1 shrink-0">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}><Pencil className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}><Trash2 className="h-4 w-4" /></Button>
-        </div>
-      </div>
-
-      {/* Policy toggles */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-        {POLICY_KEYS.map(({ key, label, hint }) => (
-          <label key={key} className="flex items-center justify-between gap-3 cursor-pointer">
-            <span className="min-w-0">
-              <span className="text-sm font-medium">{label}</span>
-              <span className="block text-xs text-muted-foreground">{hint}</span>
-            </span>
-            <Switch checked={Boolean(p[key])} onCheckedChange={(v) => toggle(key, v)} />
-          </label>
-        ))}
-      </div>
-
-      {/* Provider visibility scope */}
-      <div className="rounded-md bg-muted/40 p-3 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-sm">
-            <div className="font-medium">نطاق ظهور المزوّدين</div>
-            <div className="text-xs text-muted-foreground">أي المزوّدين يراهم عملاء هذا القروب ويتعاملون معهم.</div>
+    <div className="rounded-xl border bg-card p-4 space-y-4 shadow-sm">
+      {/* Header + at-a-glance module chips */}
+      <div className="space-y-2.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="font-semibold">{group.name}</div>
+            {group.description && <div className="text-xs text-muted-foreground mt-0.5">{group.description}</div>}
           </div>
-          <Select value={scope} onValueChange={(v) => setScope(v as 'ALL' | 'GROUP' | 'CARRIER')}>
-            <SelectTrigger className="w-[200px] shrink-0"><SelectValue /></SelectTrigger>
+          <div className="flex gap-1 shrink-0">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}><Pencil className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}><Trash2 className="h-4 w-4" /></Button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {chips.map((c, i) => (
+            <Badge key={i} variant="secondary" className="gap-1 font-normal">
+              <c.icon className="h-3 w-3" />{c.label}
+              {c.locked && <Lock className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      {/* Module sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Assignment */}
+        <ModuleSection icon={Route} tone="assign" title="موديول الإسناد"
+          desc="كيف يُسنَد الطلب: السوق المفتوح أو مزوّد محدد.">
+          <div className="space-y-2.5">
+            <ToggleRow def={{ key: 'allowMarket', label: 'النشر في السوق', hint: 'عرض الطلب لكل الناقلين' }}
+              value={Boolean(p.allowMarket)} onChange={toggle('allowMarket')} />
+            <ToggleRow def={{ key: 'allowDirect', label: 'الإسناد المباشر', hint: 'إرسال الطلب لناقل محدد' }}
+              value={Boolean(p.allowDirect)} onChange={toggle('allowDirect')} />
+          </div>
+          <div className="border-t pt-2.5">
+            <DefaultRow label="الوضع الافتراضي" value={opt(p.defaultAssignment)} options={ASSIGN_DEFAULTS}
+              onChange={(v) => set({ defaultAssignment: v === 'none' ? undefined : (v as 'MARKET' | 'DIRECT') })} />
+          </div>
+        </ModuleSection>
+
+        {/* Pricing */}
+        <ModuleSection icon={Tag} tone="pricing" title="موديول التسعير"
+          desc="كيف يُحدَّد السعر: عروض الناقلين أو سعر ثابت.">
+          <div className="space-y-2.5">
+            <ToggleRow def={{ key: 'allowMarketPricing', label: 'عروض الناقلين', hint: 'استقبال عروض أسعار' }}
+              value={Boolean(p.allowMarketPricing)} onChange={toggle('allowMarketPricing')} />
+            <ToggleRow def={{ key: 'allowFixedPricing', label: 'سعر ثابت', hint: 'العميل يحدد السعر' }}
+              value={Boolean(p.allowFixedPricing)} onChange={toggle('allowFixedPricing')} />
+          </div>
+          <div className="border-t pt-2.5">
+            <DefaultRow label="الوضع الافتراضي" value={opt(p.defaultPricing)} options={PRICING_DEFAULTS}
+              onChange={(v) => set({ defaultPricing: v === 'none' ? undefined : (v as 'MARKET' | 'FIXED') })} />
+          </div>
+        </ModuleSection>
+
+        {/* Collection — configured and optionally enforced by the admin */}
+        <ModuleSection icon={Wallet} tone="collection" title="موديول التحصيل"
+          desc="طريقة الدفع والتحصيل — يضبطها الأدمن لا العميل.">
+          <div className="space-y-2.5">
+            <ToggleRow def={{ key: 'allowPrepaid', label: 'دفع مسبق', hint: 'حجز في الضمان/المحفظة' }}
+              value={Boolean(p.allowPrepaid)} onChange={toggle('allowPrepaid')} />
+            <ToggleRow def={{ key: 'allowCOD', label: 'دفع عند التسليم', hint: 'الدفع عند الاستلام' }}
+              value={Boolean(p.allowCOD)} onChange={toggle('allowCOD')} />
+          </div>
+          <div className="border-t pt-2.5 space-y-2.5">
+            <DefaultRow label="طريقة التحصيل الافتراضية" value={opt(p.defaultCollectionMethod)} options={COLLECTION_DEFAULTS}
+              onChange={(v) => set({ defaultCollectionMethod: v === 'none' ? undefined : (v as ClientPolicy['defaultCollectionMethod']) })} />
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <span className="min-w-0 inline-flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-xs font-medium">فرض الطريقة على العميل</span>
+              </span>
+              <Switch checked={Boolean(p.enforceCollectionMethod)} onCheckedChange={(v) => set({ enforceCollectionMethod: v })} />
+            </label>
+          </div>
+        </ModuleSection>
+
+        {/* Provider visibility scope */}
+        <ModuleSection icon={Eye} tone="visibility" title="نطاق ظهور المزوّدين"
+          desc="أي المزوّدين يراهم عملاء هذا القروب ويتعاملون معهم.">
+          <Select value={scope} onValueChange={(v) => set({ visibilityScope: v as 'ALL' | 'GROUP' | 'CARRIER' })}>
+            <SelectTrigger className="h-8 w-full text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">كل المزوّدين (السوق المفتوح)</SelectItem>
               <SelectItem value="GROUP">مجموعة مزوّدين محددة</SelectItem>
               <SelectItem value="CARRIER">مزوّد واحد فقط</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        {scope === 'CARRIER' && (
-          <Select value={p.forcedCarrierId ?? 'none'} onValueChange={(v) => setForcedCarrier(v === 'none' ? undefined : v)}>
-            <SelectTrigger className="w-full sm:w-[260px]"><SelectValue placeholder="اختر المزوّد" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">— اختر المزوّد —</SelectItem>
-              {carriers.map((c) => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
-        {scope === 'GROUP' && (
-          <Select value={p.visibleCarrierGroupId ?? 'none'} onValueChange={(v) => setVisibleGroup(v === 'none' ? undefined : v)}>
-            <SelectTrigger className="w-full sm:w-[260px]"><SelectValue placeholder="اختر مجموعة المزوّدين" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">— اختر المجموعة —</SelectItem>
-              {carrierGroups.map((cg) => <SelectItem key={cg.id} value={cg.id}>{cg.name}</SelectItem>)}
-              {carrierGroups.length === 0 && <SelectItem value="none" disabled>أنشئ مجموعة مزوّدين أولاً</SelectItem>}
-            </SelectContent>
-          </Select>
-        )}
+          {scope === 'CARRIER' && (
+            <Select value={p.forcedCarrierId ?? 'none'} onValueChange={(v) => set({ forcedCarrierId: v === 'none' ? undefined : v })}>
+              <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="اختر المزوّد" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— اختر المزوّد —</SelectItem>
+                {carriers.map((c) => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          {scope === 'GROUP' && (
+            <Select value={p.visibleCarrierGroupId ?? 'none'} onValueChange={(v) => set({ visibleCarrierGroupId: v === 'none' ? undefined : v })}>
+              <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="اختر مجموعة المزوّدين" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— اختر المجموعة —</SelectItem>
+                {carrierGroups.map((cg) => <SelectItem key={cg.id} value={cg.id}>{cg.name}</SelectItem>)}
+                {carrierGroups.length === 0 && <SelectItem value="none" disabled>أنشئ مجموعة مزوّدين أولاً</SelectItem>}
+              </SelectContent>
+            </Select>
+          )}
+        </ModuleSection>
       </div>
 
       {/* Assigned clients */}
-      <div className="space-y-2">
+      <div className="space-y-2 border-t pt-3">
         <div className="text-xs font-semibold text-muted-foreground">العملاء في هذا القروب</div>
         <div className="flex flex-wrap items-center gap-1.5">
           {group.clientIds.map((id) => (

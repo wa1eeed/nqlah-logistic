@@ -12,6 +12,10 @@ export type CollectionMethod = (typeof COLLECTION_METHODS)[number];
 interface CollectionPolicy {
   allowPrepaid: boolean;
   allowCOD: boolean;
+  /** The group's admin-set default collection method (null → ESCROW). */
+  defaultCollectionMethod?: string | null;
+  /** When true, the admin's default is forced and the client cannot override it. */
+  enforceCollectionMethod?: boolean;
 }
 
 /** The order fields the collection flow needs. */
@@ -43,9 +47,18 @@ interface SettleableOrder {
 export class CollectionService {
   constructor(private prisma: PrismaService, private gateway: PaymentGateway) {}
 
-  /** Validate a requested method against policy; default ESCROW. */
+  /**
+   * Resolve the collection method for a new order. The admin configures this
+   * per group: when `enforceCollectionMethod` is set the client's choice is
+   * ignored and the group's `defaultCollectionMethod` is forced; otherwise the
+   * client's request wins, falling back to the group default, then ESCROW.
+   * The result is always validated against the group's allow toggles.
+   */
   resolveMethod(requested: string | undefined, policy: CollectionPolicy): CollectionMethod {
-    const method = (requested ?? 'ESCROW') as CollectionMethod;
+    const groupDefault = (policy.defaultCollectionMethod || 'ESCROW') as CollectionMethod;
+    const method = (policy.enforceCollectionMethod
+      ? groupDefault
+      : ((requested as CollectionMethod) ?? groupDefault));
     if (!COLLECTION_METHODS.includes(method)) {
       throw new BadRequestException({ code: 'BAD_COLLECTION_METHOD', message: 'طريقة دفع غير معروفة' });
     }

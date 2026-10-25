@@ -226,6 +226,7 @@
       "fixedDesc": "You set the order price, and the carrier accepts it as is.",
       "fixedPrice": "Fixed price (SAR)",
       "payment": "Payment method",
+      "paymentLocked": "The payment method is set by your account administrator and can't be changed for this order.",
       "prepaidTitle": "Prepaid",
       "prepaidDesc": "The amount is held in Escrow and released after delivery is confirmed.",
       "escrowTitle": "Escrow",
