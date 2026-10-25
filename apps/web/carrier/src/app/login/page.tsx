@@ -1,6 +1,7 @@
 'use client';
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { AlertCircle, CheckCircle, Eye, EyeOff, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -11,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/lib/auth-store';
 
 export default function CarrierLoginPage() {
+  const t = useTranslations('auth');
   const router = useRouter();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -30,8 +32,8 @@ export default function CarrierLoginPage() {
       const e = err as { response?: { data?: { error?: { message?: string }, message?: string } }, message?: string };
       setError(
         !e.response
-          ? 'تعذّر الوصول إلى الخادم. تأكّد من اتصالك وحاول مجددا.'
-          : (e.response?.data?.error?.message ?? e.response?.data?.message ?? e.message ?? 'حدث خطأ'),
+          ? t('login.serverError')
+          : (e.response?.data?.error?.message ?? e.response?.data?.message ?? e.message ?? t('login.genericError')),
       );
     } finally {
       setLoading(false);
@@ -49,7 +51,7 @@ export default function CarrierLoginPage() {
           </div>
           <div>
             <div className="text-lg font-bold text-white">نقلة لوجيستك</div>
-            <div className="text-xs text-white/60">منصة الناقل</div>
+            <div className="text-xs text-white/60">{t('login.brandSubtitle')}</div>
           </div>
         </div>
 
@@ -57,18 +59,18 @@ export default function CarrierLoginPage() {
         <div className="space-y-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <h2 className="text-3xl font-bold text-white leading-snug">
-              وسّع نطاق أعمالك<br />مع نقلة
+              {t('login.heroTitleLine1')}<br />{t('login.heroTitleLine2')}
             </h2>
             <p className="mt-3 text-white/70 text-sm leading-relaxed">
-              منصة رقمية لشركات النقل في المملكة
+              {t('login.heroSubtitle')}
             </p>
           </motion.div>
 
           <div className="space-y-4">
             {[
-              { icon: CheckCircle, text: 'فرص نقل يومية من العملاء' },
-              { icon: CheckCircle, text: 'إدارة الأسطول والسائقين' },
-              { icon: CheckCircle, text: 'مدفوعات آمنة ومضمونة' },
+              { icon: CheckCircle, text: t('login.benefit1') },
+              { icon: CheckCircle, text: t('login.benefit2') },
+              { icon: CheckCircle, text: t('login.benefit3') },
             ].map(({ icon: Icon, text }, i) => (
               <motion.div
                 key={i}
@@ -87,7 +89,7 @@ export default function CarrierLoginPage() {
         </div>
 
         {/* Bottom note */}
-        <div className="text-xs text-white/40">© 2026 نقلة لوجيستك · جميع الحقوق محفوظة</div>
+        <div className="text-xs text-white/40">{t('login.copyright')}</div>
       </div>
 
       {/* ── Right form panel ────────────────────────────────────────────── */}
@@ -104,18 +106,18 @@ export default function CarrierLoginPage() {
               <Truck className="h-7 w-7" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">نقلة لوجيستك</h1>
-            <p className="text-sm text-muted-foreground">منصة الناقل · فرص نقل + إدارة أسطول</p>
+            <p className="text-sm text-muted-foreground">{t('login.mobileSubtitle')}</p>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">أهلا بعودتك</CardTitle>
-              <CardDescription>سجّل دخولك للمتابعة إلى منصة الناقل</CardDescription>
+              <CardTitle className="text-xl">{t('login.welcomeTitle')}</CardTitle>
+              <CardDescription>{t('login.welcomeSubtitle')}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="identifier">البريد الإلكتروني أو رقم الجوال</Label>
+                  <Label htmlFor="identifier">{t('login.identifier')}</Label>
                   <Input
                     id="identifier"
                     type="text"
@@ -130,8 +132,8 @@ export default function CarrierLoginPage() {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password">كلمة المرور</Label>
-                    <a href="#" className="text-xs text-primary hover:underline">نسيت كلمة المرور؟</a>
+                    <Label htmlFor="password">{t('password')}</Label>
+                    <a href="#" className="text-xs text-primary hover:underline">{t('forgotPassword')}</a>
                   </div>
                   <div className="relative">
                     <Input
@@ -161,19 +163,19 @@ export default function CarrierLoginPage() {
                 )}
 
                 <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                  {loading ? 'جار الدخول...' : 'تسجيل الدخول'}
+                  {loading ? t('login.signingIn') : t('login.signIn')}
                 </Button>
 
                 <div className="relative pt-2">
                   <div className="absolute inset-x-0 top-1/2 border-t border-border" />
                   <div className="relative flex justify-center">
-                    <span className="bg-card px-3 text-xs text-muted-foreground">ناقل جديد؟</span>
+                    <span className="bg-card px-3 text-xs text-muted-foreground">{t('login.newCarrier')}</span>
                   </div>
                 </div>
 
                 <Link href="/register" className="block">
                   <Button type="button" variant="outline" className="w-full" size="lg">
-                    انضم كشركة نقل
+                    {t('login.joinAsCompany')}
                   </Button>
                 </Link>
               </form>

@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, Building2, Check, CheckCircle2,
   Eye, EyeOff, FileCheck2, Mail, MapPin, Phone, ShieldCheck, Snowflake,
@@ -73,16 +74,16 @@ interface Form {
 const CITIES = ['الرياض', 'جدة', 'الدمام', 'الخبر', 'مكة المكرمة', 'المدينة', 'الطائف', 'تبوك', 'حائل', 'بريدة', 'الجبيل', 'ينبع', 'أبها'];
 const REGIONS = ['الوسطى', 'الغربية', 'الشرقية', 'الشمالية', 'الجنوبية'];
 const FLEET_SIZES = [
-  { v: '1-5',   l: '1 إلى 5 شاحنات' },
-  { v: '6-15',  l: '6 إلى 15 شاحنة' },
-  { v: '16-50', l: '16 إلى 50 شاحنة' },
-  { v: '50+',   l: 'أكثر من 50' },
+  { v: '1-5',   l: 'register.fleet.size_1_5' },
+  { v: '6-15',  l: 'register.fleet.size_6_15' },
+  { v: '16-50', l: 'register.fleet.size_16_50' },
+  { v: '50+',   l: 'register.fleet.size_50plus' },
 ];
 const YEARS_OPTS = [
-  { v: '<1',  l: 'أقل من سنة' },
-  { v: '1-3', l: '1 إلى 3 سنوات' },
-  { v: '3-10',l: '3 إلى 10 سنوات' },
-  { v: '10+', l: 'أكثر من 10' },
+  { v: '<1',  l: 'register.years.lt1' },
+  { v: '1-3', l: 'register.years.1_3' },
+  { v: '3-10',l: 'register.years.3_10' },
+  { v: '10+', l: 'register.years.10plus' },
 ];
 /**
  * Documents required vary by account type.
@@ -103,22 +104,22 @@ const YEARS_OPTS = [
  *   - شهادة الضريبة (VAT) — اختيارية للأفراد إذا تجاوزت إيراداتهم 375,000 ر.س.
  */
 const COMPANY_DOCS = [
-  { id: 'CR',        label: 'السجل التجاري',          required: true },
-  { id: 'ZAKAT',     label: 'شهادة الزكاة والدخل',    required: true },
-  { id: 'TRANSPORT', label: 'رخصة نقل البضائع (TGA)', required: true },
-  { id: 'INSURANCE', label: 'بوليصة التأمين',          required: true },
-  { id: 'VAT',       label: 'شهادة الضريبة (VAT)',     required: false, vatOnly: true },
-  { id: 'BANK',      label: 'خطاب IBAN من البنك',     required: false },
+  { id: 'CR',        label: 'register.kycDocs.cr',               required: true },
+  { id: 'ZAKAT',     label: 'register.kycDocs.zakat',            required: true },
+  { id: 'TRANSPORT', label: 'register.kycDocs.transport',        required: true },
+  { id: 'INSURANCE', label: 'register.kycDocs.insuranceCompany', required: true },
+  { id: 'VAT',       label: 'register.kycDocs.vat',              required: false, vatOnly: true },
+  { id: 'BANK',      label: 'register.kycDocs.bank',             required: false },
 ];
 
 const INDIVIDUAL_DOCS = [
-  { id: 'NATIONAL_ID',     label: 'صورة الهوية الوطنية',                       required: true },
-  { id: 'DRIVING_LICENSE', label: 'رخصة القيادة (فئة مناسبة)',                  required: true },
-  { id: 'ISTIMARA',        label: 'استمارة الشاحنة (الملكية)',                  required: true },
-  { id: 'INSURANCE',       label: 'تأمين الشاحنة',                              required: true },
-  { id: 'TGA_PERMIT',      label: 'تصريح نقل الأفراد من TGA',                  required: false },
-  { id: 'VAT',             label: 'شهادة الضريبة (VAT)',                         required: false, vatOnly: true },
-  { id: 'BANK',            label: 'خطاب IBAN من البنك',                          required: false },
+  { id: 'NATIONAL_ID',     label: 'register.kycDocs.nationalId',          required: true },
+  { id: 'DRIVING_LICENSE', label: 'register.kycDocs.drivingLicense',      required: true },
+  { id: 'ISTIMARA',        label: 'register.kycDocs.istimara',            required: true },
+  { id: 'INSURANCE',       label: 'register.kycDocs.insuranceIndividual', required: true },
+  { id: 'TGA_PERMIT',      label: 'register.kycDocs.tgaPermit',           required: false },
+  { id: 'VAT',             label: 'register.kycDocs.vat',                 required: false, vatOnly: true },
+  { id: 'BANK',            label: 'register.kycDocs.bank',                required: false },
 ];
 
 interface DocSpec { id: string; label: string; required: boolean; vatOnly?: boolean }
@@ -128,19 +129,30 @@ function docsFor(accountType: AccountType | '', vatChoice: VatChoice): DocSpec[]
   // Hide VAT-specific doc rows if user said "Not registered"
   return list.filter((d) => !(d.vatOnly && vatChoice !== 'REGISTERED'));
 }
-const BANKS = ['الراجحي', 'الأهلي SNB', 'الرياض', 'البلاد', 'الإنماء', 'ساب', 'العربي الوطني', 'الفرنسي', 'الاستثمار'];
+const BANKS = [
+  { v: 'الراجحي',        l: 'register.banks.rajhi' },
+  { v: 'الأهلي SNB',     l: 'register.banks.snb' },
+  { v: 'الرياض',         l: 'register.banks.riyad' },
+  { v: 'البلاد',         l: 'register.banks.albilad' },
+  { v: 'الإنماء',        l: 'register.banks.alinma' },
+  { v: 'ساب',            l: 'register.banks.sab' },
+  { v: 'العربي الوطني',  l: 'register.banks.anb' },
+  { v: 'الفرنسي',        l: 'register.banks.bsf' },
+  { v: 'الاستثمار',      l: 'register.banks.saib' },
+];
 
 const STEPS_META = [
-  { title: 'نوع الحساب',        icon: User },
-  { title: 'الحساب',             icon: User },
-  { title: 'المعلومات',          icon: Building2 },
-  { title: 'الأسطول',             icon: Truck },
-  { title: 'المستندات',           icon: FileCheck2 },
-  { title: 'الحساب البنكي',      icon: Building2 },
-  { title: 'التحقّق',             icon: ShieldCheck },
+  { title: 'register.steps.accountType', icon: User },
+  { title: 'register.steps.account',     icon: User },
+  { title: 'register.steps.info',        icon: Building2 },
+  { title: 'register.steps.fleet',       icon: Truck },
+  { title: 'register.steps.docs',        icon: FileCheck2 },
+  { title: 'register.steps.bank',        icon: Building2 },
+  { title: 'register.steps.verify',      icon: ShieldCheck },
 ];
 
 export default function CarrierRegisterPage() {
+  const t = useTranslations('auth');
   const router = useRouter();
   const [step, setStep] = useState<Step>(0);
   const [showPw, setShowPw] = useState(false);
@@ -224,10 +236,10 @@ export default function CarrierRegisterPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Truck className="h-5 w-5" />
             </div>
-            <span className="font-bold tracking-tight">نقلة لوجيستك · الناقل</span>
+            <span className="font-bold tracking-tight">{t('register.brandHeader')}</span>
           </Link>
           <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
-            لديك حساب؟ <span className="text-primary font-semibold">تسجيل الدخول</span>
+            {t('register.haveAccount')} <span className="text-primary font-semibold">{t('login.signIn')}</span>
           </Link>
         </div>
       </header>
@@ -256,7 +268,7 @@ export default function CarrierRegisterPage() {
                     )}>
                       {isDone ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
                     </div>
-                    <span className="hidden sm:inline">{s.title}</span>
+                    <span className="hidden sm:inline">{t(s.title)}</span>
                   </div>
                   {i < STEPS_META.length - 1 && <div className="h-px w-3 sm:w-5 bg-border" />}
                 </li>
@@ -276,12 +288,12 @@ export default function CarrierRegisterPage() {
 
               <div className="flex items-center justify-between gap-3 pt-4 border-t">
                 <Button variant="outline" onClick={goBack} disabled={step === 0 || submitting}>
-                  <ArrowRight className="h-4 w-4 rtl:rotate-180" /> السابق
+                  <ArrowRight className="h-4 w-4 rtl:rotate-180" /> {t('register.back')}
                 </Button>
                 <Button onClick={goNext} disabled={!stepValid[step] || submitting} size="lg">
                   {step === 6
-                    ? (submitting ? 'جار التقديم...' : 'تقديم طلب التسجيل')
-                    : (<>التالي <ArrowLeft className="h-4 w-4 rtl:rotate-180" /></>)}
+                    ? (submitting ? t('register.submitting') : t('register.submit'))
+                    : (<>{t('register.next')} <ArrowLeft className="h-4 w-4 rtl:rotate-180" /></>)}
                 </Button>
               </div>
             </CardContent>
@@ -295,14 +307,14 @@ export default function CarrierRegisterPage() {
               <CardContent className="pt-6 space-y-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
-                  <h3 className="font-bold">انضم كناقل على نقلة</h3>
+                  <h3 className="font-bold">{t('register.sidebar.title')}</h3>
                 </div>
                 <ul className="space-y-3 text-sm">
-                  <Benefit text="آلاف الطلبات شهريا عبر المنصة" />
-                  <Benefit text="دفع مضمون عبر Escrow بعد التسليم" />
-                  <Benefit text="إدارة كاملة لأسطولك وسائقيك" />
-                  <Benefit text="تقارير وإحصاءات أداء مفصّلة" />
-                  <Benefit text="عمولة 8% فقط بدون رسوم خفية" />
+                  <Benefit text={t('register.sidebar.benefit1')} />
+                  <Benefit text={t('register.sidebar.benefit2')} />
+                  <Benefit text={t('register.sidebar.benefit3')} />
+                  <Benefit text={t('register.sidebar.benefit4')} />
+                  <Benefit text={t('register.sidebar.benefit5')} />
                 </ul>
               </CardContent>
             </Card>
@@ -311,10 +323,10 @@ export default function CarrierRegisterPage() {
               <CardContent className="pt-6 space-y-3">
                 <div className="flex items-center gap-2 text-warning">
                   <FileCheck2 className="h-4 w-4" />
-                  <span className="text-xs font-semibold">طلبك يخضع للمراجعة</span>
+                  <span className="text-xs font-semibold">{t('register.sidebar.reviewTitle')}</span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  بعد تقديم الطلب، يراجع فريق الامتثال المستندات خلال 24 إلى 48 ساعة عمل، ثم يتم تفعيل حسابك.
+                  {t('register.sidebar.reviewText')}
                 </p>
               </CardContent>
             </Card>
@@ -353,35 +365,35 @@ function StepHeader({ icon: Icon, title, subtitle }: { icon: any; title: string;
 function StepAccountType({
   form, set,
 }: { form: Form; set: <K extends keyof Form>(k: K, v: Form[K]) => void }) {
+  const t = useTranslations('auth');
   return (
     <>
-      <StepHeader icon={User} title="نوع حسابك" subtitle="اختر النوع الذي يناسب وضعك القانوني" />
+      <StepHeader icon={User} title={t('register.accountType.title')} subtitle={t('register.accountType.subtitle')} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <KindCard
           selected={form.accountType === 'COMPANY'}
           onClick={() => set('accountType', 'COMPANY')}
           icon={Building2}
-          title="شركة نقل"
-          subtitle="مؤسسة أو شركة مرخّصة لها سجل تجاري ساري"
-          bullets={['سجل تجاري إلزامي', 'رخصة نقل بضائع من TGA', 'مناسب للأساطيل المتوسطة والكبيرة', 'إمكانية تسجيل ضريبي']}
-          tag="للشركات"
+          title={t('register.accountType.company.title')}
+          subtitle={t('register.accountType.company.subtitle')}
+          bullets={[t('register.accountType.company.bullet1'), t('register.accountType.company.bullet2'), t('register.accountType.company.bullet3'), t('register.accountType.company.bullet4')]}
+          tag={t('register.accountType.company.tag')}
         />
         <KindCard
           selected={form.accountType === 'INDIVIDUAL'}
           onClick={() => set('accountType', 'INDIVIDUAL')}
           icon={User}
-          title="ناقل فرد"
-          subtitle="صاحب شاحنة/شاحنات يعمل بشكل فردي على هويته الشخصية"
-          bullets={['الهوية الوطنية تكفي (لا سجل تجاري)', 'رخصة قيادة بفئة مناسبة', 'استمارة الشاحنة + التأمين', 'الضريبة اختيارية']}
-          tag="للأفراد أصحاب الشاحنات"
+          title={t('register.accountType.individual.title')}
+          subtitle={t('register.accountType.individual.subtitle')}
+          bullets={[t('register.accountType.individual.bullet1'), t('register.accountType.individual.bullet2'), t('register.accountType.individual.bullet3'), t('register.accountType.individual.bullet4')]}
+          tag={t('register.accountType.individual.tag')}
         />
       </div>
 
       <div className="rounded-lg bg-info/10 border border-info/30 p-3 flex items-start gap-2 text-sm">
         <ShieldCheck className="h-4 w-4 text-info shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          متطلبات التسجيل تختلف حسب النوع. الأفراد لا يحتاجون سجلا تجاريا، لكن يجب توفير الهوية الوطنية
-          ورخصة القيادة المناسبة واستمارة الشاحنة والتأمين، وفق أنظمة هيئة النقل العام (TGA).
+          {t('register.accountType.infoNote')}
         </p>
       </div>
     </>
@@ -429,30 +441,31 @@ function KindCard({
 function StepBasics({
   form, set, showPw, setShowPw, isIndividual,
 }: { form: Form; set: <K extends keyof Form>(k: K, v: Form[K]) => void; showPw: boolean; setShowPw: (v: boolean) => void; isIndividual: boolean }) {
+  const t = useTranslations('auth');
   return (
     <>
       <StepHeader
         icon={User}
-        title={isIndividual ? 'بياناتك الشخصية' : 'بيانات المسؤول'}
-        subtitle={isIndividual ? 'معلوماتك كناقل فرد' : 'معلومات الشخص المخوّل في الشركة'}
+        title={isIndividual ? t('register.basics.titleIndividual') : t('register.basics.titleCompany')}
+        subtitle={isIndividual ? t('register.basics.subtitleIndividual') : t('register.basics.subtitleCompany')}
       />
       <div className="space-y-4">
         <div className={cn('grid grid-cols-1 gap-4', !isIndividual && 'sm:grid-cols-2')}>
           <div className="space-y-2">
-            <Label>الاسم الكامل</Label>
-            <Input value={form.fullName} onChange={(e) => set('fullName', e.target.value)} placeholder="الاسم الرباعي" />
+            <Label>{t('register.basics.fullName')}</Label>
+            <Input value={form.fullName} onChange={(e) => set('fullName', e.target.value)} placeholder={t('register.basics.fullNamePlaceholder')} />
           </div>
           {!isIndividual && (
             <div className="space-y-2">
-              <Label>المسمّى الوظيفي</Label>
+              <Label>{t('register.basics.position')}</Label>
               <Select value={form.position} onValueChange={(v) => set('position', v)}>
-                <SelectTrigger><SelectValue placeholder="اختر المسمّى" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('register.basics.positionPlaceholder')} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="OWNER">المالك</SelectItem>
-                  <SelectItem value="GM">المدير العام</SelectItem>
-                  <SelectItem value="OPS_MANAGER">مدير العمليات</SelectItem>
-                  <SelectItem value="FLEET_MANAGER">مدير الأسطول</SelectItem>
-                  <SelectItem value="AUTHORIZED">مفوّض</SelectItem>
+                  <SelectItem value="OWNER">{t('register.basics.positions.owner')}</SelectItem>
+                  <SelectItem value="GM">{t('register.basics.positions.gm')}</SelectItem>
+                  <SelectItem value="OPS_MANAGER">{t('register.basics.positions.opsManager')}</SelectItem>
+                  <SelectItem value="FLEET_MANAGER">{t('register.basics.positions.fleetManager')}</SelectItem>
+                  <SelectItem value="AUTHORIZED">{t('register.basics.positions.authorized')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -461,21 +474,21 @@ function StepBasics({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label><Mail className="h-3.5 w-3.5 inline me-1" /> البريد الإلكتروني</Label>
+            <Label><Mail className="h-3.5 w-3.5 inline me-1" /> {t('register.basics.email')}</Label>
             <Input type="email" dir="ltr" className="text-end" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="ops@company.sa" />
           </div>
           <div className="space-y-2">
-            <Label><Phone className="h-3.5 w-3.5 inline me-1" /> رقم الجوال</Label>
+            <Label><Phone className="h-3.5 w-3.5 inline me-1" /> {t('phone')}</Label>
             <Input dir="ltr" className="text-end" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+966 5XX XXX XXXX" />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label>كلمة المرور</Label>
+          <Label>{t('password')}</Label>
           <div className="relative">
             <Input type={showPw ? 'text' : 'password'} className="pe-10"
               value={form.password} onChange={(e) => set('password', e.target.value)}
-              placeholder="8 أحرف على الأقل"
+              placeholder={t('register.basics.passwordPlaceholder')}
             />
             <button type="button" onClick={() => setShowPw(!showPw)} className="absolute end-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground">
               {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -484,13 +497,13 @@ function StepBasics({
         </div>
 
         <div className="space-y-2">
-          <Label>تأكيد كلمة المرور</Label>
+          <Label>{t('confirmPassword')}</Label>
           <Input type={showPw ? 'text' : 'password'}
             value={form.confirmPassword} onChange={(e) => set('confirmPassword', e.target.value)}
-            placeholder="أعد إدخال كلمة المرور"
+            placeholder={t('register.basics.confirmPlaceholder')}
           />
           {form.confirmPassword && form.password !== form.confirmPassword && (
-            <p className="text-xs text-destructive">كلمتا المرور غير متطابقتين</p>
+            <p className="text-xs text-destructive">{t('register.basics.passwordMismatch')}</p>
           )}
         </div>
       </div>
@@ -503,41 +516,42 @@ function StepBasics({
 function StepCompany({
   form, set, isIndividual,
 }: { form: Form; set: <K extends keyof Form>(k: K, v: Form[K]) => void; isIndividual: boolean }) {
+  const t = useTranslations('auth');
   return (
     <>
       <StepHeader
         icon={Building2}
-        title={isIndividual ? 'معلوماتك كناقل فرد' : 'بيانات الشركة'}
-        subtitle={isIndividual ? 'الهوية والعنوان وحالة الضريبة' : 'السجل التجاري وعنوان النشاط'}
+        title={isIndividual ? t('register.company.titleIndividual') : t('register.company.titleCompany')}
+        subtitle={isIndividual ? t('register.company.subtitleIndividual') : t('register.company.subtitleCompany')}
       />
       <div className="space-y-4">
         {isIndividual ? (
           // ── INDIVIDUAL: National ID instead of CR ─────────────────
           <div className="space-y-2">
-            <Label>رقم الهوية الوطنية</Label>
+            <Label>{t('register.company.nationalId')}</Label>
             <Input
               dir="ltr" className="num text-end" maxLength={10}
               value={form.nationalId}
               onChange={(e) => set('nationalId', e.target.value.replace(/\D/g, ''))}
               placeholder="1xxxxxxxxx"
             />
-            <p className="text-xs text-muted-foreground">10 أرقام، يجب أن تطابق الهوية المرفقة لاحقا في المستندات</p>
+            <p className="text-xs text-muted-foreground">{t('register.company.nationalIdHint')}</p>
           </div>
         ) : (
           // ── COMPANY: Company name + CR ────────────────────────────
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>اسم الشركة (عربي)</Label>
-                <Input value={form.companyNameAr} onChange={(e) => set('companyNameAr', e.target.value)} placeholder="مثال: الجزيرة لشحن البضائع" />
+                <Label>{t('register.company.companyNameAr')}</Label>
+                <Input value={form.companyNameAr} onChange={(e) => set('companyNameAr', e.target.value)} placeholder={t('register.company.companyNameArPlaceholder')} />
               </div>
               <div className="space-y-2">
-                <Label>اسم الشركة (English) <span className="text-muted-foreground">— اختياري</span></Label>
+                <Label>{t('register.company.companyNameEn')} <span className="text-muted-foreground">{t('register.optional')}</span></Label>
                 <Input dir="ltr" value={form.companyNameEn} onChange={(e) => set('companyNameEn', e.target.value)} placeholder="Al Jazirah Cargo" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>السجل التجاري (10 أرقام)</Label>
+              <Label>{t('register.company.crNumber')}</Label>
               <Input dir="ltr" className="num text-end" maxLength={10}
                 value={form.crNumber} onChange={(e) => set('crNumber', e.target.value.replace(/\D/g, ''))}
                 placeholder="1010000000"
@@ -548,7 +562,7 @@ function StepCompany({
 
         {/* VAT — both account types, with explicit "not registered" option */}
         <div className="space-y-2">
-          <Label>التسجيل في الضريبة (VAT)</Label>
+          <Label>{t('register.company.vatLabel')}</Label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
               type="button"
@@ -558,8 +572,8 @@ function StepCompany({
                 form.vatChoice === 'REGISTERED' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40',
               )}
             >
-              <div className="font-semibold mb-0.5">مسجّل في الضريبة</div>
-              <div className="text-xs text-muted-foreground">لديّ رقم ضريبي ساري (15 رقم)</div>
+              <div className="font-semibold mb-0.5">{t('register.company.vatRegistered')}</div>
+              <div className="text-xs text-muted-foreground">{t('register.company.vatRegisteredDesc')}</div>
             </button>
             <button
               type="button"
@@ -569,16 +583,16 @@ function StepCompany({
                 form.vatChoice === 'NOT_REGISTERED' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40',
               )}
             >
-              <div className="font-semibold mb-0.5">لا يوجد تسجيل ضريبي</div>
+              <div className="font-semibold mb-0.5">{t('register.company.vatNotRegistered')}</div>
               <div className="text-xs text-muted-foreground">
-                {isIndividual ? 'إيراداتك أقل من حد الإلزام (375,000 ر.س.)' : 'الشركة غير مُلزَمة حاليا'}
+                {isIndividual ? t('register.company.vatNotRegisteredDescIndividual') : t('register.company.vatNotRegisteredDescCompany')}
               </div>
             </button>
           </div>
 
           {form.vatChoice === 'REGISTERED' && (
             <div className="mt-2 space-y-1">
-              <Label>الرقم الضريبي (15 رقم)</Label>
+              <Label>{t('register.company.vatNumber')}</Label>
               <Input
                 dir="ltr" className="num text-end" maxLength={15}
                 value={form.vatNumber}
@@ -591,31 +605,31 @@ function StepCompany({
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label>المدينة</Label>
+            <Label>{t('register.company.city')}</Label>
             <Select value={form.city} onValueChange={(v) => set('city', v)}>
-              <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('register.company.selectPlaceholder')} /></SelectTrigger>
               <SelectContent>{CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>المنطقة</Label>
+            <Label>{t('register.company.region')}</Label>
             <Select value={form.region} onValueChange={(v) => set('region', v)}>
-              <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('register.company.selectPlaceholder')} /></SelectTrigger>
               <SelectContent>{REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{isIndividual ? 'سنوات الخبرة في النقل' : 'سنوات النشاط'}</Label>
+            <Label>{isIndividual ? t('register.company.yearsIndividual') : t('register.company.yearsCompany')}</Label>
             <Select value={form.yearsInBusiness} onValueChange={(v) => set('yearsInBusiness', v)}>
-              <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-              <SelectContent>{YEARS_OPTS.map((o) => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}</SelectContent>
+              <SelectTrigger><SelectValue placeholder={t('register.company.selectPlaceholder')} /></SelectTrigger>
+              <SelectContent>{YEARS_OPTS.map((o) => <SelectItem key={o.v} value={o.v}>{t(o.l)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label><MapPin className="h-3.5 w-3.5 inline me-1" /> {isIndividual ? 'عنوان السكن' : 'عنوان المقر'} <span className="text-muted-foreground">— اختياري</span></Label>
-          <Input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="الحي، الشارع، المبنى..." />
+          <Label><MapPin className="h-3.5 w-3.5 inline me-1" /> {isIndividual ? t('register.company.addressIndividual') : t('register.company.addressCompany')} <span className="text-muted-foreground">{t('register.optional')}</span></Label>
+          <Input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder={t('register.company.addressPlaceholder')} />
         </div>
       </div>
     </>
@@ -630,13 +644,14 @@ function StepFleet({
   form: Form; set: <K extends keyof Form>(k: K, v: Form[K]) => void;
   toggleTruck: (id: string) => void; toggleRegion: (r: string) => void;
 }) {
-  const truckTypes = useTruckTypesStore((s) => s.types.filter((t) => t.active));
+  const t = useTranslations('auth');
+  const truckTypes = useTruckTypesStore((s) => s.types.filter((tt) => tt.active));
   return (
     <>
-      <StepHeader icon={Truck} title="معلومات الأسطول" subtitle="ما هي قدراتك على النقل؟" />
+      <StepHeader icon={Truck} title={t('register.fleet.title')} subtitle={t('register.fleet.subtitle')} />
       <div className="space-y-5">
         <div className="space-y-2">
-          <Label>حجم الأسطول</Label>
+          <Label>{t('register.fleet.sizeLabel')}</Label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {FLEET_SIZES.map((s) => (
               <button
@@ -648,35 +663,35 @@ function StepFleet({
                   form.fleetSize === s.v ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-border hover:border-primary/40',
                 )}
               >
-                {s.l}
+                {t(s.l)}
               </button>
             ))}
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label>أنواع الشاحنات المتوفرة</Label>
-          <p className="text-xs text-muted-foreground">اختر كل الأنواع التي تملكها (السعات وفق كاتالوج المنصة)</p>
+          <Label>{t('register.fleet.truckTypesLabel')}</Label>
+          <p className="text-xs text-muted-foreground">{t('register.fleet.truckTypesHint')}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {truckTypes.map((t) => {
-              const on = form.truckTypes.includes(t.id);
+            {truckTypes.map((tt) => {
+              const on = form.truckTypes.includes(tt.id);
               return (
                 <button
-                  key={t.id}
+                  key={tt.id}
                   type="button"
-                  onClick={() => toggleTruck(t.id)}
+                  onClick={() => toggleTruck(tt.id)}
                   className={cn(
                     'group rounded-lg border-2 text-start transition-all relative overflow-hidden',
                     on ? 'border-primary ring-1 ring-primary/30' : 'border-border hover:border-primary/40',
                   )}
                 >
                   <div className="aspect-[16/10] bg-muted/40 flex items-center justify-center p-2 border-b">
-                    {t.imageUrl ? (
+                    {tt.imageUrl ? (
                       <>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={t.imageUrl}
-                          alt={t.nameAr}
+                          src={tt.imageUrl}
+                          alt={tt.nameAr}
                           className="max-h-full max-w-full object-contain drop-shadow-md"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
@@ -685,18 +700,18 @@ function StepFleet({
                             if (fb) fb.style.display = 'flex';
                           }}
                         />
-                        <div className="text-3xl items-center justify-center" style={{ display: 'none' }}>{t.icon}</div>
+                        <div className="text-3xl items-center justify-center" style={{ display: 'none' }}>{tt.icon}</div>
                       </>
                     ) : (
-                      <div className="text-3xl">{t.icon}</div>
+                      <div className="text-3xl">{tt.icon}</div>
                     )}
                   </div>
                   <div className="p-2.5">
                     <div className="flex items-center justify-between gap-2 mb-0.5">
-                      <span className="text-sm font-semibold truncate">{t.nameAr}</span>
-                      <span className="text-[10px] num text-muted-foreground shrink-0">{(t.capacityKg / 1000).toFixed(0)} طن</span>
+                      <span className="text-sm font-semibold truncate">{tt.nameAr}</span>
+                      <span className="text-[10px] num text-muted-foreground shrink-0">{t('register.fleet.tons', { n: (tt.capacityKg / 1000).toFixed(0) })}</span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground line-clamp-1">{t.description}</p>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1">{tt.description}</p>
                   </div>
                   {on && (
                     <div className="absolute top-2 end-2 h-6 w-6 rounded-full bg-primary text-primary-foreground grid place-items-center shadow">
@@ -710,7 +725,7 @@ function StepFleet({
         </div>
 
         <div className="space-y-2">
-          <Label>المناطق التي تخدمها</Label>
+          <Label>{t('register.fleet.regionsLabel')}</Label>
           <div className="flex flex-wrap gap-2">
             {REGIONS.map((r) => {
               const on = form.primaryRegions.includes(r);
@@ -733,10 +748,10 @@ function StepFleet({
         </div>
 
         <div className="space-y-3 pt-2 border-t">
-          <Label>التجهيزات</Label>
-          <ToggleRow label="نظام تتبع GPS" desc="على جميع الشاحنات" checked={form.hasGps} onChange={(v) => set('hasGps', v)} />
-          <ToggleRow label="تأمين شامل" desc="على البضائع والشاحنات" checked={form.hasInsurance} onChange={(v) => set('hasInsurance', v)} />
-          <ToggleRow label="شاحنات مبرّدة متوفرة" desc="لنقل المواد الغذائية والأدوية" icon={Snowflake} checked={form.hasRefrigeration} onChange={(v) => set('hasRefrigeration', v)} />
+          <Label>{t('register.fleet.equipmentLabel')}</Label>
+          <ToggleRow label={t('register.fleet.gpsLabel')} desc={t('register.fleet.gpsDesc')} checked={form.hasGps} onChange={(v) => set('hasGps', v)} />
+          <ToggleRow label={t('register.fleet.insuranceLabel')} desc={t('register.fleet.insuranceDesc')} checked={form.hasInsurance} onChange={(v) => set('hasInsurance', v)} />
+          <ToggleRow label={t('register.fleet.refrigerationLabel')} desc={t('register.fleet.refrigerationDesc')} icon={Snowflake} checked={form.hasRefrigeration} onChange={(v) => set('hasRefrigeration', v)} />
         </div>
       </div>
     </>
@@ -767,6 +782,7 @@ function StepDocs({
   set: <K extends keyof Form>(k: K, v: Form[K]) => void;
   docsList: Array<{ id: string; label: string; required: boolean; vatOnly?: boolean }>;
 }) {
+  const t = useTranslations('auth');
   const handleFile = (id: string, files: FileList | null) => {
     const file = files?.[0] ?? null;
     set('docs', { ...form.docs, [id]: file });
@@ -776,11 +792,11 @@ function StepDocs({
     <>
       <StepHeader
         icon={FileCheck2}
-        title="المستندات والاعتماد"
+        title={t('register.docs.title')}
         subtitle={
           isIndividual
-            ? 'المطلوب للأفراد وفق أنظمة هيئة النقل العام (TGA)'
-            : 'المطلوب للشركات وفق المواصفات الحكومية'
+            ? t('register.docs.subtitleIndividual')
+            : t('register.docs.subtitleCompany')
         }
       />
       <div className="space-y-3">
@@ -795,13 +811,13 @@ function StepDocs({
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{d.label}</span>
-                      {d.required && <Badge variant="destructive" className="text-[10px]">إلزامي</Badge>}
+                      <span className="text-sm font-medium">{t(d.label)}</span>
+                      {d.required && <Badge variant="destructive" className="text-[10px]">{t('register.docs.required')}</Badge>}
                     </div>
                     {file ? (
                       <div className="text-xs text-success font-mono truncate" dir="ltr">{file.name}</div>
                     ) : (
-                      <div className="text-xs text-muted-foreground">PDF, JPG حتى 5 ميغابايت</div>
+                      <div className="text-xs text-muted-foreground">{t('register.docs.fileHint')}</div>
                     )}
                   </div>
                 </div>
@@ -814,7 +830,7 @@ function StepDocs({
                     <label>
                       <Button asChild size="sm" variant="outline">
                         <span className="cursor-pointer">
-                          <Upload className="h-3.5 w-3.5" /> رفع
+                          <Upload className="h-3.5 w-3.5" /> {t('register.docs.upload')}
                         </span>
                       </Button>
                       <input
@@ -840,25 +856,26 @@ function StepDocs({
 function StepBank({
   form, set,
 }: { form: Form; set: <K extends keyof Form>(k: K, v: Form[K]) => void }) {
+  const t = useTranslations('auth');
   return (
     <>
-      <StepHeader icon={Building2} title="الحساب البنكي" subtitle="حتى نتمكن من تحويل أرباحك بعد كل رحلة" />
+      <StepHeader icon={Building2} title={t('register.bank.title')} subtitle={t('register.bank.subtitle')} />
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>اسم صاحب الحساب</Label>
-          <Input value={form.accountHolder} onChange={(e) => set('accountHolder', e.target.value)} placeholder="مثل ما هو مسجّل في البنك" />
+          <Label>{t('register.bank.accountHolder')}</Label>
+          <Input value={form.accountHolder} onChange={(e) => set('accountHolder', e.target.value)} placeholder={t('register.bank.accountHolderPlaceholder')} />
         </div>
 
         <div className="space-y-2">
-          <Label>البنك</Label>
+          <Label>{t('register.bank.bankLabel')}</Label>
           <Select value={form.bankName} onValueChange={(v) => set('bankName', v)}>
-            <SelectTrigger><SelectValue placeholder="اختر البنك" /></SelectTrigger>
-            <SelectContent>{BANKS.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
+            <SelectTrigger><SelectValue placeholder={t('register.bank.bankPlaceholder')} /></SelectTrigger>
+            <SelectContent>{BANKS.map((b) => <SelectItem key={b.v} value={b.v}>{t(b.l)}</SelectItem>)}</SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label>رقم IBAN (24 خانة)</Label>
+          <Label>{t('register.bank.iban')}</Label>
           <Input
             dir="ltr"
             className="num text-end font-mono"
@@ -867,13 +884,13 @@ function StepBank({
             placeholder="SA0000000000000000000000"
             maxLength={24}
           />
-          <p className="text-xs text-muted-foreground">يبدأ بـ SA ويتبعه 22 رقم</p>
+          <p className="text-xs text-muted-foreground">{t('register.bank.ibanHint')}</p>
         </div>
 
         <div className="rounded-lg bg-info/10 border border-info/30 p-3 flex items-start gap-2 text-sm">
           <ShieldCheck className="h-4 w-4 text-info shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            يُستخدم هذا الحساب فقط لتحويل أرباحك. لن نخصم منه أي مبالغ. سيتم التحقق من تطابق اسم الحساب مع اسم الشركة في السجل التجاري.
+            {t('register.bank.infoNote')}
           </p>
         </div>
       </div>
@@ -886,39 +903,40 @@ function StepBank({
 function StepVerify({
   form, set,
 }: { form: Form; set: <K extends keyof Form>(k: K, v: Form[K]) => void }) {
+  const t = useTranslations('auth');
   return (
     <>
-      <StepHeader icon={ShieldCheck} title="التحقّق والتقديم" subtitle="آخر خطوة قبل مراجعة طلبك" />
+      <StepHeader icon={ShieldCheck} title={t('register.verify.title')} subtitle={t('register.verify.subtitle')} />
       <div className="space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>رمز البريد (للتجربة: <span className="font-mono text-primary">1234</span>)</Label>
+            <Label>{t('register.verify.emailOtpLabel')} <span className="font-mono text-primary">1234</span>)</Label>
             <OtpInput value={form.emailOtp} onChange={(v) => set('emailOtp', v)} />
           </div>
           <div className="space-y-2">
-            <Label>رمز الجوال (للتجربة: <span className="font-mono text-primary">5678</span>)</Label>
+            <Label>{t('register.verify.phoneOtpLabel')} <span className="font-mono text-primary">5678</span>)</Label>
             <OtpInput value={form.phoneOtp} onChange={(v) => set('phoneOtp', v)} />
           </div>
         </div>
 
         <div className="space-y-2 pt-4 border-t">
           <div className="rounded-lg bg-warning/10 border border-warning/30 p-3 mb-3">
-            <p className="text-sm font-semibold">قبل إتمام التسجيل</p>
+            <p className="text-sm font-semibold">{t('register.verify.beforeTitle')}</p>
             <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-              يرجى قراءة والموافقة على المستندات التالية. لا يمكن إتمام التسجيل بدون الموافقة على جميع الشروط.
+              {t('register.verify.beforeText')}
             </p>
           </div>
 
-          <ConsentRow checked={form.acceptTerms}     onChange={(v) => set('acceptTerms', v)}     label="أوافق على شروط الاستخدام"        href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/terms`} />
-          <ConsentRow checked={form.acceptPrivacy}   onChange={(v) => set('acceptPrivacy', v)}   label="أوافق على سياسة الخصوصية"        href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/privacy`} />
-          <ConsentRow checked={form.acceptTransport} onChange={(v) => set('acceptTransport', v)} label="أوافق على شروط وأحكام النقل"      href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/transport`} />
+          <ConsentRow checked={form.acceptTerms}     onChange={(v) => set('acceptTerms', v)}     label={t('consent.terms')}        href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/terms`} />
+          <ConsentRow checked={form.acceptPrivacy}   onChange={(v) => set('acceptPrivacy', v)}   label={t('consent.privacy')}        href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/privacy`} />
+          <ConsentRow checked={form.acceptTransport} onChange={(v) => set('acceptTransport', v)} label={t('consent.transport')}      href={`${process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3000'}/transport`} />
 
           <label className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30 cursor-pointer">
             <input type="checkbox" checked={form.acceptCommission} onChange={(e) => set('acceptCommission', e.target.checked)} className="mt-0.5 h-4 w-4" />
             <span className="text-sm leading-relaxed">
-              أوافق على{' '}
-              <strong>نسبة العمولة 8%</strong>
-              {' '}من قيمة كل طلب يتمّ من خلال المنصة
+              {t('register.verify.commissionPrefix')}{' '}
+              <strong>{t('register.verify.commissionBold')}</strong>
+              {' '}{t('register.verify.commissionSuffix')}
             </span>
           </label>
         </div>
@@ -926,9 +944,9 @@ function StepVerify({
         <div className="rounded-lg bg-warning/10 border border-warning/30 p-3 flex items-start gap-2 text-sm">
           <FileCheck2 className="h-4 w-4 text-warning shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-warning-foreground">ماذا بعد التقديم؟</p>
+            <p className="font-semibold text-warning-foreground">{t('register.verify.afterTitle')}</p>
             <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-              يراجع فريق الامتثال طلبك خلال 24 إلى 48 ساعة عمل. سيصلك إشعار بالقبول/الرفض على البريد والجوال.
+              {t('register.verify.afterText')}
             </p>
           </div>
         </div>
@@ -966,6 +984,7 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
 function ConsentRow({
   checked, onChange, label, href,
 }: { checked: boolean; onChange: (v: boolean) => void; label: string; href: string }) {
+  const t = useTranslations('auth');
   return (
     <label className="flex items-start justify-between gap-3 p-3 rounded-lg border bg-muted/30 cursor-pointer hover:bg-muted/50">
       <div className="flex items-start gap-3 min-w-0">
@@ -984,7 +1003,7 @@ function ConsentRow({
         onClick={(e) => e.stopPropagation()}
         className="text-xs text-primary hover:underline whitespace-nowrap shrink-0"
       >
-        اقرأ الكامل ←
+        {t('register.verify.readFull')}
       </a>
     </label>
   );

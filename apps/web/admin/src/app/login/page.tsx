@@ -1,6 +1,7 @@
 'use client';
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { AlertCircle, Eye, EyeOff, Truck, ShieldCheck, Lock, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { useAuthStore } from '@/lib/auth-store';
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const t = useTranslations('auth');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -28,8 +30,8 @@ export default function AdminLoginPage() {
       const e = err as { response?: { data?: { error?: { message?: string }, message?: string } }, message?: string };
       setError(
         !e.response
-          ? 'تعذّر الوصول إلى الخادم. تأكّد من اتصالك وحاول مجددا.'
-          : (e.response?.data?.error?.message ?? e.response?.data?.message ?? e.message ?? 'حدث خطأ'),
+          ? t('login.errorServer')
+          : (e.response?.data?.error?.message ?? e.response?.data?.message ?? e.message ?? t('login.errorGeneric')),
       );
     } finally {
       setLoading(false);
@@ -46,23 +48,23 @@ export default function AdminLoginPage() {
             <Truck className="h-6 w-6 text-[hsl(var(--mint))]" />
           </div>
           <div className="leading-tight">
-            <div className="text-lg font-bold tracking-tight">نقلة لوجيستك</div>
-            <div className="text-xs text-primary-foreground/70">منصة الشحن الذكية</div>
+            <div className="text-lg font-bold tracking-tight">{t('login.brand')}</div>
+            <div className="text-xs text-primary-foreground/70">{t('login.brandTagline')}</div>
           </div>
         </div>
 
         <div className="relative max-w-md space-y-6">
           <h2 className="text-3xl font-bold leading-snug tracking-tight">
-            لوحة إدارة المنصة
+            {t('login.panelTitle')}
           </h2>
           <p className="text-sm leading-relaxed text-primary-foreground/80">
-            تحكّم كامل في الشركات والطلبات والنزاعات والمدفوعات من مكان واحد، بواجهة سريعة وآمنة.
+            {t('login.panelSubtitle')}
           </p>
           <ul className="space-y-3 pt-2">
             {[
-              { icon: ShieldCheck, text: 'صلاحيات دقيقة ومراقبة كاملة للنشاط' },
-              { icon: Activity, text: 'مؤشرات حية للأداء والعمليات' },
-              { icon: Lock, text: 'تحقق ثنائي وتشفير كامل للبيانات' },
+              { icon: ShieldCheck, text: t('login.feature1') },
+              { icon: Activity, text: t('login.feature2') },
+              { icon: Lock, text: t('login.feature3') },
             ].map((f) => (
               <li key={f.text} className="flex items-center gap-3 text-sm text-primary-foreground/90">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]">
@@ -76,9 +78,9 @@ export default function AdminLoginPage() {
 
         <div className="relative grid grid-cols-3 gap-4 max-w-md border-t border-primary-foreground/15 pt-6">
           {[
-            { k: '+2,400', v: 'شركة مسجّلة' },
-            { k: '99.9%', v: 'جاهزية النظام' },
-            { k: '24/7', v: 'دعم ومتابعة' },
+            { k: '+2,400', v: t('login.stat1Label') },
+            { k: '99.9%', v: t('login.stat2Label') },
+            { k: '24/7', v: t('login.stat3Label') },
           ].map((s) => (
             <div key={s.v}>
               <div className="num text-xl font-extrabold text-[hsl(var(--mint))]">{s.k}</div>
@@ -101,19 +103,19 @@ export default function AdminLoginPage() {
               <Truck className="h-5 w-5" />
             </div>
             <div className="leading-tight">
-              <div className="font-bold tracking-tight">نقلة لوجيستك</div>
-              <div className="text-xs text-muted-foreground">لوحة إدارة المنصة</div>
+              <div className="font-bold tracking-tight">{t('login.brand')}</div>
+              <div className="text-xs text-muted-foreground">{t('login.panelTitle')}</div>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight">أهلا بعودتك 👋</h1>
-            <p className="text-sm text-muted-foreground">سجّل دخولك للمتابعة إلى لوحة الإدارة</p>
+            <h1 className="text-2xl font-bold tracking-tight">{t('login.title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('login.subtitle')}</p>
           </div>
 
           <form onSubmit={submit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="identifier">البريد الإلكتروني أو رقم الجوال</Label>
+              <Label htmlFor="identifier">{t('login.identifier')}</Label>
               <Input
                 id="identifier"
                 type="text"
@@ -129,8 +131,8 @@ export default function AdminLoginPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">كلمة المرور</Label>
-                <a href="#" className="text-xs font-medium text-[hsl(var(--mint))] hover:underline">نسيت كلمة المرور؟</a>
+                <Label htmlFor="password">{t('password')}</Label>
+                <a href="#" className="text-xs font-medium text-[hsl(var(--mint))] hover:underline">{t('forgotPassword')}</a>
               </div>
               <div className="relative">
                 <Input
@@ -147,7 +149,7 @@ export default function AdminLoginPage() {
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute end-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  aria-label="إظهار/إخفاء كلمة المرور"
+                  aria-label={t('login.togglePassword')}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -162,17 +164,17 @@ export default function AdminLoginPage() {
             )}
 
             <Button type="submit" className="w-full h-11 text-base" size="lg" disabled={loading}>
-              {loading ? 'جار الدخول...' : 'تسجيل الدخول'}
+              {loading ? t('login.submitting') : t('login.submit')}
             </Button>
 
             <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground pt-1">
               <ShieldCheck className="h-3.5 w-3.5 text-[hsl(var(--mint))]" />
-              محمي بنظام التحقق الثنائي والتشفير الكامل
+              {t('login.securityNote')}
             </p>
           </form>
 
           <p className="text-xs text-muted-foreground text-center">
-            © {new Date().getFullYear()} نقلة لوجيستك · جميع الحقوق محفوظة
+            © {new Date().getFullYear()} {t('login.brand')} · {t('login.rights')}
           </p>
         </motion.div>
       </main>
