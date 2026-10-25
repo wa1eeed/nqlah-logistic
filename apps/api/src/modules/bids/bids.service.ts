@@ -1,12 +1,13 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { money, round2 } from '../../common/money/money';
+import { CollectionService } from '../payments/collection/collection.service';
 import { CreateBidDto, UpdateBidDto } from './dto/bid.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 @Injectable()
 export class BidsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private collection: CollectionService) {}
 
   async list(orderId: string) {
     return this.prisma.bid.findMany({
@@ -96,7 +97,7 @@ export class BidsService {
       // assign the order
       const commission = round2(money(bid.amount).mul(0.08));
       const carrierAmount = round2(money(bid.amount).sub(commission));
-      await tx.order.update({
+      const assignedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
           carrierId: bid.carrierId,
@@ -106,27 +107,9 @@ export class BidsService {
           status: 'ASSIGNED',
         },
       });
-      // Escrow: create the Payment row in HELD state. Idempotent — only one
-      // payment per order (unique on orderId in schema). If a prior accept
-      // was rolled back externally, we upsert to keep state consistent.
-      await tx.payment.upsert({
-        where: { orderId },
-        create: {
-          orderId,
-          totalAmount: bid.amount,
-          commissionAmount: commission,
-          carrierAmount,
-          status: 'HELD',
-          heldAt: new Date(),
-        },
-        update: {
-          totalAmount: bid.amount,
-          commissionAmount: commission,
-          carrierAmount,
-          status: 'HELD',
-          heldAt: new Date(),
-        },
-      });
+      // Open the collection per the order's method (escrow hold by default, or
+      // prepaid-wallet/gateway/COD). Idempotent — one payment per order.
+      await this.collection.initiate(tx, assignedOrder);
       return updated;
     });
   }

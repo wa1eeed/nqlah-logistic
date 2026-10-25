@@ -3,10 +3,11 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import type { Prisma } from '../../generated/prisma';
+import { CollectionService } from './collection/collection.service';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private collection: CollectionService) {}
 
   async list(query: PaginationDto, actor: AuthUser) {
     const { page = 1, limit = 20, sort = 'createdAt', order = 'desc' } = query;
@@ -68,40 +69,22 @@ export class PaymentsService {
     }
     const payment = await this.prisma.payment.findUnique({ where: { id }, include: { order: true } });
     if (!payment) throw new NotFoundException({ code: 'PAYMENT_NOT_FOUND', message: 'الدفعة غير موجودة' });
-    if (payment.status !== 'HELD') {
-      throw new BadRequestException({ code: 'INVALID_STATE', message: 'الدفعة ليست محجوزة' });
+    if (payment.status === 'RELEASED') {
+      throw new BadRequestException({ code: 'INVALID_STATE', message: 'تم تحرير الدفعة بالفعل' });
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.payment.update({
-        where: { id },
-        data: { status: 'RELEASED', releasedAt: new Date() },
-      });
-      if (payment.order.carrierId) {
-        // Credit the carrier wallet
-        const carrier = await tx.company.update({
-          where: { id: payment.order.carrierId },
-          data: { walletBalance: { increment: payment.carrierAmount } },
-        });
-        await tx.transaction.create({
-          data: {
-            companyId: payment.order.carrierId,
-            type: 'credit',
-            amount: payment.carrierAmount,
-            balance: carrier.walletBalance,
-            reference: payment.transactionRef ?? payment.id,
-            description: `دفع طلب ${payment.order.orderNumber}`,
-            orderId: payment.orderId,
-          },
-        });
-      }
-      // Mark the order as completed
-      await tx.order.update({
-        where: { id: payment.orderId },
-        data: { status: 'COMPLETED' },
-      });
-      return updated;
+      // Settle per the collection method (credit carrier for prepaid/escrow,
+      // debit COD commission). Throws COD_NOT_COLLECTED if cash wasn't recorded.
+      const settled = await this.collection.settle(tx, id);
+      await tx.order.update({ where: { id: payment.orderId }, data: { status: 'COMPLETED' } });
+      return settled;
     });
+  }
+
+  /** Record that a COD order's cash was collected on delivery (carrier/admin). */
+  collect(id: string, actor: AuthUser) {
+    return this.collection.recordCollection(id, actor);
   }
 
   private isAdmin(actor: AuthUser): boolean {

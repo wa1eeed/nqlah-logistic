@@ -26,4 +26,11 @@ export class PaymentsController {
   release(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
     return this.payments.release(id, actor);
   }
+
+  /** Mark a COD payment's cash as collected on delivery (carrier or admin). */
+  @Post(':id/collect')
+  @Audit({ action: 'payment.collect', resourceType: 'Payment', idFrom: 'param', idKey: 'id' })
+  collect(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
+    return this.payments.collect(id, actor);
+  }
 }

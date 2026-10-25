@@ -6,6 +6,29 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.48 — Collection (payment) modules (2026-10-25)
+
+- Orders now carry a **collection method**, chosen at creation and gated by the
+  client's policy (`allowPrepaid` / `allowCOD`):
+  - **ESCROW** (default) — platform holds (logical) until completion; unchanged.
+  - **PREPAID_WALLET** — the client's wallet is debited now (insufficient balance
+    is rejected); carrier paid on release.
+  - **PREPAID_GATEWAY** — charged online now via a `PaymentGateway` abstraction
+    with a `StubGateway` stand-in (swap in Moyasar/Tap/HyperPay later).
+  - **COD** — nothing upfront; the carrier records cash collected on delivery
+    (`POST /payments/:id/collect`) and then owes the platform its commission,
+    debited on release.
+- New `CollectionService` holds the per-method strategy (`initiate` / `settle` /
+  `refund` / `recordCollection`); wired into bid-accept, direct assign, order
+  completion, admin release, and cancellation (prepaid auto-refund).
+- **Settlement unified:** order completion and admin release now both settle via
+  the collection service — closing the prior gap where completion flipped the
+  escrow without crediting the carrier wallet, and where direct-assigned orders
+  had no payment row at all.
+- Tests: `collection.service.spec.ts` (method×policy matrix). Totals 13 specs.
+- **Deferred to a follow-up:** PARTIAL (deposit + COD remainder) — its split
+  settlement warrants its own PR; see `PENDING_WORK.md`.
+
 ### v0.9.47 — Policy engine enforcement (2026-10-25)
 
 - `PolicyGroup` policies now **govern order creation** (they were stored and

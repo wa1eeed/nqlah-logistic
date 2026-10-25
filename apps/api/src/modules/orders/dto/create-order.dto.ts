@@ -24,6 +24,7 @@ const MODES = ['OPEN', 'DIRECT'] as const;
 const TRIP_TYPES = ['SAME_CITY', 'INTER_CITY'] as const;
 const PICKUP_WINDOWS = ['MORNING', 'EVENING', 'ALL_DAY'] as const;
 const ORDER_TYPES = ['SINGLE', 'CONSOLIDATED'] as const;
+const COLLECTION_METHODS = ['ESCROW', 'PREPAID_WALLET', 'PREPAID_GATEWAY', 'COD'] as const;
 const STOP_TYPES = ['PICKUP', 'DELIVERY', 'DROPOFF', 'WAREHOUSE', 'RETURN_EMPTY', 'EXCHANGE'] as const;
 const STOP_STATUSES = ['PENDING', 'EN_ROUTE', 'ARRIVED', 'COMPLETED', 'SKIPPED'] as const;
 
@@ -92,6 +93,9 @@ export class CreateOrderDto {
   @IsOptional() @IsString() poNumber?: string;
   @IsOptional() @IsString() notes?: string;
   @IsOptional() @IsArray() documents?: string[];
+
+  /// How the client pays — gated by the client's policy; defaults to ESCROW.
+  @IsOptional() @IsEnum(COLLECTION_METHODS) collectionMethod?: (typeof COLLECTION_METHODS)[number];
 
   /// SINGLE (default) or CONSOLIDATED (ships `truckCount` trucks along the route).
   @IsOptional() @IsEnum(ORDER_TYPES) orderType?: (typeof ORDER_TYPES)[number];

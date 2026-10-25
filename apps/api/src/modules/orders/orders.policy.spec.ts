@@ -20,35 +20,36 @@ const DEFAULT_POLICY = {
 
 function makeService(policy: typeof DEFAULT_POLICY) {
   const policies = { effectiveForCompany: jest.fn().mockResolvedValue(policy) };
-  const service = new OrdersService({} as never, {} as never, policies as never);
+  const collection = { resolveMethod: jest.fn().mockReturnValue('ESCROW') };
+  const service = new OrdersService({} as never, {} as never, policies as never, collection as never);
   // resolveSourcing is private; exercise it directly for a focused unit test.
   const resolve = (dto: Partial<CreateOrderDto>) =>
     (service as unknown as {
       resolveSourcing(d: CreateOrderDto, companyId: string): Promise<{
-        mode: 'OPEN' | 'DIRECT'; targetCarrierId: string | null; fixedPrice: number | null;
+        mode: 'OPEN' | 'DIRECT'; targetCarrierId: string | null; fixedPrice: number | null; collectionMethod: string;
       }>;
     }).resolveSourcing(dto as CreateOrderDto, 'client-1');
-  return { resolve, policies };
+  return { resolve, policies, collection };
 }
 
 describe('OrdersService.resolveSourcing', () => {
   it('leaves an OPEN order untouched under the permissive default', async () => {
     const { resolve } = makeService(DEFAULT_POLICY);
     await expect(resolve({ mode: 'OPEN' })).resolves.toEqual({
-      mode: 'OPEN', targetCarrierId: null, fixedPrice: null,
+      mode: 'OPEN', targetCarrierId: null, fixedPrice: null, collectionMethod: 'ESCROW',
     });
   });
 
   it('keeps a DIRECT order with its target and upfront price', async () => {
     const { resolve } = makeService(DEFAULT_POLICY);
     await expect(resolve({ mode: 'DIRECT', targetCarrierId: 'c-9', agreedPriceUpfront: 1500 }))
-      .resolves.toEqual({ mode: 'DIRECT', targetCarrierId: 'c-9', fixedPrice: 1500 });
+      .resolves.toEqual({ mode: 'DIRECT', targetCarrierId: 'c-9', fixedPrice: 1500, collectionMethod: 'ESCROW' });
   });
 
   it('forces DIRECT to the pinned carrier when the group sets forcedCarrierId', async () => {
     const { resolve } = makeService({ ...DEFAULT_POLICY, forcedCarrierId: 'pinned-7' });
     await expect(resolve({ mode: 'OPEN' })).resolves.toEqual({
-      mode: 'DIRECT', targetCarrierId: 'pinned-7', fixedPrice: null,
+      mode: 'DIRECT', targetCarrierId: 'pinned-7', fixedPrice: null, collectionMethod: 'ESCROW',
     });
   });
 
