@@ -1,6 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import {
   Clock, HelpCircle, LifeBuoy, Loader2, Mail, MessageSquare, Phone, Plus,
@@ -27,41 +28,16 @@ import {
   type TicketStatus, type TicketPriority, type TicketCategory,
 } from '@naqla/shared-utils';
 
-const STATUS_LABELS: Record<string, string> = {
-  OPEN: 'مفتوحة', IN_PROGRESS: 'قيد المعالجة', WAITING_USER: 'بانتظار ردك',
-  RESOLVED: 'محلولة', CLOSED: 'مغلقة',
-};
 const STATUS_BADGE: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
   OPEN: 'warning', IN_PROGRESS: 'default', WAITING_USER: 'destructive',
   RESOLVED: 'success', CLOSED: 'outline',
 };
-const PRIORITY_LABELS: Record<string, string> = {
-  LOW: 'منخفضة', MEDIUM: 'متوسطة', HIGH: 'عالية', URGENT: 'عاجلة',
-};
 const PRIORITY_BADGE: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'outline'> = {
   LOW: 'outline', MEDIUM: 'default', HIGH: 'warning', URGENT: 'destructive',
 };
-const CATEGORY_LABELS: Record<string, string> = {
-  ACCOUNT: 'حساب', BILLING: 'فواتير ومدفوعات', ORDER: 'طلب',
-  TECHNICAL: 'مشكلة تقنية', KYC: 'اعتماد KYC', DRIVER: 'سائق', OTHER: 'أخرى',
-  GENERAL: 'استفسار عام',
-};
-
-const FAQ = [
-  { q: 'كيف أضمن سلامة شحنتي؟',         a: 'كل الناقلين على المنصة معتمدون وموثّقون، وكل شحنة تخضع لتأمين شامل عند تفعيل الخيار في إنشاء الطلب.' },
-  { q: 'متى تُسدّد الفاتورة للناقل؟',     a: 'تُحتجز قيمة الطلب في حساب Escrow حتى تأكيد التسليم، ثم تُفرَج للناقل خلال 3 أيام عمل.' },
-  { q: 'هل يمكنني تتبّع موقع الشاحنة؟',  a: 'نعم، الشاحنات المجهّزة بـ GPS تظهر مواقعها لحظيا على خريطة التتبع داخل تفاصيل الطلب.' },
-  { q: 'كيف أفتح نزاعا على طلب؟',       a: 'من صفحة "النزاعات" ثم زر "فتح نزاع جديد"، يراجعه فريق الدعم خلال 24 ساعة.' },
-];
 
 // Backend SupportTicketCategory enum — keep in sync with prisma schema.
-const API_CATEGORIES: { value: string; label: string }[] = [
-  { value: 'TECHNICAL', label: 'مشكلة تقنية' },
-  { value: 'BILLING',   label: 'فواتير ومدفوعات' },
-  { value: 'ACCOUNT',   label: 'حساب' },
-  { value: 'ORDER',     label: 'طلب' },
-  { value: 'GENERAL',   label: 'استفسار عام' },
-];
+const API_CATEGORY_VALUES = ['TECHNICAL', 'BILLING', 'ACCOUNT', 'ORDER', 'GENERAL'];
 
 type ApiTicket = {
   id: string;
@@ -73,6 +49,32 @@ type ApiTicket = {
 };
 
 export default function ClientSupportPage() {
+  const t = useTranslations('client');
+  const STATUS_LABELS: Record<string, string> = {
+    OPEN: t('support.status.OPEN'), IN_PROGRESS: t('support.status.IN_PROGRESS'),
+    WAITING_USER: t('support.status.WAITING_USER'), RESOLVED: t('support.status.RESOLVED'),
+    CLOSED: t('support.status.CLOSED'),
+  };
+  const PRIORITY_LABELS: Record<string, string> = {
+    LOW: t('support.priority.LOW'), MEDIUM: t('support.priority.MEDIUM'),
+    HIGH: t('support.priority.HIGH'), URGENT: t('support.priority.URGENT'),
+  };
+  const CATEGORY_LABELS: Record<string, string> = {
+    ACCOUNT: t('support.category.ACCOUNT'), BILLING: t('support.category.BILLING'),
+    ORDER: t('support.category.ORDER'), TECHNICAL: t('support.category.TECHNICAL'),
+    KYC: t('support.category.KYC'), DRIVER: t('support.category.DRIVER'),
+    OTHER: t('support.category.OTHER'), GENERAL: t('support.category.GENERAL'),
+  };
+  const FAQ = [
+    { q: t('support.faq1q'), a: t('support.faq1a') },
+    { q: t('support.faq2q'), a: t('support.faq2a') },
+    { q: t('support.faq3q'), a: t('support.faq3a') },
+    { q: t('support.faq4q'), a: t('support.faq4a') },
+  ];
+  const API_CATEGORIES = API_CATEGORY_VALUES.map((value) => ({
+    value, label: t(`support.category.${value}`),
+  }));
+
   // Live tickets — backend returns the caller's tickets scoped by company.
   const { data: ticketsData, mutate: mutateTickets } = useSWR<ApiTicket[]>('/support/tickets', fetcher);
   const myTickets = useMemo<(ApiTicket | (ReturnType<typeof ticketsFor>[number]))[]>(() => {
@@ -94,11 +96,11 @@ export default function ClientSupportPage() {
         description: form.description.trim(),
       });
       await mutateTickets();
-      notify.success('تم إنشاء التذكرة', 'سيردّ عليك فريق الدعم قريبا');
+      notify.success(t('support.toastCreatedTitle'), t('support.toastCreatedDesc'));
       setCreateOpen(false);
       setForm({ subject: '', category: '', description: '' });
     } catch (err) {
-      notify.error(err, 'فشل إنشاء التذكرة');
+      notify.error(err, t('support.toastCreateFail'));
     } finally {
       setSubmitting(false);
     }
@@ -107,11 +109,11 @@ export default function ClientSupportPage() {
   return (
     <>
       <PageHeader
-        title="مركز الدعم"
-        subtitle="استفسارات، شكاوى، ومساعدة فنية"
+        title={t('support.title')}
+        subtitle={t('support.subtitle')}
         actions={
           <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" /> تذكرة جديدة
+            <Plus className="h-4 w-4" /> {t('support.newTicket')}
           </Button>
         }
       />
@@ -119,22 +121,22 @@ export default function ClientSupportPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <ChannelCard
           icon={MessageSquare}
-          title="محادثة فورية"
-          subtitle="رد فوري خلال دقائق · 24/7"
-          cta="بدء محادثة"
+          title={t('support.chatTitle')}
+          subtitle={t('support.chatSubtitle')}
+          cta={t('support.chatCta')}
           tone="bg-primary/10 text-primary"
         />
         <ChannelCard
           icon={Phone}
-          title="اتصال هاتفي"
-          subtitle="السبت – الخميس، 8 ص – 8 م"
+          title={t('support.phoneTitle')}
+          subtitle={t('support.phoneSubtitle')}
           cta="+966 920 000 000"
           tone="bg-info/15 text-info"
         />
         <ChannelCard
           icon={Mail}
-          title="بريد إلكتروني"
-          subtitle="رد خلال 12 ساعة عمل"
+          title={t('support.emailTitle')}
+          subtitle={t('support.emailSubtitle')}
           cta="support@naqla.sa"
           tone="bg-success/15 text-success"
         />
@@ -143,31 +145,31 @@ export default function ClientSupportPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>تذاكري</CardTitle>
-            <CardDescription>{myTickets.length} تذكرة · سجل كامل</CardDescription>
+            <CardTitle>{t('support.ticketsTitle')}</CardTitle>
+            <CardDescription>{t('support.ticketsSubtitle', { count: myTickets.length })}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             {myTickets.length === 0 ? (
               <div className="py-16 text-center text-muted-foreground">
                 <LifeBuoy className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                لا توجد تذاكر — ابدأ بإنشاء واحدة عند الحاجة
+                {t('support.ticketsEmpty')}
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>الموضوع</TableHead>
-                    <TableHead>الفئة</TableHead>
-                    <TableHead>الأولوية</TableHead>
-                    <TableHead>آخر تحديث</TableHead>
-                    <TableHead>الحالة</TableHead>
+                    <TableHead>{t('support.colSubject')}</TableHead>
+                    <TableHead>{t('support.colCategory')}</TableHead>
+                    <TableHead>{t('support.colPriority')}</TableHead>
+                    <TableHead>{t('support.colUpdated')}</TableHead>
+                    <TableHead>{t('support.colStatus')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {myTickets.map((t) => {
+                  {myTickets.map((ticket) => {
                     // Both API and mock shapes have id/subject/category/status/updatedAt.
                     // Mock additionally has priority/orderId/messageCount.
-                    const tk = t as Partial<ReturnType<typeof ticketsFor>[number]> & ApiTicket;
+                    const tk = ticket as Partial<ReturnType<typeof ticketsFor>[number]> & ApiTicket;
                     const priority = tk.priority ?? 'MEDIUM';
                     return (
                       <TableRow key={tk.id}>
@@ -175,7 +177,7 @@ export default function ClientSupportPage() {
                           <div className="font-medium text-sm">{tk.subject}</div>
                           <div className="text-xs text-muted-foreground font-mono">
                             {tk.id}
-                            {tk.messageCount != null && <> · {tk.messageCount} رسالة</>}
+                            {tk.messageCount != null && <> · {t('support.messageCount', { count: tk.messageCount })}</>}
                             {tk.orderId && <> · <Link href={`/orders/${tk.orderId}`} className="text-primary">{tk.orderId}</Link></>}
                           </div>
                         </TableCell>
@@ -200,7 +202,7 @@ export default function ClientSupportPage() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <HelpCircle className="h-4 w-4" />
-                أسئلة شائعة
+                {t('support.faqTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -218,18 +220,18 @@ export default function ClientSupportPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تذكرة دعم جديدة</DialogTitle>
-            <DialogDescription>صف المشكلة بوضوح ليتمكّن الفريق من المساعدة بسرعة</DialogDescription>
+            <DialogTitle>{t('support.dialogTitle')}</DialogTitle>
+            <DialogDescription>{t('support.dialogDesc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label>موضوع التذكرة</Label>
-              <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="ملخص قصير..." />
+              <Label>{t('support.fieldSubject')}</Label>
+              <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder={t('support.subjectPlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>الفئة</Label>
+              <Label>{t('support.colCategory')}</Label>
               <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                <SelectTrigger><SelectValue placeholder="اختر الفئة" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('support.selectCategory')} /></SelectTrigger>
                 <SelectContent>
                   {API_CATEGORIES.map((c) => (
                     <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
@@ -238,23 +240,23 @@ export default function ClientSupportPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>التفاصيل</Label>
+              <Label>{t('support.fieldDetails')}</Label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="اشرح المشكلة بتفصيل واضح..."
+                placeholder={t('support.detailsPlaceholder')}
                 className="w-full min-h-[120px] p-3 rounded-md border bg-background text-sm"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={submitting}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={submitting}>{t('support.cancel')}</Button>
             <Button
               onClick={submit}
               disabled={!form.subject || !form.category || !form.description.trim() || submitting}
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              إرسال
+              {t('support.send')}
             </Button>
           </DialogFooter>
         </DialogContent>

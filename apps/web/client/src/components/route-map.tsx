@@ -1,15 +1,21 @@
 'use client';
 import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
+
+function MapLoading() {
+  const t = useTranslations('orders');
+  return (
+    <div className="flex items-center justify-center text-muted-foreground text-sm" style={{ height: 300 }}>
+      <span className="w-2 h-2 rounded-full bg-primary animate-pulse me-2" />
+      {t('map.loading')}
+    </div>
+  );
+}
 
 const RouteMapImpl = dynamic(() => import('./route-map-impl').then((m) => m.RouteMapImpl), {
   ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center text-muted-foreground text-sm" style={{ height: 300 }}>
-      <span className="w-2 h-2 rounded-full bg-primary animate-pulse me-2" />
-      جار تحميل الخريطة...
-    </div>
-  ),
+  loading: () => <MapLoading />,
 });
 
 export interface RoutePoint {

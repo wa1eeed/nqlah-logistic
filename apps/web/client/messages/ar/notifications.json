@@ -1,5 +1,12 @@
 {
  "title": "الإشعارات",
+ "centerTitle": "مركز الإشعارات",
+ "unreadCount": "{count} إشعار غير مقروء",
+ "viewAll": "عرض كل الإشعارات",
+ "selectAllRead": "تحديد الكل كمقروء",
+ "updateFailed": "فشل تحديث الإشعار",
+ "allMarkedRead": "تم وضع كل الإشعارات كمقروءة",
+ "operationFailed": "فشل العملية",
  "all": "الكل",
  "unread": "غير مقروءة",
  "markAllRead": "تعليم الكل كمقروء",

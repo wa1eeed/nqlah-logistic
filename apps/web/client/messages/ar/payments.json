@@ -35,5 +35,60 @@
  "released": "مُفرج عنه",
  "refunded": "مستردّ",
  "disputed": "متنازع عليه"
+ },
+ "fields": {
+ "invoiceNumber": "رقم الفاتورة",
+ "no": "رقم",
+ "order": "الطلب",
+ "issued": "الإصدار",
+ "due": "الاستحقاق",
+ "amount": "المبلغ",
+ "vat": "ضريبة",
+ "total": "الإجمالي",
+ "status": "الحالة",
+ "date": "التاريخ",
+ "type": "النوع",
+ "description": "الوصف",
+ "balanceAfter": "الرصيد بعد"
+ },
+ "invoicesPage": {
+ "title": "الفواتير",
+ "subtitle": "جميع فواتير شركتك على منصة نقلة",
+ "totalPaid": "إجمالي مدفوع",
+ "issuedUnpaid": "صادر وغير مسدّد",
+ "overdueAmount": "متأخر السداد",
+ "invoiceCount": "{count} فاتورة",
+ "tabAll": "الكل",
+ "tabPaid": "مدفوعة",
+ "tabIssued": "صادرة",
+ "tabOverdue": "متأخرة",
+ "emptyTitle": "لا توجد فواتير",
+ "emptyDescription": "لا توجد فواتير في هذه الفئة حتى الآن"
+ },
+ "finance": {
+ "title": "الشؤون المالية",
+ "subtitle": "محفظتك، كشف الحساب، والفواتير",
+ "availableBalance": "الرصيد المتاح",
+ "sar": "ر.س.",
+ "topUp": "شحن المحفظة",
+ "heldInEscrow": "محجوز في Escrow",
+ "netAvailable": "صاف متاح للسحب",
+ "totalDeposits": "إجمالي الإيداعات",
+ "totalDeductions": "إجمالي الخصومات",
+ "lastTransactions": "آخر {count} معاملات",
+ "allWalletTransactions": "جميع المعاملات على محفظتك",
+ "fromDate": "من تاريخ",
+ "toDate": "إلى تاريخ",
+ "noTransactions": "لا توجد معاملات في هذه الفترة",
+ "myInvoices": "فواتيري",
+ "txKind": {
+ "CREDIT": "إيداع",
+ "DEBIT": "خصم",
+ "ESCROW_HOLD": "حجز Escrow",
+ "ESCROW_RELEASE": "إفراج Escrow",
+ "REFUND": "استرداد",
+ "COMMISSION": "عمولة",
+ "PAYOUT": "تحويل بنكي"
+ }
  }
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import L, { type LatLng } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -110,6 +111,7 @@ function ClickHandler({ onClick }: { onClick: (latlng: LatLng) => void }) {
 export function MapAddressPickerImpl({
   center, value, onChange, height = 280, label, cityName,
 }: MapAddressPickerImplProps) {
+  const t = useTranslations('orders');
   const [point, setPoint] = useState<MapPoint | null>(value ?? null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<NominatimResult[]>([]);
@@ -175,7 +177,7 @@ export function MapAddressPickerImpl({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => results.length > 0 && setOpen(true)}
-            placeholder={`ابحث عن ${label}...`}
+            placeholder={t('map.searchPlaceholder', { label })}
             className="w-full ps-9 pe-9 py-2 rounded-md border bg-background text-sm"
           />
           {loading && <Loader2 className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
