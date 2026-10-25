@@ -42,7 +42,7 @@ with today's behavior as the first registered strategies (no behavior change):
    - 6b ✅ Client — **collection-method selector** (Escrow/Wallet/Gateway/COD, policy-gated) + multi-stop **route builder** (optional intermediate stops → `stops[]`). (PR #53.)
    - 6c ✅ Carrier (+admin) — route **stop execution** panel (per-stop status, advance arrived→completed) + COD collect. (PR #54.)
    - Note: the admin settings policy panels are Arabic-hardcoded (missed in the i18n pass) — needs an i18n follow-up.
-7. ⏳ Provider-owned clients (sub-tenancy).
+7. ✅ Provider-owned clients (sub-tenancy) — `Company.ownerCarrierId`; carrier "My Clients" page (create/list); owned clients forced private to their owner (off-market, owner-only). (PR #55.)
 8. ⏳ Individual-driver portal + unified driver app (consumes stop execution).
 9. ⏳ White-label (provider-branded client area + driver app).
 

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import {
-  BarChart3, Bell, Compass, FileCheck2, Gavel, LayoutDashboard,
+  BarChart3, Bell, Building2, Compass, FileCheck2, Gavel, LayoutDashboard,
   LifeBuoy, Package, Settings, Shield, TrendingUp, Truck, Users, Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -29,6 +29,7 @@ const NAV: NavGroup[] = [
       { href: '/opportunities', labelKey: 'opportunities', icon: Compass },
       { href: '/orders',        labelKey: 'orders',        icon: Package },
       { href: '/bids',          labelKey: 'bids',          icon: Gavel },
+      { href: '/clients',       labelKey: 'clients',       icon: Building2 },
     ],
   },
   {

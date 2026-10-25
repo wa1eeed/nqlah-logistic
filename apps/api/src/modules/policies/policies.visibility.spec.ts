@@ -12,6 +12,7 @@ function makeService(opts: {
   const groups = opts.groups ?? [];
   const carrierGroups = opts.carrierGroups ?? [];
   const prisma = {
+    company: { findUnique: jest.fn(async () => ({ ownerCarrierId: null })) },
     policyGroup: {
       findFirst: jest.fn(async ({ where }: { where: { clientIds: { has: string } } }) =>
         groups.find((g) => (g.clientIds as string[]).includes(where.clientIds.has)) ?? null),
