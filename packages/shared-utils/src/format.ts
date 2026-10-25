@@ -21,42 +21,61 @@ export function formatNumber(
   return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US').format(value);
 }
 
+/**
+ * The active UI locale, read from the <html lang> the layout sets from the
+ * locale cookie. Lets locale-agnostic utils follow the current language without
+ * threading a locale through every call site. Falls back to English (the
+ * platform default) on the server or if unset.
+ */
+export function detectLocale(fallback: 'ar' | 'en' = 'en'): 'ar' | 'en' {
+  // Read via globalThis so this file doesn't need the DOM lib (shared-utils
+  // builds standalone). On the server `document` is undefined → fallback.
+  const doc = (globalThis as { document?: { documentElement?: { lang?: string } } }).document;
+  const l = doc?.documentElement?.lang;
+  if (l === 'ar' || l === 'en') return l;
+  return fallback;
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * A UNIFIED numeric timestamp — `dd/MM/yyyy`, plus ` HH:mm` when the pattern
+ * asks for time. Always Western/Latin digits and the same digit order in both
+ * languages, so month names never flip against the numbers under RTL. The
+ * `pattern`/`locale` params are kept for call-site compatibility; only whether
+ * the pattern contains `HH:mm` is read.
+ */
 export function formatDate(
   date: string | Date | null | undefined,
-  pattern: string = 'd MMMM yyyy',
-  locale: 'ar' | 'en' = 'ar',
+  pattern: string = '',
+  _locale: 'ar' | 'en' = 'en',
 ): string {
   if (!date) return '—';
   const d = new Date(date);
-  const intlLocale = locale === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US';
-  const opts: Intl.DateTimeFormatOptions = {
-    day: 'numeric',
-    month: pattern.includes('MMMM') ? 'long' : 'short',
-    year: 'numeric',
-  };
+  if (Number.isNaN(d.getTime())) return '—';
+  const base = `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
   if (pattern.includes('HH:mm')) {
-    opts.hour = '2-digit';
-    opts.minute = '2-digit';
-    opts.hour12 = false;
+    return `${base} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
   }
-  return new Intl.DateTimeFormat(intlLocale, opts).format(d);
+  return base;
 }
 
 export function formatDateTime(
   date: string | Date | null | undefined,
-  locale: 'ar' | 'en' = 'ar',
+  locale: 'ar' | 'en' = 'en',
 ): string {
-  return formatDate(date, 'd MMM yyyy HH:mm', locale);
+  return formatDate(date, 'HH:mm', locale);
 }
 
 export function formatRelative(
   date: string | Date | null | undefined,
-  locale: 'ar' | 'en' = 'ar',
+  locale?: 'ar' | 'en',
 ): string {
   if (!date) return '—';
+  const loc = locale ?? detectLocale();
   const diffMs = new Date(date).getTime() - Date.now();
   const absMs = Math.abs(diffMs);
-  const rtf = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat(loc === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US', { numeric: 'auto' });
   if (absMs < 60_000) return rtf.format(Math.round(diffMs / 1000), 'second');
   if (absMs < 3_600_000) return rtf.format(Math.round(diffMs / 60_000), 'minute');
   if (absMs < 86_400_000) return rtf.format(Math.round(diffMs / 3_600_000), 'hour');
@@ -65,10 +84,13 @@ export function formatRelative(
   return rtf.format(Math.round(diffMs / 31_536_000_000), 'year');
 }
 
-export function formatWeight(kg: number | null | undefined): string {
+export function formatWeight(kg: number | null | undefined, locale?: 'ar' | 'en'): string {
   if (kg === null || kg === undefined) return '—';
-  if (kg >= 1000) return `${formatNumber(kg / 1000)} طن`;
-  return `${formatNumber(kg)} كجم`;
+  const loc = locale ?? detectLocale();
+  const ton = loc === 'ar' ? 'طن' : 'tons';
+  const kgUnit = loc === 'ar' ? 'كجم' : 'kg';
+  if (kg >= 1000) return `${formatNumber(kg / 1000, loc)} ${ton}`;
+  return `${formatNumber(kg, loc)} ${kgUnit}`;
 }
 
 export function formatPhone(phone: string): string {
