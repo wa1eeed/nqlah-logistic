@@ -35,6 +35,8 @@ export function ClientPoliciesPanel() {
   const { data: groupsData, error: groupsError } = useSWR<unknown>('/policies/groups', fetcher);
   const { data: clientsData } = useSWR<ApiCompany[]>('/companies?type=CLIENT&limit=200', fetcher);
   const { data: carriersData } = useSWR<ApiCompany[]>('/companies?type=CARRIER&status=ACTIVE&limit=200', fetcher);
+  const { data: carrierGroupsData } = useSWR<{ id: string; name: string }[]>('/policies/carrier-groups', fetcher);
+  const carrierGroups = Array.isArray(carrierGroupsData) ? carrierGroupsData : [];
   const { mutate } = useSWRConfig();
   const apiMode = Array.isArray(groupsData);
   // Distinguish loading from a real failure so we don't flash the local fallback
@@ -133,6 +135,7 @@ export function ClientPoliciesPanel() {
             group={g}
             clients={clients}
             carriers={carriers}
+            carrierGroups={carrierGroups}
             clientName={clientName}
             onEdit={() => openEdit(g)}
             onDelete={() => { doRemove(g.id); notify.success('تم حذف القروب', g.name); }}
@@ -186,11 +189,12 @@ export function ClientPoliciesPanel() {
 }
 
 function GroupCard({
-  group, clients, carriers, clientName, onEdit, onDelete, onPolicyChange, onAssign,
+  group, clients, carriers, carrierGroups, clientName, onEdit, onDelete, onPolicyChange, onAssign,
 }: {
   group: PolicyGroup;
   clients: Co[];
   carriers: Co[];
+  carrierGroups: { id: string; name: string }[];
   clientName: (id: string) => string;
   onEdit: () => void;
   onDelete: () => void;
@@ -200,6 +204,9 @@ function GroupCard({
   const p = group.policy;
   const toggle = (key: keyof ClientPolicy, val: boolean) => onPolicyChange({ ...p, [key]: val });
   const setForcedCarrier = (id: string | undefined) => onPolicyChange({ ...p, forcedCarrierId: id });
+  const scope = p.visibilityScope ?? 'ALL';
+  const setScope = (v: 'ALL' | 'GROUP' | 'CARRIER') => onPolicyChange({ ...p, visibilityScope: v });
+  const setVisibleGroup = (id: string | undefined) => onPolicyChange({ ...p, visibleCarrierGroupId: id });
   const unassigned = clients.filter((c) => !group.clientIds.includes(c.id));
 
   return (
@@ -228,22 +235,42 @@ function GroupCard({
         ))}
       </div>
 
-      {/* Forced carrier (only meaningful with direct assign) */}
-      {p.allowDirect && (
-        <div className="flex items-center justify-between gap-3 rounded-md bg-muted/40 p-3">
+      {/* Provider visibility scope */}
+      <div className="rounded-md bg-muted/40 p-3 space-y-3">
+        <div className="flex items-center justify-between gap-3">
           <div className="text-sm">
-            <div className="font-medium">مزوّد محدد للإسناد</div>
-            <div className="text-xs text-muted-foreground">يُلزَم العميل بالإسناد المباشر لهذا المزوّد.</div>
+            <div className="font-medium">نطاق ظهور المزوّدين</div>
+            <div className="text-xs text-muted-foreground">أي المزوّدين يراهم عملاء هذا القروب ويتعاملون معهم.</div>
           </div>
-          <Select value={p.forcedCarrierId ?? 'none'} onValueChange={(v) => setForcedCarrier(v === 'none' ? undefined : v)}>
-            <SelectTrigger className="w-[180px] shrink-0"><SelectValue /></SelectTrigger>
+          <Select value={scope} onValueChange={(v) => setScope(v as 'ALL' | 'GROUP' | 'CARRIER')}>
+            <SelectTrigger className="w-[200px] shrink-0"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">بدون إلزام</SelectItem>
-              {carriers.map((c) => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
+              <SelectItem value="ALL">كل المزوّدين (السوق المفتوح)</SelectItem>
+              <SelectItem value="GROUP">مجموعة مزوّدين محددة</SelectItem>
+              <SelectItem value="CARRIER">مزوّد واحد فقط</SelectItem>
             </SelectContent>
           </Select>
         </div>
-      )}
+        {scope === 'CARRIER' && (
+          <Select value={p.forcedCarrierId ?? 'none'} onValueChange={(v) => setForcedCarrier(v === 'none' ? undefined : v)}>
+            <SelectTrigger className="w-full sm:w-[260px]"><SelectValue placeholder="اختر المزوّد" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— اختر المزوّد —</SelectItem>
+              {carriers.map((c) => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
+        {scope === 'GROUP' && (
+          <Select value={p.visibleCarrierGroupId ?? 'none'} onValueChange={(v) => setVisibleGroup(v === 'none' ? undefined : v)}>
+            <SelectTrigger className="w-full sm:w-[260px]"><SelectValue placeholder="اختر مجموعة المزوّدين" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— اختر المجموعة —</SelectItem>
+              {carrierGroups.map((cg) => <SelectItem key={cg.id} value={cg.id}>{cg.name}</SelectItem>)}
+              {carrierGroups.length === 0 && <SelectItem value="none" disabled>أنشئ مجموعة مزوّدين أولاً</SelectItem>}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
       {/* Assigned clients */}
       <div className="space-y-2">
