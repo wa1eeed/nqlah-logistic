@@ -6,7 +6,19 @@
 
 ## [Unreleased] — قيد التطوير
 
-### v0.9.59 — Individual entity type + unified driver access (2026-10-26)
+### v0.9.60 — Real registration wired (carrier + client) (2026-10-26)
+
+- The carrier and client **registration pages now create real accounts** via
+  `POST /auth/register` and sign the user in — previously `submit()` was a mock
+  that set a dev token and faked a session, so no account was ever created.
+- The **Company/Individual** choice is sent as `accountType` → persisted as
+  `Company.entityType`; an individual carrier is onboarded as its own
+  carrier+driver (phase A). Individuals use their name as the account name.
+- Errors from the API are surfaced (`notify.error`) instead of silent success.
+- **Follow-ups (not in this change):** phone-OTP verification is still a
+  soft UI gate (login works unverified); the extra data the wizard collects
+  (KYC document uploads, bank/IBAN, fleet details) is not yet persisted — only
+  the core account. These are tracked for the registration-completion pass.
 
 - **`Company.entityType`** (`COMPANY` | `INDIVIDUAL`, default `COMPANY`) — applies
   to clients and carriers alike. Additive migration; existing rows are `COMPANY`.

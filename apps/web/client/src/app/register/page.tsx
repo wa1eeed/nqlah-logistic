@@ -15,8 +15,10 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { DEV_USERS, DEV_BYPASS_TOKEN, localizeCity, localizeRegion } from '@naqla/shared-utils';
+import { localizeCity, localizeRegion } from '@naqla/shared-utils';
 import { useAuthStore } from '@/lib/auth-store';
+import { api } from '@/lib/api';
+import { notify } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 
 type Step = 0 | 1 | 2 | 3 | 4;
@@ -103,11 +105,31 @@ export default function ClientRegisterPage() {
 
   const submit = async () => {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    localStorage.setItem('naqla_client_token', DEV_BYPASS_TOKEN);
-    localStorage.setItem('naqla_client_refresh', DEV_BYPASS_TOKEN);
-    useAuthStore.setState({ user: { ...DEV_USERS.client, avatar: null } as never });
-    router.push('/');
+    try {
+      const [firstName, ...rest] = form.fullName.trim().split(/\s+/);
+      await api.post('/auth/register', {
+        companyType: 'CLIENT',
+        accountType: form.kind || 'COMPANY',
+        companyNameAr: (form.companyNameAr || form.fullName).trim(),
+        ...(form.companyNameEn ? { companyNameEn: form.companyNameEn.trim() } : {}),
+        city: form.city,
+        region: form.region,
+        contactPhone: form.phone,
+        ...(form.email ? { contactEmail: form.email, email: form.email } : {}),
+        firstName: firstName || form.fullName,
+        lastName: rest.join(' ') || firstName || form.fullName,
+        phone: form.phone,
+        password: form.password,
+        acceptedTerms: form.acceptTerms,
+        acceptedPrivacy: form.acceptPrivacy,
+        acceptedTransport: form.acceptTransport,
+      });
+      await useAuthStore.getState().login(form.phone, form.password);
+      router.push('/');
+    } catch (e) {
+      notify.error(e);
+      setSubmitting(false);
+    }
   };
 
   const toggleRoute = (r: string) => {
