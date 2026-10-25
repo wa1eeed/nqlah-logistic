@@ -37,7 +37,11 @@ with today's behavior as the first registered strategies (no behavior change):
 3. ✅ Policy engine **enforcement** — `effectiveForCompany` wired into order create + publish (sourcing + pricing gates, forced carrier); permissive defaults = today's behavior. First Jest unit tests. (This PR.)
 4. ✅ **Collection modules** — ESCROW · prepaid-wallet · prepaid-gateway (abstracted, stubbed provider) · COD, selected by policy, over the existing escrow; unified settlement on completion/release; prepaid auto-refund on cancel. (This PR.) **PARTIAL (deposit + COD remainder) deferred to a follow-up** — its split settlement needs its own PR.
 5. ✅ Provider groups (`CarrierGroup`) + client→provider **visibility scope** (ALL/GROUP/CARRIER), enforced in market listing, bidding, and direct-target selection; permissive default. (This PR.)
-6. ⏳ Dashboards — client route builder + allowed payment choices · admin group/workflow control + route view · carrier stop execution.
+6. 🟡 Dashboards (in progress):
+   - 6a ✅ **Admin control** — provider-visibility scope in the client-policies panel + a carrier-groups panel (`/settings` policies tab). (This PR.)
+   - 6b ⏳ Client — new-order **route builder** (multi-stop) + allowed collection-method selector.
+   - 6c ⏳ Carrier (+admin) — route **stop execution** view (per-stop status + proof) and COD collect.
+   - Note: the admin settings policy panels are Arabic-hardcoded (missed in the i18n pass) — needs an i18n follow-up.
 7. ⏳ Provider-owned clients (sub-tenancy).
 8. ⏳ Individual-driver portal + unified driver app (consumes stop execution).
 9. ⏳ White-label (provider-branded client area + driver app).

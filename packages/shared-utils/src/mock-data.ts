@@ -503,6 +503,11 @@ export interface ClientPolicy {
   allowPrepaid: boolean;
   /** Payment: cash/transfer on delivery. */
   allowCOD: boolean;
+  /** Which providers this group's clients can see: whole market, a provider
+   *  group, or only the forced carrier. Defaults to ALL. */
+  visibilityScope?: 'ALL' | 'GROUP' | 'CARRIER';
+  /** When visibilityScope === 'GROUP', the CarrierGroup whose carriers are visible. */
+  visibleCarrierGroupId?: string;
 }
 
 export const DEFAULT_CLIENT_POLICY: ClientPolicy = {
@@ -512,7 +517,16 @@ export const DEFAULT_CLIENT_POLICY: ClientPolicy = {
   allowFixedPricing: true,
   allowPrepaid: true,
   allowCOD: true,
+  visibilityScope: 'ALL',
 };
+
+/** A named set of provider (carrier) companies for visibility scoping. */
+export interface CarrierGroup {
+  id: string;
+  name: string;
+  description?: string;
+  carrierIds: string[];
+}
 
 export interface PolicyGroup {
   id: string;

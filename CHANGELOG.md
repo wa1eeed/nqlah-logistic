@@ -6,6 +6,18 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.50 — Admin control: provider visibility + carrier groups (2026-10-25)
+
+- The admin **client-policies panel** now exposes **provider visibility scope**
+  per client group — All providers / a provider group / a single provider —
+  surfacing the phase-5 backend (`visibilityScope` + `visibleCarrierGroupId`).
+- New **carrier-groups panel** (`/settings` → policies tab): create/rename/delete
+  provider groups and manage their members, wired to `/policies/carrier-groups`.
+- `ClientPolicy` (shared-utils) gains `visibilityScope` / `visibleCarrierGroupId`;
+  new `CarrierGroup` type.
+- Note: the settings policy panels are still Arabic-hardcoded (missed in the
+  i18n pass); flagged in `PENDING_WORK.md` as a follow-up.
+
 ### v0.9.49 — Provider groups + visibility scope (2026-10-25)
 
 - Admins can now **scope which providers a client group can see**, so the market
