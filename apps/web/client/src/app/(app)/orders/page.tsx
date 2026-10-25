@@ -2,10 +2,14 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { Package, Plus } from 'lucide-react';
+import { MapPin, Package, Plus, Search, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -22,6 +26,8 @@ import { fetcher } from '@/lib/api';
 
 export default function ClientOrdersPage() {
   const [tab, setTab] = useState('ALL');
+  const [search, setSearch] = useState('');
+  const [cityFilter, setCityFilter] = useState('ALL');
   // SWR drives the data layer. When the API is reachable, `data` holds real
   // orders. The `api.ts` interceptor returns `getMockResponse` on network
   // failure, so mock data still flows in pure UI-demo mode.
@@ -35,13 +41,31 @@ export default function ClientOrdersPage() {
     return ordersForClient(CURRENT_CLIENT_ID);
   }, [data]);
 
+  // Cities present across all orders (origin or destination) for the filter.
+  const cities = useMemo(
+    () => Array.from(new Set(all.flatMap((o) => [o.originCity, o.destinationCity]).filter(Boolean))).sort(),
+    [all],
+  );
+
   const rows = useMemo(() => {
-    if (tab === 'ALL') return all;
+    let arr = all;
     if (tab === 'ACTIVE') {
-      return all.filter((o) => ['PUBLISHED', 'BIDDING', 'ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'].includes(o.status));
+      arr = arr.filter((o) => ['PUBLISHED', 'BIDDING', 'ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'].includes(o.status));
+    } else if (tab !== 'ALL') {
+      arr = arr.filter((o) => o.status === tab);
     }
-    return all.filter((o) => o.status === tab);
-  }, [tab, all]);
+    if (cityFilter !== 'ALL') {
+      arr = arr.filter((o) => o.originCity === cityFilter || o.destinationCity === cityFilter);
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      arr = arr.filter((o) =>
+        [o.orderNumber, o.originCity, o.destinationCity, o.cargoDescription]
+          .some((v) => v?.toString().toLowerCase().includes(q)),
+      );
+    }
+    return arr;
+  }, [tab, all, cityFilter, search]);
 
   const TABS = [
     { key: 'ALL',        label: 'الكل',         count: all.length },
@@ -83,15 +107,61 @@ export default function ClientOrdersPage() {
       </FadeItem>
 
       <FadeItem>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="ابحث برقم الطلب، المدينة، أو وصف الشحنة..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="ps-9 pe-9"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
+                aria-label="مسح البحث"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Select value={cityFilter} onValueChange={setCityFilter}>
+            <SelectTrigger className="w-full sm:w-56">
+              <span className="flex items-center gap-2 min-w-0">
+                <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <SelectValue placeholder="كل المدن" />
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">كل المدن</SelectItem>
+              {cities.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </FadeItem>
+
+      <FadeItem>
         <Card>
           <CardContent className="p-0">
             {rows.length === 0 && !isLoading ? (
-              <EmptyState
-                icon={Package}
-                title="لا توجد طلبات"
-                description="لم تنشئ أي طلبات نقل بعد في هذه الفئة"
-                action={{ label: 'إنشاء طلب جديد', href: '/orders/new' }}
-              />
+              (search.trim() || cityFilter !== 'ALL') ? (
+                <EmptyState
+                  icon={Search}
+                  title="لا توجد نتائج مطابقة"
+                  description="جرّب تعديل البحث أو تغيير فلتر المدينة"
+                />
+              ) : (
+                <EmptyState
+                  icon={Package}
+                  title="لا توجد طلبات"
+                  description="لم تنشئ أي طلبات نقل بعد في هذه الفئة"
+                  action={{ label: 'إنشاء طلب جديد', href: '/orders/new' }}
+                />
+              )
             ) : (
               <Table>
                 <TableHeader>
