@@ -6,6 +6,30 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.67 — Client dashboard honours the admin's module config + robustness (2026-10-26)
+
+Audit pass over the policies & modules system across all dashboards. Server-side
+behaviour was already correct and secure; this closes the gaps where the **client
+dashboard** didn't reflect the admin's configuration, plus two robustness fixes.
+
+- **Client order form now mirrors the group's modules:** it seeds the sourcing,
+  pricing and collection selections from the group's admin-set defaults, and when
+  the admin **enforces** a collection method the payment step is **locked** to it
+  with a clear notice (instead of letting the client pick a method the server would
+  silently override).
+- **DIRECT carrier picker shows only the visible subset:** new client endpoint
+  `GET /policies/visible-carriers` returns the providers the client may target per
+  its visibility scope; the form uses it instead of the full active-carrier roster
+  (so the client can't pick a carrier the server would reject).
+- **Robustness — single-group membership:** `updateGroup` now strips the listed
+  clients from every other group (same invariant `assignClient` guarantees), so a
+  client can never land in two groups and get an ambiguous effective policy.
+- **Robustness — sourcing fallback:** when a client omits the sourcing mode and the
+  group sets no `defaultAssignment`, the mode is derived from the allow toggles
+  (direct when the market is disabled) instead of defaulting to OPEN and erroring.
+- Verified end-to-end (16/16 policy e2e checks) and live across the admin, client
+  and carrier dashboards.
+
 ### v0.9.66 — Admin-configured per-group module defaults (2026-10-26)
 
 - **PolicyGroup** gains admin-set module defaults: `defaultAssignment`

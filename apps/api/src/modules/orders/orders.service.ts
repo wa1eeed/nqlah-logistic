@@ -564,10 +564,17 @@ export class OrdersService {
   private async resolveSourcing(dto: CreateOrderDto, companyId: string) {
     const policy = await this.policies.effectiveForCompany(companyId);
     // When the client doesn't pick a sourcing module, fall back to the group's
-    // admin-set default (`defaultAssignment`), else the open market.
-    const resolvedMode = dto.mode
-      ? dto.mode
-      : (policy.defaultAssignment === 'DIRECT' ? 'DIRECT' : 'OPEN');
+    // admin-set default (`defaultAssignment`). If no default is set, derive a
+    // sensible one from the allow toggles — preferring the open market, but
+    // falling back to direct when the market is disabled — so an unspecified
+    // mode never lands on a disabled module and errors.
+    const toggleFallback: 'OPEN' | 'DIRECT' =
+      policy.allowMarket ? 'OPEN' : (policy.allowDirect ? 'DIRECT' : 'OPEN');
+    const defaultMode: 'OPEN' | 'DIRECT' =
+      policy.defaultAssignment === 'DIRECT' ? 'DIRECT'
+      : policy.defaultAssignment === 'MARKET' ? 'OPEN'
+      : toggleFallback;
+    const resolvedMode = dto.mode ?? defaultMode;
     let mode: 'OPEN' | 'DIRECT' = resolvedMode === 'DIRECT' ? 'DIRECT' : 'OPEN';
     let targetCarrierId: string | null = mode === 'DIRECT' ? dto.targetCarrierId ?? null : null;
     if (policy.forcedCarrierId) {

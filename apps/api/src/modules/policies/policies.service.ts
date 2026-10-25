@@ -72,6 +72,24 @@ export class PoliciesService {
   async updateGroup(id: string, dto: UpdateGroupDto) {
     await this.ensure(id);
     const p = dto.policy;
+    // A client belongs to at most one group. When this update sets the
+    // membership list, strip those clients from every other group first so the
+    // effective policy is never ambiguous (same invariant as `assignClient`).
+    if (dto.clientIds && dto.clientIds.length) {
+      const others = await this.prisma.policyGroup.findMany({
+        where: { id: { not: id }, clientIds: { hasSome: dto.clientIds } },
+      });
+      if (others.length) {
+        await this.prisma.$transaction(
+          others.map((g) =>
+            this.prisma.policyGroup.update({
+              where: { id: g.id },
+              data: { clientIds: g.clientIds.filter((c) => !dto.clientIds!.includes(c)) },
+            }),
+          ),
+        );
+      }
+    }
     const row = await this.prisma.policyGroup.update({
       where: { id },
       data: {
@@ -169,6 +187,25 @@ export class PoliciesService {
       return cg?.carrierIds ?? [];
     }
     return [];
+  }
+
+  /**
+   * The active carriers a client may target for a DIRECT order — the visible
+   * subset per its group's visibility scope, or all active carriers when the
+   * scope is ALL. Powers the client order form's carrier picker so it only
+   * offers providers the server would actually accept.
+   */
+  async visibleCarriersForClient(clientId: string | null | undefined) {
+    const ids = await this.visibleCarrierIds(clientId);
+    return this.prisma.company.findMany({
+      where: {
+        type: 'CARRIER',
+        status: 'ACTIVE',
+        ...(ids === null ? {} : { id: { in: ids } }),
+      },
+      select: { id: true, nameAr: true, nameEn: true, city: true },
+      orderBy: { nameAr: 'asc' },
+    });
   }
 
   /** Whether a carrier may see/bid on a given client's marketplace orders. */
