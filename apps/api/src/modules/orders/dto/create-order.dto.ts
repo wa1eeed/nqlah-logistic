@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  ValidateNested,
 } from 'class-validator';
 
 const CARGO = [
@@ -23,6 +24,28 @@ const MODES = ['OPEN', 'DIRECT'] as const;
 const TRIP_TYPES = ['SAME_CITY', 'INTER_CITY'] as const;
 const PICKUP_WINDOWS = ['MORNING', 'EVENING', 'ALL_DAY'] as const;
 const ORDER_TYPES = ['SINGLE', 'CONSOLIDATED'] as const;
+const STOP_TYPES = ['PICKUP', 'DELIVERY', 'DROPOFF', 'WAREHOUSE', 'RETURN_EMPTY', 'EXCHANGE'] as const;
+const STOP_STATUSES = ['PENDING', 'EN_ROUTE', 'ARRIVED', 'COMPLETED', 'SKIPPED'] as const;
+
+/// One stop on an order's route. The client sends an ordered list (2+ stops)
+/// when building a multi-stop trip; a classic single origin→destination order
+/// omits `stops` and the server derives a 2-stop route from origin/destination.
+export class CreateStopDto {
+  @IsEnum(STOP_TYPES) type!: (typeof STOP_TYPES)[number];
+  @IsString() city!: string;
+  @IsString() region!: string;
+  @IsString() address!: string;
+  @IsOptional() @IsNumber() lat?: number;
+  @IsOptional() @IsNumber() lng?: number;
+  @IsOptional() @IsString() contactName?: string;
+  @IsOptional() @IsString() contactPhone?: string;
+  @IsOptional() @IsDateString() scheduledAt?: string;
+  @IsOptional() @IsDateString() windowStart?: string;
+  @IsOptional() @IsDateString() windowEnd?: string;
+  @IsOptional() @IsString() instructions?: string;
+  @IsOptional() @IsString() containerNo?: string;
+  @IsOptional() @IsBoolean() isEmptyReturn?: boolean;
+}
 
 export class CreateOrderDto {
   @IsEnum(CARGO) cargoType!: (typeof CARGO)[number];
@@ -77,6 +100,21 @@ export class CreateOrderDto {
   /// Consolidated only — a shipment reference per leg, in leg order. Omit (or
   /// send an empty array) to have the server auto-generate `<orderNumber>-L<n>`.
   @IsOptional() @IsArray() @IsString({ each: true }) legReferences?: string[];
+
+  /// Multi-stop route (2+ stops, in travel order). Omit for a classic
+  /// single origin→destination order — the server then builds a 2-stop route
+  /// (PICKUP at origin, DELIVERY at destination) from the fields above.
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => CreateStopDto)
+  stops?: CreateStopDto[];
+}
+
+/// Carrier/driver (or admin override) updating one stop's execution state.
+export class UpdateStopDto {
+  @IsOptional() @IsEnum(STOP_STATUSES) status?: (typeof STOP_STATUSES)[number];
+  @IsOptional() @IsNumber() lat?: number;
+  @IsOptional() @IsNumber() lng?: number;
+  @IsOptional() @IsArray() @IsString({ each: true }) proofPhotos?: string[];
+  @IsOptional() @IsString() proofNote?: string;
 }
 
 export class UpdateOrderDto {

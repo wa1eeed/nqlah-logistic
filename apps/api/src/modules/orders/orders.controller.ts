@@ -10,7 +10,7 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { OrdersService } from './orders.service';
 import {
   AssignDriverDto, AssignOrderDto, CancelOrderDto, CreateOrderDto,
-  CreateTrackingEventDto, UpdateOrderDto,
+  CreateTrackingEventDto, UpdateOrderDto, UpdateStopDto,
 } from './dto/create-order.dto';
 import type { OrderStatus } from '../../generated/prisma';
 
@@ -139,6 +139,22 @@ export class OrdersController {
     @CurrentUser() actor: AuthUser,
   ) {
     return this.orders.setLegStatus(id, Number(index), dto.status, actor);
+  }
+
+  // ─── Multi-stop route ────────────────────────────────────────
+  @Get(':id/stops')
+  getStops(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
+    return this.orders.getStops(id, actor);
+  }
+  @Patch(':id/stops/:stopId')
+  @Audit({ action: 'order.stop.update', resourceType: 'Order', idFrom: 'param', idKey: 'id' })
+  setStopStatus(
+    @Param('id') id: string,
+    @Param('stopId') stopId: string,
+    @Body() dto: UpdateStopDto,
+    @CurrentUser() actor: AuthUser,
+  ) {
+    return this.orders.setStopStatus(id, stopId, dto, actor);
   }
 
   @Get(':id/tracking')
