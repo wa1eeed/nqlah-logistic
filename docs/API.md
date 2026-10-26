@@ -336,6 +336,19 @@ POST /api/bids
 | `POST` | `/policies/assign` 🔒👮 | admin | Move a client into a group (single-membership) |
 | `GET`/`POST`/`PUT`/`DELETE` | `/policies/carrier-groups[/:id]` 🔒👮 | admin | Carrier-group CRUD |
 
+#### Subscription plans — `/api/policies` (see [`docs/SUBSCRIPTIONS.md`](SUBSCRIPTIONS.md))
+
+| Method | Path | Who | Description |
+|---|---|---|---|
+| `GET` | `/policies/plans/public?audience=` | public | Active plans + computed prices (signup picker) |
+| `GET`/`POST`/`PUT`/`DELETE` | `/policies/plans[/:id]` 🔒👮 | admin | Plan CRUD (dynamic pricing + `moduleIds`) |
+| `GET`/`POST`/`PUT`/`DELETE` | `/policies/plan-modules[/:id]` 🔒👮 | admin | Priced module-catalog CRUD |
+| `POST` | `/policies/assign-plan` 🔒👮 | admin | Subscribe/switch a company to a plan (or clear it) |
+| `GET` | `/policies/subscription/mine` 🔒 | any | The caller's subscription + plan |
+| `POST` | `/policies/subscription/subscribe` 🔒 | any | Self-subscribe `{ planId, billingCycle? }` |
+| `POST` | `/policies/subscription/cancel` 🔒 | any | Cancel `{ immediate? }` (default: at period end) |
+| `GET` | `/policies/subscription/:companyId` 🔒👮 | admin | A company's subscription |
+
 ### 3.6 Fleet — `/api/fleet`
 
 | Method | Path | Description |

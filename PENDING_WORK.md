@@ -376,6 +376,24 @@ capability layer), per the owner's direction.
    BOTH ⇒ two halves), `InvoiceKind`, ZATCA party snapshots, platform identity in
    settings, admin Tax Invoices card. `tax-invoices.e2e.mjs`.
    See [`docs/INVOICES.md`](docs/INVOICES.md).
-4. **Later:** invoice PDF + Fatoora Phase-2 QR/TLV; buyer-facing invoice lists in
-   the client/carrier apps; bind a plan at registration + plan selection at signup;
-   subscription billing/cycle + upgrade/downgrade; profile versioning.
+4. ✅ **Phase 3 — Fixed-price market + pricing/assignment decoupling** (v0.9.79):
+   assignment (market/direct) and pricing (bidding/fixed) are independent axes;
+   a client can publish to the market at a fixed price (carriers accept it,
+   client picks); `Order.priceMode`. `market-fixed.e2e.mjs`. See
+   [`docs/POLICIES.md`](docs/POLICIES.md) §2.
+5. ✅ **Phase 4 — Subscription plans** (v0.9.80): dynamic plan pricing
+   (base + priced module catalog), `PlanModule`/`PlanModuleLink`, per-company
+   `Subscription` lifecycle (status/cycle/period/trial/price snapshot), plan
+   binding at registration + public plans endpoint, admin plan builder + carrier
+   signup plan picker. Payment is **stubbed**. `plan-pricing.e2e.mjs`,
+   `subscriptions.e2e.mjs`. See [`docs/SUBSCRIPTIONS.md`](docs/SUBSCRIPTIONS.md).
+
+### Queue — later, in priority order (not started)
+1. **Subscription PAYMENT + auto-renewal** (the remaining piece of Phase 4): charge
+   the price snapshot via the gateway, advance periods on renewal, dunning for
+   `PAST_DUE`, proration on upgrade/downgrade, subscription invoices.
+2. **Self-service billing page** (carrier/client): view the subscription, upgrade /
+   downgrade / cancel, see invoices.
+3. **Invoice PDF rendering + Fatoora Phase-2** (QR/TLV) for full ZATCA e-invoicing.
+4. **Buyer-facing invoice lists** in the client and carrier apps.
+5. **Policy profile versioning.**
