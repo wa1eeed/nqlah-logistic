@@ -6,6 +6,15 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.82 — Self-applying deploys: migrations run on container startup (2026-10-26)
+
+The API container now runs `apps/api/docker-entrypoint.sh` before the server:
+`prisma migrate deploy` (blocking — a failed migration aborts startup) then the
+idempotent bootstrap (admin, platform identity, subscription plans; non-fatal).
+No manual `db:deploy` after a deploy. `SKIP_DB_BOOTSTRAP=1` skips the step; the
+`npm run db:deploy` command remains as a manual fallback. Dockerfile also compiles
+all four bootstrap scripts and widens the healthcheck start-period for migrations.
+
 ### v0.9.81 — Safe deletes: confirmation + dependency-aware deletion (2026-10-26)
 
 Destructive actions in the admin Policy Engine no longer delete on a single

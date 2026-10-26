@@ -20,11 +20,13 @@ RUN pnpm --filter @naqla/shared-utils run build
 RUN pnpm --filter @naqla/api run db:generate && pnpm --filter @naqla/api run build
 # tsc compiles .ts files only; Prisma generates .js+.d.ts, so copy manually
 RUN cp -r /repo/apps/api/src/generated /repo/apps/api/dist/src/
-# Compile seed.ts + ensure-admin.ts → dist/prisma so they can run with plain
-# node in production (seed = demo data; ensure-admin = super-admin only).
+# Compile the prisma bootstrap scripts → dist/prisma so they can run with plain
+# node in production (seed = demo data; the ensure-* scripts are idempotent and
+# production-safe: super-admin, platform tax identity, and subscription plans).
 RUN cd /repo/apps/api && node_modules/.bin/tsc \
   --target ES2020 --module commonjs --esModuleInterop --skipLibCheck \
-  --resolveJsonModule --outDir dist/prisma prisma/seed.ts prisma/ensure-admin.ts
+  --resolveJsonModule --outDir dist/prisma \
+  prisma/seed.ts prisma/ensure-admin.ts prisma/ensure-platform-identity.ts prisma/ensure-plans.ts
 
 # pnpm deploy produces flat node_modules (no pnpm store symlinks)
 # No .prisma copy needed: client is generated into src/generated/prisma
@@ -39,8 +41,13 @@ COPY --from=builder /prod/node_modules ./node_modules
 COPY --from=builder /repo/apps/api/dist ./dist
 COPY --from=builder /repo/apps/api/package.json ./
 COPY --from=builder /repo/apps/api/prisma ./prisma
+COPY --from=builder /repo/apps/api/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 EXPOSE 4000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+# Longer start-period: the entrypoint applies migrations + bootstrap before the
+# server begins answering /health.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
   CMD wget -qO /dev/null http://localhost:4000/health || exit 1
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/src/main.js"]
+# The entrypoint applies migrations + idempotent bootstrap, then exec's the server.
+CMD ["./docker-entrypoint.sh"]
