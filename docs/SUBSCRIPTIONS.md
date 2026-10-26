@@ -107,12 +107,14 @@ profile** backing one or more plans is likewise protected (`GROUP_IN_USE`).
 ## 8. Bootstrapping an environment
 
 Plans/modules aren't demo data, so they're provisioned by
-`pnpm --filter @naqla/api db:ensure-plans` (`apps/api/prisma/ensure-plans.ts`),
-which is part of `npm run db:deploy`. It upserts the priced module catalog and
-creates the Basic (free, default) + Professional plans **idempotently, without any
-demo data** — safe in production — and leaves later admin edits untouched. If no
-default carrier plan exists it marks Basic as the default. Edit everything
-afterwards from the admin panel.
+`apps/api/prisma/ensure-plans.ts` (`db:ensure-plans`), which the API container
+runs on **every startup** (part of the entrypoint; see [`DEPLOYMENT.md`](DEPLOYMENT.md)).
+It is **non-destructive**: it creates a module, the provider profile, or the Basic
+(free, default) / Professional plan **only when missing** — never overwriting an
+existing one's price/config — **without any demo data**, so it's safe in
+production and on every environment. If no default carrier plan exists it marks
+Basic as the default. Everything is then edited from the admin panel, and later
+deploys leave those edits intact — each environment keeps its own data.
 
 ## 9. Deferred (next)
 
