@@ -2,14 +2,22 @@
 // carries the finance/tax + policy-engine work. Read-only: it never creates,
 // mutates, or deletes anything, so it is safe against staging or production.
 //
-//   # against staging:
-//   E2E_BASE=https://api.nqlah.nx.sa/api node scripts/post-deploy-check.mjs
-//   # against a local API (default):
+//   # against staging (admin differs from the demo seed → pass creds):
+//   E2E_BASE=https://api.nqlah.nx.sa/api \
+//     E2E_ADMIN_EMAIL=waleed@nx.sa E2E_ADMIN_PASSWORD=... \
+//     node scripts/post-deploy-check.mjs
+//   # against a local API with the demo seed (default creds):
 //   node scripts/post-deploy-check.mjs
 //
 // It uses ONE admin login (rate-limited 5/30min) and the shared e2e helpers.
-// Exits 0 when every check passes, 1 otherwise.
-import { BASE, j, unwrap, listOf, adminLogin, checker } from '../apps/api/test/e2e/_helpers.mjs';
+// Admin creds default to the demo seed; override with E2E_ADMIN_EMAIL /
+// E2E_ADMIN_PASSWORD. Exits 0 when every check passes, 1 otherwise.
+import { BASE, j, unwrap, listOf, checker } from '../apps/api/test/e2e/_helpers.mjs';
+
+// Admin credentials: default to the demo seed, overridable for real
+// environments whose admin differs (e.g. SEED_ADMIN_EMAIL set in Coolify).
+const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'admin@naqla.sa';
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'Admin@1234';
 
 async function run() {
   const { ok, done } = checker(`Post-deploy check — ${BASE}`);
@@ -28,9 +36,13 @@ async function run() {
   ok('database up', h?.checks?.database === 'up');
 
   // 2. Admin auth reachable.
-  let admin;
-  try { admin = await adminLogin(); } catch { admin = null; }
-  ok('admin login works', !!admin, 'rate-limited? wait 30 min, or the build is down');
+  let admin = null;
+  try {
+    const res = await j('POST', '/admin/auth/login', null, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
+    admin = unwrap(res.data)?.accessToken ?? null;
+  } catch { admin = null; }
+  ok('admin login works', !!admin,
+    `tried ${ADMIN_EMAIL} — set E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD for a custom admin (or rate-limited: wait 30 min)`);
   if (!admin) return done();
 
   // 3. Finance build marker: companies carry the short code + VAT registration.
