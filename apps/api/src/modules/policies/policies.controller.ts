@@ -7,7 +7,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { PoliciesService } from './policies.service';
 import {
   AssignClientDto, AssignPlanDto, CreateCarrierGroupDto, CreateGroupDto, CreatePlanDto,
-  UpdateCarrierGroupDto, UpdateGroupDto, UpdatePlanDto,
+  CreatePlanModuleDto, UpdateCarrierGroupDto, UpdateGroupDto, UpdatePlanDto, UpdatePlanModuleDto,
 } from './dto/policy.dto';
 
 @ApiTags('policies')
@@ -131,5 +131,37 @@ export class PoliciesController {
   @Audit({ action: 'policy.plan.assign', resourceType: 'Company', idFrom: 'body', idKey: 'companyId' })
   assignPlan(@Body() dto: AssignPlanDto) {
     return this.policies.assignPlan(dto.companyId, dto.planId ?? null);
+  }
+
+  // ─── Admin: Plan modules (priced capability catalog) ─────────
+  @Get('plan-modules')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  listPlanModules() {
+    return this.policies.listPlanModules();
+  }
+
+  @Post('plan-modules')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @Audit({ action: 'policy.planModule.create', resourceType: 'PlanModule' })
+  createPlanModule(@Body() dto: CreatePlanModuleDto) {
+    return this.policies.createPlanModule(dto);
+  }
+
+  @Put('plan-modules/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @Audit({ action: 'policy.planModule.update', resourceType: 'PlanModule', idFrom: 'param', idKey: 'id' })
+  updatePlanModule(@Param('id') id: string, @Body() dto: UpdatePlanModuleDto) {
+    return this.policies.updatePlanModule(id, dto);
+  }
+
+  @Delete('plan-modules/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @Audit({ action: 'policy.planModule.delete', resourceType: 'PlanModule', idFrom: 'param', idKey: 'id' })
+  deletePlanModule(@Param('id') id: string) {
+    return this.policies.deletePlanModule(id);
   }
 }

@@ -311,6 +311,8 @@ model Company {
   /// policy via the plan's Policy Profile. Null → legacy group membership / default.
   planId String?
   plan   Plan?  @relation(fields: [planId], references: [id])
+  /// The recurring subscription record for this company (one active per company).
+  subscription Subscription?
 
   bids               Bid[]
   invoicesIssued     Invoice[]           @relation("IssuerInvoices")
@@ -1090,12 +1092,102 @@ model Plan {
   /// Optional commission override on top of the profile's commission (commercial lever).
   commissionRateOverride Decimal? @db.Decimal(5, 4)
 
+  // ── Subscription pricing (dynamic, component-based) ──
+  /// A free plan ignores pricing entirely (effective price = 0).
+  isFree            Boolean @default(true)
+  /// Monthly base price (SAR). The plan's effective monthly price is
+  /// `basePrice + Σ(included modules' prices)`, computed in the plan builder.
+  basePrice         Decimal @default(0) @db.Decimal(10, 2)
+  /// The default billing cycle offered: "MONTHLY" | "YEARLY".
+  billingCycle      String  @default("MONTHLY")
+  /// Percentage discount applied when billed yearly (0 = none).
+  yearlyDiscountPct Decimal @default(0) @db.Decimal(5, 2)
+  /// Fleet size included in the plan (null = unlimited). Mirrored into the
+  /// capability layer as the `maxFleetSize` limit.
+  includedTruckLimit Int?
+  /// Free-trial length in days before the first charge (0 = none).
+  trialDays         Int     @default(0)
+  sortOrder         Int     @default(0)
+
+  /// The priced add-on modules this plan includes (drives features + price).
+  modules       PlanModuleLink[]
+  subscriptions Subscription[]
+
   companies Company[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([audience, active])
+}
+
+/// Admin-managed catalog of priced capabilities ("modules") a plan can bundle.
+/// Each module's `key` grants a capability-layer feature flag to subscribers,
+/// and its `price` adds to the plan's monthly price — so plan pricing is built
+/// up dynamically from the modules it includes.
+model PlanModule {
+  id          String  @id @default(cuid())
+  /// The feature flag this module grants (e.g. "fleetMaintenance",
+  /// "driverManagement", "contractedDrivers"). Unique across the catalog.
+  key         String  @unique
+  name        String
+  nameEn      String?
+  description String?
+  /// Who the module applies to: "CARRIER" | "CLIENT" | "BOTH".
+  audience    String  @default("CARRIER")
+  /// Monthly add-on price (SAR) contributed to any plan that includes it.
+  price       Decimal @default(0) @db.Decimal(10, 2)
+  active      Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  plans PlanModuleLink[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([audience, active])
+}
+
+/// Join: which modules a plan includes.
+model PlanModuleLink {
+  planId   String
+  moduleId String
+  plan     Plan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  module   PlanModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@id([planId, moduleId])
+  @@index([moduleId])
+}
+
+/// A company's subscription to a Plan — the recurring membership record.
+/// Payment is stubbed for now (the platform's gateway is not wired yet); this
+/// models the lifecycle (status, cycle, period, renewal, price snapshot) so the
+/// billing layer can be added later without reshaping the data.
+model Subscription {
+  id        String  @id @default(cuid())
+  companyId String  @unique
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      Plan    @relation(fields: [planId], references: [id])
+
+  /// "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED".
+  status       String  @default("ACTIVE")
+  billingCycle String  @default("MONTHLY")
+  /// The price locked for the current period (SAR), snapshot at (re)subscribe.
+  priceSnapshot Decimal @default(0) @db.Decimal(10, 2)
+
+  currentPeriodStart DateTime  @default(now())
+  currentPeriodEnd   DateTime?
+  /// When true, the subscription ends at period end instead of renewing.
+  cancelAtPeriodEnd  Boolean   @default(false)
+  trialEndsAt        DateTime?
+  canceledAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([planId])
 }
 
 /// A named set of provider (carrier) companies, used to scope which providers a

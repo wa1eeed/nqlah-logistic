@@ -364,6 +364,57 @@ async function main() {
     if (!found) await prisma.policyGroup.create({ data: { ...g, clientIds: [] } });
   }
 
+  // ─── Subscription plans — priced module catalog + provider plans ─────────
+  // Priced modules a provider plan can bundle (key = the capability it grants).
+  const PLAN_MODULES_SEED = [
+    { key: 'driverManagement', name: 'التحكم بالسائقين', nameEn: 'Driver management', audience: 'CARRIER', price: 0, sortOrder: 1 },
+    { key: 'fleetMaintenance', name: 'إدارة الصيانة الدورية للأسطول', nameEn: 'Periodic fleet maintenance', audience: 'CARRIER', price: 150, sortOrder: 2 },
+    { key: 'contractedDrivers', name: 'السائقون المتعاقدون', nameEn: 'Contracted drivers', audience: 'CARRIER', price: 100, sortOrder: 3 },
+    { key: 'advancedAnalytics', name: 'تحليلات متقدّمة', nameEn: 'Advanced analytics', audience: 'CARRIER', price: 80, sortOrder: 4 },
+    { key: 'prioritySupport', name: 'دعم ذو أولوية', nameEn: 'Priority support', audience: 'BOTH', price: 60, sortOrder: 5 },
+  ];
+  const moduleByKey: Record<string, string> = {};
+  for (const m of PLAN_MODULES_SEED) {
+    const row = await prisma.planModule.upsert({ where: { key: m.key }, create: m, update: { name: m.name, nameEn: m.nameEn, price: m.price, audience: m.audience, sortOrder: m.sortOrder } });
+    moduleByKey[m.key] = row.id;
+  }
+
+  // A base operating profile for providers (permissive) to back the plans.
+  let providerProfile = await prisma.policyGroup.findFirst({ where: { name: 'ملف المزوّد الأساسي' } });
+  if (!providerProfile) {
+    providerProfile = await prisma.policyGroup.create({
+      data: {
+        name: 'ملف المزوّد الأساسي', description: 'الملف التشغيلي الذي تبني عليه باقات المزوّدين',
+        allowMarket: true, allowDirect: true, allowMarketPricing: true, allowFixedPricing: true,
+        allowPrepaid: true, allowCOD: true, clientIds: [],
+      },
+    });
+  }
+
+  // Provider plans: Basic (free) and Professional (priced, bundles modules).
+  const existingBasic = await prisma.plan.findFirst({ where: { name: 'الباقة الأساسية', audience: 'CARRIER' } });
+  if (!existingBasic) {
+    await prisma.plan.create({
+      data: {
+        name: 'الباقة الأساسية', nameEn: 'Basic', tier: 'BASIC', audience: 'CARRIER',
+        policyGroupId: providerProfile.id, isFree: true, isDefault: true, active: true,
+        includedTruckLimit: 3, sortOrder: 1,
+        modules: { create: [{ moduleId: moduleByKey.driverManagement }] },
+      },
+    });
+  }
+  const existingPro = await prisma.plan.findFirst({ where: { name: 'الباقة الاحترافية', audience: 'CARRIER' } });
+  if (!existingPro) {
+    await prisma.plan.create({
+      data: {
+        name: 'الباقة الاحترافية', nameEn: 'Professional', tier: 'PRO', audience: 'CARRIER',
+        policyGroupId: providerProfile.id, isFree: false, basePrice: 300, yearlyDiscountPct: 15,
+        includedTruckLimit: 15, trialDays: 14, sortOrder: 2,
+        modules: { create: ['driverManagement', 'fleetMaintenance', 'contractedDrivers', 'advancedAnalytics', 'prioritySupport'].map((k) => ({ moduleId: moduleByKey[k] })) },
+      },
+    });
+  }
+
   console.log('');
   console.log('✅ Seed complete. Demo accounts (email or phone both work):');
   console.log('');
