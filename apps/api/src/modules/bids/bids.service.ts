@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { money, round2 } from '../../common/money/money';
+import { computeOrderFinancials } from '../../common/pricing/pricing';
 import { CollectionService } from '../payments/collection/collection.service';
 import { PoliciesService } from '../policies/policies.service';
 import { CreateBidDto, UpdateBidDto } from './dto/bid.dto';
@@ -110,8 +111,17 @@ export class BidsService {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
     }
     const bid = await this.requireBid(id);
-    const commission = round2(money(bid.amount).mul(0.08));
-    const carrierAmount = round2(money(bid.amount).sub(commission));
+    // Commission + VAT from the client's effective policy + the carrier's VAT status.
+    const policy = await this.policies.effectiveForCompany(order.clientId);
+    const carrier = await this.prisma.company.findUnique({ where: { id: bid.carrierId }, select: { vatRegistered: true, commissionRate: true } });
+    const commissionRate = policy.commissionRate ?? (carrier?.commissionRate != null ? Number(carrier.commissionRate) : undefined);
+    const fin = computeOrderFinancials({
+      price: Number(bid.amount),
+      priceVatInclusive: policy.priceVatInclusive,
+      commissionRate,
+      commissionAppliesTo: policy.commissionAppliesTo as 'CLIENT' | 'CARRIER' | 'BOTH' | undefined,
+      carrierVatRegistered: carrier?.vatRegistered,
+    });
 
     // ── Per-leg bid (phase 2b): award the leg to this carrier ──
     if (bid.orderLegId) {
@@ -127,8 +137,10 @@ export class BidsService {
           data: {
             carrierId: bid.carrierId,
             price: bid.amount,
-            commissionAmount: commission,
-            carrierAmount,
+            commissionAmount: fin.commission,
+            carrierAmount: fin.carrierAmount,
+            serviceVatAmount: fin.serviceVat,
+            commissionVatAmount: fin.commissionVat,
             status: 'ASSIGNED',
           },
         });
@@ -149,8 +161,11 @@ export class BidsService {
         data: {
           carrierId: bid.carrierId,
           agreedPrice: bid.amount,
-          commissionAmount: commission,
-          carrierAmount,
+          commissionAmount: fin.commission,
+          carrierAmount: fin.carrierAmount,
+          serviceVatAmount: fin.serviceVat,
+          commissionVatAmount: fin.commissionVat,
+          clientTotalDue: fin.clientTotalDue,
           status: 'ASSIGNED',
         },
       });

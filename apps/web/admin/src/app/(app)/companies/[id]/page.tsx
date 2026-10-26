@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -495,7 +496,65 @@ function ProfileTab({ company, isCarrier }: { company: Company; isCarrier: boole
           )}
         </CardContent>
       </Card>
+
+      {isCarrier && <TaxCard company={company} />}
     </div>
+  );
+}
+
+function TaxCard({ company }: { company: Company }) {
+  const t = useTranslations('companies');
+  const { mutate } = useSWRConfig();
+  const c = company as Company & { vatRegistered?: boolean };
+  const [registered, setRegistered] = useState<boolean>(c.vatRegistered !== false);
+  const [vatNumber, setVatNumber] = useState<string>(company.vatNumber ?? '');
+  const [saving, setSaving] = useState(false);
+  const dirty = registered !== (c.vatRegistered !== false) || (vatNumber ?? '') !== (company.vatNumber ?? '');
+  const vatInvalid = registered && vatNumber.length > 0 && !/^\d{15}$/.test(vatNumber);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await api.patch(`/admin/companies/${company.id}/tax`, {
+        vatRegistered: registered,
+        vatNumber: registered ? (vatNumber || null) : null,
+      });
+      notify.success(t('detail.profile.tax.saved'));
+      mutate(`/companies/${company.id}`);
+    } catch (e) { notify.error(e); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('detail.profile.tax.title')}</CardTitle>
+        <CardDescription className="mt-1">{t('detail.profile.tax.description')}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium">{t('detail.profile.tax.registeredLabel')}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {registered ? t('detail.profile.tax.registeredOn') : t('detail.profile.tax.registeredOff')}
+            </p>
+          </div>
+          <Switch checked={registered} onCheckedChange={setRegistered} />
+        </div>
+        {registered && (
+          <div className="space-y-1.5">
+            <Label htmlFor="tax-vat">{t('detail.profile.vatNumber')}</Label>
+            <Input id="tax-vat" value={vatNumber} inputMode="numeric" maxLength={15} dir="ltr"
+              placeholder="3xxxxxxxxxxxxx3"
+              onChange={(e) => setVatNumber(e.target.value.replace(/\D/g, '').slice(0, 15))} />
+            {vatInvalid && <p className="text-[11px] text-destructive">{t('detail.profile.tax.vatInvalid')}</p>}
+          </div>
+        )}
+        <Button size="sm" disabled={!dirty || vatInvalid || saving} onClick={save}>
+          {saving ? t('detail.profile.tax.saving') : t('detail.profile.tax.save')}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 

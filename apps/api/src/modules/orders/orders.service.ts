@@ -10,6 +10,7 @@ import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { PoliciesService } from '../policies/policies.service';
 import { CollectionService } from '../payments/collection/collection.service';
 import { money, round2 } from '../../common/money/money';
+import { computeOrderFinancials, type OrderFinancials } from '../../common/pricing/pricing';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import {
   AssignDriverDto,
@@ -261,6 +262,10 @@ export class OrdersService {
     // so ungrouped clients are unaffected; a group can disable market/direct,
     // pin every order to one carrier, or forbid a pricing mode.
     const sourcing = await this.resolveSourcing(dto, actor.companyId, legTotal);
+    // Pre-seed financials for a DIRECT upfront-priced order (commission + VAT).
+    const fixedFin = sourcing.fixedPrice != null
+      ? await this.resolveFinancials(sourcing.fixedPrice, actor.companyId, sourcing.targetCarrierId)
+      : null;
 
     return this.prisma.order.create({
       data: {
@@ -275,11 +280,14 @@ export class OrdersService {
         mode: sourcing.mode,
         targetCarrierId: sourcing.targetCarrierId,
         collectionMethod: sourcing.collectionMethod,
-        // Pre-seed agreed price for DIRECT orders with an allowed upfront price.
-        ...(sourcing.fixedPrice != null ? {
-          agreedPrice:      sourcing.fixedPrice,
-          commissionAmount: +(sourcing.fixedPrice * 0.08).toFixed(2),
-          carrierAmount:    +(sourcing.fixedPrice * 0.92).toFixed(2),
+        // Pre-seed agreed price + commission/VAT for a DIRECT upfront-priced order.
+        ...(fixedFin ? {
+          agreedPrice:         sourcing.fixedPrice,
+          commissionAmount:    fixedFin.commission,
+          carrierAmount:       fixedFin.carrierAmount,
+          serviceVatAmount:    fixedFin.serviceVat,
+          commissionVatAmount: fixedFin.commissionVat,
+          clientTotalDue:      fixedFin.clientTotalDue,
         } : {}),
         tripType: dto.tripType ?? (dto.originCity === dto.destinationCity ? 'SAME_CITY' : 'INTER_CITY'),
         pickupWindow: dto.pickupWindow ?? 'ALL_DAY',
@@ -652,6 +660,27 @@ export class OrdersService {
     return { mode, targetCarrierId, fixedPrice, collectionMethod };
   }
 
+  /**
+   * Resolve an order's/leg's commission + VAT breakdown from the client's
+   * effective policy (rate / who bears it / price VAT-inclusive) and the
+   * carrier's VAT-registration status. The single pricing source of truth.
+   */
+  async resolveFinancials(price: number, clientId: string, carrierId: string | null): Promise<OrderFinancials> {
+    const policy = await this.policies.effectiveForCompany(clientId);
+    const carrier = carrierId
+      ? await this.prisma.company.findUnique({ where: { id: carrierId }, select: { vatRegistered: true, commissionRate: true } })
+      : null;
+    // Precedence for the rate: plan/profile commission > the carrier's own rate > default.
+    const commissionRate = policy.commissionRate ?? (carrier?.commissionRate != null ? Number(carrier.commissionRate) : undefined);
+    return computeOrderFinancials({
+      price,
+      priceVatInclusive: policy.priceVatInclusive,
+      commissionRate,
+      commissionAppliesTo: policy.commissionAppliesTo as OrderFinancials['commissionAppliesTo'] | undefined,
+      carrierVatRegistered: carrier?.vatRegistered,
+    });
+  }
+
   // ─── Consolidated legs ───────────────────────────────────────
 
   private async carrierOrder(id: string, actor: AuthUser) {
@@ -828,11 +857,14 @@ export class OrdersService {
     if (legPrice == null) {
       throw new BadRequestException({ code: 'NO_LEG_PRICE', message: 'لا يوجد سعر للساق' });
     }
-    const commission = round2(money(legPrice).mul(0.08));
-    const carrierAmount = round2(money(legPrice).sub(commission));
+    const fin = await this.resolveFinancials(legPrice, order.clientId, carrierId);
     await this.prisma.orderLeg.update({
       where: { id: leg.id },
-      data: { carrierId, price: legPrice, commissionAmount: commission, carrierAmount, status: 'ASSIGNED' },
+      data: {
+        carrierId, price: legPrice, status: 'ASSIGNED',
+        commissionAmount: fin.commission, carrierAmount: fin.carrierAmount,
+        serviceVatAmount: fin.serviceVat, commissionVatAmount: fin.commissionVat,
+      },
     });
     await this.rollup(id);
     return this.getLegs(id, actor);

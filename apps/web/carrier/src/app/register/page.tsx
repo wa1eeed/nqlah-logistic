@@ -237,6 +237,10 @@ export default function CarrierRegisterPage() {
         phone: form.phone,
         password: form.password,
         ...(form.nationalId ? { nationalId: form.nationalId } : {}),
+        ...(form.accountType === 'COMPANY' && form.crNumber ? { crNumber: form.crNumber } : {}),
+        // VAT (ZATCA): send the registration choice + the 15-digit number when registered.
+        ...(form.vatChoice ? { vatRegistered: form.vatChoice === 'REGISTERED' } : {}),
+        ...(form.vatChoice === 'REGISTERED' && form.vatNumber ? { vatNumber: form.vatNumber } : {}),
         acceptedTerms: form.acceptTerms,
         acceptedPrivacy: form.acceptPrivacy,
         acceptedTransport: form.acceptTransport,

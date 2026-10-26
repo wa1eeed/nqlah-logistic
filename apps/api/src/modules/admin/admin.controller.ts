@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsArray, IsIn, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsNumber, IsOptional, IsString, Matches, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -12,6 +12,11 @@ import type { CompanyStatus, DisputeStatus } from '../../generated/prisma';
 class CompanyStatusDto {
   @IsIn(['PENDING_VERIFICATION', 'ACTIVE', 'SUSPENDED', 'REJECTED'])
   status!: CompanyStatus;
+}
+
+class CompanyTaxDto {
+  @IsOptional() @IsBoolean() vatRegistered?: boolean;
+  @IsOptional() @Matches(/^\d{15}$/, { message: 'الرقم الضريبي يجب أن يكون 15 رقماً' }) vatNumber?: string | null;
 }
 
 class AccountNoteDto {
@@ -65,6 +70,12 @@ export class AdminController {
   @Audit({ action: 'admin.company.status_change', resourceType: 'Company', idFrom: 'param', idKey: 'id' })
   setStatus(@Param('id') id: string, @Body() dto: CompanyStatusDto) {
     return this.admin.updateCompanyStatus(id, dto.status);
+  }
+
+  @Patch('companies/:id/tax')
+  @Audit({ action: 'admin.company.taxUpdate', resourceType: 'Company', idFrom: 'param', idKey: 'id' })
+  updateTax(@Param('id') id: string, @Body() dto: CompanyTaxDto) {
+    return this.admin.updateCompanyTax(id, dto);
   }
 
   @Get('drivers')

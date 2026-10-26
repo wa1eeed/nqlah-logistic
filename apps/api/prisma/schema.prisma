@@ -251,6 +251,9 @@ model Company {
   nameEn    String?
   crNumber  String? @unique
   vatNumber String?
+  /// Whether the company is registered for VAT (ZATCA). When false, no service
+  /// VAT is charged on its transactions (the "غير مسجّل في الضريبة" toggle).
+  vatRegistered Boolean @default(true)
   logo      String?
 
   city    String
@@ -471,6 +474,11 @@ model Order {
   agreedPrice      Decimal? @db.Decimal(12, 2)
   commissionAmount Decimal? @db.Decimal(12, 2)
   carrierAmount    Decimal? @db.Decimal(12, 2)
+  /// VAT breakdown (phase 2): service VAT (carrier), commission VAT (platform),
+  /// and the total the client pays (service total + any client-borne commission).
+  serviceVatAmount    Decimal? @db.Decimal(12, 2)
+  commissionVatAmount Decimal? @db.Decimal(12, 2)
+  clientTotalDue      Decimal? @db.Decimal(12, 2)
 
   actualPickupAt   DateTime?
   actualDeliveryAt DateTime?
@@ -677,6 +685,9 @@ model OrderLeg {
   /// Per-leg financial split (of `price`) when a carrier is assigned.
   commissionAmount Decimal? @db.Decimal(12, 2)
   carrierAmount    Decimal? @db.Decimal(12, 2)
+  /// Per-leg VAT breakdown (phase 2).
+  serviceVatAmount    Decimal? @db.Decimal(12, 2)
+  commissionVatAmount Decimal? @db.Decimal(12, 2)
   /// When the leg's carrier payout was released (on leg delivery).
   settledAt        DateTime?
 

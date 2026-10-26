@@ -47,8 +47,8 @@ export async function run(ctx) {
     const aBid = l1.find((b) => b.carrierId === A);
     await j('POST', `/orders/${order.id}/bids/${aBid.id}/accept`, admin);
     const legs = unwrap((await j('GET', `/orders/${order.id}/legs`, admin)).data);
-    ok('leg 1 awarded to A @ 4800 (carrierAmount 4416)',
-      legs.legs[0].carrierId === A && legs.legs[0].price === 4800 && legs.legs[0].carrierAmount === 4416 && legs.legs[0].status === 'ASSIGNED');
+    ok('leg 1 awarded to A @ 4800 (carrierAmount 5078.4, VAT-aware)',
+      legs.legs[0].carrierId === A && legs.legs[0].price === 4800 && legs.legs[0].carrierAmount === 5078.4 && legs.legs[0].status === 'ASSIGNED', JSON.stringify(legs.legs[0]));
     const bBid = await prisma.bid.findFirst({ where: { orderLegId: leg1.id, carrierId: B } });
     ok("B's losing leg-1 bid was rejected", bBid?.status === 'REJECTED', bBid?.status);
 

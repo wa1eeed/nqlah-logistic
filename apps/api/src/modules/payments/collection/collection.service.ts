@@ -28,6 +28,9 @@ interface SettleableOrder {
   agreedPrice: Prisma.Decimal | null;
   commissionAmount: Prisma.Decimal | null;
   carrierAmount: Prisma.Decimal | null;
+  /** The VAT-inclusive total the client pays (service total + any client-borne
+   *  commission). Falls back to `agreedPrice` for older orders. */
+  clientTotalDue?: Prisma.Decimal | null;
 }
 
 /**
@@ -80,7 +83,8 @@ export class CollectionService {
       throw new BadRequestException({ code: 'NO_PRICE', message: 'لا يوجد سعر متفق عليه' });
     }
     const method = (order.collectionMethod || 'ESCROW') as CollectionMethod;
-    const total = money(order.agreedPrice);
+    // What the client holds/pays — VAT-inclusive total when known (phase 2).
+    const total = money(order.clientTotalDue ?? order.agreedPrice);
     const base = {
       orderId: order.id,
       totalAmount: total,
@@ -131,7 +135,10 @@ export class CollectionService {
         throw new BadRequestException({ code: 'COD_NOT_COLLECTED', message: 'لم يُسجَّل تحصيل الدفع عند التسليم' });
       }
       if (carrierId) {
-        await this.moveWallet(tx, carrierId, money(payment.commissionAmount).negated(),
+        // The carrier holds the client's cash and owes the platform the
+        // commission plus its VAT (phase 2).
+        const commissionDue = money(payment.commissionAmount).add(money(payment.order.commissionVatAmount));
+        await this.moveWallet(tx, carrierId, commissionDue.negated(),
           `Commission on COD order ${payment.order.orderNumber}`, payment.orderId, 'COMMISSION_DUE');
       }
     } else if (carrierId) {
