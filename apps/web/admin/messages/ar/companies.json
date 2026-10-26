@@ -83,7 +83,11 @@
         "admin.company.accountNote": "إصدار إشعار محاسبي",
         "admin.dispute.update": "تحديث نزاع",
         "admin.settings.update": "تحديث الإعدادات",
-        "admin.wallet.manualTx": "حركة محفظة يدوية"
+        "admin.wallet.manualTx": "حركة محفظة يدوية",
+        "bid.accept": "قبول عرض — ترسية ناقل",
+        "bid.reject": "رفض عرض",
+        "order.leg.assignCarrier": "إسناد ناقل لساق",
+        "order.leg.unassignCarrier": "إزالة ناقل ساق"
       }
     },
     "overview": {

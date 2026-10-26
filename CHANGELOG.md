@@ -6,6 +6,15 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.73 — Audit coverage for bid awards (2026-10-26)
+
+- Bid actions are now audited: `POST /orders/:id/bids/:bidId/accept` →
+  `bid.accept`, `…/reject` → `bid.reject`, logged against the `Order`. Awarding a
+  bid (order-level or per-leg) and leg-carrier assignment therefore appear in the
+  company **360° Activity & Audit Log** timeline, with humanized labels
+  (`bid.accept`, `bid.reject`, `order.leg.assignCarrier`, `order.leg.unassignCarrier`).
+- Verified a `bid.accept` entry is written on acceptance.
+
 ### v0.9.72 — Short public codes for drivers + orders (no raw cuids) (2026-10-26)
 
 Extends the short-code principle (established for companies, `NQ-XXXXXX`) to

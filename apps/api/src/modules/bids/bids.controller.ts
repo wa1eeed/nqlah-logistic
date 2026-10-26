@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
+import { Audit } from '../../common/audit/audit.decorator';
 import { BidsService } from './bids.service';
 import { CreateBidDto, UpdateBidDto } from './dto/bid.dto';
 
@@ -31,11 +32,13 @@ export class BidsController {
   }
 
   @Post(':id/accept')
+  @Audit({ action: 'bid.accept', resourceType: 'Order', idFrom: 'param', idKey: 'orderId' })
   accept(@Param('orderId') orderId: string, @Param('id') id: string, @CurrentUser() actor: AuthUser) {
     return this.bids.accept(orderId, id, actor);
   }
 
   @Post(':id/reject')
+  @Audit({ action: 'bid.reject', resourceType: 'Order', idFrom: 'param', idKey: 'orderId' })
   reject(@Param('orderId') orderId: string, @Param('id') id: string, @CurrentUser() actor: AuthUser) {
     return this.bids.reject(orderId, id, actor);
   }
