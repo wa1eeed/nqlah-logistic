@@ -14,9 +14,11 @@ import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
 import { StopsPanel } from '@/components/stops-panel';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { useTranslations } from 'next-intl';
-import { fetcher } from '@/lib/api';
+import { api, fetcher } from '@/lib/api';
+import { notify } from '@/lib/notify';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
 import {
@@ -264,7 +266,9 @@ export default function AdminOrderDetail() {
           <Card>
             <CardHeader><CardTitle>{t('adminDetail.shipmentDetails')}</CardTitle></CardHeader>
             <CardContent>
-              {showShipmentCard && order.orderType === 'CONSOLIDATED' && (
+              {/* Consolidated breakdown shows from the start so the admin can
+                  assign a carrier per leg (phase 2), not only once shipped. */}
+              {order.orderType === 'CONSOLIDATED' && (
                 <ConsolidatedReadonly order={order} />
               )}
               {showShipmentCard && order.orderType !== 'CONSOLIDATED' && assignedPlate && (
@@ -605,6 +609,19 @@ function ConsolidatedReadonly({ order }: {
   const count = (apiLegs ? legsData!.truckCount : order.truckCount) ?? legs.length;
   const distributed = legs.filter((l) => l.truckId).length;
   const heterogeneous = !!legsData?.heterogeneous;
+  // Admin can assign a different carrier to each leg of a heterogeneous order.
+  const { mutate } = useSWRConfig();
+  const { data: carriersData } = useSWR<Array<{ id: string; nameAr: string }>>(
+    heterogeneous ? '/companies?type=CARRIER&limit=100' : null, fetcher);
+  const carriers = Array.isArray(carriersData) ? carriersData : [];
+  const assignLegCarrier = async (index: number, carrierId: string | null) => {
+    try {
+      if (carrierId) await api.post(`/orders/${order.id}/legs/${index}/assign-carrier`, { carrierId });
+      else await api.delete(`/orders/${order.id}/legs/${index}/carrier`);
+      mutate(`/orders/${order.id}/legs`);
+      mutate(`/orders/${order.id}`);
+    } catch (e) { notify.error(e); }
+  };
   const legPriceSum = legs.reduce((s, l) => s + (l.price ?? 0), 0);
   const perLeg = Math.round((order.agreedPrice ?? 0) / Math.max(1, count));
   const invoiceTotal = heterogeneous && legPriceSum > 0 ? legPriceSum : (order.agreedPrice ?? 0);
@@ -658,6 +675,19 @@ function ConsolidatedReadonly({ order }: {
               )}
               {heterogeneous && leg.price != null && (
                 <span className="shrink-0 text-xs font-semibold"><Currency amount={leg.price} /></span>
+              )}
+              {heterogeneous && (
+                <Select
+                  value={leg.carrierId ?? 'none'}
+                  onValueChange={(v) => assignLegCarrier(leg.index, v === 'none' ? null : v)}
+                  disabled={leg.status === 'IN_TRANSIT' || leg.status === 'DELIVERED'}
+                >
+                  <SelectTrigger className="h-7 w-[150px] shrink-0 text-xs"><SelectValue placeholder={t('adminDetail.legCarrier.assign')} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t('adminDetail.legCarrier.none')}</SelectItem>
+                    {carriers.map((c) => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               )}
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${LEG_TONE[leg.status]}`}>{LEG_LABEL[leg.status]}</span>
             </div>

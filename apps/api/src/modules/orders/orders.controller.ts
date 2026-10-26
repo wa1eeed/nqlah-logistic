@@ -2,7 +2,7 @@ import {
   Body, Controller, Delete, Get, Param, Patch, Post, Put, Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 import { Audit } from '../../common/audit/audit.decorator';
@@ -31,6 +31,10 @@ class DistributeLegDto {
 }
 class LegStatusDto {
   @IsEnum(LEG_STATUSES) status!: (typeof LEG_STATUSES)[number];
+}
+class AssignLegCarrierDto {
+  @IsString() carrierId!: string;
+  @IsOptional() @IsNumber() @Min(0) price?: number;
 }
 
 @ApiTags('orders')
@@ -130,6 +134,21 @@ export class OrdersController {
   @Delete(':id/legs/:index')
   clearLeg(@Param('id') id: string, @Param('index') index: string, @CurrentUser() actor: AuthUser) {
     return this.orders.clearLeg(id, Number(index), actor);
+  }
+  @Post(':id/legs/:index/assign-carrier')
+  @Audit({ action: 'order.leg.assignCarrier', resourceType: 'Order', idFrom: 'param', idKey: 'id' })
+  assignLegCarrier(
+    @Param('id') id: string,
+    @Param('index') index: string,
+    @Body() dto: AssignLegCarrierDto,
+    @CurrentUser() actor: AuthUser,
+  ) {
+    return this.orders.assignLegCarrier(id, Number(index), dto.carrierId, dto.price, actor);
+  }
+  @Delete(':id/legs/:index/carrier')
+  @Audit({ action: 'order.leg.unassignCarrier', resourceType: 'Order', idFrom: 'param', idKey: 'id' })
+  unassignLegCarrier(@Param('id') id: string, @Param('index') index: string, @CurrentUser() actor: AuthUser) {
+    return this.orders.unassignLegCarrier(id, Number(index), actor);
   }
   @Patch(':id/legs/:index/status')
   setLegStatus(

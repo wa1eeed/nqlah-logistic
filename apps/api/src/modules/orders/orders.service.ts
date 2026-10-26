@@ -9,6 +9,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { PoliciesService } from '../policies/policies.service';
 import { CollectionService } from '../payments/collection/collection.service';
+import { money, round2 } from '../../common/money/money';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import {
   AssignDriverDto,
@@ -125,7 +126,9 @@ export class OrdersService {
     } else if (actor.role === 'CARRIER_ADMIN' || actor.role === 'CARRIER_USER') {
       const myId = actor.companyId ?? '__none__';
       if (mine) {
-        where.carrierId = myId;
+        // "My work": orders assigned to me as the order carrier, or any order
+        // where I serve one of the legs (phase 2 per-leg carriers).
+        where.OR = [{ carrierId: myId }, { orderLegs: { some: { carrierId: myId } } }];
       } else {
         // Carriers see three buckets simultaneously:
         //   1. OPEN marketplace orders (PUBLISHED/BIDDING + mode=OPEN), minus any
@@ -141,6 +144,8 @@ export class OrdersService {
           ] },
           { AND: [{ mode: 'DIRECT' }, { targetCarrierId: myId }] },
           { carrierId: myId },
+          // Orders where I serve one of the legs (phase 2 per-leg carriers).
+          { orderLegs: { some: { carrierId: myId } } },
         ];
       }
     }
@@ -177,6 +182,7 @@ export class OrdersService {
         trackingEvents: { orderBy: { createdAt: 'desc' } },
         payment: true,
         invoice: true,
+        orderLegs: { select: { carrierId: true } },
         orderDrivers: {
           orderBy: { assignedAt: 'desc' },
           include: {
@@ -561,10 +567,15 @@ export class OrdersService {
     return order;
   }
 
-  private assertViewAccess(order: { clientId: string; carrierId: string | null; status: string }, actor: AuthUser) {
+  private assertViewAccess(
+    order: { clientId: string; carrierId: string | null; status: string; orderLegs?: { carrierId: string | null }[] },
+    actor: AuthUser,
+  ) {
     if (this.isAdmin(actor)) return;
     if (order.clientId === actor.companyId) return;
     if (order.carrierId === actor.companyId) return;
+    // A carrier serving one of the order's legs (phase 2) may view it.
+    if (order.orderLegs?.some((l) => l.carrierId && l.carrierId === actor.companyId)) return;
     if (
       (actor.role === 'CARRIER_ADMIN' || actor.role === 'CARRIER_USER') &&
       ['PUBLISHED', 'BIDDING'].includes(order.status)
@@ -672,9 +683,15 @@ export class OrdersService {
     this.assertViewAccess(order, actor);
 
     const count = order.truckCount ?? order.orderTrucks.length;
-    // Per-leg heterogeneous spec (truck type / destination / price), if any.
-    // Legs with no spec row fall back to the order's own values (homogeneous).
+    const heterogeneous = order.orderLegs.length > 0;
+    // Per-leg heterogeneous spec (truck type / destination / price / carrier), if
+    // any. Legs with no spec row fall back to the order's own values (homogeneous).
     const specBySeq = new Map(order.orderLegs.map((l) => [l.sequence, l]));
+    const legCarrierIds = order.orderLegs.map((l) => l.carrierId).filter((c): c is string => !!c);
+    const legCarriers = legCarrierIds.length
+      ? await this.prisma.company.findMany({ where: { id: { in: legCarrierIds } }, select: { id: true, nameAr: true } })
+      : [];
+    const carrierName = (cid?: string | null) => (cid ? legCarriers.find((c) => c.id === cid)?.nameAr : undefined);
     const driverIds = order.orderTrucks.map((l) => l.driverId).filter((d): d is string => !!d);
     const drivers = driverIds.length
       ? await this.prisma.driverProfile.findMany({
@@ -698,8 +715,15 @@ export class OrdersService {
         destinationRegion: s?.destinationRegion ?? order.destinationRegion,
         destinationAddress: s?.destinationAddress ?? order.destinationAddress,
         price: s?.price != null ? Number(s.price) : undefined,
+        carrierId: s?.carrierId ?? undefined,
+        carrierName: carrierName(s?.carrierId),
+        carrierAmount: s?.carrierAmount != null ? Number(s.carrierAmount) : undefined,
       };
     };
+    // Authoritative leg status: OrderLeg.status for heterogeneous orders, the
+    // distributed OrderTruck's status otherwise.
+    const statusFor = (index: number, row?: { status: string }) =>
+      heterogeneous ? (specBySeq.get(index)?.status ?? 'PENDING') : (row ? row.status : 'PENDING');
     const legs = Array.from({ length: count }, (_, i) => {
       const index = i + 1;
       const row = bySeq.get(index);
@@ -711,11 +735,11 @@ export class OrdersService {
             ...spec,
             truckId: row.truckId,
             driverId: row.driverId ?? undefined,
-            status: row.status,
+            status: statusFor(index, row),
             plateNumber: row.truck?.plateNumber,
             driverName: driverName(row.driverId),
           }
-        : { index, reference: refFor(index), ...spec, status: 'PENDING' };
+        : { index, reference: refFor(index), ...spec, status: statusFor(index) };
     });
     return {
       orderId: order.id,
@@ -727,15 +751,128 @@ export class OrdersService {
     };
   }
 
+  // ─── Per-leg carriers (phase 2) ──────────────────────────────
+
+  /**
+   * Authorize an action on one leg and return the order + its (optional) spec
+   * row. Allowed for an admin, the leg's own carrier, or the order's carrier
+   * (homogeneous orders). Used by distribute / clear / status.
+   */
+  private async legActor(id: string, index: number, actor: AuthUser) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      select: { id: true, carrierId: true, clientId: true, requiredTruckType: true, orderType: true },
+    });
+    if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
+    const leg = await this.prisma.orderLeg.findUnique({
+      where: { orderId_sequence: { orderId: id, sequence: index } },
+    });
+    if (this.isAdmin(actor)) return { order, leg };
+    if (leg?.carrierId && leg.carrierId === actor.companyId) return { order, leg };
+    if (order.carrierId && order.carrierId === actor.companyId) return { order, leg };
+    throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
+  }
+
+  /**
+   * Assign (or re-assign) a carrier to one leg of a heterogeneous order, with
+   * its own price + financial split. The client or an admin does this; the
+   * carrier must be visible to the client. Each leg can go to a different carrier.
+   */
+  async assignLegCarrier(id: string, index: number, carrierId: string, price: number | undefined, actor: AuthUser) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      select: { id: true, clientId: true, orderType: true },
+    });
+    if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
+    if (order.clientId !== actor.companyId && !this.isAdmin(actor)) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
+    }
+    const leg = await this.prisma.orderLeg.findUnique({
+      where: { orderId_sequence: { orderId: id, sequence: index } },
+    });
+    if (!leg) throw new NotFoundException({ code: 'LEG_NOT_FOUND', message: 'الساق غير موجودة أو الطلب ليس بسيقان متغايرة' });
+    if (leg.status === 'IN_TRANSIT' || leg.status === 'DELIVERED') {
+      throw new BadRequestException({ code: 'LEG_IN_PROGRESS', message: 'لا يمكن تغيير ناقل ساق قيد التنفيذ' });
+    }
+    const carrier = await this.prisma.company.findUnique({ where: { id: carrierId }, select: { type: true, status: true } });
+    if (!carrier || carrier.type !== 'CARRIER') {
+      throw new BadRequestException({ code: 'NOT_A_CARRIER', message: 'الشركة المختارة ليست ناقلًا' });
+    }
+    if (!(await this.policies.canCarrierServeClient(carrierId, order.clientId))) {
+      throw new ForbiddenException({ code: 'POLICY_CARRIER_NOT_VISIBLE', message: 'المزوّد غير متاح لهذا العميل' });
+    }
+    const legPrice = price != null ? price : (leg.price != null ? Number(leg.price) : null);
+    if (legPrice == null) {
+      throw new BadRequestException({ code: 'NO_LEG_PRICE', message: 'لا يوجد سعر للساق' });
+    }
+    const commission = round2(money(legPrice).mul(0.08));
+    const carrierAmount = round2(money(legPrice).sub(commission));
+    await this.prisma.orderLeg.update({
+      where: { id: leg.id },
+      data: { carrierId, price: legPrice, commissionAmount: commission, carrierAmount, status: 'ASSIGNED' },
+    });
+    await this.rollup(id);
+    return this.getLegs(id, actor);
+  }
+
+  /** Remove a leg's carrier (and any distributed truck) while it is not in transit. */
+  async unassignLegCarrier(id: string, index: number, actor: AuthUser) {
+    const order = await this.prisma.order.findUnique({ where: { id }, select: { id: true, clientId: true } });
+    if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
+    if (order.clientId !== actor.companyId && !this.isAdmin(actor)) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
+    }
+    const leg = await this.prisma.orderLeg.findUnique({ where: { orderId_sequence: { orderId: id, sequence: index } } });
+    if (!leg) throw new NotFoundException({ code: 'LEG_NOT_FOUND', message: 'الساق غير موجودة' });
+    if (leg.status === 'IN_TRANSIT' || leg.status === 'DELIVERED') {
+      throw new BadRequestException({ code: 'LEG_IN_PROGRESS', message: 'لا يمكن إلغاء ناقل ساق قيد التنفيذ' });
+    }
+    await this.prisma.$transaction([
+      this.prisma.orderTruck.deleteMany({ where: { orderId: id, sequence: index } }),
+      this.prisma.orderLeg.update({
+        where: { id: leg.id },
+        data: { carrierId: null, commissionAmount: null, carrierAmount: null, status: 'PENDING' },
+      }),
+    ]);
+    await this.rollup(id);
+    return this.getLegs(id, actor);
+  }
+
+  /** Release a leg's payout to its carrier (on leg delivery). Idempotent. */
+  private async settleLeg(
+    tx: Prisma.TransactionClient,
+    leg: { id: string; carrierId: string | null; carrierAmount: Prisma.Decimal | null; settledAt: Date | null; orderId: string; sequence: number },
+  ) {
+    if (!leg.carrierId || leg.settledAt || leg.carrierAmount == null) return;
+    const amount = money(leg.carrierAmount);
+    const updated = await tx.company.update({
+      where: { id: leg.carrierId },
+      data: { walletBalance: { increment: amount } },
+    });
+    await tx.transaction.create({
+      data: {
+        companyId: leg.carrierId,
+        type: 'credit',
+        amount: round2(amount),
+        balance: round2(money(updated.walletBalance)),
+        description: `Leg payout · order leg #${leg.sequence}`,
+        orderId: leg.orderId,
+      },
+    });
+    await tx.orderLeg.update({ where: { id: leg.id }, data: { settledAt: new Date() } });
+  }
+
   async distributeLeg(id: string, index: number, truckId: string, driverId: string | undefined, actor: AuthUser) {
-    const order = await this.carrierOrder(id, actor);
+    const { order } = await this.legActor(id, index, actor);
     // The truck must match the leg's required type (the leg's own type for a
-    // heterogeneous order, else the order's). Keeps a reefer leg from getting a
-    // flatbed, etc.
+    // heterogeneous order, else the order's) and belong to the acting carrier.
     const [truck, legSpec] = await Promise.all([
-      this.prisma.truck.findUnique({ where: { id: truckId }, select: { type: true } }),
+      this.prisma.truck.findUnique({ where: { id: truckId }, select: { type: true, companyId: true } }),
       this.prisma.orderLeg.findUnique({ where: { orderId_sequence: { orderId: order.id, sequence: index } }, select: { requiredTruckType: true } }),
     ]);
+    if (truck && !this.isAdmin(actor) && truck.companyId !== actor.companyId) {
+      throw new ForbiddenException({ code: 'TRUCK_NOT_YOURS', message: 'الشاحنة ليست ضمن أسطولك' });
+    }
     const requiredType = legSpec?.requiredTruckType ?? order.requiredTruckType;
     if (truck && truck.type !== requiredType) {
       throw new BadRequestException({ code: 'LEG_TRUCK_TYPE_MISMATCH', message: 'نوع الشاحنة لا يطابق نوع الساق المطلوب' });
@@ -752,29 +889,58 @@ export class OrdersService {
   }
 
   async clearLeg(id: string, index: number, actor: AuthUser) {
-    const order = await this.carrierOrder(id, actor);
+    const { order } = await this.legActor(id, index, actor);
     await this.prisma.orderTruck.deleteMany({ where: { orderId: order.id, sequence: index } });
     await this.rollup(order.id);
     return this.getLegs(id, actor);
   }
 
   async setLegStatus(id: string, index: number, status: string, actor: AuthUser) {
-    const order = await this.carrierOrder(id, actor);
-    await this.prisma.orderTruck.updateMany({ where: { orderId: order.id, sequence: index }, data: { status } });
+    const { order, leg } = await this.legActor(id, index, actor);
+    if (!['ASSIGNED', 'IN_TRANSIT', 'DELIVERED'].includes(status)) {
+      throw new BadRequestException({ code: 'INVALID_LEG_STATUS', message: 'حالة ساق غير صحيحة' });
+    }
+    if (leg) {
+      // Heterogeneous: OrderLeg.status is authoritative; settle the leg payout on delivery.
+      await this.prisma.$transaction(async (tx) => {
+        await tx.orderLeg.update({ where: { id: leg.id }, data: { status } });
+        await tx.orderTruck.updateMany({ where: { orderId: id, sequence: index }, data: { status } });
+        if (status === 'DELIVERED') {
+          await this.settleLeg(tx, {
+            id: leg.id, carrierId: leg.carrierId, carrierAmount: leg.carrierAmount,
+            settledAt: leg.settledAt, orderId: leg.orderId, sequence: leg.sequence,
+          });
+        }
+      });
+    } else {
+      await this.prisma.orderTruck.updateMany({ where: { orderId: order.id, sequence: index }, data: { status } });
+    }
     await this.rollup(order.id);
     return this.getLegs(id, actor);
   }
 
   /** Derive a consolidated order's status from its legs (forward-only). */
   private async rollup(orderId: string) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { orderTrucks: true } });
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { orderTrucks: true, orderLegs: true },
+    });
     if (!order || order.orderType !== 'CONSOLIDATED') return;
-    const legs = order.orderTrucks;
-    const n = order.truckCount ?? legs.length;
+    const n = order.truckCount ?? 0;
+    // Heterogeneous orders track status per OrderLeg (one per leg, with its own
+    // carrier); homogeneous orders track it on the distributed OrderTruck rows.
+    const heterogeneous = order.orderLegs.length > 0;
+    const legStatuses = heterogeneous
+      ? order.orderLegs.map((l) => l.status)
+      : order.orderTrucks.map((l) => l.status);
+    const assignedCount = heterogeneous
+      ? order.orderLegs.filter((l) => l.carrierId).length
+      : order.orderTrucks.length;
     let status = order.status;
-    if (legs.length > 0 && legs.every((l) => l.status === 'DELIVERED')) status = 'DELIVERED';
-    else if (legs.some((l) => l.status === 'IN_TRANSIT')) status = 'IN_TRANSIT';
-    else if (n > 0 && legs.length >= n) status = 'ASSIGNED';
+    if (legStatuses.length > 0 && legStatuses.every((s) => s === 'DELIVERED')) status = 'DELIVERED';
+    // Any leg moving or already delivered (but not all) means the order is in progress.
+    else if (legStatuses.some((s) => s === 'IN_TRANSIT' || s === 'DELIVERED')) status = 'IN_TRANSIT';
+    else if (n > 0 && assignedCount >= n) status = 'ASSIGNED';
     if (status !== order.status) {
       await this.prisma.order.update({ where: { id: orderId }, data: { status } });
       this.realtime.emitOrderStatus(orderId, { status });

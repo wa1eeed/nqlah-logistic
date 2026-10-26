@@ -18,6 +18,7 @@ import { useConsolidatedStore, effectiveLegs } from '@/stores/consolidated-store
 import { useFreelancerStore } from '@/stores/freelancer-store';
 import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
+import { useAuthStore } from '@/lib/auth-store';
 import {
   CURRENT_CARRIER_ID, DRIVERS, TRUCKS, localizeCity, normalizeTruckList, normalizeDriverList,
   type ConsolidatedLeg, type ConsolidatedLegStatus, type Driver, type Order, type Truck,
@@ -73,6 +74,17 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
   const legPriceSum = legs.reduce((s, l) => s + (l.price ?? 0), 0);
   const perLeg = Math.round((order.agreedPrice ?? 0) / Math.max(1, count));
   const invoiceTotal = heterogeneous && legPriceSum > 0 ? legPriceSum : (order.agreedPrice ?? 0);
+  // On a heterogeneous order a carrier may act only on its OWN legs; on a
+  // homogeneous order the order carrier handles every leg.
+  const myId = useAuthStore((s) => s.user?.companyId);
+  const canActOnLeg = (leg: ConsolidatedLeg) => canDistribute && (!heterogeneous || leg.carrierId === myId);
+  // Advance this carrier's own leg (IN_TRANSIT / DELIVERED), triggering per-leg settlement on delivery.
+  const setLegStatus = async (index: number, status: string) => {
+    try {
+      await api.patch(`/orders/${order.id}/legs/${index}/status`, { status });
+      revalidate();
+    } catch (e) { notify.error(e); }
+  };
   // The leg currently being distributed — used to constrain the truck picker to
   // the leg's required type for a heterogeneous order.
   const openLegSpec = openLeg != null ? legs.find((l) => l.index === openLeg) : undefined;
@@ -186,6 +198,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
                           <TruckIcon className="h-3 w-3" />{leg.requiredTruckType}
                           {leg.destinationCity && <>· <MapPin className="h-3 w-3" />{localizeCity(leg.destinationCity)}</>}
+                          {leg.carrierName && <span className="font-medium text-foreground">· {leg.carrierName}</span>}
                         </div>
                       )}
                       {driver && (
@@ -204,6 +217,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                       <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
                         <TruckIcon className="h-3 w-3" />{leg.requiredTruckType}
                         {leg.destinationCity && <>· <MapPin className="h-3 w-3" />{localizeCity(leg.destinationCity)}</>}
+                        {leg.carrierName && <span className="font-medium text-foreground">· {leg.carrierName}</span>}
                       </div>
                     )}
                   </div>
@@ -214,13 +228,21 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${LEG_TONE[leg.status]}`}>
                   {LEG_LABEL[leg.status]}
                 </span>
-                {canDistribute && (
+                {canActOnLeg(leg) && (
                   leg.truckId ? (
-                    leg.status === 'PENDING' || leg.status === 'ASSIGNED' ? (
-                      <Button variant="ghost" size="sm" className="shrink-0" onClick={() => doClearLeg(leg.index)}>
-                        <Link2Off className="h-4 w-4" />
-                      </Button>
-                    ) : null
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {heterogeneous && leg.status === 'ASSIGNED' && (
+                        <Button size="sm" onClick={() => setLegStatus(leg.index, 'IN_TRANSIT')}>بدء النقل</Button>
+                      )}
+                      {heterogeneous && leg.status === 'IN_TRANSIT' && (
+                        <Button size="sm" onClick={() => setLegStatus(leg.index, 'DELIVERED')}>تم التسليم</Button>
+                      )}
+                      {(leg.status === 'PENDING' || leg.status === 'ASSIGNED') && (
+                        <Button variant="ghost" size="sm" onClick={() => doClearLeg(leg.index)}>
+                          <Link2Off className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   ) : (
                     <Button size="sm" className="shrink-0" onClick={() => { setPick(''); setOpenLeg(leg.index); }}>
                       توزيع

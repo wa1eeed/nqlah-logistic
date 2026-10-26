@@ -1561,6 +1561,7 @@ function ConsolidatedReadonly({ order }: {
                       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
                         <Truck className="h-3 w-3" />{truckLabel(leg.requiredTruckType)}
                         {leg.destinationCity && <>· <MapPin className="h-3 w-3" />{localizeCity(leg.destinationCity)}</>}
+                        {leg.carrierName && <span className="font-medium text-foreground">· {leg.carrierName}</span>}
                       </div>
                     )}
                     {driverName
@@ -1575,6 +1576,7 @@ function ConsolidatedReadonly({ order }: {
                     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
                       <Truck className="h-3 w-3" />{truckLabel(leg.requiredTruckType)}
                       {leg.destinationCity && <>· <MapPin className="h-3 w-3" />{localizeCity(leg.destinationCity)}</>}
+                      {leg.carrierName && <span className="font-medium text-foreground">· {leg.carrierName}</span>}
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground">{t('detail.consolidated.notDistributed')}</div>
