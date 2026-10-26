@@ -328,8 +328,16 @@ export default function AdminOrderDetail() {
               <dl className="divide-y">
                 <Row label={t('adminDetail.clientBudget')} value={<Currency amount={order.clientBudget} />} />
                 <Row label={t('adminDetail.agreedPrice')} value={<Currency amount={order.agreedPrice} />} />
-                <Row label={t('adminDetail.platformCommission')} value={<Currency amount={order.commission ?? 0} />} />
-                <Row label={t('adminDetail.carrierNet')} value={<Currency amount={order.carrierAmount} />} />
+                {(() => {
+                  const tax = order as { serviceVatAmount?: number | null; commissionVatAmount?: number | null; clientTotalDue?: number | null };
+                  return <>
+                    {tax.serviceVatAmount != null && <Row label={t('adminDetail.serviceVat')} value={<Currency amount={tax.serviceVatAmount} />} />}
+                    <Row label={t('adminDetail.platformCommission')} value={<Currency amount={order.commission ?? 0} />} />
+                    {tax.commissionVatAmount != null && <Row label={t('adminDetail.commissionVat')} value={<Currency amount={tax.commissionVatAmount} />} />}
+                    <Row label={t('adminDetail.carrierNet')} value={<Currency amount={order.carrierAmount} />} />
+                    {tax.clientTotalDue != null && <Row label={t('adminDetail.clientTotalDue')} value={<span className="font-semibold"><Currency amount={tax.clientTotalDue} /></span>} />}
+                  </>;
+                })()}
               </dl>
             </CardContent>
           </Card>

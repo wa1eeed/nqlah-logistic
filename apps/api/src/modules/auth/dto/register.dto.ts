@@ -54,6 +54,17 @@ export class RegisterDto {
   @IsString()
   companyNameEn?: string;
 
+  // Commercial Register — a CARRIER company (10 digits).
+  @IsOptional() @Matches(/^\d{10}$/, { message: 'رقم السجل التجاري يجب أن يكون 10 أرقام' })
+  crNumber?: string;
+
+  // VAT (ZATCA) — relevant for a CARRIER company. The Saudi VAT number is 15
+  // digits. When `vatRegistered` is false ("غير مسجّل في الضريبة"), the number
+  // is not required and no service VAT is charged on the carrier's transactions.
+  @IsOptional() @Matches(/^\d{15}$/, { message: 'الرقم الضريبي يجب أن يكون 15 رقماً' })
+  vatNumber?: string;
+  @IsOptional() @IsBoolean() vatRegistered?: boolean;
+
   @IsString()
   city!: string;
 

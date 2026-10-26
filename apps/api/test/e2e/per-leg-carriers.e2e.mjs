@@ -29,9 +29,10 @@ export async function run(ctx) {
 
     await j('POST', `/orders/${order.id}/legs/1/assign-carrier`, admin, { carrierId: A.id });
     const afterAssign = unwrap((await j('POST', `/orders/${order.id}/legs/2/assign-carrier`, admin, { carrierId: B.id })).data);
+    // Carrier amounts are VAT-aware: price 5000 → serviceTotal 5750 − commissionTotal 460 = 5290; 7000 → 8050 − 644 = 7406.
     const L = afterAssign?.legs || [];
-    ok('leg 1 → A ASSIGNED, carrierAmount 4600', L[0]?.carrierId === A.id && L[0]?.status === 'ASSIGNED' && L[0]?.carrierAmount === 4600, JSON.stringify(L[0]));
-    ok('leg 2 → B ASSIGNED, carrierAmount 6440', L[1]?.carrierId === B.id && L[1]?.status === 'ASSIGNED' && L[1]?.carrierAmount === 6440, JSON.stringify(L[1]));
+    ok('leg 1 → A ASSIGNED, carrierAmount 5290', L[0]?.carrierId === A.id && L[0]?.status === 'ASSIGNED' && L[0]?.carrierAmount === 5290, JSON.stringify(L[0]));
+    ok('leg 2 → B ASSIGNED, carrierAmount 7406', L[1]?.carrierId === B.id && L[1]?.status === 'ASSIGNED' && L[1]?.carrierAmount === 7406, JSON.stringify(L[1]));
     ok('legs carry carrier names', !!L[0]?.carrierName && !!L[1]?.carrierName);
 
     const assigned = unwrap((await j('GET', `/orders/${order.id}`, admin)).data);
@@ -41,7 +42,7 @@ export async function run(ctx) {
     const afterL1 = unwrap((await j('PATCH', `/orders/${order.id}/legs/1/status`, admin, { status: 'DELIVERED' })).data);
     ok('leg 1 DELIVERED, leg 2 ASSIGNED', afterL1?.legs?.[0]?.status === 'DELIVERED' && afterL1?.legs?.[1]?.status === 'ASSIGNED');
     const aAfter = await wallet(A.id);
-    ok('carrier A credited its leg payout (+4600)', Math.round((aAfter - aBefore) * 100) / 100 === 4600, `${aBefore}→${aAfter}`);
+    ok('carrier A credited its leg payout (+5290)', Math.round((aAfter - aBefore) * 100) / 100 === 5290, `${aBefore}→${aAfter}`);
     await j('PATCH', `/orders/${order.id}/legs/1/status`, admin, { status: 'DELIVERED' });
     ok('re-delivering leg 1 does not double-pay', (await wallet(A.id)) === aAfter);
 

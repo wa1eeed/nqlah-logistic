@@ -169,6 +169,17 @@
       "kycPending": "Under review",
       "noDocsUploaded": "No documents uploaded yet",
       "carrierDocsNote": "Includes freight license and insurance policy when available.",
+      "tax": {
+        "title": "Tax & VAT",
+        "description": "Controls whether 15% service VAT is applied to this provider's orders.",
+        "registeredLabel": "VAT registered",
+        "registeredOn": "VAT (15%) is applied to this provider's services.",
+        "registeredOff": "Not VAT registered — no service VAT is charged.",
+        "vatInvalid": "VAT number must be exactly 15 digits.",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "saved": "Tax settings updated"
+      },
       "statePending": "Pending",
       "stateApproved": "Approved",
       "stateRejected": "Rejected",

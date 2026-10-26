@@ -50,11 +50,20 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, Number(process.env.BCRYPT_ROUNDS ?? 12));
 
+    // A VAT-registered carrier COMPANY must provide its 15-digit VAT number.
+    const entityType = dto.accountType === 'INDIVIDUAL' ? 'INDIVIDUAL' : 'COMPANY';
+    const vatRegistered = dto.vatRegistered ?? true;
+    if (dto.companyType === 'CARRIER' && entityType === 'COMPANY' && vatRegistered && !dto.vatNumber) {
+      throw new BadRequestException({ code: 'VAT_NUMBER_REQUIRED', message: 'الرقم الضريبي مطلوب لمنشأة نقل مسجّلة في ضريبة القيمة المضافة' });
+    }
     const company = await this.prisma.company.create({
       data: {
         type: dto.companyType,
         code: companyCode(),
-        entityType: dto.accountType === 'INDIVIDUAL' ? 'INDIVIDUAL' : 'COMPANY',
+        entityType,
+        crNumber: dto.crNumber ?? null,
+        vatNumber: dto.vatNumber ?? null,
+        vatRegistered,
         nameAr: dto.companyNameAr,
         nameEn: dto.companyNameEn,
         city: dto.city,

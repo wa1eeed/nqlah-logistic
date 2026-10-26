@@ -117,6 +117,19 @@ export class AdminService {
     return this.prisma.company.update({ where: { id }, data: { status } });
   }
 
+  /** Update a company's VAT registration (ZATCA): registered flag + 15-digit number. */
+  async updateCompanyTax(id: string, dto: { vatRegistered?: boolean; vatNumber?: string | null }) {
+    const data: Prisma.CompanyUpdateInput = {};
+    if (dto.vatRegistered !== undefined) data.vatRegistered = dto.vatRegistered;
+    if (dto.vatNumber !== undefined) data.vatNumber = dto.vatNumber ?? null;
+    // If marked not-registered, clear the number unless a new one was provided.
+    if (dto.vatRegistered === false && dto.vatNumber === undefined) data.vatNumber = null;
+    return this.prisma.company.update({
+      where: { id }, data,
+      select: { id: true, vatRegistered: true, vatNumber: true },
+    });
+  }
+
   async listOrders(query: PaginationDto, status?: string) {
     const { page = 1, limit = 20, sort = 'createdAt', order = 'desc', search } = query;
     const where: Prisma.OrderWhereInput = {
