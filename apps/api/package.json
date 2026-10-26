@@ -17,7 +17,9 @@
     "db:studio": "prisma studio",
     "clean": "rm -rf dist node_modules/.prisma",
     "db:ensure-admin": "node dist/prisma/ensure-admin.js",
-    "db:ensure-platform-identity": "node dist/prisma/ensure-platform-identity.js"
+    "db:ensure-platform-identity": "node dist/prisma/ensure-platform-identity.js",
+    "db:deploy": "prisma migrate deploy && node dist/prisma/ensure-admin.js && node dist/prisma/ensure-platform-identity.js",
+    "db:deploy:seed": "prisma migrate deploy && node dist/prisma/seed.js && node dist/prisma/ensure-platform-identity.js"
   },
   "dependencies": {
     "@naqla/shared-types": "workspace:*",
