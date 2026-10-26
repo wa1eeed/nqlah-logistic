@@ -351,3 +351,24 @@ real NestJS + Prisma API (live-verified against a local backend, see
   (مُثرى بلوحة الشاحنة واسم السائق).
 - **UI/UX polish**: تنظيف النسخ (بلا تنوين)، إصلاحات الربحية، حالات تحميل/فراغ في
   لوحة الأدمن، إصلاح اسم المزوّد المُلزَم، ومراجعة سطح المكتب.
+
+---
+
+## Workflow & Policy Engine (2026-10-26)
+
+Evolving the groups/policies system into a real engine (plans/memberships + a
+capability layer), per the owner's direction.
+
+1. ✅ **Phase 1 — engine + plans + capability layer** (v0.9.75): `Plan` model
+   (audience-aware) → Policy Profile; `PolicyGroup.features` (flags+limits) +
+   commission config; `Company.planId`; precedence resolution (sub-tenant > plan >
+   legacy group > default); enforced gates (consolidatedOrders / perLegCarriers /
+   whiteLabel); plans API + admin «محرك السياسات والتشغيل» (Plans tab + Features
+   section + company plan assignment). e2e `plans.e2e.mjs`.
+2. **Phase 2 — finance & tax**: dynamic commission (rate + appliesTo CLIENT/CARRIER/
+   BOTH + per-plan override), VAT model (`Company.vatRegistered` + VAT number at
+   carrier-company signup, 15 digits, "not VAT-registered" toggle), VAT-inclusive/
+   exclusive pricing, commission's own VAT, and VAT-compliant **tax invoices**
+   (carrier service invoice + platform commission invoice). ZATCA/Fatoora later.
+3. **Later:** bind a plan at registration + plan selection at signup; subscription
+   billing/cycle + upgrade/downgrade; profile versioning.

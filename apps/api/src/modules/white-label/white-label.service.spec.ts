@@ -10,7 +10,8 @@ function makeService(whiteLabelEnabled: boolean) {
       update: jest.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: 'car-1', ...data })),
     },
   };
-  return { svc: new WhiteLabelService(prisma as never), prisma };
+  const policies = { hasFeature: jest.fn(async () => true) };
+  return { svc: new WhiteLabelService(prisma as never, policies as never), prisma };
 }
 
 describe('WhiteLabelService', () => {

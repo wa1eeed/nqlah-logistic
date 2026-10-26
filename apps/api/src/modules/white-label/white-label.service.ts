@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { PoliciesService } from '../policies/policies.service';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 interface BrandingDto { brandName?: string; brandLogo?: string; brandColor?: string }
@@ -16,7 +17,7 @@ const SELECT = {
  */
 @Injectable()
 export class WhiteLabelService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private policies: PoliciesService) {}
 
   private carrierId(actor: AuthUser) {
     if (!actor.companyId || (actor.role !== 'CARRIER_ADMIN' && actor.role !== 'CARRIER_USER')) {
@@ -46,10 +47,14 @@ export class WhiteLabelService {
     });
   }
 
-  /** Admin: turn the white-label subscription on/off for a carrier. */
+  /** Admin: turn the white-label subscription on/off for a carrier. Enabling
+   *  requires the carrier's plan to grant the `whiteLabel` capability. */
   async setEnabled(companyId: string, enabled: boolean) {
     const co = await this.prisma.company.findUnique({ where: { id: companyId } });
     if (!co) throw new NotFoundException({ code: 'COMPANY_NOT_FOUND', message: 'الشركة غير موجودة' });
+    if (enabled && !(await this.policies.hasFeature(companyId, 'whiteLabel'))) {
+      throw new ForbiddenException({ code: 'FEATURE_WHITE_LABEL_DISABLED', message: 'ميزة الوايت ليبل غير متاحة في باقة هذا المزوّد' });
+    }
     return this.prisma.company.update({ where: { id: companyId }, data: { whiteLabelEnabled: enabled }, select: SELECT });
   }
 }

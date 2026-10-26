@@ -39,6 +39,7 @@ import { Currency } from '@/components/currency';
 import { Skeleton } from '@/components/ui/skeleton';
 import { notify } from '@/lib/notify';
 import { api, fetcher } from '@/lib/api';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   COMPANIES, ORDERS, formatDate, teamMembersFor, permissionsFor,
   normalizeCompany, normalizeOrderList, localizeCity, localizeRegion,
@@ -157,6 +158,9 @@ export default function AdminCompanyDetail() {
                 {(companyData as { whiteLabelEnabled?: boolean })?.whiteLabelEnabled ? t('detail.whiteLabelOn') : t('detail.whiteLabelOff')}
               </Button>
             )}
+            <PlanAssign companyId={company.id} audience={isCarrier ? 'CARRIER' : 'CLIENT'}
+              current={(companyData as { planId?: string | null })?.planId ?? null}
+              onChanged={() => wlMutate(`/companies/${params.id}`)} />
             {groupName && (
               <Badge variant="secondary" className="inline-flex items-center gap-1">
                 <SlidersHorizontal className="h-3 w-3" />{groupName}
@@ -1139,5 +1143,29 @@ function AdminTeamSection({ companyId, companyKind }: { companyId: string; compa
         })}
       </CardContent>
     </Card>
+  );
+}
+
+/** Assign a Plan (membership) to a company from its 360° header. */
+function PlanAssign({ companyId, audience, current, onChanged }: {
+  companyId: string; audience: 'CLIENT' | 'CARRIER'; current: string | null; onChanged: () => void;
+}) {
+  const { data } = useSWR<Array<{ id: string; name: string; audience: string; active: boolean }>>('/policies/plans', fetcher);
+  const plans = (Array.isArray(data) ? data : []).filter((p) => p.active && (p.audience === audience || p.audience === 'BOTH'));
+  const assign = async (planId: string | null) => {
+    try {
+      await api.post('/policies/assign-plan', { companyId, planId });
+      onChanged();
+    } catch (e) { notify.error(e); }
+  };
+  if (plans.length === 0) return null;
+  return (
+    <Select value={current ?? 'none'} onValueChange={(v) => assign(v === 'none' ? null : v)}>
+      <SelectTrigger className="h-9 w-[180px] text-xs"><SelectValue placeholder="الباقة" /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">— بلا باقة —</SelectItem>
+        {plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+      </SelectContent>
+    </Select>
   );
 }

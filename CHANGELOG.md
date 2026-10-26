@@ -6,6 +6,34 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.75 — Workflow & Policy Engine — Plans + capability layer (phase 1) (2026-10-26)
+
+Evolves the per-group policy settings into a real **Workflow & Policy Engine**:
+Plans (memberships) wrap Policy Profiles (the client groups) which now carry a
+**capability layer** (feature flags + limits + commission config).
+
+- **Schema:** `PolicyGroup` gains `features` (JSON flags/limits), `commissionRate`,
+  `commissionAppliesTo`, `priceVatInclusive`. New `Plan` model (audience-aware,
+  `isDefault`/`active`, → a profile, optional `commissionRateOverride`) +
+  `Company.planId`. Migration `20261026260000_policy_engine_plans`.
+- **Engine:** `effectiveForCompany` resolves by precedence **sub-tenant > plan >
+  legacy group > default**, exposing `features` + commission. `hasFeature()`
+  helper. `/policies/mine` now returns the capability layer.
+- **Capability gates (enforced):** creating a consolidated order needs
+  `consolidatedOrders`; per-leg carriers/bidding needs `perLegCarriers`; enabling
+  a carrier's **white-label** needs `whiteLabel`.
+- **API:** `GET/POST/PUT/DELETE /policies/plans` + `POST /policies/assign-plan`
+  (audited).
+- **Web (admin):** the page is now **«محرك السياسات والتشغيل»** with a **Plans**
+  tab (CRUD, audience, → profile, commission override, default/active), a
+  **Features & Commission** section on each profile, and a **plan assignment**
+  control on the company 360° header.
+- Verified: new `plans.e2e.mjs` (8 checks) + full e2e **50/50** + API jest 32/32;
+  all web apps typecheck; engine page + plan creation verified live.
+
+> Phase 2 (next): the dynamic commission + VAT math, carrier VAT registration at
+> signup, and VAT-compliant tax invoices (service + commission).
+
 ### v0.9.74 — Committed e2e verification suites (2026-10-26)
 
 The black-box HTTP verification scripts used throughout the modular-platform work

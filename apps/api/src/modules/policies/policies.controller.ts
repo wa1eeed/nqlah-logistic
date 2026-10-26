@@ -1,11 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Audit } from '../../common/audit/audit.decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PoliciesService } from './policies.service';
 import {
-  AssignClientDto, CreateCarrierGroupDto, CreateGroupDto, UpdateCarrierGroupDto, UpdateGroupDto,
+  AssignClientDto, AssignPlanDto, CreateCarrierGroupDto, CreateGroupDto, CreatePlanDto,
+  UpdateCarrierGroupDto, UpdateGroupDto, UpdatePlanDto,
 } from './dto/policy.dto';
 
 @ApiTags('policies')
@@ -89,5 +91,45 @@ export class PoliciesController {
   @UseGuards(RolesGuard)
   deleteCarrierGroup(@Param('id') id: string) {
     return this.policies.deleteCarrierGroup(id);
+  }
+
+  // ─── Admin: Plans (memberships) ──────────────────────────────
+  @Get('plans')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  listPlans() {
+    return this.policies.listPlans();
+  }
+
+  @Post('plans')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @Audit({ action: 'policy.plan.create', resourceType: 'Plan' })
+  createPlan(@Body() dto: CreatePlanDto) {
+    return this.policies.createPlan(dto);
+  }
+
+  @Put('plans/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @Audit({ action: 'policy.plan.update', resourceType: 'Plan', idFrom: 'param', idKey: 'id' })
+  updatePlan(@Param('id') id: string, @Body() dto: UpdatePlanDto) {
+    return this.policies.updatePlan(id, dto);
+  }
+
+  @Delete('plans/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @Audit({ action: 'policy.plan.delete', resourceType: 'Plan', idFrom: 'param', idKey: 'id' })
+  deletePlan(@Param('id') id: string) {
+    return this.policies.deletePlan(id);
+  }
+
+  @Post('assign-plan')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @Audit({ action: 'policy.plan.assign', resourceType: 'Company', idFrom: 'body', idKey: 'companyId' })
+  assignPlan(@Body() dto: AssignPlanDto) {
+    return this.policies.assignPlan(dto.companyId, dto.planId ?? null);
   }
 }
