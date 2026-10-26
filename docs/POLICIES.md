@@ -89,10 +89,18 @@ interface ClientPolicy {
 Each client group configures four modules, surfaced in the admin UI as four
 colour-coded cards:
 
-1. **Assignment** — `allowMarket` / `allowDirect` toggles + a `defaultAssignment`.
-   A `forcedCarrierId` pins every order to one provider (direct-only).
-2. **Pricing** — `allowMarketPricing` / `allowFixedPricing` toggles + a
-   `defaultPricing`.
+1. **Assignment** (how the order reaches carriers) — `allowMarket` (publish to the
+   market / نشر للجميع) / `allowDirect` toggles + a `defaultAssignment`. A
+   `forcedCarrierId` pins every order to one provider (direct-only).
+2. **Pricing** (how the price is set, **independent of assignment**) —
+   `allowMarketPricing` (bidding / مناقصة) / `allowFixedPricing` (the client sets
+   the price) toggles + a `defaultPricing`. Any combination is valid: a client can
+   **publish to the market at a fixed price** (`OPEN` + `FIXED`), where carriers
+   *accept* the posted price (a bid locked to it) and the client picks one; or the
+   classic market bidding (`OPEN` + `BIDDING`); or direct at a fixed/negotiated
+   price. The order records its `priceMode` (`FIXED` | `BIDDING`); a FIXED order
+   carries `agreedPrice` from creation, a BIDDING order gets it when a bid is
+   accepted.
 3. **Collection** — `allowPrepaid` / `allowCOD` toggles, a `defaultCollectionMethod`,
    and an **enforce** switch. When enforced, the order's collection method is
    forced to the group default and the client's choice is ignored

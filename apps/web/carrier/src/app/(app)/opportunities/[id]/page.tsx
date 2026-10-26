@@ -106,9 +106,14 @@ export default function CarrierOpportunityDetail() {
   }
 
   const client = companyById(order.clientId);
-  const commission = Math.round(price * 0.08);
+  // FIXED-price market order: the client set the price, so the carrier accepts it
+  // (no bidding). We lock the form's price to it and show an "accept" action.
+  const o2 = order as unknown as { priceMode?: string; agreedPrice?: number | null };
+  const fixedPrice = o2.priceMode === 'FIXED' && o2.agreedPrice != null ? Number(o2.agreedPrice) : null;
+  const effPrice = fixedPrice ?? price;
+  const commission = Math.round(effPrice * 0.08);
   const vat = Math.round(commission * 0.15);
-  const net = price - commission - vat;
+  const net = effPrice - commission - vat;
 
   // DIRECT orders use a private negotiation flow with 3 actions instead of
   // the open-market bid form. Branch on mode and render a different page.
@@ -257,7 +262,7 @@ export default function CarrierOpportunityDetail() {
         ) : (
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>{retrying ? t('oppDetail.resubmit') : t('oppDetail.submitYourBid')}</CardTitle>
+            <CardTitle>{retrying ? t('oppDetail.resubmit') : fixedPrice != null ? t('oppDetail.acceptPriceTitle') : t('oppDetail.submitYourBid')}</CardTitle>
             <CardDescription>
               {retrying
                 ? t('oppDetail.formDescRetry')
@@ -287,20 +292,32 @@ export default function CarrierOpportunityDetail() {
               </div>
             )}
             {/* Price field is the single most-decided value in a bid — make it
-                visually dominant: bigger, highlighted border, larger font. */}
+                visually dominant. For a FIXED market order the price is set by the
+                client and shown read-only (the carrier accepts it). */}
             <div className="rounded-xl border-2 border-primary/40 bg-primary/[0.04] p-4 space-y-2">
-              <Label htmlFor="price" className="text-sm font-semibold">{t('oppDetail.priceLabel')}</Label>
-              <Input
-                id="price"
-                type="number"
-                inputMode="numeric"
-                value={price || ''}
-                onChange={(e) => setPrice(Number(e.target.value))}
-                placeholder="0"
-                className="h-14 text-3xl font-bold tracking-tight num bg-background"
-                autoFocus
-              />
-              {price > 0 && (
+              <Label htmlFor="price" className="text-sm font-semibold">
+                {fixedPrice != null ? t('oppDetail.fixedPriceLabel') : t('oppDetail.priceLabel')}
+              </Label>
+              {fixedPrice != null ? (
+                <>
+                  <div className="h-14 flex items-center text-3xl font-bold tracking-tight num">
+                    {fixedPrice.toLocaleString('en-US')} <span className="text-base font-normal text-muted-foreground ms-2">{t('units.sar')}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t('oppDetail.fixedPriceHint')}</p>
+                </>
+              ) : (
+                <Input
+                  id="price"
+                  type="number"
+                  inputMode="numeric"
+                  value={price || ''}
+                  onChange={(e) => setPrice(Number(e.target.value))}
+                  placeholder="0"
+                  className="h-14 text-3xl font-bold tracking-tight num bg-background"
+                  autoFocus
+                />
+              )}
+              {effPrice > 0 && (
                 <div className="text-xs text-muted-foreground">
                   {t('oppDetail.afterFees')}{' '}
                   <span className="font-semibold text-success num">
@@ -414,7 +431,7 @@ export default function CarrierOpportunityDetail() {
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                 {t('oppDetail.netEstTitle')}
               </div>
-              <BreakdownRow label={t('oppDetail.breakdownPrice')} amount={price} sar={t('units.sar')} />
+              <BreakdownRow label={t('oppDetail.breakdownPrice')} amount={effPrice} sar={t('units.sar')} />
               <BreakdownRow label={t('oppDetail.breakdownCommission')} amount={-commission} sar={t('units.sar')} />
               <BreakdownRow label={t('oppDetail.breakdownVat')} amount={-vat} sar={t('units.sar')} />
               <Separator />
@@ -437,7 +454,7 @@ export default function CarrierOpportunityDetail() {
                     // proposedDeliveryDate. estimatedDays defaults to 0 in
                     // the DTO so we don't need to send it.
                     await api.post(`/orders/${order.id}/bids`, {
-                      amount: price,
+                      amount: effPrice,
                       proposedPickupDate: pickupConfirm === 'PROPOSE' && proposedPickup ? proposedPickup : undefined,
                       proposedDeliveryDate: proposedDeliveryDate || undefined,
                       notes: notes || undefined,
@@ -456,10 +473,10 @@ export default function CarrierOpportunityDetail() {
                     setSubmitting(false);
                   }
                 }}
-                disabled={!price || !proposedDeliveryDate || !truckId || submitting}
+                disabled={!effPrice || !proposedDeliveryDate || !truckId || submitting}
               >
                 <Send className="h-4 w-4" />
-                {submitting ? t('oppDetail.sending') : t('oppDetail.send')}
+                {submitting ? t('oppDetail.sending') : fixedPrice != null ? t('oppDetail.acceptPrice') : t('oppDetail.send')}
               </Button>
             </div>
             {submitErr && (
