@@ -534,7 +534,11 @@ model OrderStop {
   orderId String
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  /// 1-based position in the route.
+  /// For a heterogeneous consolidated order, the leg (رحلة فرعية) this stop
+  /// belongs to — matches `OrderLeg.sequence`. Null = an order-level route
+  /// (single orders and homogeneous consolidated orders).
+  legSequence Int?
+  /// 1-based position in the route (within its leg when `legSequence` is set).
   sequence Int
   type     StopType
   /// "PENDING" | "EN_ROUTE" | "ARRIVED" | "COMPLETED" | "SKIPPED".
@@ -568,8 +572,9 @@ model OrderStop {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([orderId, sequence])
+  @@unique([orderId, legSequence, sequence])
   @@index([orderId])
+  @@index([orderId, legSequence])
 }
 
 enum StopType {

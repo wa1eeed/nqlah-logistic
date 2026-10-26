@@ -14,7 +14,8 @@ export async function run(ctx) {
     destinationCity: 'جدة', destinationRegion: 'مكة المكرمة', destinationAddress: 'port',
     requiredTruckType: 'REFRIGERATED', pickupDate: new Date(Date.now() + 2 * 86400000).toISOString(),
     legs: [
-      { requiredTruckType: 'REFRIGERATED', destinationCity: 'جدة', destinationRegion: 'مكة المكرمة', destinationAddress: 'market', price: 4200, reference: 'REF-COLD' },
+      { requiredTruckType: 'REFRIGERATED', destinationCity: 'جدة', destinationRegion: 'مكة المكرمة', destinationAddress: 'market', price: 4200, reference: 'REF-COLD',
+        stops: [{ type: 'RETURN_EMPTY', city: 'جدة', region: 'مكة المكرمة', address: 'empty yard', instructions: 'إرجاع الحاوية' }] },
       { requiredTruckType: 'CONTAINER_40', destinationCity: 'الدمام', destinationRegion: 'الشرقية', destinationAddress: 'port', price: 5800 },
       { requiredTruckType: 'LARGE_FLATBED', destinationCity: 'أبها', destinationRegion: 'عسير', destinationAddress: 'zone', price: 6000 },
     ],
@@ -31,6 +32,9 @@ export async function run(ctx) {
   ok('leg 1 = REFRIGERATED → جدة @ 4200', L[0]?.requiredTruckType === 'REFRIGERATED' && L[0]?.destinationCity === 'جدة' && L[0]?.price === 4200);
   ok('leg 2 = CONTAINER_40 → الدمام @ 5800', L[1]?.requiredTruckType === 'CONTAINER_40' && L[1]?.destinationCity === 'الدمام' && L[1]?.price === 5800);
   ok('leg 3 = LARGE_FLATBED → أبها @ 6000', L[2]?.requiredTruckType === 'LARGE_FLATBED' && L[2]?.destinationCity === 'أبها' && L[2]?.price === 6000);
+  // Per-leg intermediate stops: leg 1 carries its own RETURN_EMPTY waypoint; others none.
+  ok('leg 1 has its own RETURN_EMPTY stop', L[0]?.stops?.length === 1 && L[0].stops[0].type === 'RETURN_EMPTY', JSON.stringify(L[0]?.stops));
+  ok('legs 2 & 3 have no stops', (L[1]?.stops?.length ?? 0) === 0 && (L[2]?.stops?.length ?? 0) === 0);
 
   const homo = unwrap((await j('POST', '/orders', client.token, { ...base, legs: undefined, truckCount: 2 })).data);
   const homoLegs = unwrap((await j('GET', `/orders/${homo.id}/legs`, client.token)).data);

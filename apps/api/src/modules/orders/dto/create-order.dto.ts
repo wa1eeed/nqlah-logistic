@@ -33,6 +33,9 @@ const STOP_STATUSES = ['PENDING', 'EN_ROUTE', 'ARRIVED', 'COMPLETED', 'SKIPPED']
 /// omits `stops` and the server derives a 2-stop route from origin/destination.
 export class CreateStopDto {
   @IsEnum(STOP_TYPES) type!: (typeof STOP_TYPES)[number];
+  /// The leg (1-based) this stop belongs to in a heterogeneous consolidated
+  /// order; omit for an order-level route. Usually set via the leg's own `stops`.
+  @IsOptional() @IsInt() @Min(1) legSequence?: number;
   @IsString() city!: string;
   @IsString() region!: string;
   @IsString() address!: string;
@@ -59,6 +62,9 @@ export class CreateOrderLegDto {
   @IsOptional() @IsNumber() destinationLng?: number;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) price?: number;
   @IsOptional() @IsString() reference?: string;
+  /// Optional intermediate stops for THIS leg's route (pickup → stops →
+  /// this leg's destination). Each becomes an OrderStop tagged with the leg.
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => CreateStopDto) stops?: CreateStopDto[];
 }
 
 export class CreateOrderDto {

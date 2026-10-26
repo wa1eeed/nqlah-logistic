@@ -176,6 +176,10 @@
       "noBids": "No bids on this leg yet",
       "award": "Award"
     },
+    "legStops": {
+      "label": "Stops:",
+      "types": { "DROPOFF": "Partial drop-off", "PICKUP": "Extra pickup", "WAREHOUSE": "Warehouse", "RETURN_EMPTY": "Empty-container return", "EXCHANGE": "Exchange" }
+    },
  "total": "Total",
  "singleInvoice": "Single invoice for order {orderNumber}.",
  "titles": {

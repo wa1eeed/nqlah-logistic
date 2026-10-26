@@ -176,6 +176,10 @@
       "noBids": "لا عروض على هذه الرحلة الفرعية بعد",
       "award": "اعتماد"
     },
+    "legStops": {
+      "label": "محطّات:",
+      "types": { "DROPOFF": "تسليم جزئي", "PICKUP": "استلام إضافي", "WAREHOUSE": "مستودع", "RETURN_EMPTY": "إرجاع حاوية فارغة", "EXCHANGE": "تبادل" }
+    },
  "total": "الإجمالي",
  "singleInvoice": "فاتورة واحدة برقم الطلب {orderNumber}.",
  "titles": {

@@ -38,6 +38,20 @@ const LEG_TONE: Record<ConsolidatedLegStatus, string> = {
   IN_TRANSIT: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
   DELIVERED: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
 };
+const STOP_LABEL: Record<string, string> = {
+  DROPOFF: 'تسليم جزئي', PICKUP: 'استلام إضافي', WAREHOUSE: 'مستودع',
+  RETURN_EMPTY: 'إرجاع حاوية فارغة', EXCHANGE: 'تبادل',
+};
+/** Compact per-leg waypoints line: "محطّات: إرجاع حاوية فارغة · جدة، …". */
+function LegStops({ stops }: { stops?: ConsolidatedLeg['stops'] }) {
+  if (!stops || stops.length === 0) return null;
+  return (
+    <div className="mt-0.5 flex items-start gap-1 text-[11px] text-muted-foreground flex-wrap">
+      <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+      <span>محطّات: {stops.map((s) => `${STOP_LABEL[s.type] ?? s.type}${s.city ? ` · ${localizeCity(s.city)}` : ''}`).join('، ')}</span>
+    </div>
+  );
+}
 
 export function ConsolidatedPanel({ order, canDistribute = false }: { order: Order; canDistribute?: boolean }) {
   const overrides = useConsolidatedStore((s) => s.overrides[order.id] ?? {});
@@ -219,6 +233,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                           {leg.carrierName && <span className="font-medium text-foreground">· {leg.carrierName}</span>}
                         </div>
                       )}
+                      <LegStops stops={leg.stops} />
                       {driver && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Users className="h-3 w-3" /> {driver.fullName}
@@ -238,6 +253,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                         {leg.carrierName && <span className="font-medium text-foreground">· {leg.carrierName}</span>}
                       </div>
                     )}
+                    <LegStops stops={leg.stops} />
                   </div>
                 )}
                 {heterogeneous && leg.price != null && (
