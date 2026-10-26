@@ -99,7 +99,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
     if (bidLeg == null || !(amt > 0)) return;
     try {
       await api.post(`/orders/${order.id}/bids`, { legIndex: bidLeg, amount: amt });
-      notify.success('تم إرسال عرضك', `الساق ${bidLeg} · ${amt.toLocaleString('en-US')} ر.س.`);
+      notify.success('تم إرسال عرضك', `الرحلة الفرعية ${bidLeg} · ${amt.toLocaleString('en-US')} ر.س.`);
       setBidLeg(null); setBidAmount(''); revalidate();
     } catch (e) { notify.error(e); }
   };
@@ -289,7 +289,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
             <div className="mb-2 text-sm font-semibold">الفاتورة المجمّعة</div>
             <dl className="space-y-1.5 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted-foreground num">{heterogeneous ? <>{count} شاحنات · تسعير لكل ساق</> : <>{count} شاحنات × <Currency amount={perLeg} /></>}</dt>
+                <dt className="text-muted-foreground num">{heterogeneous ? <>{count} شاحنات · تسعير لكل رحلة فرعية</> : <>{count} شاحنات × <Currency amount={perLeg} /></>}</dt>
                 <dd><Currency amount={invoiceTotal} /></dd>
               </div>
               {order.commission != null && (
@@ -316,7 +316,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
             <DialogDescription>
               اختر شاحنة من أسطولك — السائق المربوط بها يُسنَد تلقائيا.
               {heterogeneous && openLegSpec?.requiredTruckType && (
-                <span className="mt-1 block">هذه الساق تتطلّب نوع شاحنة: <span className="font-medium text-foreground">{openLegSpec.requiredTruckType}</span></span>
+                <span className="mt-1 block">هذه الرحلة الفرعية تتطلّب نوع شاحنة: <span className="font-medium text-foreground">{openLegSpec.requiredTruckType}</span></span>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -385,8 +385,8 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
       <Dialog open={bidLeg != null} onOpenChange={(o) => { if (!o) { setBidLeg(null); setBidAmount(''); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>عرض سعر للساق رقم {bidLeg}</DialogTitle>
-            <DialogDescription>قدّم سعرك لهذه الساق. يختار العميل العرض المناسب.</DialogDescription>
+            <DialogTitle>عرض سعر للرحلة الفرعية رقم {bidLeg}</DialogTitle>
+            <DialogDescription>قدّم سعرك لهذه الرحلة الفرعية. يختار العميل العرض المناسب.</DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-2">
             <Label htmlFor="legBidAmount" className="text-sm font-medium">سعرك المقترح (ر.س.)</Label>

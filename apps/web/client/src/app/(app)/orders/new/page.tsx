@@ -852,6 +852,14 @@ export default function NewOrderWizard() {
                     <Plus className="h-4 w-4" /> {t('wizard.route.addStop')}
                   </Button>
                 </div>
+                {form.stops.length === 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[11px] text-muted-foreground">{t('wizard.route.stopsExamplesLabel')}</span>
+                    {(['RETURN_EMPTY', 'PICKUP', 'WAREHOUSE', 'DROPOFF', 'EXCHANGE'] as const).map((k) => (
+                      <Badge key={k} variant="secondary" className="font-normal">{t(`wizard.route.stopTypes.${k}`)}</Badge>
+                    ))}
+                  </div>
+                )}
                 {form.stops.map((s, i) => (
                   <div key={i} className="rounded-md border bg-muted/30 p-3 space-y-2">
                     <div className="flex items-center justify-between">
