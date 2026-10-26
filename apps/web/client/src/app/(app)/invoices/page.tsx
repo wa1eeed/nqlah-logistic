@@ -97,7 +97,7 @@ export default function ClientInvoicesPage() {
                       <span className="font-mono text-xs font-medium">{i.invoiceNumber}</span>
                       <StatusBadge status={i.status} />
                     </div>
-                    <div className="mt-1 font-mono text-xs text-muted-foreground">{i.orderId}</div>
+                    <div className="mt-1 font-mono text-xs text-muted-foreground">{i.order?.orderNumber ?? i.orderId}</div>
                     <div className="mt-2.5 flex items-center justify-between gap-2">
                       <span className="num text-xs text-muted-foreground">{formatDate(i.dueAt)}</span>
                       <span className="text-sm font-semibold"><Currency amount={i.total} /></span>
@@ -132,7 +132,7 @@ export default function ClientInvoicesPage() {
                   {rows.map((i) => (
                     <TableRow key={i.id}>
                       <TableCell className="font-mono text-xs font-medium">{i.invoiceNumber}</TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">{i.orderId}</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{i.order?.orderNumber ?? i.orderId}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDate(i.issuedAt)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDate(i.dueAt)}</TableCell>
                       <TableCell className="text-end"><Currency amount={i.amount} /></TableCell>

@@ -235,6 +235,8 @@ export type EscrowState = 'HELD' | 'RELEASED' | 'REFUNDED' | 'DISPUTED';
 export interface Payment {
   id: string;
   orderId: string;
+  /** From the API — the order's short public number, preferred over the raw id. */
+  order?: { orderNumber: string };
   clientId: string;
   carrierId: string;
   amount: number;
@@ -262,6 +264,8 @@ export interface Invoice {
   id: string;
   invoiceNumber: string;
   orderId: string;
+  /** From the API — the order's short public number, preferred over the raw id. */
+  order?: { orderNumber: string };
   clientId: string;
   amount: number;
   vat: number;

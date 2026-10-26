@@ -119,7 +119,7 @@ export default function AdminPaymentsPage() {
                   <span className="font-mono text-xs font-medium">{p.id}</span>
                   <StatusBadge status={p.state} />
                 </div>
-                <div className="mt-1 font-mono text-xs text-primary">{p.orderId}</div>
+                <div className="mt-1 font-mono text-xs text-primary">{p.order?.orderNumber ?? p.orderId}</div>
                 <div className="text-xs text-muted-foreground truncate">
                   {companyById(p.clientId)?.nameAr ?? '—'} ← {companyById(p.carrierId)?.nameAr ?? '—'}
                 </div>
@@ -168,7 +168,7 @@ export default function AdminPaymentsPage() {
               {rows.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-mono text-xs font-medium">{p.id}</TableCell>
-                  <TableCell className="font-mono text-xs text-primary">{p.orderId}</TableCell>
+                  <TableCell className="font-mono text-xs text-primary">{p.order?.orderNumber ?? p.orderId}</TableCell>
                   <TableCell>{companyById(p.clientId)?.nameAr ?? '—'}</TableCell>
                   <TableCell>{companyById(p.carrierId)?.nameAr ?? '—'}</TableCell>
                   <TableCell className="text-end"><Currency amount={p.amount} /></TableCell>

@@ -6,6 +6,23 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.72 — Short public codes for drivers + orders (no raw cuids) (2026-10-26)
+
+Extends the short-code principle (established for companies, `NQ-XXXXXX`) to
+drivers and order references.
+
+- **Drivers:** `DriverProfile.code` (`DR-XXXXXX`), generated at every creation
+  path (individual-carrier registration, fleet create/invite) and backfilled for
+  existing rows (migration `20261026240000_add_driver_code`). The admin drivers
+  list now shows the code instead of a truncated raw cuid.
+- **Orders:** every UI that referenced an order by its raw `orderId` cuid now
+  shows the order's short public **`orderNumber`** (`ORD-YYYY-NNNNNN`): client
+  invoices + finance, admin payments, carrier finance. The invoices list endpoint
+  now includes the order's `orderNumber`; the payments list already did. Shared
+  `Invoice` / `Payment` types gained an optional `order { orderNumber }`.
+- **Fix:** the admin **drivers** page requested `limit=200` (over the API's
+  `@Max(100)`) → 400, so the list never loaded; corrected to `limit=100`.
+
 ### v0.9.71 — Documentation deep-polish pass (2026-10-26)
 
 Final English deep-docs pass over the `docs/` references to match the current platform.

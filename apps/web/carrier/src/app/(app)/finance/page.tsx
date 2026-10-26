@@ -185,7 +185,7 @@ export default function CarrierFinancePage() {
                   heldPayments.map((p) => (
                     <div key={p.id} className="p-4">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-xs text-primary">{p.orderId}</span>
+                        <span className="font-mono text-xs text-primary">{p.order?.orderNumber ?? p.orderId}</span>
                         <StatusBadge status={p.state} />
                       </div>
                       <div className="mt-1 text-sm font-medium">{companyById(p.clientId)?.nameAr ?? '—'}</div>
@@ -223,7 +223,7 @@ export default function CarrierFinancePage() {
                   ) : (
                     heldPayments.map((p) => (
                       <TableRow key={p.id}>
-                        <TableCell className="font-mono text-xs text-primary">{p.orderId}</TableCell>
+                        <TableCell className="font-mono text-xs text-primary">{p.order?.orderNumber ?? p.orderId}</TableCell>
                         <TableCell>{companyById(p.clientId)?.nameAr ?? '—'}</TableCell>
                         <TableCell className="text-end"><Currency amount={p.amount} /></TableCell>
                         <TableCell className="text-end text-destructive"><Currency amount={-p.commission} /></TableCell>

@@ -25,7 +25,11 @@ export class InvoicesService {
       this.prisma.invoice.findMany({
         where, skip: (page - 1) * limit, take: limit,
         orderBy: { [sort]: order },
-        include: { issuer: { select: { nameAr: true } }, receiver: { select: { nameAr: true } } },
+        include: {
+          issuer: { select: { nameAr: true } },
+          receiver: { select: { nameAr: true } },
+          order: { select: { orderNumber: true } },
+        },
       }),
       this.prisma.invoice.count({ where }),
     ]);

@@ -13,7 +13,7 @@ import { TokenBlacklistService } from '../../common/security/token-blacklist.ser
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { normalizeSaudiPhone } from '@naqla/shared-utils';
-import { companyCode } from '../../common/codes';
+import { companyCode, driverCode } from '../../common/codes';
 
 @Injectable()
 export class AuthService {
@@ -94,6 +94,7 @@ export class AuthService {
     if (dto.companyType === 'CARRIER' && dto.accountType === 'INDIVIDUAL') {
       await this.prisma.driverProfile.create({
         data: {
+          code: driverCode(),
           userId: user.id,
           companyId: company.id,
           licenseNumber: dto.licenseNumber ?? `IND-${user.id}`,
