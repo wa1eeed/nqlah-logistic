@@ -6,6 +6,19 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.74 — Committed e2e verification suites (2026-10-26)
+
+The black-box HTTP verification scripts used throughout the modular-platform work
+are now committed and documented under `apps/api/test/e2e/`:
+
+- `policies.e2e.mjs`, `heterogeneous-orders.e2e.mjs`, `per-leg-carriers.e2e.mjs`,
+  `per-leg-bidding.e2e.mjs`, a `run-all.mjs` runner, and a README with prerequisites.
+- `pnpm --filter @naqla/api verify:e2e` runs all four (42 checks) against a local
+  (or `E2E_BASE`) API; each suite also runs standalone and exits non-zero on failure.
+- The runner authenticates **once** and shares tokens across suites, so the
+  rate-limited admin login (5/30min) is hit a single time. Suites create and clean
+  up their own test data.
+
 ### v0.9.73 — Audit coverage for bid awards (2026-10-26)
 
 - Bid actions are now audited: `POST /orders/:id/bids/:bidId/accept` →
