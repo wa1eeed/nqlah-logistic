@@ -95,12 +95,13 @@
    > ℹ️ داخل حاوية الـAPI على Coolify يكون المجلد `/app` هو `apps/api` نفسه (بلا جذر
    > المستودع، فلا يوجد `scripts/`). استخدم أمر الحزمة المكافئ من `/app` مباشرةً:
    > `npm run db:deploy` (production) أو `npm run db:deploy:seed` (staging) — وكلاهما
-   > يطبّق migrations ثم الأدمن ثم الهوية الضريبية.
+   > يطبّق migrations ثم الأدمن ثم الهوية الضريبية ثم باقات الاشتراك.
 
    أو يدوياً، بنفس الترتيب:
    - **migrations:** `npx prisma migrate deploy` (لا `migrate dev` في staging/prod)
    - **الأدمن:** production → `pnpm --filter @naqla/api db:ensure-admin` (من الـ env، بلا بيانات تجريبية)؛ staging → `pnpm db:seed` (أدمن + بيانات تجريبية). لتغيير بيانات الأدمن لاحقاً: حدّث `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` ثم أعد تشغيل `db:ensure-admin`.
    - **الهوية الضريبية للمنصّة:** `pnpm --filter @naqla/api db:ensure-platform-identity` — يضمن فقط وجود صفوف الإعدادات (ببيانات مبدئية إن كانت مفقودة) حتى لا تنكسر الفوترة. تُحرَّر فعلياً من **لوحة الأدمن** (الإعدادات ← المالية ← «الهوية الضريبية للمنصة»). راجع [`INVOICES.md`](INVOICES.md).
+   - **باقات الاشتراك:** `pnpm --filter @naqla/api db:ensure-plans` — يزرع كتالوج الموديولز المسعّرة + الباقة الأساسية (مجانية، افتراضية) والاحترافية بشكل idempotent وبلا بيانات تجريبية؛ تُحرَّر لاحقاً من **لوحة الأدمن** (محرك السياسات ← الباقات/موديولز الباقات). راجع [`SUBSCRIPTIONS.md`](SUBSCRIPTIONS.md).
 
    > ⚠️ الهوية الضريبية (الرقم الضريبي، السجل، الاسم، العنوان) تُدار من لوحة الأدمن —
    > **لا** من متغيّرات Coolify. عبّئها بالبيانات الرسمية لنقلة من اللوحة **قبل** أن يُكمَل

@@ -92,12 +92,22 @@ Module `apps/api/src/modules/policies/`:
 (free toggle, base price, yearly discount, truck limit, trial, module multi-select,
 live computed price); the **موديولز الباقات** tab manages the priced catalog.
 
-## 7. Deferred (next)
+## 7. Bootstrapping an environment
+
+Plans/modules aren't demo data, so they're provisioned by
+`pnpm --filter @naqla/api db:ensure-plans` (`apps/api/prisma/ensure-plans.ts`),
+which is part of `npm run db:deploy`. It upserts the priced module catalog and
+creates the Basic (free, default) + Professional plans **idempotently, without any
+demo data** — safe in production — and leaves later admin edits untouched. If no
+default carrier plan exists it marks Basic as the default. Edit everything
+afterwards from the admin panel.
+
+## 8. Deferred (next)
 
 - **Payment + auto-renewal**: charge the price snapshot, advance periods, dunning
   for `PAST_DUE`, proration on upgrade/downgrade, subscription invoices.
 - **Self-service billing page** (carrier/client): upgrade / downgrade / cancel.
 
-## 8. Changelog anchors
+## 9. Changelog anchors
 
 - v0.9.80 — subscription plans (dynamic pricing + lifecycle + signup binding).
