@@ -38,9 +38,11 @@ Tracked verbatim so nothing is dropped. Work top-to-bottom; one PR per coherent 
      (`assign-carrier` / `carrier` endpoints), with per-leg financials, per-leg
      settlement on delivery, leg-level status/authorization, and an admin per-leg
      assignment UI. (v0.9.69.)
-   - **Phase 2b (open):** per-leg **open-market bidding** — carriers browsing and
-     bidding on individual legs (needs `Bid.orderLegId` + a per-leg bid/award flow
-     and carrier-opportunities UI). Direct per-leg assignment ships in 2a.
+   - ✅ **Phase 2b — per-leg open-market bidding:** carriers bid on individual legs
+     (`POST /orders/:id/bids { legIndex, amount }`, gated by truck-type capability);
+     the client/admin awards a leg to a bid (`Bid.orderLegId` + partial unique
+     indexes). Carrier "قدّم عرضاً" UI + admin per-leg bids/award dialog. (v0.9.70.)
+     → Item 8 complete (heterogeneous legs + per-leg carriers + per-leg bidding).
 9. ✅ **C2 — complete the modules** — **per-group module defaults** done: the admin sets
    a group's default assignment (MARKET|DIRECT), pricing (MARKET|FIXED) and collection
    method (+ enforcement), beyond the existing allow/deny toggles. Assignment + collection

@@ -6,6 +6,32 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.70 — Per-leg open-market bidding (phase 2b) (2026-10-26)
+
+Carriers can now **bid on individual legs** of a heterogeneous consolidated order,
+and the client/admin **awards each leg** to a bid — completing the per-leg
+marketplace. Backlog item 8, phase 2b.
+
+- **Schema:** `Bid.orderLegId` (+ `OrderLeg.bids`); a carrier may bid on several
+  legs of one order, so the `(orderId, carrierId)` unique is replaced by two
+  **partial** unique indexes — order-level (one per order+carrier) and leg-level
+  (one per leg+carrier). Migration `20261026220000_bid_order_leg`.
+- **API:**
+  - `POST /orders/:id/bids { legIndex, amount }` — a per-leg bid; the leg must be
+    open (no carrier yet) and the carrier must own a truck of the leg's type
+    (`NO_MATCHING_TRUCK`), else it bids on an assigned leg (`LEG_ALREADY_ASSIGNED`).
+  - `GET /orders/:id/bids?legIndex=N` — a leg's bids (order-level list excludes
+    leg bids).
+  - Accepting a per-leg bid **awards the leg**: sets its carrier + price +
+    financial split, rejects the other bids on that leg, and rolls up the order.
+  - `GET /orders/:id/legs` now also returns each leg's `bidCount` and, for a
+    carrier, its own `myBidAmount` / `myBidStatus`.
+- **Web:** the **carrier panel** adds a "قدّم عرضاً" (bid) action on each leg the
+  carrier can serve, with an edit-your-bid state; the **admin order detail** shows
+  a per-leg bids count, a bids dialog, and an **Award** button.
+- Verified: 10/10 per-leg-bidding e2e + API jest 32/32; all web apps typecheck;
+  carrier bid + admin award verified live.
+
 ### v0.9.69 — Per-leg carriers (phase 2): a different carrier per leg + per-leg settlement (2026-10-26)
 
 Each leg of a heterogeneous consolidated order can now be served by **its own

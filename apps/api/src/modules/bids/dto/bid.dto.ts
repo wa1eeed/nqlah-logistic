@@ -2,6 +2,9 @@ import { IsDateString, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-
 
 export class CreateBidDto {
   @IsNumber() @Min(1) amount!: number;
+  /** Phase 2b — bid on a specific LEG of a heterogeneous order (1-based index).
+   *  Omit for a classic order-level bid. */
+  @IsOptional() @IsInt() @Min(1) legIndex?: number;
   /** Legacy duration field (kept for back-compat with old clients). New
    *  clients should send `proposedDeliveryDate` instead; this becomes optional. */
   @IsOptional() @IsInt() @Min(0) estimatedDays?: number;

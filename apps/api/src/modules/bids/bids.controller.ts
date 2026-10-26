@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 import { BidsService } from './bids.service';
@@ -11,8 +11,8 @@ export class BidsController {
   constructor(private bids: BidsService) {}
 
   @Get()
-  list(@Param('orderId') orderId: string) {
-    return this.bids.list(orderId);
+  list(@Param('orderId') orderId: string, @Query('legIndex') legIndex?: string) {
+    return this.bids.list(orderId, legIndex != null ? Number(legIndex) : undefined);
   }
 
   @Post()

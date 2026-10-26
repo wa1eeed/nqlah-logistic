@@ -692,6 +692,17 @@ export class OrdersService {
       ? await this.prisma.company.findMany({ where: { id: { in: legCarrierIds } }, select: { id: true, nameAr: true } })
       : [];
     const carrierName = (cid?: string | null) => (cid ? legCarriers.find((c) => c.id === cid)?.nameAr : undefined);
+    // Per-leg bids: a count per leg (for the client/admin), and — when the actor
+    // is a carrier — that carrier's own bid on each leg (for the carrier UI).
+    const legIds = order.orderLegs.map((l) => l.id);
+    const legBids = (heterogeneous && legIds.length)
+      ? await this.prisma.bid.findMany({
+          where: { orderLegId: { in: legIds }, status: { in: ['PENDING', 'ACCEPTED'] } },
+          select: { orderLegId: true, carrierId: true, amount: true, status: true },
+        })
+      : [];
+    const bidsForSeq = (legId?: string) => legBids.filter((b) => b.orderLegId === legId);
+    const myBidFor = (legId?: string) => (actor.companyId ? legBids.find((b) => b.orderLegId === legId && b.carrierId === actor.companyId) : undefined);
     const driverIds = order.orderTrucks.map((l) => l.driverId).filter((d): d is string => !!d);
     const drivers = driverIds.length
       ? await this.prisma.driverProfile.findMany({
@@ -709,6 +720,7 @@ export class OrdersService {
     // Each leg's spec: its own values when heterogeneous, else the order's.
     const specFor = (index: number) => {
       const s = specBySeq.get(index);
+      const myBid = myBidFor(s?.id);
       return {
         requiredTruckType: s?.requiredTruckType ?? order.requiredTruckType,
         destinationCity: s?.destinationCity ?? order.destinationCity,
@@ -718,6 +730,9 @@ export class OrdersService {
         carrierId: s?.carrierId ?? undefined,
         carrierName: carrierName(s?.carrierId),
         carrierAmount: s?.carrierAmount != null ? Number(s.carrierAmount) : undefined,
+        bidCount: bidsForSeq(s?.id).length,
+        myBidAmount: myBid ? Number(myBid.amount) : undefined,
+        myBidStatus: myBid?.status,
       };
     };
     // Authoritative leg status: OrderLeg.status for heterogeneous orders, the

@@ -158,7 +158,12 @@
     "perLegPricing": "تسعير لكل ساق",
     "legCarrier": {
       "assign": "إسناد ناقل",
-      "none": "— بدون ناقل —"
+      "none": "— بدون ناقل —",
+      "bids": "{count} عروض",
+      "bidsTitle": "عروض الساق {index}",
+      "bidsDesc": "اعتمد عرضاً لإسناد ناقله إلى الساق.",
+      "noBids": "لا عروض على هذه الساق بعد",
+      "award": "اعتماد"
     },
  "total": "الإجمالي",
  "singleInvoice": "فاتورة واحدة برقم الطلب {orderNumber}.",

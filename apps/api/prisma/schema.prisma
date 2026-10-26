@@ -563,6 +563,11 @@ model Bid {
   carrierId String
   carrier   Company @relation(fields: [carrierId], references: [id])
 
+  /// Phase 2b — a bid may target a specific LEG of a heterogeneous order
+  /// (per-leg marketplace). Null = a classic order-level bid.
+  orderLegId String?
+  orderLeg   OrderLeg? @relation(fields: [orderLegId], references: [id], onDelete: Cascade)
+
   amount Decimal   @db.Decimal(12, 2)
   status BidStatus @default(PENDING)
 
@@ -584,7 +589,11 @@ model Bid {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@unique([orderId, carrierId])
+  // Uniqueness is enforced by two PARTIAL unique indexes created in the
+  // migration (order-level: one bid per (order, carrier); leg-level: one bid per
+  // (leg, carrier)), since a carrier may bid on several legs of one order.
+  @@index([orderId, carrierId])
+  @@index([orderLegId, status])
   @@index([orderId, status])
 }
 
@@ -662,6 +671,9 @@ model OrderLeg {
   carrierAmount    Decimal? @db.Decimal(12, 2)
   /// When the leg's carrier payout was released (on leg delivery).
   settledAt        DateTime?
+
+  /// Per-leg bids (phase 2b) when the leg is on the open market.
+  bids Bid[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

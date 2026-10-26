@@ -85,6 +85,24 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
       revalidate();
     } catch (e) { notify.error(e); }
   };
+
+  // ── Per-leg bidding (phase 2b) ──
+  // A heterogeneous order on the open market: bid on an unassigned leg this
+  // carrier can serve (owns a truck of the leg's type).
+  const isBiddable = heterogeneous && order.mode === 'OPEN' && ['PUBLISHED', 'BIDDING'].includes(order.status);
+  const servedTypes = useMemo(() => new Set(srcTrucks.map((t) => t.truckType)), [srcTrucks]);
+  const canBidLeg = (leg: ConsolidatedLeg) => isBiddable && !leg.carrierId && servedTypes.has(leg.requiredTruckType as never);
+  const [bidLeg, setBidLeg] = useState<number | null>(null);
+  const [bidAmount, setBidAmount] = useState('');
+  const submitBid = async () => {
+    const amt = Number(bidAmount);
+    if (bidLeg == null || !(amt > 0)) return;
+    try {
+      await api.post(`/orders/${order.id}/bids`, { legIndex: bidLeg, amount: amt });
+      notify.success('تم إرسال عرضك', `الساق ${bidLeg} · ${amt.toLocaleString('en-US')} ر.س.`);
+      setBidLeg(null); setBidAmount(''); revalidate();
+    } catch (e) { notify.error(e); }
+  };
   // The leg currently being distributed — used to constrain the truck picker to
   // the leg's required type for a heterogeneous order.
   const openLegSpec = openLeg != null ? legs.find((l) => l.index === openLeg) : undefined;
@@ -228,6 +246,19 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${LEG_TONE[leg.status]}`}>
                   {LEG_LABEL[leg.status]}
                 </span>
+                {/* Per-leg bidding on a market order */}
+                {canBidLeg(leg) && (
+                  leg.myBidAmount != null ? (
+                    <button type="button" onClick={() => { setBidAmount(String(leg.myBidAmount)); setBidLeg(leg.index); }}
+                      className="shrink-0 text-xs text-[hsl(var(--mint))] font-medium">
+                      عرضك: <span className="num" dir="ltr">{leg.myBidAmount.toLocaleString('en-US')}</span> · تعديل
+                    </button>
+                  ) : (
+                    <Button size="sm" variant="outline" className="shrink-0" onClick={() => { setBidAmount(''); setBidLeg(leg.index); }}>
+                      قدّم عرضاً
+                    </Button>
+                  )
+                )}
                 {canActOnLeg(leg) && (
                   leg.truckId ? (
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -346,6 +377,25 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
           <DialogFooter>
             <Button variant="outline" onClick={() => { setOpenLeg(null); setPick(''); setTripFee(''); }}>إلغاء</Button>
             <Button onClick={doDistribute} disabled={distributeBlocked}><CheckCircle2 className="h-4 w-4" /> توزيع</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Per-leg bid dialog */}
+      <Dialog open={bidLeg != null} onOpenChange={(o) => { if (!o) { setBidLeg(null); setBidAmount(''); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>عرض سعر للساق رقم {bidLeg}</DialogTitle>
+            <DialogDescription>قدّم سعرك لهذه الساق. يختار العميل العرض المناسب.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-2">
+            <Label htmlFor="legBidAmount" className="text-sm font-medium">سعرك المقترح (ر.س.)</Label>
+            <Input id="legBidAmount" type="number" inputMode="numeric" min={1} dir="ltr" className="text-end"
+              value={bidAmount} onChange={(e) => setBidAmount(e.target.value)} placeholder="0.00" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBidLeg(null); setBidAmount(''); }}>إلغاء</Button>
+            <Button onClick={submitBid} disabled={!(Number(bidAmount) > 0)}><CheckCircle2 className="h-4 w-4" /> إرسال العرض</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

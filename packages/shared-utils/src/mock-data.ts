@@ -106,6 +106,10 @@ export interface ConsolidatedLeg {
   carrierId?: string;
   carrierName?: string;
   carrierAmount?: number;
+  /** Phase 2b — per-leg bidding: total bids on the leg + the viewing carrier's own bid. */
+  bidCount?: number;
+  myBidAmount?: number;
+  myBidStatus?: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN' | 'EXPIRED';
 }
 
 export interface Order {
