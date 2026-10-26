@@ -129,6 +129,14 @@
  "commissionVat": "ضريبة العمولة (15%)",
  "clientTotalDue": "إجمالي المستحق على العميل",
  "carrierNet": "صافي للناقل",
+ "invoices": {
+  "title": "الفواتير الضريبية",
+  "kind": { "SERVICE": "فاتورة الخدمة", "COMMISSION": "فاتورة العمولة" },
+  "parties": "{seller} ← {buyer}",
+  "base": "المبلغ (قبل الضريبة)",
+  "vat": "ضريبة القيمة المضافة (15%)",
+  "total": "الإجمالي"
+ },
  "distance": "المسافة",
  "distanceUnit": "{km} كم",
  "estimatedDuration": "المدة المتوقعة",

@@ -341,9 +341,53 @@ export default function AdminOrderDetail() {
               </dl>
             </CardContent>
           </Card>
+
+          <TaxInvoicesCard invoices={(order as { invoices?: TaxInvoice[] }).invoices ?? []} />
         </div>
       </div>
     </>
+  );
+}
+
+interface TaxInvoice {
+  id: string;
+  invoiceNumber: string;
+  kind: 'SERVICE' | 'COMMISSION';
+  status: string;
+  amount: number;
+  vatAmount: number;
+  totalAmount: number;
+  sellerName?: string | null;
+  buyerName?: string | null;
+}
+
+function TaxInvoicesCard({ invoices }: { invoices: TaxInvoice[] }) {
+  const t = useTranslations('orders');
+  if (!invoices.length) return null;
+  return (
+    <Card>
+      <CardHeader><CardTitle>{t('adminDetail.invoices.title')}</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        {invoices.map((inv) => (
+          <div key={inv.id} className="rounded-xl border border-border/70 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <Badge variant={inv.kind === 'SERVICE' ? 'secondary' : 'outline'}>
+                {t(`adminDetail.invoices.kind.${inv.kind}`)}
+              </Badge>
+              <span className="num text-[11px] text-muted-foreground" dir="ltr">{inv.invoiceNumber.slice(0, 10)}</span>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t('adminDetail.invoices.parties', { seller: inv.sellerName ?? '—', buyer: inv.buyerName ?? '—' })}
+            </p>
+            <dl className="mt-2 divide-y text-sm">
+              <Row label={t('adminDetail.invoices.base')} value={<Currency amount={inv.amount} />} />
+              <Row label={t('adminDetail.invoices.vat')} value={<Currency amount={inv.vatAmount} />} />
+              <Row label={t('adminDetail.invoices.total')} value={<span className="font-semibold"><Currency amount={inv.totalAmount} /></span>} />
+            </dl>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 

@@ -129,6 +129,14 @@
  "commissionVat": "Commission VAT (15%)",
  "clientTotalDue": "Client Total Due",
  "carrierNet": "Carrier Net",
+ "invoices": {
+  "title": "Tax Invoices",
+  "kind": { "SERVICE": "Service invoice", "COMMISSION": "Commission invoice" },
+  "parties": "{seller} → {buyer}",
+  "base": "Amount (ex-VAT)",
+  "vat": "VAT (15%)",
+  "total": "Total"
+ },
  "distance": "Distance",
  "distanceUnit": "{km} km",
  "estimatedDuration": "Estimated Duration",

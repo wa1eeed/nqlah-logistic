@@ -9,6 +9,8 @@ the real HTTP + DB path.
 | --- | --- |
 | `policies.e2e.mjs` | Per-group collection **enforcement** + defaults, client override, provider-**visibility** scope, `visible-carriers`. |
 | `plans.e2e.mjs` | **Workflow & Policy Engine**: profile features/commission, Plan → profile, assign plan, `/policies/mine` exposure, and feature gates (consolidated + white-label). |
+| `finance.e2e.mjs` | **Dynamic commission + VAT**: VAT-inclusive/exclusive pricing, carrier VAT registration, commission `CLIENT`/`CARRIER`/`BOTH`, service + commission VAT on order financials. |
+| `tax-invoices.e2e.mjs` | **VAT-compliant tax invoices** on order completion: carrier `SERVICE` invoice (→ client) + platform `COMMISSION` invoice (→ bearer), ZATCA party snapshots, `BOTH` split, idempotency. |
 | `heterogeneous-orders.e2e.mjs` | Consolidated orders with **per-leg** truck type / destination / price; summed pricing; homogeneous back-compat. |
 | `per-leg-carriers.e2e.mjs` | A **different carrier per leg**, per-leg financials, per-leg **settlement** on delivery, order rollup. |
 | `per-leg-bidding.e2e.mjs` | **Per-leg bidding**: bid on individual legs, truck-type gate, award a leg to a bid, reject-others, rollup. |

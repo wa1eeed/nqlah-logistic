@@ -129,6 +129,15 @@ enum InvoiceStatus {
   CANCELLED
 }
 
+/// SERVICE = carrier → client transport invoice (VAT only if the carrier is
+/// VAT-registered). COMMISSION = platform → bearer commission invoice (always
+/// carries VAT; the platform is VAT-registered). An order yields one SERVICE
+/// invoice and one COMMISSION invoice per bearer (BOTH ⇒ carrier + client).
+enum InvoiceKind {
+  SERVICE
+  COMMISSION
+}
+
 enum NotificationType {
   ORDER_CREATED
   BID_RECEIVED
@@ -503,7 +512,7 @@ model Order {
   stops          OrderStop[]
   trackingEvents TrackingEvent[]
   payment        Payment?
-  invoice        Invoice?
+  invoices       Invoice[]
   dispute        Dispute?
   review         Review?
 
@@ -790,20 +799,33 @@ model Transaction {
 model Invoice {
   id            String        @id @default(cuid())
   invoiceNumber String        @unique @default(cuid())
+  kind          InvoiceKind   @default(SERVICE)
   status        InvoiceStatus @default(DRAFT)
 
-  orderId String? @unique
+  orderId String?
   order   Order?  @relation(fields: [orderId], references: [id])
 
-  issuerId   String
-  issuer     Company @relation("IssuerInvoices", fields: [issuerId], references: [id])
-  receiverId String
-  receiver   Company @relation("ReceiverInvoices", fields: [receiverId], references: [id])
+  // Parties are optional FKs: the platform is a party on COMMISSION invoices but
+  // has no Company row, so its identity lives in the seller* snapshot instead.
+  issuerId   String?
+  issuer     Company? @relation("IssuerInvoices", fields: [issuerId], references: [id])
+  receiverId String?
+  receiver   Company? @relation("ReceiverInvoices", fields: [receiverId], references: [id])
 
   amount      Decimal @db.Decimal(12, 2)
   vatAmount   Decimal @default(0) @db.Decimal(12, 2)
   totalAmount Decimal @db.Decimal(12, 2)
 
+  // Immutable ZATCA party snapshots taken at issue time, so an invoice stays
+  // correct even if a company later edits its VAT/CR number.
+  sellerName      String?
+  sellerVatNumber String?
+  sellerCrNumber  String?
+  buyerName       String?
+  buyerVatNumber  String?
+  buyerCrNumber   String?
+
+  // Legacy seller identity (kept for back-compat; mirrors seller* above).
   vatNumber String?
   crNumber  String?
 
@@ -815,6 +837,10 @@ model Invoice {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([issuerId])
+  @@index([receiverId])
 }
 
 /// Per-trip fee a provider (carrier) owes a FREELANCER truck/driver. Issued
