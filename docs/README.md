@@ -32,6 +32,9 @@ polish pass before release.
 
 - [`LOCAL_BACKEND.md`](LOCAL_BACKEND.md) — run the API + Postgres + Redis
   locally (needed to wire features to the real backend and verify them).
+- [`apps/api/test/e2e/README.md`](../apps/api/test/e2e/README.md) — black-box
+  HTTP verification suites (policies & modules, heterogeneous orders, per-leg
+  carriers, per-leg bidding); run with `pnpm --filter @naqla/api verify:e2e`.
 - [`DEPLOYMENT.md`](DEPLOYMENT.md) — deployment.
 - [`MONITORING.md`](MONITORING.md) — monitoring.
 - [`SECURITY.md`](SECURITY.md) — security.
