@@ -40,9 +40,10 @@ Known capabilities: `consolidatedOrders`, `perLegCarriers`, `liveTracking`,
 carrier's white-label needs `whiteLabel`. `PolicyEngineService.hasFeature()` is
 the check; `/policies/mine` exposes the whole layer so the apps adapt.
 
-> **Phase 2 (planned):** the dynamic commission + VAT math (commission applies to
+> **Phase 2 (done):** the dynamic commission + VAT math (commission applies to
 > client/carrier/both, VAT-inclusive pricing, commission's own VAT), carrier VAT
 > registration at signup, and VAT-compliant **tax invoices** (service + commission).
+> See [`FINANCE.md`](FINANCE.md) and [`INVOICES.md`](INVOICES.md).
 
 ---
 

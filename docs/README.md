@@ -19,9 +19,14 @@ polish pass before release.
 - [`ORDERS.md`](ORDERS.md) — order types (single vs consolidated), heterogeneous
   legs (per-leg truck type/destination/price), per-leg carriers + per-leg bidding
   + settlement, distribution, and invoices.
-- [`POLICIES.md`](POLICIES.md) — admin per-group modules: sourcing/pricing/collection
-  allow toggles + defaults + collection enforcement, provider-visibility scope, and
-  carrier groups.
+- [`POLICIES.md`](POLICIES.md) — the Workflow & Policy Engine: plans → profiles →
+  modules + capability layer + commission; sourcing/pricing/collection toggles +
+  defaults + enforcement, provider-visibility scope, and carrier groups.
+- [`FINANCE.md`](FINANCE.md) — commission + VAT math (`computeOrderFinancials`),
+  `commissionAppliesTo`, VAT-inclusive pricing, carrier VAT registration, and
+  settlement.
+- [`INVOICES.md`](INVOICES.md) — VAT-compliant tax invoices on completion: service
+  + commission invoices, the platform as a party, and ZATCA snapshots.
 - [`FREELANCERS.md`](FREELANCERS.md) — provider dispatcher: owned vs freelancer
   fleet, per-trip freelancer invoices, and the profitability page.
 - [`TRACKING.md`](TRACKING.md) — live shipment tracking: real OSRM road routes,
