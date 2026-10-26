@@ -33,8 +33,14 @@ Tracked verbatim so nothing is dropped. Work top-to-bottom; one PR per coherent 
    `GET /orders/:id/legs` returns the spec + a `heterogeneous` flag; order total = sum
    of leg prices). Client wizard gained a per-leg editor; client/admin/carrier views
    show each leg's spec + a per-leg invoice; distribute enforces the leg's truck type.
-   (v0.9.68.) **Phase 2 (open):** per-leg *different carriers* / per-leg bidding — the
-   architectural fork that depends on the leg-level-assignment product decision.
+   (v0.9.68.)
+   - ✅ **Phase 2a — per-leg carriers:** each leg can be assigned to its own carrier
+     (`assign-carrier` / `carrier` endpoints), with per-leg financials, per-leg
+     settlement on delivery, leg-level status/authorization, and an admin per-leg
+     assignment UI. (v0.9.69.)
+   - **Phase 2b (open):** per-leg **open-market bidding** — carriers browsing and
+     bidding on individual legs (needs `Bid.orderLegId` + a per-leg bid/award flow
+     and carrier-opportunities UI). Direct per-leg assignment ships in 2a.
 9. ✅ **C2 — complete the modules** — **per-group module defaults** done: the admin sets
    a group's default assignment (MARKET|DIRECT), pricing (MARKET|FIXED) and collection
    method (+ enforcement), beyond the existing allow/deny toggles. Assignment + collection

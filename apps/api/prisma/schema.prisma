@@ -286,6 +286,7 @@ model Company {
   ordersAsClient         Order[] @relation("ClientOrders")
   ordersAsCarrier        Order[] @relation("CarrierOrders")
   ordersDirectlyTargeted Order[] @relation("TargetCarrierOrders")
+  carrierLegs            OrderLeg[] @relation("CarrierLegs")
 
   /// Sub-tenancy: when a CLIENT company was registered by a carrier, this is
   /// that owning carrier. Owned clients' orders route privately to the owner
@@ -623,12 +624,12 @@ model OrderDriver {
 }
 
 /// The per-leg SPEC of a CONSOLIDATED order — what makes its legs heterogeneous.
-/// Each leg can carry a different truck type, a different destination, and its own
-/// price, all sharing the order's single pickup origin, client and invoice. One
-/// row per leg (sequence 1..truckCount), created at order creation. This is the
-/// plan; the actual truck/driver assignment stays on `OrderTruck` (same
-/// `(orderId, sequence)`). Homogeneous legacy orders have no rows and fall back to
-/// the order's own truck type / destination / price.
+/// Each leg can carry a different truck type, a different destination, its own
+/// price, and (phase 2) its own CARRIER, all sharing the order's single pickup
+/// origin, client and invoice. One row per leg (sequence 1..truckCount), created
+/// at order creation. The truck/driver assignment stays on `OrderTruck` (same
+/// `(orderId, sequence)`). Homogeneous legacy orders have no rows and fall back
+/// to the order's own truck type / destination / price / carrier.
 model OrderLeg {
   id       String @id @default(cuid())
   orderId  String
@@ -649,11 +650,25 @@ model OrderLeg {
   /// Per-leg price; the order total is the sum of its legs' prices.
   price Decimal? @db.Decimal(12, 2)
 
+  /// Phase 2 — a leg can be served by its own carrier. When set, the leg's
+  /// lifecycle and payout are tracked here (independent of the order's carrier).
+  carrierId        String?
+  carrier          Company? @relation("CarrierLegs", fields: [carrierId], references: [id])
+  /// Leg lifecycle: "PENDING" | "ASSIGNED" | "IN_TRANSIT" | "DELIVERED".
+  /// Authoritative for heterogeneous orders; homogeneous orders use OrderTruck.
+  status           String   @default("PENDING")
+  /// Per-leg financial split (of `price`) when a carrier is assigned.
+  commissionAmount Decimal? @db.Decimal(12, 2)
+  carrierAmount    Decimal? @db.Decimal(12, 2)
+  /// When the leg's carrier payout was released (on leg delivery).
+  settledAt        DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([orderId, sequence])
   @@index([orderId])
+  @@index([carrierId])
 }
 
 model TrackingEvent {

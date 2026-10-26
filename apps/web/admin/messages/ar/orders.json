@@ -156,6 +156,10 @@
  "consolidatedInvoice": "الفاتورة المجمّعة",
  "trucksMultiplier": "{count} شاحنات × ",
     "perLegPricing": "تسعير لكل ساق",
+    "legCarrier": {
+      "assign": "إسناد ناقل",
+      "none": "— بدون ناقل —"
+    },
  "total": "الإجمالي",
  "singleInvoice": "فاتورة واحدة برقم الطلب {orderNumber}.",
  "titles": {

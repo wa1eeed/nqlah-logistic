@@ -102,6 +102,10 @@ export interface ConsolidatedLeg {
   destinationRegion?: string;
   destinationAddress?: string;
   price?: number;
+  /** Phase 2 — the leg's own carrier (independent per leg) + its net payout. */
+  carrierId?: string;
+  carrierName?: string;
+  carrierAmount?: number;
 }
 
 export interface Order {

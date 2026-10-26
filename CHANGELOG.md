@@ -6,6 +6,37 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.69 — Per-leg carriers (phase 2): a different carrier per leg + per-leg settlement (2026-10-26)
+
+Each leg of a heterogeneous consolidated order can now be served by **its own
+carrier**, with its own lifecycle and payout — the order's single pickup, client
+and invoice are still shared. Backlog item 8, phase 2 (per-leg assignment).
+
+- **Schema:** `OrderLeg` gains `carrierId`, `status`, `commissionAmount`,
+  `carrierAmount`, `settledAt` (+ `Company.carrierLegs`); migration
+  `20261026200000_order_leg_carrier`.
+- **API:**
+  - `POST /orders/:id/legs/:index/assign-carrier { carrierId, price? }` and
+    `DELETE …/legs/:index/carrier` — client/admin assign (or clear) a leg's
+    carrier; the carrier must be visible to the client; the leg's financial split
+    (8% commission) is computed from its price.
+  - A leg's carrier (not only the order carrier) can distribute its own truck and
+    advance its leg's status; the truck must be theirs and match the leg type.
+  - `GET /orders/:id/legs` now returns each leg's `carrierId` / `carrierName` /
+    `carrierAmount`, and the authoritative leg status.
+  - **Per-leg settlement:** on leg delivery, the leg's carrier is credited its
+    `carrierAmount` (idempotent); the order rolls up ASSIGNED → IN_TRANSIT →
+    DELIVERED from its legs.
+  - Carriers' order list + view access now include orders where they serve a leg.
+- **Web:** the admin order detail assigns a carrier per leg (dropdown + status);
+  the client/admin/carrier views show each leg's carrier; the carrier panel gates
+  actions to the carrier's own legs and adds per-leg start / deliver controls.
+- Verified: 13/13 per-leg-carrier e2e + 12/12 heterogeneous + API jest 32/32; all
+  web apps typecheck; admin assignment verified live.
+
+> Still ahead (phase 2b): per-leg **open-market bidding** (carriers browsing and
+> bidding on individual legs) — this increment covers per-leg direct assignment.
+
 ### v0.9.68 — Heterogeneous consolidated orders (per-leg type/destination/price) (2026-10-26)
 
 A consolidated order's legs can now be **heterogeneous**: each leg has its own

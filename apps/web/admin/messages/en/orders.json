@@ -156,6 +156,10 @@
  "consolidatedInvoice": "Consolidated Invoice",
  "trucksMultiplier": "{count} trucks × ",
     "perLegPricing": "Priced per leg",
+    "legCarrier": {
+      "assign": "Assign carrier",
+      "none": "— Unassigned —"
+    },
  "total": "Total",
  "singleInvoice": "Single invoice for order {orderNumber}.",
  "titles": {
