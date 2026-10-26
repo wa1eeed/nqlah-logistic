@@ -24,7 +24,7 @@ function makeService(policy: typeof DEFAULT_POLICY) {
     visibleCarrierIds: jest.fn().mockResolvedValue(null),
   };
   const collection = { resolveMethod: jest.fn().mockReturnValue('ESCROW') };
-  const service = new OrdersService({} as never, {} as never, policies as never, collection as never);
+  const service = new OrdersService({} as never, {} as never, policies as never, collection as never, {} as never);
   // resolveSourcing is private; exercise it directly for a focused unit test.
   const resolve = (dto: Partial<CreateOrderDto>) =>
     (service as unknown as {

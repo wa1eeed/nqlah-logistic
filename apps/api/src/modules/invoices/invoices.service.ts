@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
+import type { Prisma } from '../../generated/prisma';
+import type { OrderFinancials } from '../../common/pricing/pricing';
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateInvoiceDto {
@@ -10,6 +12,16 @@ export class CreateInvoiceDto {
   @IsNumber() amount!: number;
   @IsOptional() @IsNumber() vatAmount?: number;
   @IsOptional() @IsString() notes?: string;
+}
+
+/** Minimal shape `generateForOrder` needs — fetched inside the caller's tx. */
+interface InvoiceableOrder {
+  id: string;
+  orderNumber: string;
+  clientId: string;
+  carrierId: string | null;
+  client: { nameAr: string; vatNumber: string | null; crNumber: string | null };
+  carrier: { nameAr: string; vatNumber: string | null; crNumber: string | null; vatRegistered: boolean } | null;
 }
 
 @Injectable()
@@ -50,6 +62,7 @@ export class InvoicesService {
     const issuerId = actor.companyId!;
     return this.prisma.invoice.create({
       data: {
+        kind: 'SERVICE',
         orderId: dto.orderId,
         issuerId,
         receiverId: dto.receiverId,
@@ -69,7 +82,126 @@ export class InvoicesService {
     });
   }
 
+  /**
+   * Generate the VAT-compliant tax invoices for a completed order, inside the
+   * caller's transaction. Idempotent: does nothing if invoices already exist
+   * for the order. Produces:
+   *   • one SERVICE invoice  (carrier → client), VAT only if the carrier is
+   *     VAT-registered;
+   *   • one COMMISSION invoice per bearer (platform → carrier and/or client),
+   *     always with VAT. BOTH ⇒ two commission invoices (half each).
+   * Returns the created invoice ids.
+   */
+  async generateForOrder(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    fin: OrderFinancials,
+  ): Promise<string[]> {
+    const existing = await tx.invoice.count({ where: { orderId } });
+    if (existing > 0) return [];
+
+    const order = (await tx.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true, orderNumber: true, clientId: true, carrierId: true,
+        client: { select: { nameAr: true, vatNumber: true, crNumber: true } },
+        carrier: { select: { nameAr: true, vatNumber: true, crNumber: true, vatRegistered: true } },
+      },
+    })) as InvoiceableOrder | null;
+    if (!order || !order.carrier || !order.carrierId) return [];
+
+    const platform = await this.platformIdentity(tx);
+    const created: string[] = [];
+
+    // ── SERVICE invoice: carrier → client ──────────────────────────────────
+    const svc = await tx.invoice.create({
+      data: {
+        kind: 'SERVICE', status: 'ISSUED',
+        orderId: order.id,
+        issuerId: order.carrierId,
+        receiverId: order.clientId,
+        amount: fin.serviceBase,
+        vatAmount: fin.serviceVat,
+        totalAmount: fin.serviceTotal,
+        sellerName: order.carrier.nameAr,
+        sellerVatNumber: order.carrier.vatRegistered ? order.carrier.vatNumber : null,
+        sellerCrNumber: order.carrier.crNumber,
+        vatNumber: order.carrier.vatRegistered ? order.carrier.vatNumber : null,
+        crNumber: order.carrier.crNumber,
+        buyerName: order.client.nameAr,
+        buyerVatNumber: order.client.vatNumber,
+        buyerCrNumber: order.client.crNumber,
+        notes: `فاتورة خدمة نقل للطلب ${order.orderNumber}`,
+      },
+      select: { id: true },
+    });
+    created.push(svc.id);
+
+    // ── COMMISSION invoice(s): platform → bearer(s) ────────────────────────
+    const commissionBuyers: Array<{ buyer: 'CARRIER' | 'CLIENT'; base: number; vat: number; total: number }> = [];
+    if (fin.commissionAppliesTo === 'CLIENT') {
+      commissionBuyers.push({ buyer: 'CLIENT', base: fin.commission, vat: fin.commissionVat, total: fin.commissionTotal });
+    } else if (fin.commissionAppliesTo === 'BOTH') {
+      const base = r2(fin.commission / 2);
+      const vat = r2(fin.commissionVat / 2);
+      commissionBuyers.push({ buyer: 'CARRIER', base, vat, total: r2(base + vat) });
+      commissionBuyers.push({
+        buyer: 'CLIENT',
+        base: r2(fin.commission - base),
+        vat: r2(fin.commissionVat - vat),
+        total: r2(fin.commissionTotal - r2(base + vat)),
+      });
+    } else {
+      commissionBuyers.push({ buyer: 'CARRIER', base: fin.commission, vat: fin.commissionVat, total: fin.commissionTotal });
+    }
+
+    for (const c of commissionBuyers) {
+      if (c.total <= 0) continue;
+      const buyerCo = c.buyer === 'CARRIER' ? order.carrier : order.client;
+      const com = await tx.invoice.create({
+        data: {
+          kind: 'COMMISSION', status: 'ISSUED',
+          orderId: order.id,
+          issuerId: null, // the platform has no Company row
+          receiverId: c.buyer === 'CARRIER' ? order.carrierId : order.clientId,
+          amount: c.base,
+          vatAmount: c.vat,
+          totalAmount: c.total,
+          sellerName: platform.name,
+          sellerVatNumber: platform.vatNumber,
+          sellerCrNumber: platform.crNumber,
+          vatNumber: platform.vatNumber,
+          crNumber: platform.crNumber,
+          buyerName: buyerCo.nameAr,
+          buyerVatNumber: buyerCo.vatNumber,
+          buyerCrNumber: buyerCo.crNumber,
+          notes: `فاتورة عمولة المنصة للطلب ${order.orderNumber}`,
+        },
+        select: { id: true },
+      });
+      created.push(com.id);
+    }
+
+    return created;
+  }
+
+  /** Platform legal identity (seller on commission invoices) from settings. */
+  private async platformIdentity(tx: Prisma.TransactionClient) {
+    const rows = await tx.setting.findMany({
+      where: { key: { in: ['platform_name_ar', 'platform_vat_number', 'platform_cr_number'] } },
+      select: { key: true, value: true },
+    });
+    const get = (k: string) => rows.find((r) => r.key === k)?.value ?? null;
+    return {
+      name: get('platform_name_ar') ?? 'نقلة لوجيستك',
+      vatNumber: get('platform_vat_number'),
+      crNumber: get('platform_cr_number'),
+    };
+  }
+
   private isAdmin(actor: AuthUser): boolean {
     return actor.role === 'ADMIN' || actor.role === 'SUPER_ADMIN';
   }
 }
+
+const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;

@@ -9,6 +9,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { PoliciesService } from '../policies/policies.service';
 import { CollectionService } from '../payments/collection/collection.service';
+import { InvoicesService } from '../invoices/invoices.service';
 import { money, round2 } from '../../common/money/money';
 import { computeOrderFinancials, type OrderFinancials } from '../../common/pricing/pricing';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
@@ -106,6 +107,7 @@ export class OrdersService {
     private realtime: RealtimeGateway,
     private policies: PoliciesService,
     private collection: CollectionService,
+    private invoices: InvoicesService,
   ) {}
 
   async list(query: PaginationDto & { status?: OrderStatus; mine?: boolean }, actor: AuthUser) {
@@ -182,7 +184,7 @@ export class OrdersService {
         bids: { include: { carrier: { select: { id: true, nameAr: true, nameEn: true, logo: true, city: true, region: true, contactPhone: true } } }, orderBy: { amount: 'asc' } },
         trackingEvents: { orderBy: { createdAt: 'desc' } },
         payment: true,
-        invoice: true,
+        invoices: true,
         orderLegs: { select: { carrierId: true } },
         orderDrivers: {
           orderBy: { assignedAt: 'desc' },
@@ -442,9 +444,8 @@ export class OrdersService {
 
   /**
    * Client confirms receipt (or the 72-hour auto-release fires from a cron).
-   * Atomic: order → COMPLETED + Payment → RELEASED + releasedAt timestamped.
-   * Wallet credit + invoice generation should listen on the `order.complete`
-   * audit event (out of scope for this slice).
+   * Atomic: order → COMPLETED + Payment → RELEASED + releasedAt timestamped +
+   * VAT-compliant tax invoices generated (carrier service + platform commission).
    */
   async complete(id: string, actor: AuthUser) {
     const order = await this.requireOrder(id);
@@ -464,6 +465,12 @@ export class OrdersService {
         where: { id },
         data: { status: 'COMPLETED' },
       });
+      // Generate the VAT-compliant tax invoices (idempotent). Price the order
+      // from its agreed price against the same policy used for settlement.
+      if (order.carrierId && order.agreedPrice != null) {
+        const fin = await this.resolveFinancials(Number(order.agreedPrice), order.clientId, order.carrierId);
+        await this.invoices.generateForOrder(tx, id, fin);
+      }
       // Set assigned drivers back to AVAILABLE once order completes.
       const assigned = await tx.orderDriver.findMany({ where: { orderId: id }, select: { driverId: true } });
       if (assigned.length > 0) {

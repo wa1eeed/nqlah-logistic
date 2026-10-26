@@ -4,9 +4,10 @@ import { OrdersService } from './orders.service';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { PoliciesModule } from '../policies/policies.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { InvoicesModule } from '../invoices/invoices.module';
 
 @Module({
-  imports: [RealtimeModule, PoliciesModule, PaymentsModule],
+  imports: [RealtimeModule, PoliciesModule, PaymentsModule, InvoicesModule],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

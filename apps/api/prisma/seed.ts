@@ -54,6 +54,11 @@ async function main() {
     { key: 'platform_name_en', value: 'Naqla Logistics', category: 'branding' },
     { key: 'platform_logo', value: '', category: 'branding' }, // URL to logo (PNG/SVG)
 
+    // Platform legal identity — seller on every commission tax invoice (ZATCA).
+    { key: 'platform_vat_number', value: '300000000000003', category: 'finance' },
+    { key: 'platform_cr_number', value: '1010000000', category: 'finance' },
+    { key: 'platform_address', value: 'الرياض، المملكة العربية السعودية', category: 'finance' },
+
     // Localization defaults
     { key: 'default_locale', value: 'ar', category: 'localization' },
     { key: 'default_direction', value: 'rtl', category: 'localization' },
