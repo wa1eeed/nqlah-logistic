@@ -212,6 +212,10 @@ export class OrdersService {
     // truck type, destination and price. Each leg carries a shipment reference
     // the client typed or the system auto-generates as `<orderNumber>-L<n>`.
     const isConsolidated = dto.orderType === 'CONSOLIDATED';
+    // Policy Engine capability gate: the client's plan must grant consolidated orders.
+    if (isConsolidated && !(await this.policies.hasFeature(actor.companyId, 'consolidatedOrders'))) {
+      throw new ForbiddenException({ code: 'FEATURE_CONSOLIDATED_DISABLED', message: 'الطلبات المجمّعة غير متاحة في باقتك' });
+    }
     const hasLegSpecs = isConsolidated && Array.isArray(dto.legs) && dto.legs.length >= 2;
     const truckCount = isConsolidated
       ? (hasLegSpecs
@@ -801,6 +805,10 @@ export class OrdersService {
     if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
     if (order.clientId !== actor.companyId && !this.isAdmin(actor)) {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
+    }
+    // Policy Engine capability gate: per-leg carriers must be granted by the plan.
+    if (!(await this.policies.hasFeature(order.clientId, 'perLegCarriers'))) {
+      throw new ForbiddenException({ code: 'FEATURE_PER_LEG_CARRIERS_DISABLED', message: 'ناقل لكل ساق غير متاح في باقتك' });
     }
     const leg = await this.prisma.orderLeg.findUnique({
       where: { orderId_sequence: { orderId: id, sequence: index } },

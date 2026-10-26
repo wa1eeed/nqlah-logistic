@@ -1,10 +1,14 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray, IsBoolean, IsEnum, IsNumber, IsObject, IsOptional, IsString, Max, Min, ValidateNested,
+} from 'class-validator';
 
 const VISIBILITY_SCOPES = ['ALL', 'GROUP', 'CARRIER'] as const;
 const ASSIGNMENT_MODES = ['MARKET', 'DIRECT'] as const;
 const PRICING_MODES = ['MARKET', 'FIXED'] as const;
 const COLLECTION_METHODS = ['ESCROW', 'PREPAID_WALLET', 'PREPAID_GATEWAY', 'COD'] as const;
+const COMMISSION_APPLIES = ['CLIENT', 'CARRIER', 'BOTH'] as const;
+const PLAN_AUDIENCES = ['CLIENT', 'CARRIER', 'BOTH'] as const;
 
 export class ClientPolicyDto {
   @IsBoolean() allowMarket!: boolean;
@@ -21,6 +25,41 @@ export class ClientPolicyDto {
   @IsOptional() @IsBoolean() enforceCollectionMethod?: boolean;
   @IsOptional() @IsEnum(VISIBILITY_SCOPES) visibilityScope?: (typeof VISIBILITY_SCOPES)[number];
   @IsOptional() @IsString() visibleCarrierGroupId?: string | null;
+  // Capability layer (feature flags + numeric limits), a free-form map.
+  @IsOptional() @IsObject() features?: Record<string, boolean | number> | null;
+  // Commission config (consumed by the finance/tax module).
+  @IsOptional() @IsNumber() @Min(0) @Max(1) commissionRate?: number | null;
+  @IsOptional() @IsEnum(COMMISSION_APPLIES) commissionAppliesTo?: (typeof COMMISSION_APPLIES)[number] | null;
+  @IsOptional() @IsBoolean() priceVatInclusive?: boolean;
+}
+
+export class CreatePlanDto {
+  @IsString() name!: string;
+  @IsOptional() @IsString() nameEn?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() tier?: string;
+  @IsOptional() @IsEnum(PLAN_AUDIENCES) audience?: (typeof PLAN_AUDIENCES)[number];
+  @IsString() policyGroupId!: string;
+  @IsOptional() @IsNumber() @Min(0) @Max(1) commissionRateOverride?: number;
+  @IsOptional() @IsBoolean() isDefault?: boolean;
+  @IsOptional() @IsBoolean() active?: boolean;
+}
+
+export class UpdatePlanDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() nameEn?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() tier?: string;
+  @IsOptional() @IsEnum(PLAN_AUDIENCES) audience?: (typeof PLAN_AUDIENCES)[number];
+  @IsOptional() @IsString() policyGroupId?: string;
+  @IsOptional() @IsNumber() @Min(0) @Max(1) commissionRateOverride?: number | null;
+  @IsOptional() @IsBoolean() isDefault?: boolean;
+  @IsOptional() @IsBoolean() active?: boolean;
+}
+
+export class AssignPlanDto {
+  @IsString() companyId!: string;
+  @IsOptional() @IsString() planId?: string | null;
 }
 
 export class CreateCarrierGroupDto {

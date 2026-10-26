@@ -1,13 +1,52 @@
-# Client Policies & Platform Modules — Per-Group Configuration
+# Workflow & Policy Engine
 
-Admins tailor how the platform behaves **per client group**: which sourcing,
-pricing, collection and provider-visibility options a client sees, the group's
-**defaults** for each module, and whether a module is **enforced**. Everything is
-configured by the **admin**, not the client.
+The engine drives **how the platform operates per company**. Four layers:
+
+```
+Company.planId
+   └─ Plan (membership)        commercial wrapper a company subscribes to (audience-aware)
+        └─ Policy Profile       the operating ruleset (the "group")
+             ├─ modules          sourcing / pricing / collection / visibility (+ defaults + enforcement)
+             ├─ capability layer feature flags + numeric limits
+             └─ commission       rate / appliesTo / price-VAT-inclusive
+        └─ Engine               resolves the effective policy + features and drives the workflow
+```
+
+`PolicyEngineService` (`PoliciesService`) resolves a company's **effective
+operating policy** by precedence: **sub-tenant owner > Plan > legacy group
+membership (`clientIds`) > default**. Everything is configured by the **admin**,
+surfaced at **Admin → محرك السياسات والتشغيل**.
+
+### Plans (memberships)
+
+A `Plan` (باقة/عضوية) is a thin commercial wrapper that references one Policy
+Profile; its *shape* (modules + features + commission) comes from that profile.
+Plans are **audience-aware** (`CLIENT` | `CARRIER` | `BOTH`), can be marked
+`isDefault` per audience, and may carry an optional `commissionRateOverride`.
+A company subscribes via `Company.planId` (admin-assigned now; registration-bound
+later). API: `GET/POST/PUT/DELETE /policies/plans`, `POST /policies/assign-plan`.
+
+### Capability layer (features & limits)
+
+Each profile carries a flexible `features` map — **feature flags** and **numeric
+limits** — that plans grant to their subscribers. A feature is **denied only when
+explicitly `false`**; absent = allowed (so an ungrouped company keeps full access).
+Known capabilities: `consolidatedOrders`, `perLegCarriers`, `liveTracking`,
+`freelancerFleet`, `whiteLabel`, `prioritySupport`, `advancedAnalytics`; limits:
+`maxActiveOrders`, `maxFleetSize`, `maxTeamMembers`. New keys need no migration.
+
+**Enforced gates (phase 1):** consolidated-order creation needs
+`consolidatedOrders`; per-leg carriers/bidding need `perLegCarriers`; enabling a
+carrier's white-label needs `whiteLabel`. `PolicyEngineService.hasFeature()` is
+the check; `/policies/mine` exposes the whole layer so the apps adapt.
+
+> **Phase 2 (planned):** the dynamic commission + VAT math (commission applies to
+> client/carrier/both, VAT-inclusive pricing, commission's own VAT), carrier VAT
+> registration at signup, and VAT-compliant **tax invoices** (service + commission).
 
 ---
 
-## 1. Model
+## 1. Profile model
 
 Prisma `PolicyGroup` (`apps/api/prisma/schema.prisma`); frontend `ClientPolicy`
 (`packages/shared-utils/src/mock-data.ts`).

@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import {
   Building2, Pencil, Plus, Trash2, Users, X,
-  Store, Send, Gavel, Tag, Wallet, HandCoins, Lock, Eye, Route,
+  Store, Send, Gavel, Tag, Wallet, HandCoins, Lock, Eye, Route, Sparkles, Percent,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -414,6 +414,9 @@ function GroupCard({
         </ModuleSection>
       </div>
 
+      {/* Capability layer: features, limits + commission (Policy Engine) */}
+      <FeaturesSection policy={p} onChange={(patch) => set(patch)} />
+
       {/* Assigned clients */}
       <div className="space-y-2 border-t pt-3">
         <div className="text-xs font-semibold text-muted-foreground">العملاء في هذا القروب</div>
@@ -436,6 +439,93 @@ function GroupCard({
             </SelectContent>
           </Select>
         )}
+      </div>
+    </div>
+  );
+}
+
+const FEATURE_DEFS: { key: string; label: string; hint: string }[] = [
+  { key: 'consolidatedOrders', label: 'الطلبات المجمّعة', hint: 'إنشاء طلبات متعددة الشاحنات' },
+  { key: 'perLegCarriers', label: 'ناقل/مزايدة لكل ساق', hint: 'سيقان متغايرة بناقلين مستقلين' },
+  { key: 'liveTracking', label: 'التتبّع اللحظي', hint: 'تتبّع الشحنات على الخريطة' },
+  { key: 'freelancerFleet', label: 'الأسطول المستقل', hint: 'للمزوّد — شاحنات فري‑لانسر' },
+  { key: 'whiteLabel', label: 'الوايت ليبل', hint: 'للمزوّد — علامة تجارية خاصة' },
+  { key: 'prioritySupport', label: 'دعم مميّز', hint: 'أولوية في تذاكر الدعم' },
+];
+const LIMIT_DEFS: { key: string; label: string }[] = [
+  { key: 'maxActiveOrders', label: 'أقصى طلبات نشطة' },
+  { key: 'maxFleetSize', label: 'أقصى حجم أسطول' },
+  { key: 'maxTeamMembers', label: 'أقصى أعضاء الفريق' },
+];
+
+/** The capability layer of a profile: feature toggles + numeric limits + commission. */
+function FeaturesSection({ policy, onChange }: { policy: ClientPolicy; onChange: (patch: Partial<ClientPolicy>) => void }) {
+  const features = (policy.features ?? {}) as Record<string, boolean | number | undefined>;
+  const setFeature = (key: string, val: boolean | number | undefined) => {
+    const next = { ...features };
+    if (val === undefined) delete next[key]; else next[key] = val;
+    onChange({ features: next });
+  };
+  const ratePct = policy.commissionRate != null ? String(+(policy.commissionRate * 100).toFixed(2)) : '';
+  return (
+    <div className="rounded-lg border border-s-[3px] border-s-rose-400 bg-rose-50/40 dark:bg-rose-950/20 p-3.5 space-y-3">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+        <div className="min-w-0">
+          <div className="text-sm font-semibold leading-tight">القدرات والعمولة</div>
+          <div className="text-xs text-muted-foreground">فعّل/عطّل الميزات واضبط الحدود والعمولة — تمنحها الباقات لمشتركيها.</div>
+        </div>
+      </div>
+
+      {/* Feature toggles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+        {FEATURE_DEFS.map((f) => (
+          <label key={f.key} className="flex items-center justify-between gap-3 cursor-pointer">
+            <span className="min-w-0">
+              <span className="text-sm font-medium">{f.label}</span>
+              <span className="block text-xs text-muted-foreground">{f.hint}</span>
+            </span>
+            {/* A feature is allowed unless explicitly false. */}
+            <Switch checked={features[f.key] !== false} onCheckedChange={(v) => setFeature(f.key, v ? true : false)} />
+          </label>
+        ))}
+      </div>
+
+      {/* Limits */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border-t pt-2.5">
+        {LIMIT_DEFS.map((l) => (
+          <div key={l.key} className="space-y-1">
+            <Label className="text-xs">{l.label}</Label>
+            <Input type="number" dir="ltr" min={0} className="h-8 text-end text-xs" placeholder="∞"
+              value={typeof features[l.key] === 'number' ? String(features[l.key]) : ''}
+              onChange={(e) => setFeature(l.key, e.target.value ? Number(e.target.value) : undefined)} />
+          </div>
+        ))}
+      </div>
+
+      {/* Commission */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border-t pt-2.5">
+        <div className="space-y-1">
+          <Label className="text-xs inline-flex items-center gap-1"><Percent className="h-3 w-3" />نسبة العمولة</Label>
+          <Input type="number" dir="ltr" min={0} max={100} step="0.1" className="h-8 text-end text-xs" placeholder="8"
+            value={ratePct} onChange={(e) => onChange({ commissionRate: e.target.value ? Number(e.target.value) / 100 : undefined })} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">تُحتسب على</Label>
+          <Select value={policy.commissionAppliesTo ?? 'none'} onValueChange={(v) => onChange({ commissionAppliesTo: v === 'none' ? undefined : (v as ClientPolicy['commissionAppliesTo']) })}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">الافتراضي</SelectItem>
+              <SelectItem value="CARRIER">المزوّد</SelectItem>
+              <SelectItem value="CLIENT">العميل</SelectItem>
+              <SelectItem value="BOTH">كلاهما</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <label className="flex items-center justify-between gap-2 cursor-pointer pt-5">
+          <span className="text-xs font-medium">السعر شامل الضريبة</span>
+          <Switch checked={Boolean(policy.priceVatInclusive)} onCheckedChange={(v) => onChange({ priceVatInclusive: v })} />
+        </label>
       </div>
     </div>
   );

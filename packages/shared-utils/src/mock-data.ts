@@ -541,6 +541,49 @@ export interface ClientPolicy {
   visibilityScope?: 'ALL' | 'GROUP' | 'CARRIER';
   /** When visibilityScope === 'GROUP', the CarrierGroup whose carriers are visible. */
   visibleCarrierGroupId?: string;
+  /** Capability layer (Workflow & Policy Engine): feature flags + numeric limits.
+   *  A feature is denied only when explicitly false; absent = allowed. */
+  features?: GroupFeatures;
+  /** Platform commission rate for this profile (e.g. 0.08). */
+  commissionRate?: number;
+  /** Who bears the commission. */
+  commissionAppliesTo?: 'CLIENT' | 'CARRIER' | 'BOTH';
+  /** Whether the agreed order price is VAT-inclusive (else VAT is added on top). */
+  priceVatInclusive?: boolean;
+}
+
+/** The capability layer of a Policy Profile — feature flags + numeric limits.
+ *  Extensible: unknown keys are allowed, but these are the known capabilities. */
+export interface GroupFeatures {
+  // capability toggles
+  consolidatedOrders?: boolean;   // client: create consolidated orders
+  perLegCarriers?: boolean;       // client: per-leg carriers + per-leg bidding
+  liveTracking?: boolean;
+  freelancerFleet?: boolean;      // carrier: use freelancer trucks
+  whiteLabel?: boolean;           // carrier: white-label branding
+  prioritySupport?: boolean;
+  advancedAnalytics?: boolean;
+  // numeric limits (0 / undefined = unlimited)
+  maxActiveOrders?: number;
+  maxFleetSize?: number;
+  maxTeamMembers?: number;
+  [key: string]: boolean | number | undefined;
+}
+
+/** A commercial Plan / membership (باقة) that wraps a Policy Profile. */
+export interface Plan {
+  id: string;
+  name: string;
+  nameEn?: string;
+  description?: string;
+  tier?: string;
+  audience: 'CLIENT' | 'CARRIER' | 'BOTH';
+  isDefault: boolean;
+  active: boolean;
+  policyGroupId: string;
+  policyGroup?: { id: string; name: string };
+  commissionRateOverride?: number | null;
+  _count?: { companies: number };
 }
 
 export const DEFAULT_CLIENT_POLICY: ClientPolicy = {

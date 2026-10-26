@@ -295,6 +295,11 @@ model Company {
   ownerCarrier   Company?  @relation("OwnedClients", fields: [ownerCarrierId], references: [id])
   ownedClients   Company[] @relation("OwnedClients")
 
+  /// The Plan (membership) this company subscribes to; resolves its operating
+  /// policy via the plan's Policy Profile. Null → legacy group membership / default.
+  planId String?
+  plan   Plan?  @relation(fields: [planId], references: [id])
+
   bids               Bid[]
   invoicesIssued     Invoice[]           @relation("IssuerInvoices")
   invoicesReceived   Invoice[]           @relation("ReceiverInvoices")
@@ -987,11 +992,61 @@ model PolicyGroup {
   visibilityScope       String  @default("ALL")
   visibleCarrierGroupId String?
 
-  /// Client company ids governed by this group.
+  /// ─── Capability layer (Workflow & Policy Engine) ───
+  /// Feature flags + numeric limits as a flexible map, e.g.
+  /// `{ consolidatedOrders: true, perLegCarriers: true, whiteLabel: false,
+  ///    freelancerFleet: true, liveTracking: true, maxActiveOrders: 50 }`.
+  /// A feature is DENIED only when explicitly false; absent = allowed (so an
+  /// ungrouped company keeps today's full access). Extensible without migrations.
+  features Json?
+
+  /// ─── Commission config (consumed by the finance/tax module — phase 2) ───
+  /// Platform commission rate for this profile (e.g. 0.08). Null → platform default.
+  commissionRate      Decimal? @db.Decimal(5, 4)
+  /// Who bears the commission: "CLIENT" | "CARRIER" | "BOTH" (default CARRIER).
+  commissionAppliesTo String?
+  /// Whether an order's agreed price is VAT-inclusive (else VAT is added on top).
+  priceVatInclusive   Boolean  @default(false)
+
+  /// Client company ids governed by this group (legacy direct membership; a Plan
+  /// is the preferred binding — see the Plan model).
   clientIds String[]
+
+  plans Plan[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// A commercial PLAN / membership (باقة/عضوية). A thin wrapper a company
+/// subscribes to; its *shape* comes from the Policy Profile (PolicyGroup) it
+/// references. Audience-aware so client plans and carrier plans differ.
+model Plan {
+  id          String  @id @default(cuid())
+  name        String
+  nameEn      String?
+  description String?
+  /// "BASIC" | "PRO" | "ENTERPRISE" | … — a free label for the tier.
+  tier        String?
+  /// Who this plan is for: "CLIENT" | "CARRIER" | "BOTH".
+  audience    String  @default("BOTH")
+  /// The default plan assigned to new companies of this audience when none chosen.
+  isDefault   Boolean @default(false)
+  active      Boolean @default(true)
+
+  /// The operating ruleset this plan grants.
+  policyGroupId String
+  policyGroup   PolicyGroup @relation(fields: [policyGroupId], references: [id])
+
+  /// Optional commission override on top of the profile's commission (commercial lever).
+  commissionRateOverride Decimal? @db.Decimal(5, 4)
+
+  companies Company[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([audience, active])
 }
 
 /// A named set of provider (carrier) companies, used to scope which providers a

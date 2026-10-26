@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { Prisma } from '../../generated/prisma';
 import { CreateGroupDto, UpdateGroupDto } from './dto/policy.dto';
+
+type Features = Record<string, boolean | number> | undefined;
 
 const DEFAULT_POLICY = {
   allowMarket: true,
@@ -16,6 +19,11 @@ const DEFAULT_POLICY = {
   enforceCollectionMethod: false,
   visibilityScope: 'ALL',
   visibleCarrierGroupId: undefined as string | undefined,
+  // Capability layer — absent features mean "allowed" (full access by default).
+  features: undefined as Features,
+  commissionRate: undefined as number | undefined,
+  commissionAppliesTo: undefined as string | undefined,
+  priceVatInclusive: false,
 };
 
 type GroupRow = {
@@ -25,6 +33,7 @@ type GroupRow = {
   defaultAssignment: string | null; defaultPricing: string | null;
   defaultCollectionMethod: string | null; enforceCollectionMethod: boolean;
   visibilityScope: string; visibleCarrierGroupId: string | null;
+  features: unknown; commissionRate: unknown; commissionAppliesTo: string | null; priceVatInclusive: boolean;
   clientIds: string[];
 };
 
@@ -48,6 +57,10 @@ function toDto(g: GroupRow) {
       enforceCollectionMethod: g.enforceCollectionMethod,
       visibilityScope: g.visibilityScope,
       visibleCarrierGroupId: g.visibleCarrierGroupId ?? undefined,
+      features: (g.features as Features) ?? undefined,
+      commissionRate: g.commissionRate != null ? Number(g.commissionRate) : undefined,
+      commissionAppliesTo: g.commissionAppliesTo ?? undefined,
+      priceVatInclusive: g.priceVatInclusive,
     },
     clientIds: g.clientIds,
   };
@@ -111,6 +124,10 @@ export class PoliciesService {
               enforceCollectionMethod: p.enforceCollectionMethod ?? false,
               visibilityScope: p.visibilityScope ?? 'ALL',
               visibleCarrierGroupId: p.visibleCarrierGroupId ?? null,
+              ...(p.features !== undefined ? { features: p.features ?? Prisma.DbNull } : {}),
+              ...(p.commissionRate !== undefined ? { commissionRate: p.commissionRate ?? null } : {}),
+              ...(p.commissionAppliesTo !== undefined ? { commissionAppliesTo: p.commissionAppliesTo ?? null } : {}),
+              ...(p.priceVatInclusive !== undefined ? { priceVatInclusive: p.priceVatInclusive } : {}),
             }
           : {}),
       },
@@ -140,16 +157,21 @@ export class PoliciesService {
     return this.listGroups();
   }
 
-  /** The effective policy for a client company: its group's policy, else default. */
+  /**
+   * The effective operating policy for a company — the heart of the Policy
+   * Engine. Resolution precedence:
+   *   1. sub-tenancy  (a carrier-owned client is private to its owner),
+   *   2. Plan         (the company's membership → its Policy Profile),
+   *   3. legacy direct group membership (`clientIds`),
+   *   4. default      (full access, no limits).
+   */
   async effectiveForCompany(companyId: string | null | undefined) {
     if (!companyId) return DEFAULT_POLICY;
-    // Sub-tenancy: a carrier-owned client is private to its owner — force direct
-    // assignment to the owner and keep it off the open market. This overrides
-    // any policy group.
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
-      select: { ownerCarrierId: true },
+      select: { ownerCarrierId: true, plan: { include: { policyGroup: true } } },
     });
+    // 1. Sub-tenancy overrides everything.
     if (company?.ownerCarrierId) {
       return {
         ...DEFAULT_POLICY,
@@ -160,8 +182,24 @@ export class PoliciesService {
         visibilityScope: 'CARRIER',
       };
     }
+    // 2. Plan → its Policy Profile (with an optional plan-level commission override).
+    if (company?.plan?.active && company.plan.policyGroup) {
+      const policy = toDto(company.plan.policyGroup as GroupRow).policy;
+      if (company.plan.commissionRateOverride != null) {
+        policy.commissionRate = Number(company.plan.commissionRateOverride);
+      }
+      return policy;
+    }
+    // 3. Legacy direct group membership.
     const g = await this.prisma.policyGroup.findFirst({ where: { clientIds: { has: companyId } } });
     return g ? toDto(g as GroupRow).policy : DEFAULT_POLICY;
+  }
+
+  /** Whether a company's effective policy grants a capability (absent = allowed). */
+  async hasFeature(companyId: string | null | undefined, key: string): Promise<boolean> {
+    const policy = await this.effectiveForCompany(companyId);
+    const f = policy.features as Record<string, boolean | number> | undefined;
+    return f?.[key] !== false;
   }
 
   // ─── Provider visibility ─────────────────────────────────────
@@ -274,5 +312,84 @@ export class PoliciesService {
     const g = await this.prisma.policyGroup.findUnique({ where: { id } });
     if (!g) throw new NotFoundException({ code: 'GROUP_NOT_FOUND', message: 'المجموعة غير موجودة' });
     return g;
+  }
+
+  // ─── Plans (memberships) ─────────────────────────────────────
+
+  listPlans() {
+    return this.prisma.plan.findMany({
+      orderBy: [{ audience: 'asc' }, { createdAt: 'asc' }],
+      include: { policyGroup: { select: { id: true, name: true } }, _count: { select: { companies: true } } },
+    });
+  }
+
+  async createPlan(dto: {
+    name: string; nameEn?: string; description?: string; tier?: string;
+    audience?: string; policyGroupId: string; commissionRateOverride?: number;
+    isDefault?: boolean; active?: boolean;
+  }) {
+    await this.ensure(dto.policyGroupId); // the profile must exist
+    const plan = await this.prisma.plan.create({
+      data: {
+        name: dto.name, nameEn: dto.nameEn, description: dto.description, tier: dto.tier,
+        audience: dto.audience ?? 'BOTH', policyGroupId: dto.policyGroupId,
+        commissionRateOverride: dto.commissionRateOverride ?? null,
+        isDefault: dto.isDefault ?? false, active: dto.active ?? true,
+      },
+    });
+    if (plan.isDefault) await this.clearOtherDefaults(plan.id, plan.audience);
+    return plan;
+  }
+
+  async updatePlan(id: string, dto: {
+    name?: string; nameEn?: string; description?: string; tier?: string;
+    audience?: string; policyGroupId?: string; commissionRateOverride?: number | null;
+    isDefault?: boolean; active?: boolean;
+  }) {
+    const existing = await this.prisma.plan.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException({ code: 'PLAN_NOT_FOUND', message: 'الباقة غير موجودة' });
+    if (dto.policyGroupId) await this.ensure(dto.policyGroupId);
+    const plan = await this.prisma.plan.update({
+      where: { id },
+      data: {
+        name: dto.name, nameEn: dto.nameEn, description: dto.description, tier: dto.tier,
+        audience: dto.audience, policyGroupId: dto.policyGroupId,
+        ...(dto.commissionRateOverride !== undefined ? { commissionRateOverride: dto.commissionRateOverride } : {}),
+        isDefault: dto.isDefault, active: dto.active,
+      },
+    });
+    if (plan.isDefault) await this.clearOtherDefaults(plan.id, plan.audience);
+    return plan;
+  }
+
+  async deletePlan(id: string) {
+    const plan = await this.prisma.plan.findUnique({ where: { id }, include: { _count: { select: { companies: true } } } });
+    if (!plan) throw new NotFoundException({ code: 'PLAN_NOT_FOUND', message: 'الباقة غير موجودة' });
+    // Detach any subscribers first (they fall back to default/legacy resolution).
+    if (plan._count.companies > 0) {
+      await this.prisma.company.updateMany({ where: { planId: id }, data: { planId: null } });
+    }
+    await this.prisma.plan.delete({ where: { id } });
+    return { id };
+  }
+
+  /** Subscribe a company to a plan (or clear it). */
+  async assignPlan(companyId: string, planId: string | null | undefined) {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId }, select: { id: true } });
+    if (!company) throw new NotFoundException({ code: 'COMPANY_NOT_FOUND', message: 'الشركة غير موجودة' });
+    if (planId) {
+      const plan = await this.prisma.plan.findUnique({ where: { id: planId }, select: { id: true } });
+      if (!plan) throw new NotFoundException({ code: 'PLAN_NOT_FOUND', message: 'الباقة غير موجودة' });
+    }
+    await this.prisma.company.update({ where: { id: companyId }, data: { planId: planId ?? null } });
+    return { companyId, planId: planId ?? null };
+  }
+
+  /** Only one default plan per audience. */
+  private async clearOtherDefaults(planId: string, audience: string) {
+    await this.prisma.plan.updateMany({
+      where: { id: { not: planId }, audience, isDefault: true },
+      data: { isDefault: false },
+    });
   }
 }

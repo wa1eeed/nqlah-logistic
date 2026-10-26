@@ -1,30 +1,35 @@
 'use client';
 import { useState } from 'react';
-import { Users, Truck } from 'lucide-react';
+import { Users, Truck, Layers, SlidersHorizontal } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/page-header';
 import { ClientPoliciesPanel } from '@/components/settings/client-policies-panel';
 import { CarrierGroupsPanel } from '@/components/settings/carrier-groups-panel';
+import { PlansPanel } from '@/components/settings/plans-panel';
+
+type Tab = 'plans' | 'clients' | 'carriers';
 
 /**
- * Dedicated "Policies & Groups" control center — split out of the general
- * Settings page so market organization (client policy groups + provider groups
- * + visibility) has its own clear, professional home.
+ * Workflow & Policy Engine — the control center that drives how the platform
+ * operates per company: Plans (memberships) wrap Policy Profiles (client groups)
+ * which carry the modules, capability features/limits, commission and visibility.
  */
-export default function AdminPoliciesPage() {
-  const [tab, setTab] = useState<'clients' | 'carriers'>('clients');
+export default function AdminPolicyEnginePage() {
+  const [tab, setTab] = useState<Tab>('plans');
   return (
     <>
       <PageHeader
         eyebrow="إدارة المنصّة"
-        title="السياسات والمجموعات"
-        subtitle="نظّم السوق: مجموعات العملاء (الإسناد/التسعير/التحصيل/الظهور) ومجموعات المزوّدين."
+        title="محرك السياسات والتشغيل"
+        subtitle="الباقات والعضويات، ملفات السياسة (الموديولز + الميزات + العمولة + الظهور)، ومجموعات المزوّدين — تحكّم كامل بآلية العمل."
       />
-      <Tabs value={tab} onValueChange={(v) => setTab(v as 'clients' | 'carriers')} className="space-y-6">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="space-y-6">
         <TabsList>
-          <TabsTrigger value="clients"><Users className="h-4 w-4 me-1.5" /> مجموعات العملاء</TabsTrigger>
+          <TabsTrigger value="plans"><Layers className="h-4 w-4 me-1.5" /> الباقات والعضويات</TabsTrigger>
+          <TabsTrigger value="clients"><SlidersHorizontal className="h-4 w-4 me-1.5" /> ملفات السياسة</TabsTrigger>
           <TabsTrigger value="carriers"><Truck className="h-4 w-4 me-1.5" /> مجموعات المزوّدين</TabsTrigger>
         </TabsList>
+        <TabsContent value="plans"><PlansPanel /></TabsContent>
         <TabsContent value="clients"><ClientPoliciesPanel /></TabsContent>
         <TabsContent value="carriers"><CarrierGroupsPanel /></TabsContent>
       </Tabs>
