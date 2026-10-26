@@ -1,109 +1,156 @@
 # Orders — Types & Lifecycle
 
-Reference for order **types** and the **consolidated (multi-truck) order** flow.
-For the general order state machine and escrow, see `docs/ARCHITECTURE.md`.
+Reference for order **types** and the **consolidated (multi-truck) order** flow,
+including heterogeneous legs, per-leg carriers, and per-leg bidding. For the
+general order state machine and escrow, see [`docs/ARCHITECTURE.md`](ARCHITECTURE.md);
+for payment collection, see [`docs/POLICIES.md`](POLICIES.md) §Collection.
 
 ---
 
 ## 1. Order types
 
-An order is one of two kinds (`Order.orderType`, defaults to `SINGLE` when absent):
+An order is one of two kinds (`Order.orderType`, defaults to `SINGLE`):
 
 - **`SINGLE`** — one shipment on one truck. The platform's standard flow.
-- **`CONSOLIDATED`** — a bulk request for **N trucks on the same route and
-  cargo**, published as **one order** with **one order number** and **one
-  consolidated invoice**. The awarded carrier then distributes the N legs across
-  its own trucks/drivers.
+- **`CONSOLIDATED`** — several trucks under **one order**, with **one order
+  number**, **one client**, and **one consolidated invoice**. Its legs may be
+  either homogeneous or heterogeneous:
+  - **Homogeneous** — N trucks on the **same route, truck type and split price**.
+    The client sets a `truckCount` (2–20); everything else is shared.
+  - **Heterogeneous** — each leg has its **own truck type, destination and
+    price** (and, in phase 2, its own carrier), while the single pickup origin,
+    client and invoice stay shared.
 
-The client chooses the type in the new-order form (Step 1). For a consolidated
-order a stepper sets `truckCount` (range 2–20). Everything else in the request
-(route, cargo, truck type, requirements) is shared by all trucks.
+The client picks the kind in the new-order wizard (Step 1). For a consolidated
+order a toggle chooses **identical legs** (the `truckCount` stepper + per-leg
+reference editor) or **mixed legs** (a per-leg editor: truck type, destination,
+price, reference — add/remove legs, with a live total).
 
-Model (`packages/shared-utils/src/mock-data.ts`):
+### Model
+
+Prisma (`apps/api/prisma/schema.prisma`): the per-leg plan lives in **`OrderLeg`**,
+the actual truck/driver assignment in **`OrderTruck`** (both keyed by
+`(orderId, sequence)`). Homogeneous legacy orders have no `OrderLeg` rows and fall
+back to the order's own values.
+
+```prisma
+model OrderLeg {
+  orderId, sequence              // 1-based leg index
+  reference?                     // per-leg shipment reference
+  requiredTruckType              // per-leg truck type
+  destination{City,Region,Address,Lat?,Lng?}   // per-leg destination (origin is shared)
+  price?                         // per-leg price; order total = Σ leg prices
+  // phase 2 — a leg's own carrier:
+  carrierId?                     // the carrier serving this leg
+  status                         // PENDING | ASSIGNED | IN_TRANSIT | DELIVERED
+  commissionAmount?, carrierAmount?   // per-leg financial split of `price`
+  settledAt?                     // when the leg payout was released
+  bids Bid[]                     // phase 2b — per-leg bids
+}
+```
+
+Frontend shape (`packages/shared-utils/src/mock-data.ts`):
 
 ```ts
-type OrderType = 'SINGLE' | 'CONSOLIDATED';
-type ConsolidatedLegStatus = 'PENDING' | 'ASSIGNED' | 'IN_TRANSIT' | 'DELIVERED';
-
-interface ConsolidatedLeg { index: number; status: ConsolidatedLegStatus; truckId?: string; driverId?: string; }
-
-interface Order {
-  // …
-  orderType?: OrderType;
-  truckCount?: number;        // CONSOLIDATED only
-  legs?: ConsolidatedLeg[];   // CONSOLIDATED only — one per truck
+interface ConsolidatedLeg {
+  index: number;
+  status: 'PENDING' | 'ASSIGNED' | 'IN_TRANSIT' | 'DELIVERED';
+  reference?: string;
+  truckId?: string; driverId?: string; plateNumber?: string; driverName?: string;
+  // heterogeneous spec (falls back to the order's values when absent):
+  requiredTruckType?: TruckType;
+  destinationCity?: string; destinationRegion?: string; destinationAddress?: string;
+  price?: number;
+  // phase 2 — per-leg carrier + settlement:
+  carrierId?: string; carrierName?: string; carrierAmount?: number;
+  // phase 2b — per-leg bidding:
+  bidCount?: number; myBidAmount?: number; myBidStatus?: BidStatus;
 }
 ```
 
 ---
 
-## 2. Consolidated order lifecycle
+## 2. Consolidated lifecycle
 
-1. **Create** — the client submits one consolidated order (`orderType`,
-   `truckCount`). It is published, bid on, and awarded like any order, under one
-   order number.
-2. **Distribute** — after the award, the carrier distributes each **leg** to one
-   of its fleet trucks. The truck's **linked driver** (see `docs/FLEET.md`) is
-   attached automatically. Progress is tracked as *distributed / total*.
-3. **Transit & delivery** — each leg carries its own status
-   (`PENDING → ASSIGNED → IN_TRANSIT → DELIVERED`); the parent order rolls them
-   up.
-4. **Invoice** — one consolidated invoice: `truckCount × per-truck amount =
-   total`, under the single order number. `agreedPrice` is the order total;
-   per-truck = `agreedPrice / truckCount`.
-
----
-
-## 3. UI
-
-- **New-order form** — `apps/web/client/src/app/(app)/orders/new/page.tsx`:
-  order-type cards + truck-count stepper (Step 1); the summary and review step
-  reflect the choice.
-- **Carrier distribution (interactive)** —
-  `apps/web/carrier/src/components/consolidated-panel.tsx`, backed by
-  `apps/web/carrier/src/stores/consolidated-store.ts` (Zustand + persist, keyed
-  by `orderId`). Shows a progress bar, a per-leg board (assign / clear via a
-  truck picker), and the consolidated invoice. Rendered on the carrier order
-  detail when `order.orderType === 'CONSOLIDATED'`.
-- **Client & admin (read-only)** — a `ConsolidatedReadonly` breakdown (each leg:
-  plate + driver + status) and the consolidated invoice, on their order-detail
-  pages. The single-truck plate/driver block is shown only for `SINGLE` orders.
+1. **Create** — the client submits one consolidated order. A heterogeneous order
+   sends a `legs[]` spec; `truckCount` is derived and the order total is the **sum
+   of the legs' prices** (seeding `agreedPrice` for a DIRECT order and
+   `clientBudget`). A homogeneous order sends `truckCount` (+ optional
+   `legReferences`).
+2. **Source a carrier per leg** — two paths, mixable:
+   - **Direct assignment** (phase 2a) — the client/admin assigns a carrier to each
+     leg (`POST /orders/:id/legs/:index/assign-carrier`). The carrier must be
+     visible to the client; the leg's 8% commission split is computed from its price.
+   - **Open-market bidding** (phase 2b) — carriers **bid on individual legs**
+     (`POST /orders/:id/bids { legIndex, amount }`); the client/admin **awards** a
+     leg to a bid, which assigns that carrier at the bid amount.
+3. **Distribute** — a leg's carrier distributes the leg to one of **its own**
+   fleet trucks (the truck must match the leg's required type); the truck's linked
+   driver is attached automatically.
+4. **Transit & delivery** — the leg's carrier advances its leg
+   (`ASSIGNED → IN_TRANSIT → DELIVERED`). The order status **rolls up** from its
+   legs (all delivered → `DELIVERED`; any moving/delivered → `IN_TRANSIT`; all
+   legs have a carrier → `ASSIGNED`).
+5. **Settlement** — on **leg delivery**, the leg's carrier is credited its
+   `carrierAmount` (idempotent, guarded by `settledAt`); the platform keeps the
+   per-leg commission. The client still pays the order total once (order-level
+   collection / escrow); payouts are released per leg.
+6. **Invoice** — one consolidated invoice under the single order number. For a
+   homogeneous order it is `truckCount × per-truck amount`; for a heterogeneous
+   order it is the **sum of the legs' prices**, shown per leg.
 
 ---
 
-## 4. Demo notes & future (real API)
+## 3. API
 
-- In demo mode the carrier's distribution lives in the carrier's local store, so
-  the baseline (seeded) distribution is what client/admin display. With a real
-  backend the legs and their assignments are server-side and shared across all
-  parties in real time.
-## Backend (v0.9.26)
+Leg list + assignment + status (`apps/api/src/modules/orders/`):
 
-Consolidated orders and their legs are persisted by the API (see
-`docs/LOCAL_BACKEND.md`).
+| Endpoint | Who | Purpose |
+| --- | --- | --- |
+| `GET /orders/:id/legs` | client / leg carrier / order carrier / admin | Full 1..N leg list, enriched with per-leg spec, carrier, plate/driver, `bidCount`, and the caller's own bid. Includes a `heterogeneous` flag. |
+| `POST /orders/:id/legs/:index/assign-carrier` | client / admin | Assign a carrier to a leg (`{ carrierId, price? }`); computes the split, sets the leg `ASSIGNED`. |
+| `DELETE /orders/:id/legs/:index/carrier` | client / admin | Clear a leg's carrier (while not in transit). |
+| `POST /orders/:id/legs/:index/distribute` | leg carrier / admin | Assign one of the carrier's own trucks to the leg (type must match). |
+| `DELETE /orders/:id/legs/:index` | leg carrier / admin | Un-distribute the truck. |
+| `PATCH /orders/:id/legs/:index/status` | leg carrier / admin | Advance the leg; `DELIVERED` releases the leg payout. |
 
-- `Order.orderType` (`SINGLE` | `CONSOLIDATED`) + `truckCount`. `OrderTruck` is a
-  leg with `sequence`, `status`, and `driverId` — one row per **distributed**
-  leg; undistributed legs are implicit (`PENDING`).
-- Carrier-scoped endpoints: `GET /orders/:id/legs` (full 1..N list),
-  `POST /orders/:id/legs/:index/distribute`, `DELETE /orders/:id/legs/:index`,
-  `PATCH /orders/:id/legs/:index/status`. A truck serves at most one leg.
-- The parent order's status is **rolled up** (forward-only) from its legs: all
-  delivered → DELIVERED, any in transit → IN_TRANSIT, all distributed →
-  ASSIGNED.
-- `GET /orders/:id/legs` is readable by the order's client, its carrier, or an
-  admin; distributed legs are enriched with the truck plate + driver name so a
-  viewer without fleet access can render them. Mutations are carrier/admin only.
-- The carrier `ConsolidatedPanel` and the client/admin **read-only** breakdowns
-  all read `/orders/:id/legs` (mock `order.legs` fallback kept); distribute/clear
-  persist to the DB.
+Per-leg bidding (`apps/api/src/modules/bids/`):
 
-## Per-leg shipment references (v0.9.35)
+| Endpoint | Who | Purpose |
+| --- | --- | --- |
+| `POST /orders/:id/bids` `{ legIndex, amount }` | carrier | Bid on a leg; the leg must be open and the carrier must own a truck of its type (`NO_MATCHING_TRUCK`, `LEG_ALREADY_ASSIGNED`). Omit `legIndex` for a classic order-level bid. |
+| `GET /orders/:id/bids?legIndex=N` | client / carrier / admin | A leg's bids (the order-level list excludes leg bids). |
+| `POST /orders/:id/bids/:bidId/accept` | client / admin | Award: assigns the leg's carrier + price + split, rejects the other bids on that leg, rolls up the order. |
 
-- `Order.legReferences String[]` holds one shipment reference per leg, ordered
-  by sequence (`legReferences[index-1]`). Set at creation: the client either
-  types one per shipment or lets the system auto-generate `<orderNumber>-L<n>`
-  (blank manual entries fall back to auto).
-- `CreateOrderDto` now accepts `orderType`, `truckCount`, and `legReferences`;
-  `create` persists them. `GET /orders/:id/legs` returns `reference` per leg,
-  shown in the consolidated table on the client + admin order-detail pages.
+**Authorization:** a leg's own carrier — not only the order carrier — may
+distribute its truck and advance its leg, and may view any order where it serves a
+leg. A carrier may bid on several legs of one order; uniqueness is enforced by two
+partial unique indexes on `Bid` (one per order+carrier for order-level bids, one
+per leg+carrier for leg bids).
+
+---
+
+## 4. UI
+
+- **New-order wizard** — `apps/web/client/src/app/(app)/orders/new/page.tsx`:
+  order-type cards, the identical/mixed toggle, and the per-leg editor for mixed
+  legs. The summary and review steps reflect the choice.
+- **Carrier panel** — `apps/web/carrier/src/components/consolidated-panel.tsx`:
+  shows each leg's spec + carrier; a **bid** action ("قدّم عرضاً") on serviceable
+  open legs; and, for the carrier's **own** legs, distribute + start/deliver
+  controls. Rendered on the carrier order detail for `CONSOLIDATED` orders.
+- **Admin & client order detail** — a `ConsolidatedReadonly` breakdown (per-leg
+  truck type, destination, price, carrier, status) and the per-leg invoice. The
+  **admin** detail adds a per-leg **carrier assignment** dropdown and a per-leg
+  **bids → Award** dialog. The single-truck plate/driver block shows only for
+  `SINGLE` orders.
+
+---
+
+## 5. Changelog anchors
+
+- v0.9.26 — consolidated orders + legs persisted by the API.
+- v0.9.35 — per-leg shipment references.
+- v0.9.68 — heterogeneous legs (per-leg truck type / destination / price).
+- v0.9.69 — per-leg carriers + per-leg settlement (direct assignment).
+- v0.9.70 — per-leg open-market bidding + award.

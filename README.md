@@ -33,7 +33,7 @@
 - **Swagger / OpenAPI** — API documentation
 
 ### Frontend
-- **[Next.js 14](https://nextjs.org/)** (App Router) — 4 تطبيقات منفصلة
+- **[Next.js 14](https://nextjs.org/)** (App Router) — 5 تطبيقات منفصلة (client · carrier · admin · driver · landing)
 - **[React 18](https://react.dev/)**
 - **[Tailwind CSS](https://tailwindcss.com/)** + **[shadcn/ui](https://ui.shadcn.com/)** (مثبّت محلياً في كل تطبيق)
 - **[Zustand](https://github.com/pmndrs/zustand)** — State management + persist
@@ -57,7 +57,7 @@
 naqla-platform/
 ├── apps/
 │   ├── api/                    # NestJS Backend          → :4000
-│   │   ├── prisma/             # Schema (23 model + 14 enum)
+│   │   ├── prisma/             # Schema (28 model + 22 enum)
 │   │   └── src/modules/        # 14 module
 │   └── web/
 │       ├── landing/            # الصفحة التسويقية         → :3000
@@ -176,10 +176,19 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 
 ---
 
-## ✨ الميزات الرئيسية (v0.9.3)
+## ✨ الميزات الرئيسية (v0.9.70)
 
-- ✅ **نظام تصميم Premium (Mint)** — ثيم فاتح راقٍ بلون نعناعي واحد كلون تمييز، لوحات تيل غامقة، بطاقات بيضاء وظلال ناعمة، حركات framer-motion، أرقام لاتينية، بلا تدرّجات لونية. يغطّي الصفحة التسويقية وصفحاتها الداخلية وكل اللوحات الثلاث
-- ✅ **3 لوحات تحكم متخصّصة**: Admin / Client / Carrier — مع sidebars وlayouts مستقلّة
+### أحدث البرنامج (v0.9.5x–v0.9.70)
+- ✅ **بوابة سائق موحّدة** — تطبيق `driver` + توحيد الوصول لأي مستخدم له `DriverProfile` (تابع لمزوّد، فري‑لانسر، أو ناقل فرد).
+- ✅ **مجموعات وموديولز قابلة للإعداد** — صفحة «السياسات والمجموعات» المستقلّة: مجموعات العملاء والمزوّدين، إعدادات افتراضية لكل قروب (إسناد/تسعير/تحصيل) **يضبطها الأدمن**، مع **فرض** طريقة التحصيل، ونطاق ظهور المزوّدين — بواجهة كروت أنيقة. راجع [docs/POLICIES.md](docs/POLICIES.md).
+- ✅ **الطلبات المجمّعة غير المتجانسة** — كل ساق بنوع شاحنة ووجهة وسعر خاص، ثم **ناقل مستقل لكل ساق** (إسناد مباشر أو **مزايدة لكل ساق**) مع تسوية مستحقّات لكل ساق. راجع [docs/ORDERS.md](docs/ORDERS.md).
+- ✅ **صفحة تفاصيل 360° للشركة** — نظرة عامة، الطلبات، الأسطول، المالية، كشف الحساب، **سجل النشاط والتدقيق**، الملف/KYC، والفريق في مكان واحد.
+- ✅ **أكواد عامّة قصيرة** — `Company.code` (`NQ-XXXXXX`) بدل الـ cuid الخام في الواجهات.
+- ✅ **تعدّد الكيانات والعلامة البيضاء** — `entityType` (شركة/فرد)، عملاء مملوكون لمزوّد (sub‑tenancy)، وعلامة بيضاء لكل مزوّد.
+
+### الأساس
+- ✅ **نظام تصميم Premium (Mint)** — ثيم فاتح راقٍ بلون نعناعي واحد كلون تمييز، لوحات تيل غامقة، بطاقات بيضاء وظلال ناعمة، حركات framer-motion، أرقام لاتينية، بلا تدرّجات لونية. يغطّي الصفحة التسويقية وصفحاتها الداخلية وكل اللوحات
+- ✅ **لوحات تحكم متخصّصة**: Admin / Client / Carrier / Driver — مع sidebars وlayouts مستقلّة
 - ✅ **Marketplace مفتوح + Direct Request** — طريقتان لإسناد الطلبات
 - ✅ **نظام عروض كامل** — تقديم، مقارنة، قبول، سحب
 - ✅ **Escrow Wallet System** — حجز المبلغ حتى التسليم
@@ -229,7 +238,7 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 - ✅ **City-Bounded Map Search** (v0.8.0) — Nominatim search في الـ Wizard يحصر النتائج بـ ~50km حول مركز المدينة المختارة
 - ✅ **DIRECT negotiation** (v0.3.x) — تفاوض مباشر عميل↔ناقل: accept/counter/decline rounds
 - ✅ **Pulsing badges + sound** (v0.3.x) — تنبيه بصري وصوتي للطلبات الجديدة
-- ✅ **404 + 500 Pages** — في كل التطبيقات الأربعة
+- ✅ **404 + 500 Pages** — في كل التطبيقات الخمسة
 - ✅ **Dark Mode** — في كل واجهة
 - ✅ **RTL كامل** — Arabic-first
 

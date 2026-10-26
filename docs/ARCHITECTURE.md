@@ -96,10 +96,13 @@ naqla-platform/
 | **Auth** | `modules/auth` | تسجيل، دخول، تحديث Token، OTP عبر SMS، Refresh tokens |
 | **Users** | `modules/users` | بروفايل المستخدم، تحديثه، Avatar |
 | **Companies** | `modules/companies` | شركات العملاء والناقلين، KYC، اعتماد |
-| **Orders** | `modules/orders` | إنشاء، نشر، تأكيد، إلغاء، تحديث حالة |
-| **Bids** | `modules/bids` | تقديم عرض، قبول، رفض، سحب |
+| **Orders** | `modules/orders` | إنشاء، نشر، تأكيد، إلغاء، تحديث حالة؛ الطلبات المجمّعة والسيقان (OrderLeg) |
+| **Bids** | `modules/bids` | تقديم عرض، قبول، رفض، سحب؛ المزايدة لكل ساق |
+| **Policies** | `modules/policies` | مجموعات العملاء والمزوّدين، الموديولز الافتراضية، نطاق الظهور |
 | **Fleet** | `modules/fleet` | شاحنات، سائقين، تحديث موقع |
-| **Payments** | `modules/payments` | Escrow، تحويلات، إفراج، عمولات |
+| **Payments** | `modules/payments` | Escrow، prepaid/COD collection، تحويلات، إفراج، عمولات |
+| **Driver** | `modules/driver` | بوابة السائق الموحّدة (أي مستخدم له DriverProfile) |
+| **White-label** | `modules/white-label` | العلامة البيضاء للمزوّدين (brand) |
 | **Invoices** | `modules/invoices` | إصدار فواتير، تتبّع، export |
 | **Notifications** | `modules/notifications` | إرسال multi-channel، قوالب |
 | **Admin** | `modules/admin` | dashboards، KYC queue، disputes، settings |
@@ -128,23 +131,29 @@ naqla-platform/
 
 ## 4. قاعدة البيانات (Prisma Schema)
 
-### 4.1 Models (21)
+### 4.1 Models (28)
 
 #### 👤 Users & Companies
 - **`User`** — حسابات المستخدمين (admin/client/carrier/driver)
-- **`Company`** — كيانات الشركات (عميل أو ناقل)
+- **`Company`** — كيانات الشركات (عميل أو ناقل). Carries a short public `code`
+  (`NQ-XXXXXX`), `entityType` (COMPANY | INDIVIDUAL), sub-tenancy
+  (`ownerCarrierId`), and white-label fields (`brandName/Logo/Color`).
 - **`KYCDocument`** — مستندات الاعتماد (CR/VAT/Zakat/تأمين/رخصة نقل)
 - **`DriverProfile`** — بيانات السائقين (رخصة، حالة، تعيينات)
+- **`SavedAddress`** — عناوين العميل المحفوظة
 - **`RefreshToken`** — refresh tokens للـ JWT
 - **`ApiKey`** — مفاتيح API لـ integrations مستقبلية
 
 #### 🚚 Fleet
-- **`Truck`** — الشاحنات (plate, type, capacity, status)
+- **`Truck`** — الشاحنات (plate, type, capacity, ownership, status)
 
 #### 📦 Orders & Bids
-- **`Order`** — الطلبات (mode: OPEN/DIRECT، 9 حالات)
-- **`Bid`** — العروض (price, days, notes, status)
-- **`OrderTruck`** — ربط الشاحنة بالطلب
+- **`Order`** — الطلبات (mode: OPEN/DIRECT، `orderType` SINGLE/CONSOLIDATED، 10 حالات)
+- **`OrderStop`** — محطات المسار (multi-stop route)
+- **`OrderLeg`** — per-leg plan of a consolidated order (truck type, destination,
+  price, **carrier**, status, settlement) — see [`docs/ORDERS.md`](ORDERS.md)
+- **`Bid`** — العروض (price, status); `orderLegId` for per-leg bids
+- **`OrderTruck`** — ربط الشاحنة بالساق
 - **`OrderDriver`** — ربط السائق بالطلب
 
 #### 📍 Tracking
@@ -152,21 +161,32 @@ naqla-platform/
 - **`LocationHistory`** — تاريخ المواقع للشاحنات
 
 #### 💰 Finance
-- **`Payment`** — مدفوعات (Escrow states)
+- **`Payment`** — مدفوعات (Escrow / prepaid / COD states)
 - **`Transaction`** — ledger entries للمحافظ
 - **`Invoice`** — فواتير العميل
+- **`FreelancerInvoice`** — مستحقات الأسطول المستقل (freelancer trip fees)
 
 #### ⚖️ Disputes & Reviews
 - **`Dispute`** — نزاعات (raisedBy CLIENT/CARRIER)
 - **`Review`** — تقييمات بعد التسليم
+
+#### ⚙️ Policies & Support
+- **`PolicyGroup`** — client group: allow toggles, module defaults, collection
+  enforcement, provider-visibility scope — see [`docs/POLICIES.md`](POLICIES.md)
+- **`CarrierGroup`** — named set of providers (visibility scoping)
+- **`SupportTicket`** — تذاكر الدعم
 
 #### 🔔 System
 - **`Notification`** — إشعارات in-app
 - **`AuditLog`** — سجل التدقيق
 - **`Setting`** — إعدادات platform-wide
 
-### 4.2 Enums (13)
-`UserRole`, `CompanyType`, `CompanyStatus`, `KYCStatus`, `OrderStatus`, `TruckType`, `CargoType`, `BidStatus`, `PaymentStatus`, `InvoiceStatus`, `NotificationType`, `DisputeStatus`, `DriverStatus`
+### 4.2 Enums (22)
+Including `UserRole`, `CompanyType`, `CompanyEntityType`, `CompanyStatus`,
+`KYCStatus`, `OrderStatus`, `StopType`, `TruckType`, `TruckStatus`,
+`FleetOwnership`, `CargoType`, `BidStatus`, `PaymentStatus`, `InvoiceStatus`,
+`NotificationType`, `DisputeStatus`, `DriverStatus`, `SupportTicketCategory`,
+`SupportTicketStatus`, `AddressKind`.
 
 ### 4.3 العلاقات الرئيسية (ER Summary)
 

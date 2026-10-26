@@ -16,10 +16,12 @@ polish pass before release.
   lifecycle, escrow.
 - [`FLEET.md`](FLEET.md) — trucks & drivers: bidirectional linking, status sync,
   audit log, ID codes, trips.
-- [`ORDERS.md`](ORDERS.md) — order types (single vs consolidated multi-truck),
-  fixed-price pricing & payment method, carrier distribution, invoices.
-- [`POLICIES.md`](POLICIES.md) — admin per-client / per-group platform policy
-  (distribution, pricing, payment; customization groups).
+- [`ORDERS.md`](ORDERS.md) — order types (single vs consolidated), heterogeneous
+  legs (per-leg truck type/destination/price), per-leg carriers + per-leg bidding
+  + settlement, distribution, and invoices.
+- [`POLICIES.md`](POLICIES.md) — admin per-group modules: sourcing/pricing/collection
+  allow toggles + defaults + collection enforcement, provider-visibility scope, and
+  carrier groups.
 - [`FREELANCERS.md`](FREELANCERS.md) — provider dispatcher: owned vs freelancer
   fleet, per-trip freelancer invoices, and the profitability page.
 - [`TRACKING.md`](TRACKING.md) — live shipment tracking: real OSRM road routes,
@@ -42,6 +44,7 @@ polish pass before release.
 - `../CHANGELOG.md` — chronological change log (newest under `[Unreleased]`).
 - `../PENDING_WORK.md` — live backlog and current status.
 
-> Note: `../CHANGELOG.md` and `../CLAUDE_CODE_INSTRUCTIONS.md` are currently in
-> Arabic and will be standardized to English in the final documentation pass
-> (see `DOCUMENTATION.md`). New changelog entries are written in English.
+> Note: the technical references in this `docs/` folder are maintained in English.
+> The product is Arabic-first, so `../README.md`, `../CHANGELOG.md` and
+> `../CLAUDE_CODE_INSTRUCTIONS.md` are bilingual (Arabic narrative + English
+> technical terms); changelog entries from v0.8.0 onward are written in English.
