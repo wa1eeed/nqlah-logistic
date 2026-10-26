@@ -4,6 +4,7 @@ import { context } from './_helpers.mjs';
 import { run as policies } from './policies.e2e.mjs';
 import { run as plans } from './plans.e2e.mjs';
 import { run as planPricing } from './plan-pricing.e2e.mjs';
+import { run as subscriptions } from './subscriptions.e2e.mjs';
 import { run as finance } from './finance.e2e.mjs';
 import { run as marketFixed } from './market-fixed.e2e.mjs';
 import { run as taxInvoices } from './tax-invoices.e2e.mjs';
@@ -15,6 +16,7 @@ const suites = [
   ['Policies & modules', policies],
   ['Policy Engine — plans & features', plans],
   ['Plan pricing & modules', planPricing],
+  ['Subscriptions', subscriptions],
   ['Finance & tax', finance],
   ['Fixed-price market', marketFixed],
   ['Tax invoices', taxInvoices],

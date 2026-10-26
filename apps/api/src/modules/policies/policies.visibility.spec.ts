@@ -25,7 +25,7 @@ function makeService(opts: {
         carrierGroups.filter((c) => where.id.in.includes(c.id as string))),
     },
   };
-  return new PoliciesService(prisma as never);
+  return new PoliciesService(prisma as never, {} as never);
 }
 
 describe('PoliciesService provider visibility', () => {

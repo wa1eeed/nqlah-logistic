@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { Prisma } from '../../generated/prisma';
+import { SubscriptionsService } from './subscriptions.service';
 import { CreateGroupDto, UpdateGroupDto } from './dto/policy.dto';
 
 type Features = Record<string, boolean | number> | undefined;
@@ -68,7 +69,7 @@ function toDto(g: GroupRow) {
 
 @Injectable()
 export class PoliciesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private subscriptions: SubscriptionsService) {}
 
   async listGroups() {
     const rows = await this.prisma.policyGroup.findMany({ orderBy: { createdAt: 'asc' } });
@@ -370,6 +371,23 @@ export class PoliciesService {
     return plans.map((p) => this.toPlanDto(p));
   }
 
+  /** Public, slim list of the active plans offered to an audience at signup. */
+  async listPublicPlans(audience?: string) {
+    const aud = audience === 'CLIENT' || audience === 'CARRIER' ? audience : undefined;
+    const plans = await this.prisma.plan.findMany({
+      where: { active: true, ...(aud ? { audience: { in: [aud, 'BOTH'] } } : {}) },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      include: { modules: { include: { module: true } } },
+    });
+    return plans.map((p) => ({
+      id: p.id, name: p.name, nameEn: p.nameEn, description: p.description, tier: p.tier,
+      audience: p.audience, isFree: p.isFree, isDefault: p.isDefault,
+      includedTruckLimit: p.includedTruckLimit, trialDays: p.trialDays,
+      price: this.priceOf(p),
+      modules: p.modules.filter((m) => m.module.active).map((m) => ({ key: m.module.key, name: m.module.name, nameEn: m.module.nameEn, price: Number(m.module.price) })),
+    }));
+  }
+
   async getPlan(id: string) {
     const plan = await this.prisma.plan.findUnique({ where: { id }, include: this.planInclude });
     if (!plan) throw new NotFoundException({ code: 'PLAN_NOT_FOUND', message: 'الباقة غير موجودة' });
@@ -504,15 +522,22 @@ export class PoliciesService {
     return { id };
   }
 
-  /** Subscribe a company to a plan (or clear it). */
+  /**
+   * Admin: subscribe a company to a plan (creates/switches its subscription) or
+   * clear it (cancels the subscription immediately). Delegates the lifecycle to
+   * SubscriptionsService so Company.planId and the Subscription record stay in sync.
+   */
   async assignPlan(companyId: string, planId: string | null | undefined) {
     const company = await this.prisma.company.findUnique({ where: { id: companyId }, select: { id: true } });
     if (!company) throw new NotFoundException({ code: 'COMPANY_NOT_FOUND', message: 'الشركة غير موجودة' });
     if (planId) {
-      const plan = await this.prisma.plan.findUnique({ where: { id: planId }, select: { id: true } });
-      if (!plan) throw new NotFoundException({ code: 'PLAN_NOT_FOUND', message: 'الباقة غير موجودة' });
+      await this.subscriptions.subscribe(companyId, planId);
+    } else {
+      // Clear the plan + cancel any subscription immediately.
+      const existing = await this.prisma.subscription.findUnique({ where: { companyId }, select: { companyId: true } });
+      if (existing) await this.subscriptions.cancel(companyId, false);
+      else await this.prisma.company.update({ where: { id: companyId }, data: { planId: null } });
     }
-    await this.prisma.company.update({ where: { id: companyId }, data: { planId: planId ?? null } });
     return { companyId, planId: planId ?? null };
   }
 

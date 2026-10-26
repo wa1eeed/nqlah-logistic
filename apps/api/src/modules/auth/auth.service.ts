@@ -10,6 +10,7 @@ import { AuditLogService } from '../../common/audit/audit-log.service';
 import { LoginAttemptService } from '../../common/security/login-attempt.service';
 import { OtpService } from '../../common/security/otp.service';
 import { TokenBlacklistService } from '../../common/security/token-blacklist.service';
+import { SubscriptionsService } from '../policies/subscriptions.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { normalizeSaudiPhone } from '@naqla/shared-utils';
@@ -26,7 +27,25 @@ export class AuthService {
     private attempts: LoginAttemptService,
     private otp: OtpService,
     private blacklist: TokenBlacklistService,
+    private subscriptions: SubscriptionsService,
   ) {}
+
+  /**
+   * Resolve the plan to bind at signup: the chosen plan when it's valid for the
+   * company's audience, else the default active plan for that audience, else null.
+   */
+  private async resolveSignupPlan(planId: string | undefined, companyType: 'CLIENT' | 'CARRIER'): Promise<string | null> {
+    if (planId) {
+      const chosen = await this.prisma.plan.findUnique({ where: { id: planId }, select: { id: true, active: true, audience: true } });
+      if (chosen?.active && (chosen.audience === companyType || chosen.audience === 'BOTH')) return chosen.id;
+    }
+    const def = await this.prisma.plan.findFirst({
+      where: { isDefault: true, active: true, audience: { in: [companyType, 'BOTH'] } },
+      orderBy: { audience: 'asc' }, // prefer the audience-specific default over BOTH
+      select: { id: true },
+    });
+    return def?.id ?? null;
+  }
 
   // ─── Register (Phone-first, email optional) ─────────────────────
 
@@ -75,6 +94,15 @@ export class AuthService {
         contactEmail: dto.contactEmail ?? email ?? `noreply+${phone}@phone.${process.env.APP_DOMAIN ?? 'nqlah.nx.sa'}`,
       },
     });
+
+    // Bind a subscription plan at registration: the chosen plan (validated for
+    // this audience) or the default plan for it. A free/default plan activates
+    // immediately; a paid one starts its trial. Non-blocking — a failure here
+    // must not fail signup (the company just falls back to the default policy).
+    try {
+      const planId = await this.resolveSignupPlan(dto.planId, dto.companyType);
+      if (planId) await this.subscriptions.subscribe(company.id, planId);
+    } catch { /* ignore — registration succeeds without a subscription */ }
 
     const user = await this.prisma.user.create({
       data: {
