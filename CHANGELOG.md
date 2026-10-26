@@ -6,6 +6,30 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.80 — Subscription plans: dynamic pricing + lifecycle + signup binding (2026-10-26)
+
+Recurring memberships on top of the Policy Engine, with smart component-based
+pricing. Payment is stubbed (the lifecycle is modelled so billing can be added
+later). See [`docs/SUBSCRIPTIONS.md`](docs/SUBSCRIPTIONS.md).
+
+- **Dynamic pricing:** a plan's price = `basePrice + Σ(included module prices)`;
+  yearly applies `yearlyDiscountPct`. Exposed as `plan.price { monthly, yearly,
+  modulesTotal }`. Plan gains `isFree`, `basePrice`, `billingCycle`,
+  `yearlyDiscountPct`, `includedTruckLimit`, `trialDays`, `sortOrder`.
+- **Module catalog:** `PlanModule` (admin-managed priced capabilities; `key` →
+  feature flag) + `PlanModuleLink`. Included modules grant their feature keys and
+  `includedTruckLimit → maxFleetSize` via `effectiveForCompany`.
+- **Subscription** model (one per company): status (`TRIALING`/`ACTIVE`/`PAST_DUE`/
+  `CANCELLED`/`EXPIRED`), cycle, period, price snapshot, trial, cancelAtPeriodEnd.
+  `SubscriptionsService.subscribe/cancel`; admin `assignPlan` keeps it in sync.
+- **Registration binding:** `POST /auth/register` accepts `planId` (or the audience
+  default) and creates a subscription; public `GET /policies/plans/public?audience=`
+  feeds the signup picker. Carrier signup wizard gains a plan picker.
+- **Admin UI:** plan builder with a live computed price + a «موديولز الباقات»
+  catalog tab. Migration `20261026360000_plan_subscriptions`.
+- Verified: `plan-pricing.e2e.mjs` (11) + `subscriptions.e2e.mjs` (9) + full e2e
+  10 suites + jest 41/41; all apps typecheck.
+
 ### v0.9.79 — Pricing decoupled from assignment + fixed-price market (2026-10-26)
 
 The sourcing model is now two independent axes — **assignment** (market vs

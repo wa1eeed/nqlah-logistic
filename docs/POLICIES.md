@@ -19,12 +19,13 @@ surfaced at **Admin → محرك السياسات والتشغيل**.
 
 ### Plans (memberships)
 
-A `Plan` (باقة/عضوية) is a thin commercial wrapper that references one Policy
-Profile; its *shape* (modules + features + commission) comes from that profile.
-Plans are **audience-aware** (`CLIENT` | `CARRIER` | `BOTH`), can be marked
-`isDefault` per audience, and may carry an optional `commissionRateOverride`.
-A company subscribes via `Company.planId` (admin-assigned now; registration-bound
-later). API: `GET/POST/PUT/DELETE /policies/plans`, `POST /policies/assign-plan`.
+A `Plan` (باقة/عضوية) references one Policy Profile (its *shape*: modules +
+features + commission) and adds a **subscription price** built up dynamically from
+a priced **module catalog** it bundles. Plans are **audience-aware** (`CLIENT` |
+`CARRIER` | `BOTH`), can be marked `isDefault` per audience, and may carry a
+`commissionRateOverride`. A company subscribes via `Company.planId` + a
+`Subscription` record (admin-assigned, or **bound at registration**). The full
+pricing + lifecycle model is in [`SUBSCRIPTIONS.md`](SUBSCRIPTIONS.md).
 
 ### Capability layer (features & limits)
 

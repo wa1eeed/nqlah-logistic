@@ -22,6 +22,9 @@ polish pass before release.
 - [`POLICIES.md`](POLICIES.md) — the Workflow & Policy Engine: plans → profiles →
   modules + capability layer + commission; sourcing/pricing/collection toggles +
   defaults + enforcement, provider-visibility scope, and carrier groups.
+- [`SUBSCRIPTIONS.md`](SUBSCRIPTIONS.md) — subscription plans: dynamic pricing
+  (base + priced module catalog), the per-company subscription lifecycle, and
+  plan binding at registration.
 - [`FINANCE.md`](FINANCE.md) — commission + VAT math (`computeOrderFinancials`),
   `commissionAppliesTo`, VAT-inclusive pricing, carrier VAT registration, and
   settlement.
