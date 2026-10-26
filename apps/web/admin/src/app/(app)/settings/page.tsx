@@ -45,6 +45,15 @@ export default function AdminSettingsPage() {
   const [escrowDays, setEscrowDays] = useState(3);
   const [savingFinancial, setSavingFinancial] = useState(false);
 
+  // Platform tax identity — the seller on every commission tax invoice. Stored
+  // under the exact keys the invoice generator reads (see docs/INVOICES.md).
+  const [platformNameAr, setPlatformNameAr] = useState('نقلة لوجيستك');
+  const [platformVat, setPlatformVat] = useState('');
+  const [platformCr, setPlatformCr] = useState('');
+  const [platformAddress, setPlatformAddress] = useState('');
+  const [savingTaxIdentity, setSavingTaxIdentity] = useState(false);
+  const platformVatInvalid = platformVat.length > 0 && !/^\d{15}$/.test(platformVat);
+
   // General settings
   const [brandName, setBrandName] = useState('نقلة لوجيستك');
   const [supportEmail, setSupportEmail] = useState('support@naqla.sa');
@@ -57,6 +66,10 @@ export default function AdminSettingsPage() {
     if (settingMap['financial.commission']) setCommission(Number(settingMap['financial.commission']));
     if (settingMap['financial.vat']) setVat(Number(settingMap['financial.vat']));
     if (settingMap['financial.escrowDays']) setEscrowDays(Number(settingMap['financial.escrowDays']));
+    if (settingMap['platform_name_ar']) setPlatformNameAr(settingMap['platform_name_ar']);
+    if (settingMap['platform_vat_number']) setPlatformVat(settingMap['platform_vat_number']);
+    if (settingMap['platform_cr_number']) setPlatformCr(settingMap['platform_cr_number']);
+    if (settingMap['platform_address']) setPlatformAddress(settingMap['platform_address']);
     if (settingMap['general.brandName']) setBrandName(settingMap['general.brandName']);
     if (settingMap['general.supportEmail']) setSupportEmail(settingMap['general.supportEmail']);
     if (settingMap['general.supportPhone']) setSupportPhone(settingMap['general.supportPhone']);
@@ -109,6 +122,27 @@ export default function AdminSettingsPage() {
       notify.error(err, 'فشل حفظ الإعدادات');
     } finally {
       setSavingFinancial(false);
+    }
+  };
+
+  const saveTaxIdentity = async () => {
+    if (savingTaxIdentity || platformVatInvalid) return;
+    setSavingTaxIdentity(true);
+    try {
+      await api.put('/admin/settings', {
+        settings: [
+          { key: 'platform_name_ar', value: platformNameAr },
+          { key: 'platform_vat_number', value: platformVat },
+          { key: 'platform_cr_number', value: platformCr },
+          { key: 'platform_address', value: platformAddress },
+        ],
+      });
+      notify.success('تم حفظ الهوية الضريبية للمنصة');
+      await mutateSettings();
+    } catch (err) {
+      notify.error(err, 'فشل حفظ الهوية الضريبية');
+    } finally {
+      setSavingTaxIdentity(false);
     }
   };
 
@@ -207,6 +241,42 @@ export default function AdminSettingsPage() {
               <div className="flex items-center gap-2 pt-2">
                 <Button onClick={saveFinancial} disabled={savingFinancial}>
                   {savingFinancial ? 'جار الحفظ…' : 'حفظ التغييرات'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>الهوية الضريبية للمنصة</CardTitle>
+              <CardDescription>
+                تظهر كبائع في فواتير العمولة الضريبية. عبّئها بالبيانات الرسمية لنقلة قبل إطلاق المنصة.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 max-w-2xl">
+              <div className="space-y-2">
+                <Label htmlFor="platform-name-ar">اسم المنصة (عربي)</Label>
+                <Input id="platform-name-ar" value={platformNameAr} onChange={(e) => setPlatformNameAr(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="platform-vat">الرقم الضريبي (15 رقماً)</Label>
+                <Input id="platform-vat" value={platformVat} inputMode="numeric" maxLength={15} dir="ltr"
+                  placeholder="3xxxxxxxxxxxxx3"
+                  onChange={(e) => setPlatformVat(e.target.value.replace(/\D/g, '').slice(0, 15))} />
+                {platformVatInvalid && <p className="text-xs text-destructive">الرقم الضريبي يجب أن يكون 15 رقماً بالضبط.</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="platform-cr">رقم السجل التجاري</Label>
+                <Input id="platform-cr" value={platformCr} inputMode="numeric" dir="ltr"
+                  onChange={(e) => setPlatformCr(e.target.value.replace(/\D/g, ''))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="platform-address">العنوان</Label>
+                <Input id="platform-address" value={platformAddress} onChange={(e) => setPlatformAddress(e.target.value)} />
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <Button onClick={saveTaxIdentity} disabled={savingTaxIdentity || platformVatInvalid}>
+                  {savingTaxIdentity ? 'جار الحفظ…' : 'حفظ الهوية الضريبية'}
                 </Button>
               </div>
             </CardContent>

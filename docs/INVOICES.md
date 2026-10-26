@@ -38,13 +38,16 @@ row**, so `issuerId` is `null` there. Its legal identity is read from settings:
 | `platform_cr_number` | Platform commercial register |
 | `platform_address` | Platform address |
 
-Set these in production from env (Coolify) with
-`pnpm --filter @naqla/api db:ensure-platform-identity` (`PLATFORM_VAT_NUMBER`,
-`PLATFORM_CR_NUMBER`, `PLATFORM_NAME_AR`, `PLATFORM_ADDRESS`) — part of
-[`scripts/deploy-db.sh`](../scripts/deploy-db.sh).
+Edit these from the **admin panel** — Settings → Financial → «الهوية الضريبية
+للمنصة» — which writes the same setting keys. `db:ensure-platform-identity`
+(part of `db:deploy`) only guarantees the rows exist after a fresh deploy,
+seeding placeholders when missing; an optional env override
+(`PLATFORM_VAT_NUMBER` / `PLATFORM_CR_NUMBER` / `PLATFORM_NAME_AR` /
+`PLATFORM_ADDRESS`) exists for CI/bootstrap only.
 
-> ⚠️ The seeded `platform_vat_number` (`300000000000003`) is a **test** value —
-> replace it with Naqla's real VAT number before issuing production invoices.
+> ⚠️ The seeded `platform_vat_number` (`300000000000003`) is a **placeholder** —
+> set Naqla's real VAT number from the admin panel before issuing production
+> invoices.
 
 ---
 

@@ -1,21 +1,21 @@
 /**
- * Create or update the platform's legal tax identity — WITHOUT any demo data.
+ * Ensure the platform's legal tax-identity settings EXIST (the seller on every
+ * commission tax invoice — see docs/INVOICES.md), so the invoice generator
+ * always finds a row. WITHOUT any demo data.
  *
- * These settings are the **seller** on every platform commission tax invoice
- * (see docs/INVOICES.md), so they must be set before any order completes in
- * production. Set them as environment variables (Coolify) and run:
+ * The identity is normally edited from the **admin panel**
+ * (Settings → Financial → «الهوية الضريبية للمنصة»), which writes the same
+ * setting keys. This script just guarantees the rows are present after a fresh
+ * deploy, seeding safe placeholders when they are missing. Run:
  *
  *   node dist/prisma/ensure-platform-identity.js   # in the API container
  *   # or locally:  pnpm --filter @naqla/api db:ensure-platform-identity
  *
- * Env (all optional; existing values are kept when the matching env is unset):
- *   PLATFORM_VAT_NUMBER   — 15-digit ZATCA VAT number (REQUIRED for real invoices)
- *   PLATFORM_CR_NUMBER    — commercial register number
- *   PLATFORM_NAME_AR      — legal name (Arabic)
- *   PLATFORM_ADDRESS      — address line
+ * Optional env override (CI/bootstrap only; the admin panel is the usual path):
+ *   PLATFORM_VAT_NUMBER / PLATFORM_CR_NUMBER / PLATFORM_NAME_AR / PLATFORM_ADDRESS
+ * When a var is unset, any existing value is kept untouched.
  *
- * Idempotent: each key is upserted individually, so existing settings and all
- * other data are left untouched.
+ * Idempotent: each key is upserted individually; other data is never touched.
  */
 import { PrismaClient } from '../src/generated/prisma';
 
@@ -52,7 +52,7 @@ async function main() {
 
   const vat = await prisma.setting.findUnique({ where: { key: 'platform_vat_number' } });
   if (!vat?.value || vat.value === '300000000000003') {
-    console.warn('⚠️  platform_vat_number is empty or the test value — set PLATFORM_VAT_NUMBER to Naqla\'s real VAT number before issuing production invoices.');
+    console.warn('⚠️  platform_vat_number is empty or a placeholder — set Naqla\'s real VAT number from the admin panel (Settings → Financial) before issuing production invoices.');
   }
   console.log('✅ Platform tax identity ready.');
 }
