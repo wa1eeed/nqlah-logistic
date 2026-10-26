@@ -95,10 +95,11 @@
    أو يدوياً، بنفس الترتيب:
    - **migrations:** `npx prisma migrate deploy` (لا `migrate dev` في staging/prod)
    - **الأدمن:** production → `pnpm --filter @naqla/api db:ensure-admin` (من الـ env، بلا بيانات تجريبية)؛ staging → `pnpm db:seed` (أدمن + بيانات تجريبية). لتغيير بيانات الأدمن لاحقاً: حدّث `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` ثم أعد تشغيل `db:ensure-admin`.
-   - **الهوية الضريبية للمنصّة:** `pnpm --filter @naqla/api db:ensure-platform-identity` — يضبط البائع في فواتير العمولة من الـ env (`PLATFORM_VAT_NUMBER` 15 رقماً، `PLATFORM_CR_NUMBER`، `PLATFORM_NAME_AR`، `PLATFORM_ADDRESS`). راجع [`INVOICES.md`](INVOICES.md).
+   - **الهوية الضريبية للمنصّة:** `pnpm --filter @naqla/api db:ensure-platform-identity` — يضمن فقط وجود صفوف الإعدادات (ببيانات مبدئية إن كانت مفقودة) حتى لا تنكسر الفوترة. تُحرَّر فعلياً من **لوحة الأدمن** (الإعدادات ← المالية ← «الهوية الضريبية للمنصة»). راجع [`INVOICES.md`](INVOICES.md).
 
-   > ⚠️ اضبط `PLATFORM_VAT_NUMBER` على الرقم الضريبي الحقيقي لنقلة في Coolify **قبل**
-   > أن يُكمَل أي طلب في production — وإلا ستصدر فواتير العمولة برقم فارغ/تجريبي.
+   > ⚠️ الهوية الضريبية (الرقم الضريبي، السجل، الاسم، العنوان) تُدار من لوحة الأدمن —
+   > **لا** من متغيّرات Coolify. عبّئها بالبيانات الرسمية لنقلة من اللوحة **قبل** أن يُكمَل
+   > أي طلب في production، وإلا ستصدر فواتير العمولة ببيانات مبدئية.
 
 11. **تحقّق بعد النشر** (قراءة فقط، آمن على staging/production) — يؤكّد أن البناء
     المنشور حيّ ويحمل فعلاً أعمال المالية/الضرائب ومحرك السياسات:
