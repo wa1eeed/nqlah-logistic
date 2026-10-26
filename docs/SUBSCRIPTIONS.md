@@ -92,7 +92,19 @@ Module `apps/api/src/modules/policies/`:
 (free toggle, base price, yearly discount, truck limit, trial, module multi-select,
 live computed price); the **موديولز الباقات** tab manages the priced catalog.
 
-## 7. Bootstrapping an environment
+## 7. Deleting a plan (safe delete)
+
+A plan with subscribers can't be deleted blindly. `DELETE /policies/plans/:id`:
+
+- with subscribers and no option → refuses with `PLAN_HAS_SUBSCRIBERS` + the count;
+- `?reassignTo=<planId>` → moves every subscriber to that plan, then deletes;
+- `?detach=true` → cancels their subscriptions (they fall back to the default
+  policy), then deletes.
+
+The admin plan-delete dialog offers "transfer to …" or "detach". A **policy
+profile** backing one or more plans is likewise protected (`GROUP_IN_USE`).
+
+## 8. Bootstrapping an environment
 
 Plans/modules aren't demo data, so they're provisioned by
 `pnpm --filter @naqla/api db:ensure-plans` (`apps/api/prisma/ensure-plans.ts`),
@@ -102,12 +114,12 @@ demo data** — safe in production — and leaves later admin edits untouched. I
 default carrier plan exists it marks Basic as the default. Edit everything
 afterwards from the admin panel.
 
-## 8. Deferred (next)
+## 9. Deferred (next)
 
 - **Payment + auto-renewal**: charge the price snapshot, advance periods, dunning
   for `PAST_DUE`, proration on upgrade/downgrade, subscription invoices.
 - **Self-service billing page** (carrier/client): upgrade / downgrade / cancel.
 
-## 9. Changelog anchors
+## 10. Changelog anchors
 
 - v0.9.80 — subscription plans (dynamic pricing + lifecycle + signup binding).

@@ -130,8 +130,8 @@ export class PoliciesController {
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
   @Audit({ action: 'policy.plan.delete', resourceType: 'Plan', idFrom: 'param', idKey: 'id' })
-  deletePlan(@Param('id') id: string) {
-    return this.policies.deletePlan(id);
+  deletePlan(@Param('id') id: string, @Query('reassignTo') reassignTo?: string, @Query('detach') detach?: string) {
+    return this.policies.deletePlan(id, { reassignToId: reassignTo || undefined, detach: detach === 'true' });
   }
 
   @Post('assign-plan')

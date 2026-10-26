@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import type { Plan, PlanModule } from '@naqla/shared-utils';
 
 type Profile = { id: string; name: string };
@@ -114,9 +115,18 @@ export function PlansPanel() {
       setOpen(false); revalidate();
     } catch (e) { notify.error(e); }
   };
-  const remove = async (p: Plan) => {
-    try { await api.delete(`/policies/plans/${p.id}`); notify.success('تم حذف الباقة', p.name); revalidate(); }
-    catch (e) { notify.error(e); }
+  // Dependency-aware delete: a plan with subscribers needs a decision first.
+  const [delPlan, setDelPlan] = useState<Plan | null>(null);
+  const [reassignTo, setReassignTo] = useState<string>('');
+  const subscriberCount = delPlan?._count?.companies ?? 0;
+  const reassignTargets = delPlan ? plans.filter((x) => x.id !== delPlan.id && x.active && (x.audience === delPlan.audience || x.audience === 'BOTH' || delPlan.audience === 'BOTH')) : [];
+  const confirmDelete = async () => {
+    if (!delPlan) return;
+    let url = `/policies/plans/${delPlan.id}`;
+    if (subscriberCount > 0) url += reassignTo === '__detach__' ? '?detach=true' : `?reassignTo=${reassignTo}`;
+    await api.delete(url);
+    notify.success('تم حذف الباقة', delPlan.name);
+    setDelPlan(null); revalidate();
   };
 
   return (
@@ -177,7 +187,7 @@ export function PlansPanel() {
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => remove(p)}><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { setDelPlan(p); setReassignTo(''); }}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </div>
             </div>
@@ -296,6 +306,34 @@ export function PlansPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation — with subscriber transfer/detach when needed. */}
+      <ConfirmDialog
+        open={!!delPlan}
+        onOpenChange={(v) => { if (!v) setDelPlan(null); }}
+        title={`حذف «${delPlan?.name ?? ''}»`}
+        description={subscriberCount > 0
+          ? `لهذه الباقة ${subscriberCount} مشترك. اختر وجهتهم قبل الحذف.`
+          : 'لا يمكن التراجع عن هذا الإجراء.'}
+        confirmLabel="حذف الباقة"
+        confirmDisabled={subscriberCount > 0 && !reassignTo}
+        onConfirm={confirmDelete}
+      >
+        {subscriberCount > 0 && (
+          <div className="space-y-2">
+            <Label>وجهة المشتركين</Label>
+            <Select value={reassignTo || undefined} onValueChange={setReassignTo}>
+              <SelectTrigger><SelectValue placeholder="اختر…" /></SelectTrigger>
+              <SelectContent>
+                {reassignTargets.map((x) => (
+                  <SelectItem key={x.id} value={x.id}>تحويل إلى: {x.name}{x.isFree ? ' (مجانية)' : ` (${(x.price?.monthly ?? 0).toLocaleString('en-US')} ر.س)`}</SelectItem>
+                ))}
+                <SelectItem value="__detach__">فصلهم (يعودون للباقة/السياسة الافتراضية)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </ConfirmDialog>
     </Card>
   );
 }

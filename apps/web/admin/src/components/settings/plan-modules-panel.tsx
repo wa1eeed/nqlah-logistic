@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import type { PlanModule } from '@naqla/shared-utils';
 
 const AUDIENCES: { value: 'CLIENT' | 'CARRIER' | 'BOTH'; label: string; icon: typeof Users }[] = [
@@ -67,9 +68,12 @@ export function PlanModulesPanel() {
       setOpen(false); revalidate();
     } catch (e) { notify.error(e); }
   };
-  const remove = async (m: PlanModule) => {
-    try { await api.delete(`/policies/plan-modules/${m.id}`); notify.success('تم حذف الموديول', m.name); revalidate(); }
-    catch (e) { notify.error(e); }
+  const [delMod, setDelMod] = useState<PlanModule | null>(null);
+  const confirmDelete = async () => {
+    if (!delMod) return;
+    await api.delete(`/policies/plan-modules/${delMod.id}`);
+    notify.success('تم حذف الموديول', delMod.name);
+    setDelMod(null); revalidate();
   };
 
   return (
@@ -109,7 +113,7 @@ export function PlanModulesPanel() {
               </div>
               <div className="flex gap-1 shrink-0">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(m)}><Pencil className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => remove(m)}><Trash2 className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDelMod(m)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </div>
           );
@@ -154,6 +158,17 @@ export function PlanModulesPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!delMod}
+        onOpenChange={(v) => { if (!v) setDelMod(null); }}
+        title={`حذف «${delMod?.name ?? ''}»`}
+        description={(delMod?._count?.plans ?? 0) > 0
+          ? `هذا الموديول مستخدم في ${delMod?._count?.plans} باقة — سيُزال منها وينخفض سعرها تلقائياً.`
+          : 'لا يمكن التراجع عن هذا الإجراء.'}
+        confirmLabel="حذف الموديول"
+        onConfirm={confirmDelete}
+      />
     </Card>
   );
 }

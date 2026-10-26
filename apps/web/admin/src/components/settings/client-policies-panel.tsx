@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usePolicyStore } from '@/stores/policy-store';
 import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { COMPANIES, type ClientPolicy, type PolicyGroup } from '@naqla/shared-utils';
 
 type Co = { id: string; nameAr: string };
@@ -85,9 +86,13 @@ export function ClientPoliciesPanel() {
     if (apiMode) { try { await api.put(`/policies/groups/${id}`, { name, description }); revalidate(); } catch (e) { notify.error(e); } }
     else renameGroup(id, name, description);
   };
-  const doRemove = async (id: string) => {
-    if (apiMode) { try { await api.delete(`/policies/groups/${id}`); revalidate(); } catch (e) { notify.error(e); } }
-    else removeGroup(id);
+  const [delGroup, setDelGroup] = useState<{ id: string; name: string } | null>(null);
+  const confirmRemove = async () => {
+    if (!delGroup) return;
+    if (apiMode) await api.delete(`/policies/groups/${delGroup.id}`); // throws GROUP_IN_USE → surfaced
+    else removeGroup(delGroup.id);
+    notify.success('تم حذف الملف', delGroup.name);
+    setDelGroup(null); revalidate();
   };
   const doSetPolicy = async (id: string, policy: ClientPolicy) => {
     if (apiMode) { try { await api.put(`/policies/groups/${id}`, { policy }); revalidate(); } catch (e) { notify.error(e); } }
@@ -154,7 +159,7 @@ export function ClientPoliciesPanel() {
             carrierGroups={carrierGroups}
             clientName={clientName}
             onEdit={() => openEdit(g)}
-            onDelete={() => { doRemove(g.id); notify.success('تم حذف القروب', g.name); }}
+            onDelete={() => setDelGroup({ id: g.id, name: g.name })}
             onPolicyChange={(policy) => doSetPolicy(g.id, policy)}
             onAssign={(clientId, groupId) => doAssign(clientId, groupId)}
           />
@@ -200,6 +205,15 @@ export function ClientPoliciesPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!delGroup}
+        onOpenChange={(v) => { if (!v) setDelGroup(null); }}
+        title={`حذف ملف السياسة «${delGroup?.name ?? ''}»`}
+        description="العملاء المرتبطون يعودون للإعدادات الافتراضية. إن كان الملف مرتبطاً بباقات فلن يُحذف حتى تُزيلها أولاً."
+        confirmLabel="حذف الملف"
+        onConfirm={confirmRemove}
+      />
     </Card>
   );
 }
