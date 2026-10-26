@@ -4,6 +4,7 @@ import { normalizeSaudiPhone } from '@naqla/shared-utils';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateDriverDto, CreateTruckDto, InviteDriverDto, LocationDto, UpdateTruckDto } from './dto/fleet.dto';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
+import { driverCode } from '../../common/codes';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 type TruckStatusValue = 'AVAILABLE' | 'ON_TRIP' | 'MAINTENANCE' | 'OFF_DUTY';
@@ -161,6 +162,7 @@ export class FleetService {
     if (!actor.companyId) throw new BadRequestException({ code: 'NO_COMPANY', message: 'لا توجد شركة' });
     return this.prisma.driverProfile.create({
       data: {
+        code: driverCode(),
         userId: dto.userId,
         companyId: actor.companyId,
         licenseNumber: dto.licenseNumber,
@@ -204,6 +206,7 @@ export class FleetService {
       });
       return tx.driverProfile.create({
         data: {
+          code: driverCode(),
           userId: user.id,
           companyId: actor.companyId!,
           licenseNumber: dto.licenseNumber,

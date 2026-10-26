@@ -24,6 +24,7 @@ import { formatDate, localizeCity } from '@naqla/shared-utils';
 
 type ApiDriver = {
   id: string;
+  code?: string | null;
   status: 'AVAILABLE' | 'ON_TRIP' | 'OFF_DUTY';
   licenseNumber: string;
   licenseExpiry: string;
@@ -46,7 +47,7 @@ export default function AdminDriversPage() {
   const [affiliation, setAffiliation] = useState<'ALL' | 'CARRIER' | 'INDEPENDENT'>('ALL');
   const isIndependent = (d: ApiDriver) => d.company?.entityType === 'INDIVIDUAL';
 
-  const { data: raw } = useSWR<ApiDriver[] | { items?: ApiDriver[] }>('/admin/drivers?limit=200', fetcher);
+  const { data: raw } = useSWR<ApiDriver[] | { items?: ApiDriver[] }>('/admin/drivers?limit=100', fetcher);
   const apiDrivers: ApiDriver[] = useMemo(() => {
     if (!raw) return [];
     return Array.isArray(raw) ? raw : (raw as { items?: ApiDriver[] }).items ?? [];
@@ -206,7 +207,7 @@ export default function AdminDriversPage() {
                           </Avatar>
                           <div className="min-w-0">
                             <div className="font-medium truncate">{fullName}</div>
-                            <div className="text-xs text-muted-foreground font-mono">{d.id.slice(0, 8)}</div>
+                            <div className="text-xs text-muted-foreground font-mono">{d.code ?? d.id.slice(0, 8)}</div>
                           </div>
                         </div>
                       </TableCell>

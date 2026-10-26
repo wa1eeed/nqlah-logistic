@@ -6,3 +6,6 @@ const gen = customAlphabet(alphabet, 6);
 
 /** A short, human-friendly public company reference, e.g. "NQ-7K4F2P". */
 export const companyCode = (): string => `NQ-${gen()}`;
+
+/** A short, human-friendly public driver reference, e.g. "DR-7K4F2P". */
+export const driverCode = (): string => `DR-${gen()}`;

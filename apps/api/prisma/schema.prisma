@@ -366,6 +366,9 @@ model Truck {
 
 model DriverProfile {
   id        String  @id @default(cuid())
+  /// Short, human-friendly public reference (e.g. "DR-7K4F2P") shown in the UI
+  /// instead of the raw cuid.
+  code      String? @unique
   userId    String  @unique
   user      User    @relation(fields: [userId], references: [id])
   companyId String
