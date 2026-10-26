@@ -37,6 +37,9 @@ export class RegisterDto {
   @IsEnum(['COMPANY', 'INDIVIDUAL'] as const, { message: 'نوع الكيان غير صالح' })
   accountType?: 'COMPANY' | 'INDIVIDUAL';
 
+  // The subscription plan chosen at signup (optional → the default plan is used).
+  @IsOptional() @IsString() planId?: string;
+
   // National ID — relevant for an individual operator.
   @IsOptional() @IsString() nationalId?: string;
 

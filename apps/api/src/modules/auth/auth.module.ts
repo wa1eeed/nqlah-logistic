@@ -7,6 +7,7 @@ import { AdminAuthService } from './admin-auth.service';
 import { LoginAttemptService } from '../../common/security/login-attempt.service';
 import { OtpService } from '../../common/security/otp.service';
 import { TokenBlacklistService } from '../../common/security/token-blacklist.service';
+import { PoliciesModule } from '../policies/policies.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { TokenBlacklistService } from '../../common/security/token-blacklist.ser
       secret: process.env.JWT_SECRET ?? 'change-me',
       signOptions: { expiresIn: process.env.JWT_EXPIRES_IN ?? process.env.JWT_ACCESS_TTL ?? '10h' },
     }),
+    PoliciesModule,
   ],
   controllers: [AuthController, AdminAuthController],
   providers: [

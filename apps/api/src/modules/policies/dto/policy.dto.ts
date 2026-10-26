@@ -33,7 +33,22 @@ export class ClientPolicyDto {
   @IsOptional() @IsBoolean() priceVatInclusive?: boolean;
 }
 
-export class CreatePlanDto {
+const BILLING_CYCLES = ['MONTHLY', 'YEARLY'] as const;
+
+/** Subscription-pricing fields shared by create/update plan. */
+class PlanPricingDto {
+  @IsOptional() @IsBoolean() isFree?: boolean;
+  @IsOptional() @IsNumber() @Min(0) basePrice?: number;
+  @IsOptional() @IsEnum(BILLING_CYCLES) billingCycle?: (typeof BILLING_CYCLES)[number];
+  @IsOptional() @IsNumber() @Min(0) @Max(100) yearlyDiscountPct?: number;
+  @IsOptional() @IsNumber() @Min(0) includedTruckLimit?: number | null;
+  @IsOptional() @IsNumber() @Min(0) trialDays?: number;
+  @IsOptional() @IsNumber() sortOrder?: number;
+  /// The PlanModule ids this plan includes (drives features + price).
+  @IsOptional() @IsArray() @IsString({ each: true }) moduleIds?: string[];
+}
+
+export class CreatePlanDto extends PlanPricingDto {
   @IsString() name!: string;
   @IsOptional() @IsString() nameEn?: string;
   @IsOptional() @IsString() description?: string;
@@ -45,7 +60,7 @@ export class CreatePlanDto {
   @IsOptional() @IsBoolean() active?: boolean;
 }
 
-export class UpdatePlanDto {
+export class UpdatePlanDto extends PlanPricingDto {
   @IsOptional() @IsString() name?: string;
   @IsOptional() @IsString() nameEn?: string;
   @IsOptional() @IsString() description?: string;
@@ -55,6 +70,27 @@ export class UpdatePlanDto {
   @IsOptional() @IsNumber() @Min(0) @Max(1) commissionRateOverride?: number | null;
   @IsOptional() @IsBoolean() isDefault?: boolean;
   @IsOptional() @IsBoolean() active?: boolean;
+}
+
+export class CreatePlanModuleDto {
+  @IsString() key!: string;
+  @IsString() name!: string;
+  @IsOptional() @IsString() nameEn?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsEnum(PLAN_AUDIENCES) audience?: (typeof PLAN_AUDIENCES)[number];
+  @IsOptional() @IsNumber() @Min(0) price?: number;
+  @IsOptional() @IsBoolean() active?: boolean;
+  @IsOptional() @IsNumber() sortOrder?: number;
+}
+
+export class UpdatePlanModuleDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() nameEn?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsEnum(PLAN_AUDIENCES) audience?: (typeof PLAN_AUDIENCES)[number];
+  @IsOptional() @IsNumber() @Min(0) price?: number;
+  @IsOptional() @IsBoolean() active?: boolean;
+  @IsOptional() @IsNumber() sortOrder?: number;
 }
 
 export class AssignPlanDto {

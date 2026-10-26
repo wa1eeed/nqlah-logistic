@@ -573,6 +573,19 @@ export interface GroupFeatures {
 }
 
 /** A commercial Plan / membership (باقة) that wraps a Policy Profile. */
+export interface PlanModule {
+  id: string;
+  key: string;
+  name: string;
+  nameEn?: string;
+  description?: string;
+  audience: 'CLIENT' | 'CARRIER' | 'BOTH';
+  price: number;
+  active: boolean;
+  sortOrder?: number;
+  _count?: { plans: number };
+}
+
 export interface Plan {
   id: string;
   name: string;
@@ -585,7 +598,19 @@ export interface Plan {
   policyGroupId: string;
   policyGroup?: { id: string; name: string };
   commissionRateOverride?: number | null;
-  _count?: { companies: number };
+  // Subscription pricing (dynamic: base + included modules).
+  isFree?: boolean;
+  basePrice?: number;
+  billingCycle?: 'MONTHLY' | 'YEARLY';
+  yearlyDiscountPct?: number;
+  includedTruckLimit?: number | null;
+  trialDays?: number;
+  sortOrder?: number;
+  moduleIds?: string[];
+  modules?: PlanModule[];
+  /** Computed by the API: { monthly, yearly, modulesTotal }. */
+  price?: { monthly: number; yearly: number; modulesTotal: number };
+  _count?: { companies: number; subscriptions?: number };
 }
 
 export const DEFAULT_CLIENT_POLICY: ClientPolicy = {

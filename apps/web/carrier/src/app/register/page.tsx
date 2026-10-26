@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -58,6 +58,8 @@ interface Form {
   hasInsurance: boolean;
   hasRefrigeration: boolean;
   primaryRegions: string[];
+  // Subscription plan chosen at signup (empty → default plan is used).
+  planId: string;
   // Step 3 — compliance docs
   docs: Record<string, File | null>;
   // Step 4 — bank
@@ -166,7 +168,7 @@ export default function CarrierRegisterPage() {
     vatChoice: '', vatNumber: '',
     city: '', region: '', address: '', yearsInBusiness: '',
     fleetSize: '', truckTypes: [], hasGps: true, hasInsurance: true, hasRefrigeration: false,
-    primaryRegions: [],
+    primaryRegions: [], planId: '',
     docs: {},
     iban: '', bankName: '', accountHolder: '',
     emailOtp: '', phoneOtp: '',
@@ -241,6 +243,7 @@ export default function CarrierRegisterPage() {
         // VAT (ZATCA): send the registration choice + the 15-digit number when registered.
         ...(form.vatChoice ? { vatRegistered: form.vatChoice === 'REGISTERED' } : {}),
         ...(form.vatChoice === 'REGISTERED' && form.vatNumber ? { vatNumber: form.vatNumber } : {}),
+        ...(form.planId ? { planId: form.planId } : {}),
         acceptedTerms: form.acceptTerms,
         acceptedPrivacy: form.acceptPrivacy,
         acceptedTransport: form.acceptTransport,
@@ -782,8 +785,63 @@ function StepFleet({
           <ToggleRow label={t('register.fleet.insuranceLabel')} desc={t('register.fleet.insuranceDesc')} checked={form.hasInsurance} onChange={(v) => set('hasInsurance', v)} />
           <ToggleRow label={t('register.fleet.refrigerationLabel')} desc={t('register.fleet.refrigerationDesc')} icon={Snowflake} checked={form.hasRefrigeration} onChange={(v) => set('hasRefrigeration', v)} />
         </div>
+
+        {/* Subscription plan selection (bound at signup). */}
+        <div className="space-y-2 pt-2 border-t">
+          <Label>اختر باقتك</Label>
+          <PlanPicker value={form.planId} onChange={(id) => set('planId', id)} />
+        </div>
       </div>
     </>
+  );
+}
+
+/** Carrier plan selection at signup — fetches the public plan list (no auth). */
+function PlanPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  const [plans, setPlans] = useState<Array<{ id: string; name: string; isFree: boolean; isDefault: boolean; price: { monthly: number }; includedTruckLimit: number | null; trialDays: number; modules: Array<{ key: string; name: string }> }>>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    api.get('/policies/plans/public?audience=CARRIER')
+      .then((r) => { if (alive) { const list = r.data?.data ?? []; setPlans(list); if (!value) { const def = list.find((p: { isDefault: boolean }) => p.isDefault) ?? list[0]; if (def) onChange(def.id); } } })
+      .catch(() => { /* non-blocking — default plan is applied server-side */ })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  if (loading) return <p className="text-xs text-muted-foreground">جارِ تحميل الباقات…</p>;
+  if (plans.length === 0) return <p className="text-xs text-muted-foreground">ستُطبَّق الباقة الافتراضية.</p>;
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      {plans.map((p) => {
+        const on = value === p.id;
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => onChange(p.id)}
+            className={cn(
+              'text-start p-3 rounded-xl border-2 transition-colors',
+              on ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40',
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-sm">{p.name}</span>
+              {on && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
+            </div>
+            <div className="mt-1 text-sm font-bold text-primary num">
+              {p.isFree ? 'مجانية' : <>{p.price.monthly.toLocaleString('en-US')} <span className="text-[11px] font-normal text-muted-foreground">ر.س/شهر</span></>}
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1 text-[10px] text-muted-foreground">
+              {p.includedTruckLimit != null && <span className="rounded bg-muted px-1.5 py-0.5 num">{p.includedTruckLimit} شاحنة</span>}
+              {p.trialDays > 0 && <span className="rounded bg-muted px-1.5 py-0.5 num">{p.trialDays} يوم تجربة</span>}
+              {p.modules.slice(0, 3).map((m) => <span key={m.key} className="rounded bg-muted px-1.5 py-0.5">{m.name}</span>)}
+              {p.modules.length > 3 && <span className="rounded bg-muted px-1.5 py-0.5 num">+{p.modules.length - 3}</span>}
+            </div>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

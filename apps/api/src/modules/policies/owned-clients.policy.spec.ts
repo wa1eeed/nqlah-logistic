@@ -12,7 +12,7 @@ function makeService(ownerByClient: Record<string, string | null>) {
     },
     policyGroup: { findFirst: jest.fn(async () => null) },
   };
-  return new PoliciesService(prisma as never);
+  return new PoliciesService(prisma as never, {} as never);
 }
 
 describe('PoliciesService sub-tenancy (owned clients)', () => {

@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { Prisma } from '../../generated/prisma';
+import { SubscriptionsService } from './subscriptions.service';
 import { CreateGroupDto, UpdateGroupDto } from './dto/policy.dto';
 
 type Features = Record<string, boolean | number> | undefined;
@@ -68,7 +69,7 @@ function toDto(g: GroupRow) {
 
 @Injectable()
 export class PoliciesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private subscriptions: SubscriptionsService) {}
 
   async listGroups() {
     const rows = await this.prisma.policyGroup.findMany({ orderBy: { createdAt: 'asc' } });
@@ -169,7 +170,10 @@ export class PoliciesService {
     if (!companyId) return DEFAULT_POLICY;
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
-      select: { ownerCarrierId: true, plan: { include: { policyGroup: true } } },
+      select: {
+        ownerCarrierId: true,
+        plan: { include: { policyGroup: true, modules: { include: { module: true } } } },
+      },
     });
     // 1. Sub-tenancy overrides everything.
     if (company?.ownerCarrierId) {
@@ -183,10 +187,22 @@ export class PoliciesService {
       };
     }
     // 2. Plan → its Policy Profile (with an optional plan-level commission override).
+    //    The plan's included priced modules each grant their feature key, and the
+    //    plan's included truck limit becomes the `maxFleetSize` capability limit —
+    //    layered on top of the profile's own features.
     if (company?.plan?.active && company.plan.policyGroup) {
       const policy = toDto(company.plan.policyGroup as GroupRow).policy;
       if (company.plan.commissionRateOverride != null) {
         policy.commissionRate = Number(company.plan.commissionRateOverride);
+      }
+      const planModuleKeys = (company.plan.modules ?? [])
+        .filter((m) => m.module.active)
+        .map((m) => m.module.key);
+      if (planModuleKeys.length || company.plan.includedTruckLimit != null) {
+        const features: Record<string, boolean | number> = { ...(policy.features ?? {}) };
+        for (const key of planModuleKeys) features[key] = true;
+        if (company.plan.includedTruckLimit != null) features.maxFleetSize = company.plan.includedTruckLimit;
+        policy.features = features;
       }
       return policy;
     }
@@ -316,39 +332,118 @@ export class PoliciesService {
 
   // ─── Plans (memberships) ─────────────────────────────────────
 
-  listPlans() {
-    return this.prisma.plan.findMany({
-      orderBy: [{ audience: 'asc' }, { createdAt: 'asc' }],
-      include: { policyGroup: { select: { id: true, name: true } }, _count: { select: { companies: true } } },
+  /** Compute a plan's prices from its base + included modules (the source of
+   *  truth for the "dynamic pricing" shown in the admin builder and at signup). */
+  private priceOf(plan: {
+    isFree: boolean; basePrice: Prisma.Decimal | number; yearlyDiscountPct: Prisma.Decimal | number;
+    modules?: Array<{ module: { price: Prisma.Decimal | number; active: boolean } }>;
+  }) {
+    const modulesTotal = (plan.modules ?? [])
+      .filter((m) => m.module.active)
+      .reduce((s, m) => s + Number(m.module.price), 0);
+    const monthly = plan.isFree ? 0 : +(Number(plan.basePrice) + modulesTotal).toFixed(2);
+    const discount = Number(plan.yearlyDiscountPct) || 0;
+    const yearly = +(monthly * 12 * (1 - discount / 100)).toFixed(2);
+    return { monthly, yearly, modulesTotal: +modulesTotal.toFixed(2) };
+  }
+
+  private planInclude = {
+    policyGroup: { select: { id: true, name: true } },
+    modules: { include: { module: true } },
+    _count: { select: { companies: true, subscriptions: true } },
+  } as const;
+
+  private toPlanDto = (plan: Prisma.PlanGetPayload<{ include: PoliciesService['planInclude'] }>) => ({
+    ...plan,
+    basePrice: Number(plan.basePrice),
+    yearlyDiscountPct: Number(plan.yearlyDiscountPct),
+    commissionRateOverride: plan.commissionRateOverride != null ? Number(plan.commissionRateOverride) : null,
+    moduleIds: plan.modules.map((m) => m.moduleId),
+    modules: plan.modules.map((m) => ({ ...m.module, price: Number(m.module.price) })),
+    price: this.priceOf(plan),
+  });
+
+  async listPlans() {
+    const plans = await this.prisma.plan.findMany({
+      orderBy: [{ audience: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
+      include: this.planInclude,
     });
+    return plans.map((p) => this.toPlanDto(p));
+  }
+
+  /** Public, slim list of the active plans offered to an audience at signup. */
+  async listPublicPlans(audience?: string) {
+    const aud = audience === 'CLIENT' || audience === 'CARRIER' ? audience : undefined;
+    const plans = await this.prisma.plan.findMany({
+      where: { active: true, ...(aud ? { audience: { in: [aud, 'BOTH'] } } : {}) },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      include: { modules: { include: { module: true } } },
+    });
+    return plans.map((p) => ({
+      id: p.id, name: p.name, nameEn: p.nameEn, description: p.description, tier: p.tier,
+      audience: p.audience, isFree: p.isFree, isDefault: p.isDefault,
+      includedTruckLimit: p.includedTruckLimit, trialDays: p.trialDays,
+      price: this.priceOf(p),
+      modules: p.modules.filter((m) => m.module.active).map((m) => ({ key: m.module.key, name: m.module.name, nameEn: m.module.nameEn, price: Number(m.module.price) })),
+    }));
+  }
+
+  async getPlan(id: string) {
+    const plan = await this.prisma.plan.findUnique({ where: { id }, include: this.planInclude });
+    if (!plan) throw new NotFoundException({ code: 'PLAN_NOT_FOUND', message: 'الباقة غير موجودة' });
+    return this.toPlanDto(plan);
+  }
+
+  private async validModuleIds(moduleIds: string[] | undefined) {
+    if (!moduleIds || moduleIds.length === 0) return [];
+    const found = await this.prisma.planModule.findMany({ where: { id: { in: moduleIds } }, select: { id: true } });
+    const set = new Set(found.map((m) => m.id));
+    const missing = moduleIds.filter((id) => !set.has(id));
+    if (missing.length) throw new NotFoundException({ code: 'PLAN_MODULE_NOT_FOUND', message: `موديول غير موجود: ${missing.join(', ')}` });
+    return moduleIds;
   }
 
   async createPlan(dto: {
     name: string; nameEn?: string; description?: string; tier?: string;
     audience?: string; policyGroupId: string; commissionRateOverride?: number;
     isDefault?: boolean; active?: boolean;
+    isFree?: boolean; basePrice?: number; billingCycle?: string; yearlyDiscountPct?: number;
+    includedTruckLimit?: number | null; trialDays?: number; sortOrder?: number; moduleIds?: string[];
   }) {
     await this.ensure(dto.policyGroupId); // the profile must exist
+    const moduleIds = await this.validModuleIds(dto.moduleIds);
     const plan = await this.prisma.plan.create({
       data: {
         name: dto.name, nameEn: dto.nameEn, description: dto.description, tier: dto.tier,
         audience: dto.audience ?? 'BOTH', policyGroupId: dto.policyGroupId,
         commissionRateOverride: dto.commissionRateOverride ?? null,
         isDefault: dto.isDefault ?? false, active: dto.active ?? true,
+        isFree: dto.isFree ?? true, basePrice: dto.basePrice ?? 0,
+        billingCycle: dto.billingCycle ?? 'MONTHLY', yearlyDiscountPct: dto.yearlyDiscountPct ?? 0,
+        includedTruckLimit: dto.includedTruckLimit ?? null, trialDays: dto.trialDays ?? 0,
+        sortOrder: dto.sortOrder ?? 0,
+        modules: { create: moduleIds.map((moduleId) => ({ moduleId })) },
       },
     });
     if (plan.isDefault) await this.clearOtherDefaults(plan.id, plan.audience);
-    return plan;
+    return this.getPlan(plan.id);
   }
 
   async updatePlan(id: string, dto: {
     name?: string; nameEn?: string; description?: string; tier?: string;
     audience?: string; policyGroupId?: string; commissionRateOverride?: number | null;
     isDefault?: boolean; active?: boolean;
+    isFree?: boolean; basePrice?: number; billingCycle?: string; yearlyDiscountPct?: number;
+    includedTruckLimit?: number | null; trialDays?: number; sortOrder?: number; moduleIds?: string[];
   }) {
     const existing = await this.prisma.plan.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException({ code: 'PLAN_NOT_FOUND', message: 'الباقة غير موجودة' });
     if (dto.policyGroupId) await this.ensure(dto.policyGroupId);
+    // Replace the module set when moduleIds is provided.
+    if (dto.moduleIds !== undefined) {
+      await this.validModuleIds(dto.moduleIds);
+      await this.prisma.planModuleLink.deleteMany({ where: { planId: id } });
+    }
     const plan = await this.prisma.plan.update({
       where: { id },
       data: {
@@ -356,10 +451,15 @@ export class PoliciesService {
         audience: dto.audience, policyGroupId: dto.policyGroupId,
         ...(dto.commissionRateOverride !== undefined ? { commissionRateOverride: dto.commissionRateOverride } : {}),
         isDefault: dto.isDefault, active: dto.active,
+        isFree: dto.isFree, basePrice: dto.basePrice,
+        billingCycle: dto.billingCycle, yearlyDiscountPct: dto.yearlyDiscountPct,
+        ...(dto.includedTruckLimit !== undefined ? { includedTruckLimit: dto.includedTruckLimit } : {}),
+        trialDays: dto.trialDays, sortOrder: dto.sortOrder,
+        ...(dto.moduleIds !== undefined ? { modules: { create: dto.moduleIds.map((moduleId) => ({ moduleId })) } } : {}),
       },
     });
     if (plan.isDefault) await this.clearOtherDefaults(plan.id, plan.audience);
-    return plan;
+    return this.getPlan(plan.id);
   }
 
   async deletePlan(id: string) {
@@ -373,15 +473,71 @@ export class PoliciesService {
     return { id };
   }
 
-  /** Subscribe a company to a plan (or clear it). */
+  // ─── Plan modules (priced capability catalog) ────────────────
+
+  async listPlanModules() {
+    const mods = await this.prisma.planModule.findMany({
+      orderBy: [{ audience: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
+      include: { _count: { select: { plans: true } } },
+    });
+    return mods.map((m) => ({ ...m, price: Number(m.price) }));
+  }
+
+  async createPlanModule(dto: {
+    key: string; name: string; nameEn?: string; description?: string;
+    audience?: string; price?: number; active?: boolean; sortOrder?: number;
+  }) {
+    const exists = await this.prisma.planModule.findUnique({ where: { key: dto.key } });
+    if (exists) throw new BadRequestException({ code: 'PLAN_MODULE_KEY_TAKEN', message: 'مفتاح الموديول مستخدم بالفعل' });
+    const m = await this.prisma.planModule.create({
+      data: {
+        key: dto.key, name: dto.name, nameEn: dto.nameEn, description: dto.description,
+        audience: dto.audience ?? 'CARRIER', price: dto.price ?? 0,
+        active: dto.active ?? true, sortOrder: dto.sortOrder ?? 0,
+      },
+    });
+    return { ...m, price: Number(m.price) };
+  }
+
+  async updatePlanModule(id: string, dto: {
+    name?: string; nameEn?: string; description?: string;
+    audience?: string; price?: number; active?: boolean; sortOrder?: number;
+  }) {
+    const existing = await this.prisma.planModule.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException({ code: 'PLAN_MODULE_NOT_FOUND', message: 'الموديول غير موجود' });
+    const m = await this.prisma.planModule.update({
+      where: { id },
+      data: {
+        name: dto.name, nameEn: dto.nameEn, description: dto.description,
+        audience: dto.audience, price: dto.price, active: dto.active, sortOrder: dto.sortOrder,
+      },
+    });
+    return { ...m, price: Number(m.price) };
+  }
+
+  async deletePlanModule(id: string) {
+    const m = await this.prisma.planModule.findUnique({ where: { id } });
+    if (!m) throw new NotFoundException({ code: 'PLAN_MODULE_NOT_FOUND', message: 'الموديول غير موجود' });
+    await this.prisma.planModule.delete({ where: { id } }); // cascades its plan links
+    return { id };
+  }
+
+  /**
+   * Admin: subscribe a company to a plan (creates/switches its subscription) or
+   * clear it (cancels the subscription immediately). Delegates the lifecycle to
+   * SubscriptionsService so Company.planId and the Subscription record stay in sync.
+   */
   async assignPlan(companyId: string, planId: string | null | undefined) {
     const company = await this.prisma.company.findUnique({ where: { id: companyId }, select: { id: true } });
     if (!company) throw new NotFoundException({ code: 'COMPANY_NOT_FOUND', message: 'الشركة غير موجودة' });
     if (planId) {
-      const plan = await this.prisma.plan.findUnique({ where: { id: planId }, select: { id: true } });
-      if (!plan) throw new NotFoundException({ code: 'PLAN_NOT_FOUND', message: 'الباقة غير موجودة' });
+      await this.subscriptions.subscribe(companyId, planId);
+    } else {
+      // Clear the plan + cancel any subscription immediately.
+      const existing = await this.prisma.subscription.findUnique({ where: { companyId }, select: { companyId: true } });
+      if (existing) await this.subscriptions.cancel(companyId, false);
+      else await this.prisma.company.update({ where: { id: companyId }, data: { planId: null } });
     }
-    await this.prisma.company.update({ where: { id: companyId }, data: { planId: planId ?? null } });
     return { companyId, planId: planId ?? null };
   }
 
