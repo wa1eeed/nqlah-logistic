@@ -420,11 +420,18 @@ model Order {
   orderNumber String      @unique @default(cuid())
   status      OrderStatus @default(DRAFT)
 
-  /// "OPEN" → all carriers can bid; "DIRECT" → only targetCarrier sees it.
+  /// ASSIGNMENT — how the order reaches carriers: "OPEN" → published to the
+  /// market (all eligible carriers); "DIRECT" → only `targetCarrier` sees it.
   /// String (not enum) so we can add modes without a migration; validated at the DTO.
   mode            String   @default("OPEN")
   targetCarrierId String?
   targetCarrier   Company? @relation("TargetCarrierOrders", fields: [targetCarrierId], references: [id])
+
+  /// PRICING — how the price is set, independent of assignment: "BIDDING"
+  /// (مناقصة — carriers propose a price) | "FIXED" (the client sets the price;
+  /// carriers accept it). A FIXED market order carries `agreedPrice` from
+  /// creation; a BIDDING order gets it when a bid is accepted.
+  priceMode String @default("BIDDING")
 
   /// "SAME_CITY" | "INTER_CITY" — drives Wizard UI + distance/route assumptions.
   tripType     String @default("INTER_CITY")

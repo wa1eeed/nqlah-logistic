@@ -75,8 +75,18 @@ export class BidsService {
     if (existing && existing.status === 'ACCEPTED') {
       throw new BadRequestException({ code: 'BID_LOCKED', message: 'العرض مقبول بالفعل' });
     }
+    // FIXED pricing: the client set the price, so a carrier "accepting" the order
+    // can't negotiate it — lock the bid amount to the order's (or leg's) price.
+    let amount = dto.amount;
+    if (order.priceMode === 'FIXED') {
+      const legPrice = orderLegId
+        ? (await this.prisma.orderLeg.findUnique({ where: { id: orderLegId }, select: { price: true } }))?.price
+        : null;
+      const fixed = legPrice ?? order.agreedPrice;
+      if (fixed != null) amount = Number(fixed);
+    }
     const data = {
-      amount: dto.amount,
+      amount,
       estimatedDays: dto.estimatedDays ?? 0,
       estimatedHours: dto.estimatedHours,
       proposedPickupDate: dto.proposedPickupDate ? new Date(dto.proposedPickupDate) : null,

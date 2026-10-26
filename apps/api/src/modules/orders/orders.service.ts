@@ -293,8 +293,11 @@ export class OrdersService {
     // so ungrouped clients are unaffected; a group can disable market/direct,
     // pin every order to one carrier, or forbid a pricing mode.
     const sourcing = await this.resolveSourcing(dto, actor.companyId, legTotal);
-    // Pre-seed financials for a DIRECT upfront-priced order (commission + VAT).
-    const fixedFin = sourcing.fixedPrice != null
+    // Pre-seed the carrier split (commission + VAT) only when the carrier is
+    // already known — a DIRECT fixed-price order. An OPEN fixed-price order
+    // stores its agreed price now but resolves the split when a carrier is
+    // chosen (bid accepted), since the carrier's VAT status is unknown yet.
+    const fixedFin = (sourcing.fixedPrice != null && sourcing.targetCarrierId)
       ? await this.resolveFinancials(sourcing.fixedPrice, actor.companyId, sourcing.targetCarrierId)
       : null;
 
@@ -309,11 +312,14 @@ export class OrdersService {
         stops: { create: stopRows },
         // v0.6.0 workflow fields — resolved against the client's policy above.
         mode: sourcing.mode,
+        priceMode: sourcing.priceMode,
         targetCarrierId: sourcing.targetCarrierId,
         collectionMethod: sourcing.collectionMethod,
-        // Pre-seed agreed price + commission/VAT for a DIRECT upfront-priced order.
+        // A fixed price is stored up front (OPEN or DIRECT). The carrier split is
+        // pre-seeded only when the carrier is known (DIRECT); otherwise it is
+        // resolved at bid-accept.
+        ...(sourcing.fixedPrice != null ? { agreedPrice: sourcing.fixedPrice } : {}),
         ...(fixedFin ? {
-          agreedPrice:         sourcing.fixedPrice,
           commissionAmount:    fixedFin.commission,
           carrierAmount:       fixedFin.carrierAmount,
           serviceVatAmount:    fixedFin.serviceVat,
@@ -680,20 +686,27 @@ export class OrdersService {
         throw new ForbiddenException({ code: 'POLICY_CARRIER_NOT_VISIBLE', message: 'المزوّد غير متاح لهذا العميل' });
       }
     }
-    // A heterogeneous consolidated order's fixed price is the sum of its legs'
-    // prices; a single/homogeneous order uses the upfront price. Either is
-    // "fixed pricing" and gated by the same policy toggle.
-    const upfront = dto.agreedPriceUpfront != null ? dto.agreedPriceUpfront : (legTotal ?? null);
-    const fixedPrice = mode === 'DIRECT' && upfront != null ? upfront : null;
-    if (fixedPrice != null && !policy.allowFixedPricing) {
+    // PRICING is independent of ASSIGNMENT. FIXED = the client set the price;
+    // BIDDING (مناقصة) = carriers propose it. FIXED works with the market too:
+    // an OPEN+FIXED order is published at a set price and carriers accept it.
+    //   • an explicit `agreedPriceUpfront` ⇒ FIXED (any mode — this is what makes
+    //     OPEN+FIXED possible).
+    //   • a heterogeneous order's summed leg prices ⇒ FIXED only when DIRECT
+    //     (auto-assign); an OPEN heterogeneous order keeps per-leg BIDDING so
+    //     carriers can bid on individual legs.
+    const explicitFixed = dto.agreedPriceUpfront != null;
+    const legFixed = !explicitFixed && legTotal != null && mode === 'DIRECT';
+    const priceMode: 'FIXED' | 'BIDDING' = (explicitFixed || legFixed) ? 'FIXED' : 'BIDDING';
+    const fixedPrice = explicitFixed ? dto.agreedPriceUpfront! : (legFixed ? legTotal! : null);
+    if (priceMode === 'FIXED' && !policy.allowFixedPricing) {
       throw new ForbiddenException({ code: 'POLICY_FIXED_PRICING_DISABLED', message: 'التسعير الثابت غير مسموح لهذا العميل' });
     }
-    if (mode === 'OPEN' && !policy.allowMarketPricing) {
-      throw new ForbiddenException({ code: 'POLICY_MARKET_PRICING_DISABLED', message: 'تسعير السوق غير مسموح لهذا العميل' });
+    if (priceMode === 'BIDDING' && !policy.allowMarketPricing) {
+      throw new ForbiddenException({ code: 'POLICY_BIDDING_DISABLED', message: 'التسعير بالمناقصة غير مسموح لهذا العميل' });
     }
     // Collection method is validated against the same policy (allowPrepaid/allowCOD).
     const collectionMethod = this.collection.resolveMethod(dto.collectionMethod, policy);
-    return { mode, targetCarrierId, fixedPrice, collectionMethod };
+    return { mode, targetCarrierId, fixedPrice, priceMode, collectionMethod };
   }
 
   /**

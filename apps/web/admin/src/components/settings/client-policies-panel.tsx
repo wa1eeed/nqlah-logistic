@@ -32,7 +32,7 @@ const ASSIGN_DEFAULTS = [
 ];
 const PRICING_DEFAULTS = [
   { value: 'none',   label: 'بدون افتراضي' },
-  { value: 'MARKET', label: 'عروض الناقلين' },
+  { value: 'MARKET', label: 'المناقصة (عروض الناقلين)' },
   { value: 'FIXED',  label: 'سعر ثابت' },
 ];
 const COLLECTION_DEFAULTS = [
@@ -296,7 +296,7 @@ function GroupCard({
     { icon: p.defaultAssignment === 'DIRECT' ? Send : Store,
       label: p.defaultAssignment === 'DIRECT' ? 'افتراضي: مباشر' : 'افتراضي: السوق' },
     ...(p.defaultPricing ? [{ icon: p.defaultPricing === 'FIXED' ? Tag : Gavel,
-      label: p.defaultPricing === 'FIXED' ? 'تسعير: ثابت' : 'تسعير: عروض' }] : []),
+      label: p.defaultPricing === 'FIXED' ? 'تسعير: ثابت' : 'تسعير: مناقصة' }] : []),
     { icon: p.defaultCollectionMethod === 'COD' ? HandCoins : Wallet,
       label: `تحصيل: ${COLLECTION_LABEL[p.defaultCollectionMethod ?? 'ESCROW'] ?? 'ضمان (Escrow)'}`,
       locked: p.enforceCollectionMethod },
@@ -346,9 +346,9 @@ function GroupCard({
 
         {/* Pricing */}
         <ModuleSection icon={Tag} tone="pricing" title="موديول التسعير"
-          desc="كيف يُحدَّد السعر: عروض الناقلين أو سعر ثابت.">
+          desc="كيف يُحدَّد السعر (مستقل عن الإسناد): مناقصة أو سعر ثابت.">
           <div className="space-y-2.5">
-            <ToggleRow def={{ key: 'allowMarketPricing', label: 'عروض الناقلين', hint: 'استقبال عروض أسعار' }}
+            <ToggleRow def={{ key: 'allowMarketPricing', label: 'المناقصة', hint: 'الناقلون يقدّمون عروض أسعار' }}
               value={Boolean(p.allowMarketPricing)} onChange={toggle('allowMarketPricing')} />
             <ToggleRow def={{ key: 'allowFixedPricing', label: 'سعر ثابت', hint: 'العميل يحدد السعر' }}
               value={Boolean(p.allowFixedPricing)} onChange={toggle('allowFixedPricing')} />

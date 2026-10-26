@@ -6,6 +6,40 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.79 — Pricing decoupled from assignment + fixed-price market (2026-10-26)
+
+The sourcing model is now two independent axes — **assignment** (market vs
+direct) and **pricing** (bidding vs fixed) — and any combination is valid. See
+[`docs/POLICIES.md`](docs/POLICIES.md) §2.
+
+- **New: publish to the market at a FIXED price** (`OPEN` + `FIXED`). The order is
+  published with the client's price; carriers *accept* it (a bid locked to the
+  price) and the client picks one. Financials resolve against the chosen carrier.
+- **Schema:** `Order.priceMode` (`BIDDING` | `FIXED`). Migration
+  `20261026340000_order_price_mode`.
+- **Engine:** `resolveSourcing` derives `priceMode` from the client's price intent,
+  not the assignment mode; FIXED needs `allowFixedPricing`, BIDDING needs
+  `allowMarketPricing`. OPEN heterogeneous orders keep per-leg bidding.
+- **Bids:** a bid on a FIXED order is locked to the order's (or leg's) price.
+- **Web:** carrier opportunity shows **«قبول السعر»** (accept) for a fixed-price
+  market order instead of the bid form; admin pricing module relabelled to
+  **مناقصة / سعر ثابت** with a note that pricing is independent of assignment; the
+  client wizard already offered both axes.
+- Verified: new `market-fixed.e2e.mjs` (10 checks: OPEN+FIXED create → publish →
+  carrier accept-locked → client pick → financials; BIDDING keeps proposed price;
+  policy gates) + full e2e 8 suites + jest 41/41; all apps typecheck; carrier
+  «قبول السعر» checked live.
+
+### v0.9.78 — Per-leg stops + رحلة فرعية rename (2026-10-26)
+
+- **Per-leg intermediate stops:** in a heterogeneous consolidated order each stop
+  belongs to its leg (رحلة فرعية) — `OrderStop.legSequence`, per-leg `stops` in the
+  create DTO, `GET /orders/:id/legs` returns each leg's waypoints; client wizard
+  edits stops inside each leg card; carrier + admin show them. Migration
+  `20261026320000_order_stop_leg`.
+- **Rename:** «ساق/سيقان» → «رحلة فرعية / رحلات فرعية» across client, admin and
+  carrier (Arabic); plus richer intermediate-stops hint + example chips.
+
 ### v0.9.77 — VAT-compliant tax invoices (phase 2b) (2026-10-26)
 
 Completing an order now auto-issues ZATCA-aligned **tax invoices** from the stored
