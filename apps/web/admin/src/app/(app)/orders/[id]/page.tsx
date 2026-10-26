@@ -19,6 +19,7 @@ import { useTranslations } from 'next-intl';
 import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
 import {
@@ -622,6 +623,18 @@ function ConsolidatedReadonly({ order }: {
       mutate(`/orders/${order.id}`);
     } catch (e) { notify.error(e); }
   };
+  // Per-leg bids (phase 2b): view the bids on a leg and award one.
+  const [bidsLeg, setBidsLeg] = useState<number | null>(null);
+  const { data: legBids } = useSWR<Array<{ id: string; amount: number; carrier?: { nameAr: string }; status: string }>>(
+    bidsLeg != null ? `/orders/${order.id}/bids?legIndex=${bidsLeg}` : null, fetcher);
+  const acceptLegBid = async (bidId: string) => {
+    try {
+      await api.post(`/orders/${order.id}/bids/${bidId}/accept`, {});
+      setBidsLeg(null);
+      mutate(`/orders/${order.id}/legs`);
+      mutate(`/orders/${order.id}`);
+    } catch (e) { notify.error(e); }
+  };
   const legPriceSum = legs.reduce((s, l) => s + (l.price ?? 0), 0);
   const perLeg = Math.round((order.agreedPrice ?? 0) / Math.max(1, count));
   const invoiceTotal = heterogeneous && legPriceSum > 0 ? legPriceSum : (order.agreedPrice ?? 0);
@@ -676,6 +689,11 @@ function ConsolidatedReadonly({ order }: {
               {heterogeneous && leg.price != null && (
                 <span className="shrink-0 text-xs font-semibold"><Currency amount={leg.price} /></span>
               )}
+              {heterogeneous && !leg.carrierId && (leg.bidCount ?? 0) > 0 && (
+                <Button size="sm" variant="outline" className="h-7 shrink-0 text-xs" onClick={() => setBidsLeg(leg.index)}>
+                  {t('adminDetail.legCarrier.bids', { count: String(leg.bidCount) })}
+                </Button>
+              )}
               {heterogeneous && (
                 <Select
                   value={leg.carrierId ?? 'none'}
@@ -704,6 +722,30 @@ function ConsolidatedReadonly({ order }: {
         <div className="mt-1 flex justify-between border-t pt-1 font-semibold"><span>{t('adminDetail.total')}</span><Currency amount={invoiceTotal} /></div>
         <p className="mt-1 text-[11px] text-muted-foreground">{t('adminDetail.singleInvoice', { orderNumber: order.orderNumber })}</p>
       </div>
+
+      {/* Per-leg bids — award one to assign the leg's carrier. */}
+      <Dialog open={bidsLeg != null} onOpenChange={(o) => { if (!o) setBidsLeg(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('adminDetail.legCarrier.bidsTitle', { index: String(bidsLeg ?? '') })}</DialogTitle>
+            <DialogDescription>{t('adminDetail.legCarrier.bidsDesc')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-1">
+            {(legBids ?? []).length === 0 && <div className="py-6 text-center text-sm text-muted-foreground">{t('adminDetail.legCarrier.noBids')}</div>}
+            {(legBids ?? []).map((b) => (
+              <div key={b.id} className="flex items-center justify-between gap-3 rounded-lg border p-2.5">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{b.carrier?.nameAr ?? '—'}</div>
+                  <div className="text-xs text-muted-foreground"><Currency amount={b.amount} /></div>
+                </div>
+                {b.status === 'PENDING'
+                  ? <Button size="sm" className="shrink-0" onClick={() => acceptLegBid(b.id)}>{t('adminDetail.legCarrier.award')}</Button>
+                  : <span className="shrink-0 text-xs text-muted-foreground">{b.status}</span>}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

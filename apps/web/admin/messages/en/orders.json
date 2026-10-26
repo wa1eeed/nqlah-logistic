@@ -158,7 +158,12 @@
     "perLegPricing": "Priced per leg",
     "legCarrier": {
       "assign": "Assign carrier",
-      "none": "— Unassigned —"
+      "none": "— Unassigned —",
+      "bids": "{count} bids",
+      "bidsTitle": "Bids on leg {index}",
+      "bidsDesc": "Award a bid to assign that carrier to the leg.",
+      "noBids": "No bids on this leg yet",
+      "award": "Award"
     },
  "total": "Total",
  "singleInvoice": "Single invoice for order {orderNumber}.",
