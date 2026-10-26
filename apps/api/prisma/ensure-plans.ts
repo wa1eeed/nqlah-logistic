@@ -6,12 +6,14 @@
  *   node dist/prisma/ensure-plans.js        # in the API container
  *   # or locally:  pnpm --filter @naqla/api db:ensure-plans
  *
- * Idempotent:
- *   • modules are upserted by their unique `key` (price/name refreshed, links kept);
- *   • the provider profile and the two plans are created only if missing, so any
- *     later admin edits (prices, modules, extra plans) are preserved.
+ * Idempotent AND non-destructive — it only ever FILLS IN what's missing, so later
+ * admin edits (module prices, plan configs, extra plans) are never overwritten:
+ *   • a module is created only if its unique `key` doesn't exist yet;
+ *   • the provider profile and the two plans are created only if missing.
  *
- * Edit prices/modules afterwards from the admin panel (محرك السياسات → الباقات).
+ * This matters across environments: promoting code to production runs this on the
+ * production DB, where it creates the baseline on the first deploy and then leaves
+ * everything you've customised from the admin panel untouched on every deploy after.
  */
 import { PrismaClient } from '../src/generated/prisma';
 
@@ -26,16 +28,14 @@ const MODULES = [
 ];
 
 async function main() {
-  // 1. Module catalog (upsert by key).
+  // 1. Module catalog — create a module only if its key is missing (never
+  //    overwrite an existing one's admin-edited price/name).
   const idByKey: Record<string, string> = {};
   for (const m of MODULES) {
-    const row = await prisma.planModule.upsert({
-      where: { key: m.key },
-      create: m,
-      update: { name: m.name, nameEn: m.nameEn, price: m.price, audience: m.audience, sortOrder: m.sortOrder },
-    });
+    let row = await prisma.planModule.findUnique({ where: { key: m.key } });
+    if (!row) { row = await prisma.planModule.create({ data: m }); console.log(`• module ${m.key} created (${m.price} SAR)`); }
+    else console.log(`• module ${m.key} kept`);
     idByKey[m.key] = row.id;
-    console.log(`• module ${m.key} (${m.price} SAR)`);
   }
 
   // 2. A base operating profile the plans attach to (find-or-create).
