@@ -84,18 +84,18 @@
 7. اضبط `SEED_ADMIN_EMAIL` و `SEED_ADMIN_PASSWORD` (في Coolify) — كلمة مرور قوية،
    خاصّةً في production. هي مصدر بيانات دخول الأدمن.
 8. شغّل: `NODE_ENV={env} pnpm --filter @naqla/api start` — الـ validation يجب أن يمرّ
-9. **خطوة قاعدة البيانات بعد كل نشر** — من داخل حاوية الـ API شغّل السكربت الموحّد
-   (يطبّق migrations + الأدمن + الهوية الضريبية، وكلها idempotent):
+9. **خطوة قاعدة البيانات — تلقائية الآن عند الإقلاع.** حاوية الـAPI تشغّل
+   `apps/api/docker-entrypoint.sh` قبل الخادم في كل إقلاع: يطبّق `prisma migrate deploy`
+   (حاجب — فشله يُسقط الإقلاع فلا يُخدَم مخطّط غير متطابق)، ثم التهيئات الـidempotent
+   (الأدمن، الهوية الضريبية، باقات الاشتراك — غير حاجبة). **لا تحتاج أي أمر يدوي بعد
+   النشر.** Prisma يأخذ قفلاً، فالنسخ المتوازية آمنة.
 
+   التشغيل اليدوي يبقى متاحاً كبديل/تجاوز من `/app`:
    ```bash
-   sh scripts/deploy-db.sh                 # production (ensure-admin)
-   SEED_MODE=seed sh scripts/deploy-db.sh  # staging (demo seed)
+   npm run db:deploy        # migrate + admin + platform identity + plans (idempotent)
+   npm run db:deploy:seed    # staging فقط — مع بيانات تجريبية
    ```
-
-   > ℹ️ داخل حاوية الـAPI على Coolify يكون المجلد `/app` هو `apps/api` نفسه (بلا جذر
-   > المستودع، فلا يوجد `scripts/`). استخدم أمر الحزمة المكافئ من `/app` مباشرةً:
-   > `npm run db:deploy` (production) أو `npm run db:deploy:seed` (staging) — وكلاهما
-   > يطبّق migrations ثم الأدمن ثم الهوية الضريبية ثم باقات الاشتراك.
+   ولتخطّي خطوة القاعدة عند الإقلاع (نادراً): اضبط `SKIP_DB_BOOTSTRAP=1`.
 
    أو يدوياً، بنفس الترتيب:
    - **migrations:** `npx prisma migrate deploy` (لا `migrate dev` في staging/prod)
