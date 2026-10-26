@@ -92,6 +92,16 @@ export interface ConsolidatedLeg {
   reference?: string;
   truckId?: string;
   driverId?: string;
+  /** Enriched by the API for viewers who can't query the fleet. */
+  plateNumber?: string;
+  driverName?: string;
+  /** Heterogeneous-order spec: a leg's own truck type, destination and price.
+   *  Falls back to the order's values for a homogeneous consolidated order. */
+  requiredTruckType?: TruckType;
+  destinationCity?: string;
+  destinationRegion?: string;
+  destinationAddress?: string;
+  price?: number;
 }
 
 export interface Order {

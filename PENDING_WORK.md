@@ -28,9 +28,13 @@ Tracked verbatim so nothing is dropped. Work top-to-bottom; one PR per coherent 
    account statement, the **Activity & Audit Log timeline**, profile/KYC, and team —
    everything in one place. Activity tab + `GET /admin/companies/:id/audit` added in
    v0.9.65 (PR for `feat/company-360-activity`). Verified live.
-8. **C1 — heterogeneous consolidated orders** — a consolidated order whose legs can each
-   have a **different truck type + destination + price** (per-leg), across client/admin/
-   carrier. (Currently: N trucks on one shared route.)
+8. ✅ **C1 — heterogeneous consolidated orders** (phase 1) — each leg now has its own
+   **truck type + destination + price** (new `OrderLeg` model + `legs[]` on create;
+   `GET /orders/:id/legs` returns the spec + a `heterogeneous` flag; order total = sum
+   of leg prices). Client wizard gained a per-leg editor; client/admin/carrier views
+   show each leg's spec + a per-leg invoice; distribute enforces the leg's truck type.
+   (v0.9.68.) **Phase 2 (open):** per-leg *different carriers* / per-leg bidding — the
+   architectural fork that depends on the leg-level-assignment product decision.
 9. ✅ **C2 — complete the modules** — **per-group module defaults** done: the admin sets
    a group's default assignment (MARKET|DIRECT), pricing (MARKET|FIXED) and collection
    method (+ enforcement), beyond the existing allow/deny toggles. Assignment + collection

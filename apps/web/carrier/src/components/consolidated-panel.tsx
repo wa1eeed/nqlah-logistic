@@ -23,7 +23,7 @@ import {
   type ConsolidatedLeg, type ConsolidatedLegStatus, type Driver, type Order, type Truck,
 } from '@naqla/shared-utils';
 
-type LegsResponse = { truckCount: number; status: string; legs: ConsolidatedLeg[] };
+type LegsResponse = { truckCount: number; status: string; heterogeneous?: boolean; legs: ConsolidatedLeg[] };
 
 const LEG_LABEL: Record<ConsolidatedLegStatus, string> = {
   PENDING: 'لم تُوزَّع',
@@ -69,7 +69,13 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
   const legs = apiMode ? legsData!.legs : effectiveLegs(order.legs ?? [], overrides);
   const count = apiMode ? legsData!.truckCount : (order.truckCount ?? legs.length);
   const distributed = legs.filter((l) => l.truckId).length;
+  const heterogeneous = !!legsData?.heterogeneous;
+  const legPriceSum = legs.reduce((s, l) => s + (l.price ?? 0), 0);
   const perLeg = Math.round((order.agreedPrice ?? 0) / Math.max(1, count));
+  const invoiceTotal = heterogeneous && legPriceSum > 0 ? legPriceSum : (order.agreedPrice ?? 0);
+  // The leg currently being distributed — used to constrain the truck picker to
+  // the leg's required type for a heterogeneous order.
+  const openLegSpec = openLeg != null ? legs.find((l) => l.index === openLeg) : undefined;
   const pct = count > 0 ? Math.round((distributed / count) * 100) : 0;
 
   const revalidate = () => { mutate(`/orders/${order.id}/legs`); mutate(`/orders/${order.id}`); };
@@ -145,7 +151,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                 <Layers className="h-4 w-4 text-[hsl(var(--mint))]" /> طلب مجمّع · {count} شاحنات
               </CardTitle>
               <CardDescription className="mt-1 flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" /> {localizeCity(order.originCity)} ← {localizeCity(order.destinationCity)}
+                <MapPin className="h-3.5 w-3.5" /> {localizeCity(order.originCity)} ← {heterogeneous ? 'وجهات متعددة' : localizeCity(order.destinationCity)}
               </CardDescription>
             </div>
             <div className="text-end">
@@ -176,6 +182,12 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium num">{truck.code}</div>
+                      {heterogeneous && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                          <TruckIcon className="h-3 w-3" />{leg.requiredTruckType}
+                          {leg.destinationCity && <>· <MapPin className="h-3 w-3" />{localizeCity(leg.destinationCity)}</>}
+                        </div>
+                      )}
                       {driver && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Users className="h-3 w-3" /> {driver.fullName}
@@ -184,9 +196,20 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
-                    <TruckIcon className="h-4 w-4 opacity-40" /> لم تُوزَّع بعد
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <TruckIcon className="h-4 w-4 opacity-40" /> لم تُوزَّع بعد
+                    </div>
+                    {heterogeneous && (
+                      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                        <TruckIcon className="h-3 w-3" />{leg.requiredTruckType}
+                        {leg.destinationCity && <>· <MapPin className="h-3 w-3" />{localizeCity(leg.destinationCity)}</>}
+                      </div>
+                    )}
                   </div>
+                )}
+                {heterogeneous && leg.price != null && (
+                  <span className="shrink-0 text-xs font-semibold"><Currency amount={leg.price} /></span>
                 )}
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${LEG_TONE[leg.status]}`}>
                   {LEG_LABEL[leg.status]}
@@ -213,8 +236,8 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
             <div className="mb-2 text-sm font-semibold">الفاتورة المجمّعة</div>
             <dl className="space-y-1.5 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted-foreground num">{count} شاحنات × <Currency amount={perLeg} /></dt>
-                <dd><Currency amount={order.agreedPrice ?? 0} /></dd>
+                <dt className="text-muted-foreground num">{heterogeneous ? <>{count} شاحنات · تسعير لكل ساق</> : <>{count} شاحنات × <Currency amount={perLeg} /></>}</dt>
+                <dd><Currency amount={invoiceTotal} /></dd>
               </div>
               {order.commission != null && (
                 <div className="flex justify-between text-muted-foreground">
@@ -237,7 +260,12 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>توزيع الشاحنة رقم {openLeg}</DialogTitle>
-            <DialogDescription>اختر شاحنة من أسطولك — السائق المربوط بها يُسنَد تلقائيا.</DialogDescription>
+            <DialogDescription>
+              اختر شاحنة من أسطولك — السائق المربوط بها يُسنَد تلقائيا.
+              {heterogeneous && openLegSpec?.requiredTruckType && (
+                <span className="mt-1 block">هذه الساق تتطلّب نوع شاحنة: <span className="font-medium text-foreground">{openLegSpec.requiredTruckType}</span></span>
+              )}
+            </DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-3">
             <Select value={pick} onValueChange={setPick}>
@@ -245,11 +273,13 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
               <SelectContent>
                 {srcTrucks.map((t) => {
                   const used = usedTrucks.has(t.id);
+                  // Heterogeneous legs require a matching truck type (also enforced server-side).
+                  const typeMismatch = heterogeneous && !!openLegSpec?.requiredTruckType && t.truckType !== openLegSpec.requiredTruckType;
                   const drv = srcDrivers.find((d) => d.id === driverForTruck(t.id))?.fullName;
                   const tag = t.ownership === 'FREELANCER' ? ' · فري‑لانسر' : '';
                   return (
-                    <SelectItem key={t.id} value={t.id} disabled={used}>
-                      {t.code} · {t.plateNumber}{drv ? ` · ${drv}` : ''}{tag}{used ? ' (مستخدمة بهذا الطلب)' : ''}
+                    <SelectItem key={t.id} value={t.id} disabled={used || typeMismatch}>
+                      {t.code} · {t.plateNumber}{drv ? ` · ${drv}` : ''}{tag}{used ? ' (مستخدمة بهذا الطلب)' : typeMismatch ? ' (نوع غير مطابق)' : ''}
                     </SelectItem>
                   );
                 })}

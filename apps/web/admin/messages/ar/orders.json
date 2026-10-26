@@ -155,6 +155,7 @@
  "notAssignedYet": "لم تُوزَّع بعد",
  "consolidatedInvoice": "الفاتورة المجمّعة",
  "trucksMultiplier": "{count} شاحنات × ",
+    "perLegPricing": "تسعير لكل ساق",
  "total": "الإجمالي",
  "singleInvoice": "فاتورة واحدة برقم الطلب {orderNumber}.",
  "titles": {

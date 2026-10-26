@@ -6,6 +6,32 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.68 — Heterogeneous consolidated orders (per-leg type/destination/price) (2026-10-26)
+
+A consolidated order's legs can now be **heterogeneous**: each leg has its own
+**truck type**, **destination** and **price** (all sharing the order's single
+pickup origin, client and invoice). Backlog item 8 (phase 1).
+
+- **Schema:** new `OrderLeg` model (sequence, requiredTruckType, destination,
+  price) + `Order.orderLegs`; migration `20261026180000_order_leg_heterogeneous`.
+  Homogeneous legacy orders keep no rows and fall back to the order's own values.
+- **API:** `POST /orders` accepts a `legs[]` spec; `truckCount` is derived and the
+  order total is the **sum** of the legs' prices (seeds `agreedPrice` for a DIRECT
+  order and `clientBudget`). `GET /orders/:id/legs` returns each leg's spec plus a
+  `heterogeneous` flag. `distributeLeg` rejects a truck whose type doesn't match
+  the leg's required type (`LEG_TRUCK_TYPE_MISMATCH`).
+- **Client wizard:** a "same vs mixed legs" toggle; in mixed mode a per-leg editor
+  (truck type / destination / address / price / reference, add & remove legs) with
+  a live total. Validation and pricing adapt to per-leg mode.
+- **Display:** the client, admin and carrier order views show each leg's truck
+  type, destination and price, and a per-leg (summed) invoice; the carrier's
+  distribute dialog constrains the truck picker to the leg's required type.
+- Verified end-to-end (12/12 heterogeneous e2e checks) + homogeneous back-compat;
+  all web apps typecheck and the client wizard verified live.
+
+> Phase 2 (not in this change): per-leg **different carriers** / per-leg bidding —
+> a larger step pending the product decision on leg-level assignment.
+
 ### v0.9.67 — Client dashboard honours the admin's module config + robustness (2026-10-26)
 
 Audit pass over the policies & modules system across all dashboards. Server-side

@@ -200,19 +200,44 @@ export class OrdersService {
     }
     const orderNumber = `ORD-${new Date().getFullYear()}-${orderNumberGen()}`;
 
-    // Consolidated orders ship `truckCount` legs. Each leg carries a shipment
-    // reference the client either typed (one per leg) or left to the system to
-    // auto-generate as `<orderNumber>-L<n>`. Blank entries fall back to auto.
+    // Consolidated orders ship `truckCount` legs. A HETEROGENEOUS order sends a
+    // `legs` spec (each leg its own truck type / destination / price); a
+    // homogeneous one just sends `truckCount` and every leg shares the order's
+    // truck type, destination and price. Each leg carries a shipment reference
+    // the client typed or the system auto-generates as `<orderNumber>-L<n>`.
     const isConsolidated = dto.orderType === 'CONSOLIDATED';
+    const hasLegSpecs = isConsolidated && Array.isArray(dto.legs) && dto.legs.length >= 2;
     const truckCount = isConsolidated
-      ? Math.min(20, Math.max(2, Math.trunc(dto.truckCount ?? 2)))
+      ? (hasLegSpecs
+          ? Math.min(20, dto.legs!.length)
+          : Math.min(20, Math.max(2, Math.trunc(dto.truckCount ?? 2))))
       : null;
     const legReferences = isConsolidated && truckCount
       ? Array.from({ length: truckCount }, (_, i) => {
-          const typed = dto.legReferences?.[i]?.trim();
+          const typed = (hasLegSpecs ? dto.legs![i]?.reference : dto.legReferences?.[i])?.trim();
           return typed && typed.length > 0 ? typed : `${orderNumber}-L${i + 1}`;
         })
       : [];
+
+    // Per-leg spec rows + the order total derived from the legs' prices (only
+    // when every leg is priced; otherwise the total is left to the bidding flow).
+    const legRows = hasLegSpecs
+      ? dto.legs!.slice(0, 20).map((leg, i) => ({
+          sequence: i + 1,
+          reference: legReferences[i],
+          requiredTruckType: leg.requiredTruckType,
+          destinationCity: leg.destinationCity,
+          destinationRegion: leg.destinationRegion,
+          destinationAddress: leg.destinationAddress,
+          destinationLat: leg.destinationLat ?? null,
+          destinationLng: leg.destinationLng ?? null,
+          price: leg.price != null ? leg.price : null,
+        }))
+      : [];
+    const pricedLegs = legRows.filter((l) => l.price != null);
+    const legTotal = hasLegSpecs && legRows.length > 0 && pricedLegs.length === legRows.length
+      ? +pricedLegs.reduce((sum, l) => sum + (l.price as number), 0).toFixed(2)
+      : null;
 
     // Multi-stop route. When the client sends 2+ stops we persist them in order
     // and derive the denormalized origin/destination summary from them (first
@@ -225,7 +250,7 @@ export class OrdersService {
     // default) and apply it to sourcing + pricing. Defaults allow everything,
     // so ungrouped clients are unaffected; a group can disable market/direct,
     // pin every order to one carrier, or forbid a pricing mode.
-    const sourcing = await this.resolveSourcing(dto, actor.companyId);
+    const sourcing = await this.resolveSourcing(dto, actor.companyId, legTotal);
 
     return this.prisma.order.create({
       data: {
@@ -234,6 +259,7 @@ export class OrdersService {
         orderType: isConsolidated ? 'CONSOLIDATED' : 'SINGLE',
         truckCount,
         legReferences,
+        ...(legRows.length ? { orderLegs: { create: legRows } } : {}),
         stops: { create: stopRows },
         // v0.6.0 workflow fields — resolved against the client's policy above.
         mode: sourcing.mode,
@@ -260,7 +286,7 @@ export class OrdersService {
         pickupDate: new Date(dto.pickupDate),
         deliveryDate: dto.deliveryDate ? new Date(dto.deliveryDate) : null,
         bidDeadline: dto.bidDeadline ? new Date(dto.bidDeadline) : null,
-        clientBudget: dto.clientBudget,
+        clientBudget: dto.clientBudget ?? legTotal ?? undefined,
         poNumber: dto.poNumber,
         notes: dto.notes,
         documents: dto.documents ?? [],
@@ -561,7 +587,7 @@ export class OrdersService {
    *  - forbid fixed upfront pricing (`allowFixedPricing`) or market/bid pricing
    *    (`allowMarketPricing`).
    */
-  private async resolveSourcing(dto: CreateOrderDto, companyId: string) {
+  private async resolveSourcing(dto: CreateOrderDto, companyId: string, legTotal?: number | null) {
     const policy = await this.policies.effectiveForCompany(companyId);
     // When the client doesn't pick a sourcing module, fall back to the group's
     // admin-set default (`defaultAssignment`). If no default is set, derive a
@@ -595,7 +621,11 @@ export class OrdersService {
         throw new ForbiddenException({ code: 'POLICY_CARRIER_NOT_VISIBLE', message: 'المزوّد غير متاح لهذا العميل' });
       }
     }
-    const fixedPrice = mode === 'DIRECT' && dto.agreedPriceUpfront != null ? dto.agreedPriceUpfront : null;
+    // A heterogeneous consolidated order's fixed price is the sum of its legs'
+    // prices; a single/homogeneous order uses the upfront price. Either is
+    // "fixed pricing" and gated by the same policy toggle.
+    const upfront = dto.agreedPriceUpfront != null ? dto.agreedPriceUpfront : (legTotal ?? null);
+    const fixedPrice = mode === 'DIRECT' && upfront != null ? upfront : null;
     if (fixedPrice != null && !policy.allowFixedPricing) {
       throw new ForbiddenException({ code: 'POLICY_FIXED_PRICING_DISABLED', message: 'التسعير الثابت غير مسموح لهذا العميل' });
     }
@@ -635,12 +665,16 @@ export class OrdersService {
           orderBy: { sequence: 'asc' },
           include: { truck: { select: { plateNumber: true } } },
         },
+        orderLegs: { orderBy: { sequence: 'asc' } },
       },
     });
     if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
     this.assertViewAccess(order, actor);
 
     const count = order.truckCount ?? order.orderTrucks.length;
+    // Per-leg heterogeneous spec (truck type / destination / price), if any.
+    // Legs with no spec row fall back to the order's own values (homogeneous).
+    const specBySeq = new Map(order.orderLegs.map((l) => [l.sequence, l]));
     const driverIds = order.orderTrucks.map((l) => l.driverId).filter((d): d is string => !!d);
     const drivers = driverIds.length
       ? await this.prisma.driverProfile.findMany({
@@ -655,26 +689,57 @@ export class OrdersService {
 
     const bySeq = new Map(order.orderTrucks.map((l) => [l.sequence, l]));
     const refFor = (index: number) => order.legReferences?.[index - 1] || undefined;
+    // Each leg's spec: its own values when heterogeneous, else the order's.
+    const specFor = (index: number) => {
+      const s = specBySeq.get(index);
+      return {
+        requiredTruckType: s?.requiredTruckType ?? order.requiredTruckType,
+        destinationCity: s?.destinationCity ?? order.destinationCity,
+        destinationRegion: s?.destinationRegion ?? order.destinationRegion,
+        destinationAddress: s?.destinationAddress ?? order.destinationAddress,
+        price: s?.price != null ? Number(s.price) : undefined,
+      };
+    };
     const legs = Array.from({ length: count }, (_, i) => {
       const index = i + 1;
       const row = bySeq.get(index);
+      const spec = specFor(index);
       return row
         ? {
             index,
             reference: refFor(index),
+            ...spec,
             truckId: row.truckId,
             driverId: row.driverId ?? undefined,
             status: row.status,
             plateNumber: row.truck?.plateNumber,
             driverName: driverName(row.driverId),
           }
-        : { index, reference: refFor(index), status: 'PENDING' };
+        : { index, reference: refFor(index), ...spec, status: 'PENDING' };
     });
-    return { orderId: order.id, orderNumber: order.orderNumber, truckCount: count, status: order.status, legs };
+    return {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      truckCount: count,
+      heterogeneous: order.orderLegs.length > 0,
+      status: order.status,
+      legs,
+    };
   }
 
   async distributeLeg(id: string, index: number, truckId: string, driverId: string | undefined, actor: AuthUser) {
     const order = await this.carrierOrder(id, actor);
+    // The truck must match the leg's required type (the leg's own type for a
+    // heterogeneous order, else the order's). Keeps a reefer leg from getting a
+    // flatbed, etc.
+    const [truck, legSpec] = await Promise.all([
+      this.prisma.truck.findUnique({ where: { id: truckId }, select: { type: true } }),
+      this.prisma.orderLeg.findUnique({ where: { orderId_sequence: { orderId: order.id, sequence: index } }, select: { requiredTruckType: true } }),
+    ]);
+    const requiredType = legSpec?.requiredTruckType ?? order.requiredTruckType;
+    if (truck && truck.type !== requiredType) {
+      throw new BadRequestException({ code: 'LEG_TRUCK_TYPE_MISMATCH', message: 'نوع الشاحنة لا يطابق نوع الساق المطلوب' });
+    }
     // A truck serves at most one leg of the order — free it from any other leg.
     await this.prisma.orderTruck.deleteMany({ where: { orderId: order.id, truckId, sequence: { not: index } } });
     await this.prisma.orderTruck.upsert({
