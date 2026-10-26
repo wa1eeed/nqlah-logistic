@@ -110,13 +110,18 @@
     المنشور حيّ ويحمل فعلاً أعمال المالية/الضرائب ومحرك السياسات:
 
     ```bash
-    E2E_BASE=https://api.nqlah.nx.sa/api node scripts/post-deploy-check.mjs
-    # أو:  E2E_BASE=https://api.nqlah.nx.sa/api pnpm check:deployed
+    # من جذر المستودع على جهازك. أدمن الـstaging/prod غالباً ليس أدمن الـseed،
+    # فمرّر بياناته (نفس SEED_ADMIN_EMAIL/PASSWORD في Coolify):
+    E2E_BASE=https://api.nqlah.nx.sa/api \
+      E2E_ADMIN_EMAIL=waleed@nx.sa E2E_ADMIN_PASSWORD='…' \
+      pnpm check:deployed
     ```
 
     يفحص `/health`، تسجيل دخول الأدمن، وجود `code` + `vatRegistered` على الشركات،
     نقاط `/policies/plans` و`/invoices`، وأن `PATCH /admin/companies/:id/tax` مركّبة
     (رقم ضريبي غير صالح → 400، وليس 404 = بناء قديم). يخرج بـ 0 عند نجاح كل الفحوص.
+    بيانات الأدمن تُقرأ من `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` (افتراضها بيانات
+    الـseed). ضع كلمة المرور بين اقتباسات مفردة إن احتوت `#` أو `@`.
 
 ---
 
@@ -413,12 +418,18 @@ NEXT_PUBLIC_MINIO_URL=https://storage.nqlah.nx.sa
 
 # 3. أوّل deploy — Coolify يبني الـ Docker image ويشغّله
 
-# 4. طبّق migrations في Coolify terminal للـ API container:
-node -e "const{execSync}=require('child_process');execSync('npx prisma@5.22.0 migrate deploy --schema=/app/prisma/schema.prisma',{stdio:'inherit'})"
-
-# 5. شغّل seed (للـ staging — demo accounts):
-node dist/prisma/seed.js
+# 4. في Coolify terminal للـ API container (المجلد /app = apps/api):
+#    production:
+npm run db:deploy
+#    staging (مع بيانات تجريبية):
+npm run db:deploy:seed
+# كلاهما: prisma migrate deploy → الأدمن/الـseed → ضمان صفوف الهوية الضريبية.
 ```
+
+> ℹ️ `prisma` CLI صار ضمن `dependencies` (PR #89)، فهو متوفّر داخل الحاوية ولا حاجة
+> لأي حيلة `npx`. إن صادفت صورة قديمة جداً تسبق هذا التغيير فلا تجد `prisma`، فالحل
+> المؤقت لمرة واحدة: `npx --yes prisma@5.22.0 migrate deploy` ثم
+> `node dist/prisma/ensure-admin.js` و`node dist/prisma/ensure-platform-identity.js`.
 
 ### 5.5 Auto-Deploy
 
