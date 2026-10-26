@@ -83,7 +83,11 @@
         "admin.company.accountNote": "Account note issued",
         "admin.dispute.update": "Dispute updated",
         "admin.settings.update": "Settings updated",
-        "admin.wallet.manualTx": "Manual wallet transaction"
+        "admin.wallet.manualTx": "Manual wallet transaction",
+        "bid.accept": "Bid accepted — carrier awarded",
+        "bid.reject": "Bid rejected",
+        "order.leg.assignCarrier": "Leg carrier assigned",
+        "order.leg.unassignCarrier": "Leg carrier removed"
       }
     },
     "overview": {
