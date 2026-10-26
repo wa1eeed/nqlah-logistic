@@ -137,9 +137,16 @@ export class PoliciesService {
   }
 
   async deleteGroup(id: string) {
-    await this.ensure(id);
+    const g = await this.ensure(id);
+    // A profile backing one or more plans can't be removed — the plans would be
+    // orphaned. The admin must delete/retarget those plans first.
+    const plansUsing = await this.prisma.plan.count({ where: { policyGroupId: id } });
+    if (plansUsing > 0) {
+      throw new BadRequestException({ code: 'GROUP_IN_USE', message: `هذا الملف مرتبط بـ${plansUsing} باقة — احذفها أو غيّر ملفها أولاً`, plansUsing });
+    }
+    // Legacy direct members (clientIds) simply fall back to the default policy.
     await this.prisma.policyGroup.delete({ where: { id } });
-    return { id };
+    return { id, detachedClients: (g as { clientIds?: string[] }).clientIds?.length ?? 0 };
   }
 
   /** Move a client into one group (removing it from any others), or null. */
@@ -462,14 +469,39 @@ export class PoliciesService {
     return this.getPlan(plan.id);
   }
 
-  async deletePlan(id: string) {
+  /**
+   * Delete a plan, handling its subscribers safely. With subscribers present the
+   * caller MUST choose: `reassignToId` moves them to another plan, or `detach`
+   * cancels their subscriptions (they fall back to the default policy). Without a
+   * choice it refuses with PLAN_HAS_SUBSCRIBERS + the count, so the UI can prompt.
+   */
+  async deletePlan(id: string, opts: { reassignToId?: string; detach?: boolean } = {}) {
     const plan = await this.prisma.plan.findUnique({ where: { id }, include: { _count: { select: { companies: true } } } });
     if (!plan) throw new NotFoundException({ code: 'PLAN_NOT_FOUND', message: 'الباقة غير موجودة' });
-    // Detach any subscribers first (they fall back to default/legacy resolution).
-    if (plan._count.companies > 0) {
-      await this.prisma.company.updateMany({ where: { planId: id }, data: { planId: null } });
+    const subscriberCount = plan._count.companies;
+    if (subscriberCount > 0) {
+      if (opts.reassignToId) {
+        if (opts.reassignToId === id) throw new BadRequestException({ code: 'REASSIGN_SELF', message: 'لا يمكن التحويل إلى الباقة نفسها' });
+        const target = await this.prisma.plan.findUnique({ where: { id: opts.reassignToId }, select: { id: true, active: true } });
+        if (!target) throw new NotFoundException({ code: 'PLAN_NOT_FOUND', message: 'باقة التحويل غير موجودة' });
+        if (!target.active) throw new BadRequestException({ code: 'PLAN_INACTIVE', message: 'باقة التحويل غير مفعّلة' });
+        const subs = await this.prisma.company.findMany({ where: { planId: id }, select: { id: true } });
+        for (const s of subs) await this.subscriptions.subscribe(s.id, opts.reassignToId);
+      } else if (opts.detach) {
+        const subs = await this.prisma.company.findMany({ where: { planId: id }, select: { id: true } });
+        for (const s of subs) {
+          const has = await this.prisma.subscription.findUnique({ where: { companyId: s.id }, select: { companyId: true } });
+          if (has) await this.subscriptions.cancel(s.id, false);
+          else await this.prisma.company.update({ where: { id: s.id }, data: { planId: null } });
+        }
+      } else {
+        throw new BadRequestException({ code: 'PLAN_HAS_SUBSCRIBERS', message: `الباقة لديها ${subscriberCount} مشترك — حوّلهم إلى باقة أخرى أو افصلهم أولاً`, subscriberCount });
+      }
     }
-    await this.prisma.plan.delete({ where: { id } });
+    // Drop any subscription rows still pointing at this plan (cancelled on detach;
+    // already moved on reassign) so the RESTRICT FK on Subscription.planId clears.
+    await this.prisma.subscription.deleteMany({ where: { planId: id } });
+    await this.prisma.plan.delete({ where: { id } }); // cascades its module links
     return { id };
   }
 

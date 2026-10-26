@@ -389,6 +389,12 @@ capability layer), per the owner's direction.
    `subscriptions.e2e.mjs`. See [`docs/SUBSCRIPTIONS.md`](docs/SUBSCRIPTIONS.md).
 
 ### Queue — later, in priority order (not started)
+0. **Safe-delete rollout (Phase 2):** the reusable `ConfirmDialog` + dependency-aware
+   deletion landed for the admin Policy Engine (plans/modules/profiles/carrier-groups,
+   v0.9.81). Extend it to the remaining admin catalog deletes (cities, truck types,
+   cargo types, SMS templates, compliance docs — currently native `confirm()`) and the
+   carrier/provider destructive actions (team member remove, fleet), replacing
+   `confirm()` and adding dependency guards where relevant.
 1. **Subscription PAYMENT + auto-renewal** (the remaining piece of Phase 4): charge
    the price snapshot via the gateway, advance periods on renewal, dunning for
    `PAST_DUE`, proration on upgrade/downgrade, subscription invoices.

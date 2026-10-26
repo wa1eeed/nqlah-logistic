@@ -6,6 +6,28 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.81 — Safe deletes: confirmation + dependency-aware deletion (2026-10-26)
+
+Destructive actions in the admin Policy Engine no longer delete on a single
+click, and deletions that would orphan data are handled like major platforms.
+
+- **Reusable `ConfirmDialog`** (`apps/web/admin/src/components/confirm-dialog.tsx`):
+  a styled confirmation (warning icon, spinner, toast on error) with an optional
+  slot for dependency-resolution controls. Applied to the plans, plan-modules,
+  policy-profile and carrier-group deletes (which previously deleted immediately).
+- **Dependency-aware deletes (backend):**
+  - A **plan with subscribers** can't be deleted blindly — the admin must either
+    **reassign** them to another plan (`?reassignTo=`) or **detach** them
+    (`?detach=true`, subscriptions cancelled → default policy); otherwise
+    `PLAN_HAS_SUBSCRIBERS`. The plan-delete dialog offers both.
+  - A **policy profile backing plans** is protected (`GROUP_IN_USE`) — remove or
+    retarget the plans first.
+  - **Financial records** (invoices, transactions, payments) have no delete
+    endpoints at all — they stay immutable.
+- Verified: new `safe-delete.e2e.mjs` (8 checks: block, reassign-then-delete,
+  detach-then-delete, profile-in-use) + full e2e 11 suites + jest 41/41; the
+  confirmation dialog checked live in admin.
+
 ### v0.9.80 — Subscription plans: dynamic pricing + lifecycle + signup binding (2026-10-26)
 
 Recurring memberships on top of the Policy Engine, with smart component-based

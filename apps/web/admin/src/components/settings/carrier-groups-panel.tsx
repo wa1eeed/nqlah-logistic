@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { COMPANIES } from '@naqla/shared-utils';
 
 type Co = { id: string; nameAr: string };
@@ -53,9 +54,12 @@ export function CarrierGroupsPanel() {
     setOpen(false);
   };
 
-  const remove = async (g: CarrierGroup) => {
-    try { await api.delete(`/policies/carrier-groups/${g.id}`); notify.success('تم حذف المجموعة', g.name); revalidate(); }
-    catch (e) { notify.error(e); }
+  const [delGroup, setDelGroup] = useState<CarrierGroup | null>(null);
+  const confirmDelete = async () => {
+    if (!delGroup) return;
+    await api.delete(`/policies/carrier-groups/${delGroup.id}`);
+    notify.success('تم حذف المجموعة', delGroup.name);
+    setDelGroup(null); revalidate();
   };
 
   const setMembers = async (g: CarrierGroup, carrierIds: string[]) => {
@@ -93,7 +97,7 @@ export function CarrierGroupsPanel() {
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(g)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => remove(g)}><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDelGroup(g)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </div>
               <div className="space-y-2">
@@ -148,6 +152,17 @@ export function CarrierGroupsPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!delGroup}
+        onOpenChange={(v) => { if (!v) setDelGroup(null); }}
+        title={`حذف مجموعة «${delGroup?.name ?? ''}»`}
+        description={(delGroup?.carrierIds?.length ?? 0) > 0
+          ? `تضمّ ${delGroup?.carrierIds?.length} مزوّداً — سيُفكّ ارتباطهم، وأي ملف سياسة يستهدفها يعود إلى «كل المزوّدين».`
+          : 'لا يمكن التراجع عن هذا الإجراء.'}
+        confirmLabel="حذف المجموعة"
+        onConfirm={confirmDelete}
+      />
     </Card>
   );
 }
