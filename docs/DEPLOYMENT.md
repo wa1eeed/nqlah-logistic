@@ -100,6 +100,18 @@
    > ⚠️ اضبط `PLATFORM_VAT_NUMBER` على الرقم الضريبي الحقيقي لنقلة في Coolify **قبل**
    > أن يُكمَل أي طلب في production — وإلا ستصدر فواتير العمولة برقم فارغ/تجريبي.
 
+11. **تحقّق بعد النشر** (قراءة فقط، آمن على staging/production) — يؤكّد أن البناء
+    المنشور حيّ ويحمل فعلاً أعمال المالية/الضرائب ومحرك السياسات:
+
+    ```bash
+    E2E_BASE=https://api.nqlah.nx.sa/api node scripts/post-deploy-check.mjs
+    # أو:  E2E_BASE=https://api.nqlah.nx.sa/api pnpm check:deployed
+    ```
+
+    يفحص `/health`، تسجيل دخول الأدمن، وجود `code` + `vatRegistered` على الشركات،
+    نقاط `/policies/plans` و`/invoices`، وأن `PATCH /admin/companies/:id/tax` مركّبة
+    (رقم ضريبي غير صالح → 400، وليس 404 = بناء قديم). يخرج بـ 0 عند نجاح كل الفحوص.
+
 ---
 
 ## 2. Production Server

@@ -17,6 +17,7 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "check:i18n": "tsx scripts/check-translations.ts",
+    "check:deployed": "node scripts/post-deploy-check.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "devDependencies": {
