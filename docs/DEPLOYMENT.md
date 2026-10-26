@@ -88,8 +88,8 @@
    (يطبّق migrations + الأدمن + الهوية الضريبية، وكلها idempotent):
 
    ```bash
-   bash scripts/deploy-db.sh                 # production (ensure-admin)
-   SEED_MODE=seed bash scripts/deploy-db.sh  # staging (demo seed)
+   sh scripts/deploy-db.sh                 # production (ensure-admin)
+   SEED_MODE=seed sh scripts/deploy-db.sh  # staging (demo seed)
    ```
 
    أو يدوياً، بنفس الترتيب:
