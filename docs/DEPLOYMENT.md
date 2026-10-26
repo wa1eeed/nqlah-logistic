@@ -88,9 +88,14 @@
    (يطبّق migrations + الأدمن + الهوية الضريبية، وكلها idempotent):
 
    ```bash
-   bash scripts/deploy-db.sh                 # production (ensure-admin)
-   SEED_MODE=seed bash scripts/deploy-db.sh  # staging (demo seed)
+   sh scripts/deploy-db.sh                 # production (ensure-admin)
+   SEED_MODE=seed sh scripts/deploy-db.sh  # staging (demo seed)
    ```
+
+   > ℹ️ داخل حاوية الـAPI على Coolify يكون المجلد `/app` هو `apps/api` نفسه (بلا جذر
+   > المستودع، فلا يوجد `scripts/`). استخدم أمر الحزمة المكافئ من `/app` مباشرةً:
+   > `npm run db:deploy` (production) أو `npm run db:deploy:seed` (staging) — وكلاهما
+   > يطبّق migrations ثم الأدمن ثم الهوية الضريبية.
 
    أو يدوياً، بنفس الترتيب:
    - **migrations:** `npx prisma migrate deploy` (لا `migrate dev` في staging/prod)

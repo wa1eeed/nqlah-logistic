@@ -1,12 +1,14 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 #
 # Post-deploy database step for the Naqla API container (staging / production).
+# POSIX sh — works with the container's /bin/sh (busybox ash on Alpine); bash
+# is not required.
 #
 # Run this AFTER the new code is deployed (Coolify Redeploy), from inside the
 # API container, e.g.:
 #
-#     bash scripts/deploy-db.sh
-#     # or:  SEED_MODE=seed bash scripts/deploy-db.sh   (staging, adds demo data)
+#     sh scripts/deploy-db.sh
+#     # or:  SEED_MODE=seed sh scripts/deploy-db.sh   (staging, adds demo data)
 #
 # It is safe to re-run: every step is idempotent.
 #
@@ -27,7 +29,10 @@
 #   SEED_MODE=seed                — run the demo seed instead of ensure-admin
 #                                   (staging only; NEVER in production)
 
-set -euo pipefail
+set -eu
+# pipefail is not POSIX; enable it only when the shell supports it (busybox ash
+# and bash do), so a bare `sh` without it does not abort on `set`.
+(set -o pipefail) 2>/dev/null && set -o pipefail || true
 
 # Resolve the API directory whether this is run from the repo root or apps/api.
 if [ -f "prisma/schema.prisma" ]; then
