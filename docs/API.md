@@ -226,6 +226,17 @@ Authorization: Bearer <accessToken>
 | `GET` | `/orders/:id/tracking` 🔒 | tracking events |
 | `POST` | `/orders/:id/tracking` 🔒 | تحديث حالة/موقع |
 
+#### Consolidated-order legs — `/orders/:id/legs` (see [`docs/ORDERS.md`](ORDERS.md))
+
+| Method | Path | Who | Description |
+|---|---|---|---|
+| `GET` | `/orders/:id/legs` 🔒 | client / leg carrier / order carrier / admin | Full 1..N leg list: per-leg spec (type/destination/price), carrier, plate/driver, status, `bidCount`, and the caller's own bid; `heterogeneous` flag |
+| `POST` | `/orders/:id/legs/:index/assign-carrier` 🔒 | client / admin | Assign a carrier to a leg `{ carrierId, price? }` |
+| `DELETE` | `/orders/:id/legs/:index/carrier` 🔒 | client / admin | Clear a leg's carrier |
+| `POST` | `/orders/:id/legs/:index/distribute` 🔒 | leg carrier / admin | Assign the carrier's own truck `{ truckId, driverId? }` (type must match) |
+| `DELETE` | `/orders/:id/legs/:index` 🔒 | leg carrier / admin | Un-distribute the truck |
+| `PATCH` | `/orders/:id/legs/:index/status` 🔒 | leg carrier / admin | Advance the leg; `DELIVERED` releases the leg payout |
+
 #### `GET /api/orders` list response — embedded bids
 كل طلب في القائمة يأتي مع مصفوفة `bids` خفيفة (id + carrierId + status + amount فقط) ليتمكّن الـ frontend من معرفة "هل قدّمت عرضاً على هذا الطلب؟" دون ضربة API إضافية. الـ payload الكامل للعرض (notes / estimatedDays / proposedPickupDate / …) يأتي من `GET /api/orders/:id`.
 
@@ -293,6 +304,14 @@ POST /api/orders/:orderId/bids
 | `POST` | `/bids/:id/accept` 🔒 | قبول العرض (من العميل) |
 | `POST` | `/bids/:id/reject` 🔒 | رفض العرض |
 
+Bids are also mounted per order at `/orders/:orderId/bids`:
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/orders/:orderId/bids?legIndex=N` 🔒 | List an order's bids, or one leg's bids (`legIndex`); the order-level list excludes leg bids |
+| `POST` | `/orders/:orderId/bids` 🔒 | Order-level bid, or a **per-leg** bid with `{ legIndex, amount }` — the leg must be open and the carrier must own a truck of its type (`NO_MATCHING_TRUCK` / `LEG_ALREADY_ASSIGNED`) |
+| `POST` | `/orders/:orderId/bids/:id/accept` 🔒 | Accept; a leg bid **awards the leg** (carrier + price + split) and rejects the other bids on that leg |
+
 #### Bid body example
 ```jsonc
 POST /api/bids
@@ -304,6 +323,16 @@ POST /api/bids
   "notes": "شاحنة 2024، تأمين شامل"
 }
 ```
+
+### 3.5b Policies & Groups — `/api/policies` (see [`docs/POLICIES.md`](POLICIES.md))
+
+| Method | Path | Who | Description |
+|---|---|---|---|
+| `GET` | `/policies/mine` 🔒 | any client | The caller's effective policy (its group's, else defaults) |
+| `GET` | `/policies/visible-carriers` 🔒 | any client | Active carriers the client may target for a DIRECT order |
+| `GET`/`POST`/`PUT`/`DELETE` | `/policies/groups[/:id]` 🔒👮 | admin | Client-group CRUD (allow toggles, module defaults, enforcement, visibility, `clientIds`) |
+| `POST` | `/policies/assign` 🔒👮 | admin | Move a client into a group (single-membership) |
+| `GET`/`POST`/`PUT`/`DELETE` | `/policies/carrier-groups[/:id]` 🔒👮 | admin | Carrier-group CRUD |
 
 ### 3.6 Fleet — `/api/fleet`
 
@@ -383,6 +412,11 @@ POST /api/uploads/presign
 | `GET` | `/admin/dashboard/stats` 👮 | إحصاءات اللوحة |
 | `GET` | `/admin/companies` 👮 | كل الشركات + KYC queue |
 | `PUT` | `/admin/companies/:id/status` 👮 | اعتماد/رفض/تعليق (ACTIVE/SUSPENDED/REJECTED) |
+| `GET` | `/admin/companies/:id/trucks` 👮 | Company fleet (360° detail) |
+| `GET` | `/admin/companies/:id/drivers` 👮 | Company drivers (360° detail) |
+| `GET` | `/admin/companies/:id/statement` 👮 | Account statement (wallet, ledger) |
+| `GET` | `/admin/companies/:id/audit` 👮 | Activity & audit-log timeline (users + company + orders) |
+| `POST` | `/admin/companies/:id/notes` 👮 | Issue a credit/debit account note |
 | `GET` | `/admin/orders` 👮 | كل الطلبات في النظام |
 | `GET` | `/admin/disputes` 👮 | كل النزاعات |
 | `PUT` | `/admin/disputes/:id` 👮 | حل نزاع (resolution + note) |

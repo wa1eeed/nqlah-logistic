@@ -6,6 +6,26 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.71 — Documentation deep-polish pass (2026-10-26)
+
+Final English deep-docs pass over the `docs/` references to match the current platform.
+
+- **`docs/ORDERS.md`** rewritten: single vs consolidated, heterogeneous legs
+  (per-leg truck type/destination/price), per-leg carriers + per-leg bidding +
+  settlement, the full leg/bid API surface, authorization, and UI.
+- **`docs/POLICIES.md`** rewritten: per-group modules (allow toggles + defaults +
+  collection enforcement), provider-visibility scope, carrier groups, the policy
+  API (incl. `visible-carriers`), and the elegant module-card UI.
+- **`docs/API.md`**: added the consolidated-leg endpoints, per-leg bidding, the
+  Policies & Groups section, and the admin per-company endpoints (statement/audit/…).
+- **`docs/ARCHITECTURE.md`**: model list updated to 28 models / 22 enums (OrderLeg,
+  OrderStop, PolicyGroup, CarrierGroup, FreelancerInvoice, SupportTicket,
+  SavedAddress; Company code/entityType/owner/white-label); added the Policies,
+  Driver and White-label modules.
+- **`README.md`**: feature list refreshed to v0.9.70 (driver portal, per-group
+  modules, heterogeneous/per-leg orders, 360° detail, short codes); corrected the
+  app count (5) and schema counts.
+
 ### v0.9.70 — Per-leg open-market bidding (phase 2b) (2026-10-26)
 
 Carriers can now **bid on individual legs** of a heterogeneous consolidated order,

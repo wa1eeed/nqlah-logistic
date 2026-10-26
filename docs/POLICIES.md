@@ -1,73 +1,140 @@
-# Client Policies — Per-Client / Per-Group Configuration
+# Client Policies & Platform Modules — Per-Group Configuration
 
-Admins tailor how the platform behaves **per client** (grouped into policy
-groups): which distribution, pricing, and payment options the client sees when
-creating an order.
+Admins tailor how the platform behaves **per client group**: which sourcing,
+pricing, collection and provider-visibility options a client sees, the group's
+**defaults** for each module, and whether a module is **enforced**. Everything is
+configured by the **admin**, not the client.
 
 ---
 
 ## 1. Model
 
-`packages/shared-utils/src/mock-data.ts`.
+Prisma `PolicyGroup` (`apps/api/prisma/schema.prisma`); frontend `ClientPolicy`
+(`packages/shared-utils/src/mock-data.ts`).
 
 ```ts
 interface ClientPolicy {
+  // ── Allow toggles (which options the client may use) ──
   allowMarket: boolean;        // publish to the open market
   allowDirect: boolean;        // direct-assign to a carrier
   forcedCarrierId?: string;    // lock direct-assign to this carrier (market off)
   allowMarketPricing: boolean; // carriers bid
   allowFixedPricing: boolean;  // client sets a fixed price
-  allowPrepaid: boolean;       // Escrow
+  allowPrepaid: boolean;       // Escrow / prepaid wallet / gateway
   allowCOD: boolean;           // cash on delivery
+
+  // ── Per-group module DEFAULTS (admin-set) ──
+  defaultAssignment?: 'MARKET' | 'DIRECT';
+  defaultPricing?: 'MARKET' | 'FIXED';
+  defaultCollectionMethod?: 'ESCROW' | 'PREPAID_WALLET' | 'PREPAID_GATEWAY' | 'COD';
+  enforceCollectionMethod?: boolean;   // force the default; the client can't override
+
+  // ── Provider visibility scope ──
+  visibilityScope?: 'ALL' | 'GROUP' | 'CARRIER';
+  visibleCarrierGroupId?: string;      // when scope = GROUP
 }
-
-interface PolicyGroup { id; name; description?; policy: ClientPolicy; clientIds: string[]; }
-
-policyForClient(clientId, groups?) // → the client's group policy, else DEFAULT_CLIENT_POLICY
 ```
 
-`DEFAULT_CLIENT_POLICY` enables everything. `POLICY_GROUPS_SEED` ships two example
-groups (a contracted/forced-provider group and a market-only group).
+- A **client belongs to at most one** `PolicyGroup`; ungrouped clients use
+  `DEFAULT_CLIENT_POLICY` (everything allowed, no defaults, no enforcement,
+  scope `ALL`). Both `assignClient` and `updateGroup(clientIds)` strip a client
+  from every other group, so the effective policy is never ambiguous.
+- A **`CarrierGroup`** is a named set of providers, used as the target of a client
+  group's `GROUP` visibility scope.
 
-## 2. Admin UI
+---
 
-**Admin → Settings → «سياسات العملاء»**
-(`apps/web/admin/src/components/settings/client-policies-panel.tsx`, backed by
-`stores/policy-store.ts`, Zustand + persist):
+## 2. The modules
 
-- Create / rename / delete **groups**.
-- Per group: toggle each policy option (Switch), pick a **forced provider** for
-  direct-assign, and **link clients** (a client belongs to at most one group).
-- A **default** section lists clients with no group (all options enabled).
+Each client group configures four modules, surfaced in the admin UI as four
+colour-coded cards:
 
-## 3. Client form gating
+1. **Assignment** — `allowMarket` / `allowDirect` toggles + a `defaultAssignment`.
+   A `forcedCarrierId` pins every order to one provider (direct-only).
+2. **Pricing** — `allowMarketPricing` / `allowFixedPricing` toggles + a
+   `defaultPricing`.
+3. **Collection** — `allowPrepaid` / `allowCOD` toggles, a `defaultCollectionMethod`,
+   and an **enforce** switch. When enforced, the order's collection method is
+   forced to the group default and the client's choice is ignored
+   (`CollectionService.resolveMethod`); otherwise the client's choice wins, falling
+   back to the group default, then `ESCROW`. The result is always validated against
+   the allow toggles.
+4. **Provider visibility** — `visibilityScope`: `ALL` (whole market), `GROUP` (only
+   `visibleCarrierGroupId`'s carriers), or `CARRIER` (only `forcedCarrierId`).
 
-The new-order form (`apps/web/client/.../orders/new/page.tsx`) computes
-`policyForClient(CURRENT_CLIENT_ID)` and:
+### How defaults are applied (order creation)
 
-- hides the distribution / pricing / payment options the policy disables;
-- pre-selects the only remaining option;
-- when `forcedCarrierId` is set, locks the order to direct-assign to that
-  provider and shows a notice.
+`OrdersService.resolveSourcing` + `CollectionService.resolveMethod`:
 
-## 4. Backend (v0.9.27)
+- **Sourcing** — when the client omits the mode, the group's `defaultAssignment`
+  is used; with no default, the mode is derived from the allow toggles (direct when
+  the market is disabled) so an unspecified mode never lands on a disabled module.
+- **Pricing** — `defaultPricing` seeds the client form; fixed pricing is gated by
+  `allowFixedPricing`.
+- **Collection** — the default/enforcement above.
 
-Policies are now persisted by the API (see `docs/LOCAL_BACKEND.md`), so an admin
-change reaches the client's order form — the localStorage-per-origin limitation
-is gone.
+---
 
-- Prisma model `PolicyGroup` (the 7 flags + `forcedCarrierId` + `clientIds`),
-  migration `add_policy_groups`. A client belongs to at most one group.
-- Module `apps/api/src/modules/policies/`:
-  `GET /policies/mine` (effective policy for the acting client — its group's,
-  else all-enabled defaults); admin-guarded `GET/POST/PUT/DELETE
-  /policies/groups` and `POST /policies/assign`.
-- The admin panel and the client new-order form call these endpoints; both keep
-  a mock fallback for offline/design runs. The client form **clamps** its
-  current selections to valid options when the policy loads or changes.
+## 3. Provider visibility
 
-## 5. Demo note
+`PoliciesService` resolves, from a client's group:
 
-With the backend running, admin edits apply to the client immediately. Without
-it, each app falls back to the seeded policy in its own origin (the original
-demo behavior).
+- `visibleCarrierIds(clientId)` — the carriers a client may see/deal with (`null` =
+  whole market). A carrier-owned (sub-tenant) client can only ever see its owner.
+- `visibleCarriersForClient(clientId)` — the **active** carrier companies for the
+  client's DIRECT picker (powers `GET /policies/visible-carriers`).
+- `canCarrierServeClient(carrierId, clientId)` — whether a carrier may bid on a
+  client's market order.
+- `restrictedClientIdsForCarrier(carrierId)` — clients whose market orders are
+  hidden from a carrier (filters the carrier's market listing).
+
+These are enforced server-side: the carrier market list excludes restricted
+clients, bids are rejected for out-of-scope carriers, and a DIRECT `targetCarrierId`
+outside the visible set is rejected at order creation.
+
+---
+
+## 4. API
+
+Module `apps/api/src/modules/policies/`:
+
+| Endpoint | Who | Purpose |
+| --- | --- | --- |
+| `GET /policies/mine` | any client | The caller's effective policy (its group's, else defaults). |
+| `GET /policies/visible-carriers` | any client | The active carriers the client may target for a DIRECT order. |
+| `GET/POST/PUT/DELETE /policies/groups` | admin | Client-group CRUD (name, description, full policy, `clientIds`). |
+| `POST /policies/assign` | admin | Move a client into a group (or out). |
+| `GET/POST/PUT/DELETE /policies/carrier-groups` | admin | Carrier-group CRUD. |
+
+The admin panel and the client new-order form call these; both keep a mock
+fallback for offline/design runs. The client form **seeds** its selections from the
+group's defaults, **clamps** disallowed selections when the policy loads, and
+**locks** the payment step when the collection method is enforced.
+
+---
+
+## 5. Admin UI
+
+**Admin → Policies & Groups** (`apps/web/admin/src/app/(app)/policies/page.tsx`):
+
+- Tabs for **client groups** (`client-policies-panel.tsx`) and **carrier groups**
+  (`carrier-groups-panel.tsx`).
+- Each client group renders as four colour-coded, icon-led module cards with an
+  at-a-glance chip summary (a 🔒 lock on an enforced collection method), per-module
+  toggles, and a default selector.
+- Create / rename / delete groups; link clients (single-membership); pick a forced
+  provider or a visible carrier group.
+- Group membership is reflected on the company list (a group-name tag) and the
+  company 360° detail header.
+
+---
+
+## 6. Changelog anchors
+
+- v0.9.27 — policies persisted by the API.
+- v0.9.6x — dedicated Policies & Groups page; carrier groups; provider visibility
+  scope; group tags on companies.
+- v0.9.66 — admin-configured per-group module defaults (assignment / pricing /
+  collection) + collection enforcement + elegant module-card UX.
+- v0.9.67 — client dashboard honours the defaults/enforcement; `visible-carriers`
+  endpoint; single-group-membership + sourcing-fallback robustness.
