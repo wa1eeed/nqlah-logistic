@@ -426,6 +426,22 @@ function Row({ label, value, icon: Icon }: { label: string; value: React.ReactNo
   );
 }
 
+/** Compact per-leg waypoints line for the admin order detail legs list. */
+function LegStopsLine({ stops, t }: { stops?: ConsolidatedLeg['stops']; t: (key: string) => string }) {
+  if (!stops || stops.length === 0) return null;
+  const label = (type: string) => {
+    const k = `adminDetail.legStops.types.${type}`;
+    const v = t(k);
+    return v === k ? type : v;
+  };
+  return (
+    <div className="flex items-start gap-1 text-[11px] text-muted-foreground flex-wrap">
+      <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+      <span>{t('adminDetail.legStops.label')} {stops.map((s) => `${label(s.type)}${s.city ? ` · ${localizeCity(s.city)}` : ''}`).join('، ')}</span>
+    </div>
+  );
+}
+
 function MapSection({ order }: { order: any }) {
   const t = useTranslations('orders');
   const o = coordsFor(order.originCity);
@@ -721,6 +737,7 @@ function ConsolidatedReadonly({ order }: {
                         {leg.destinationCity && <>· <MapPin className="h-3 w-3" />{localizeCity(leg.destinationCity)}</>}
                       </div>
                     )}
+                    <LegStopsLine stops={leg.stops} t={t} />
                     {driverName
                       ? <div className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="h-3 w-3" /> {driverName}</div>
                       : <div className="text-xs text-muted-foreground">{t('adminDetail.noDriver')}</div>}
@@ -735,6 +752,7 @@ function ConsolidatedReadonly({ order }: {
                       {leg.destinationCity && <>· <MapPin className="h-3 w-3" />{localizeCity(leg.destinationCity)}</>}
                     </div>
                   )}
+                  <LegStopsLine stops={leg.stops} t={t} />
                   <div className="text-xs text-muted-foreground">{t('adminDetail.notAssignedYet')}</div>
                 </div>
               )}

@@ -51,7 +51,8 @@ type RouteSummary = Pick<
  *   destination) built from the flat fields; summary = those same fields.
  */
 function buildRoute(dto: CreateOrderDto): { stopRows: StopCreateRow[]; summary: RouteSummary } {
-  const toRow = (s: CreateStopDto, i: number): StopCreateRow => ({
+  const toRow = (s: CreateStopDto, i: number, legSequence?: number): StopCreateRow => ({
+    legSequence: legSequence ?? null,
     sequence: i + 1,
     type: s.type,
     city: s.city,
@@ -69,13 +70,41 @@ function buildRoute(dto: CreateOrderDto): { stopRows: StopCreateRow[]; summary: 
     isEmptyReturn: s.isEmptyReturn ?? false,
   });
 
+  // Heterogeneous consolidated: each leg with intermediate stops gets its own
+  // route (shared pickup → the leg's stops → the leg's destination), tagged with
+  // `legSequence`. Legs without stops keep their implied pickup→destination route
+  // (no OrderStop rows). The order summary = origin + the first leg's destination.
+  const legs = dto.orderType === 'CONSOLIDATED' && Array.isArray(dto.legs) && dto.legs.length >= 2 ? dto.legs : null;
+  if (legs) {
+    const stopRows: StopCreateRow[] = [];
+    legs.forEach((leg, li) => {
+      const legStops = leg.stops ?? [];
+      if (legStops.length === 0) return;
+      const seq = li + 1;
+      let n = 0;
+      stopRows.push(toRow({ type: 'PICKUP', city: dto.originCity, region: dto.originRegion, address: dto.originAddress, lat: dto.originLat, lng: dto.originLng } as CreateStopDto, n++, seq));
+      for (const s of legStops) stopRows.push(toRow(s, n++, seq));
+      stopRows.push(toRow({ type: 'DELIVERY', city: leg.destinationCity, region: leg.destinationRegion, address: leg.destinationAddress, lat: leg.destinationLat, lng: leg.destinationLng } as CreateStopDto, n++, seq));
+    });
+    const firstLeg = legs[0];
+    return {
+      stopRows,
+      summary: {
+        originCity: dto.originCity, originRegion: dto.originRegion, originAddress: dto.originAddress,
+        originLat: dto.originLat, originLng: dto.originLng,
+        destinationCity: firstLeg.destinationCity, destinationRegion: firstLeg.destinationRegion, destinationAddress: firstLeg.destinationAddress,
+        destinationLat: firstLeg.destinationLat, destinationLng: firstLeg.destinationLng,
+      },
+    };
+  }
+
   if (dto.stops && dto.stops.length >= 2) {
     const stops = dto.stops;
     const first = stops.find((s) => s.type === 'PICKUP') ?? stops[0];
     const lastDelivery = [...stops].reverse().find((s) => DELIVERY_STOP_TYPES.includes(s.type as never));
     const last = lastDelivery ?? stops[stops.length - 1];
     return {
-      stopRows: stops.map(toRow),
+      stopRows: stops.map((s, i) => toRow(s, i)),
       summary: {
         originCity: first.city, originRegion: first.region, originAddress: first.address,
         originLat: first.lat, originLng: first.lng,
@@ -717,10 +746,31 @@ export class OrdersService {
           include: { truck: { select: { plateNumber: true } } },
         },
         orderLegs: { orderBy: { sequence: 'asc' } },
+        stops: { where: { legSequence: { not: null } }, orderBy: [{ legSequence: 'asc' }, { sequence: 'asc' }] },
       },
     });
     if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
     this.assertViewAccess(order, actor);
+
+    // Per-leg intermediate stops (waypoints), grouped by the leg they belong to.
+    // Each leg's route is PICKUP(origin) → waypoints → DELIVERY(destination); the
+    // first and last rows are those synthesized endpoints, so only the middle rows
+    // are the client's added waypoints.
+    const stopsByLeg = new Map<number, Array<{ type: string; city: string; region: string; address: string; instructions: string | null; status: string }>>();
+    {
+      const grouped = new Map<number, typeof order.stops>();
+      for (const s of order.stops) {
+        if (s.legSequence == null) continue;
+        const arr = grouped.get(s.legSequence) ?? [];
+        arr.push(s);
+        grouped.set(s.legSequence, arr);
+      }
+      for (const [seq, rows] of grouped) {
+        const sorted = [...rows].sort((a, b) => a.sequence - b.sequence);
+        const middle = sorted.slice(1, Math.max(1, sorted.length - 1)); // drop synthesized pickup + delivery
+        stopsByLeg.set(seq, middle.map((s) => ({ type: s.type, city: s.city, region: s.region, address: s.address, instructions: s.instructions, status: s.status })));
+      }
+    }
 
     const count = order.truckCount ?? order.orderTrucks.length;
     const heterogeneous = order.orderLegs.length > 0;
@@ -773,6 +823,7 @@ export class OrdersService {
         bidCount: bidsForSeq(s?.id).length,
         myBidAmount: myBid ? Number(myBid.amount) : undefined,
         myBidStatus: myBid?.status,
+        stops: stopsByLeg.get(index) ?? [],
       };
     };
     // Authoritative leg status: OrderLeg.status for heterogeneous orders, the
@@ -1021,7 +1072,7 @@ export class OrdersService {
   async getStops(id: string, actor: AuthUser) {
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: { stops: { orderBy: { sequence: 'asc' } } },
+      include: { stops: { orderBy: [{ legSequence: 'asc' }, { sequence: 'asc' }] } },
     });
     if (!order) throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'الطلب غير موجود' });
     this.assertViewAccess(order, actor);

@@ -38,6 +38,20 @@ const LEG_TONE: Record<ConsolidatedLegStatus, string> = {
   IN_TRANSIT: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
   DELIVERED: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]',
 };
+const STOP_LABEL: Record<string, string> = {
+  DROPOFF: 'تسليم جزئي', PICKUP: 'استلام إضافي', WAREHOUSE: 'مستودع',
+  RETURN_EMPTY: 'إرجاع حاوية فارغة', EXCHANGE: 'تبادل',
+};
+/** Compact per-leg waypoints line: "محطّات: إرجاع حاوية فارغة · جدة، …". */
+function LegStops({ stops }: { stops?: ConsolidatedLeg['stops'] }) {
+  if (!stops || stops.length === 0) return null;
+  return (
+    <div className="mt-0.5 flex items-start gap-1 text-[11px] text-muted-foreground flex-wrap">
+      <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+      <span>محطّات: {stops.map((s) => `${STOP_LABEL[s.type] ?? s.type}${s.city ? ` · ${localizeCity(s.city)}` : ''}`).join('، ')}</span>
+    </div>
+  );
+}
 
 export function ConsolidatedPanel({ order, canDistribute = false }: { order: Order; canDistribute?: boolean }) {
   const overrides = useConsolidatedStore((s) => s.overrides[order.id] ?? {});
@@ -99,7 +113,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
     if (bidLeg == null || !(amt > 0)) return;
     try {
       await api.post(`/orders/${order.id}/bids`, { legIndex: bidLeg, amount: amt });
-      notify.success('تم إرسال عرضك', `الساق ${bidLeg} · ${amt.toLocaleString('en-US')} ر.س.`);
+      notify.success('تم إرسال عرضك', `الرحلة الفرعية ${bidLeg} · ${amt.toLocaleString('en-US')} ر.س.`);
       setBidLeg(null); setBidAmount(''); revalidate();
     } catch (e) { notify.error(e); }
   };
@@ -219,6 +233,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                           {leg.carrierName && <span className="font-medium text-foreground">· {leg.carrierName}</span>}
                         </div>
                       )}
+                      <LegStops stops={leg.stops} />
                       {driver && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Users className="h-3 w-3" /> {driver.fullName}
@@ -238,6 +253,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
                         {leg.carrierName && <span className="font-medium text-foreground">· {leg.carrierName}</span>}
                       </div>
                     )}
+                    <LegStops stops={leg.stops} />
                   </div>
                 )}
                 {heterogeneous && leg.price != null && (
@@ -289,7 +305,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
             <div className="mb-2 text-sm font-semibold">الفاتورة المجمّعة</div>
             <dl className="space-y-1.5 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted-foreground num">{heterogeneous ? <>{count} شاحنات · تسعير لكل ساق</> : <>{count} شاحنات × <Currency amount={perLeg} /></>}</dt>
+                <dt className="text-muted-foreground num">{heterogeneous ? <>{count} شاحنات · تسعير لكل رحلة فرعية</> : <>{count} شاحنات × <Currency amount={perLeg} /></>}</dt>
                 <dd><Currency amount={invoiceTotal} /></dd>
               </div>
               {order.commission != null && (
@@ -316,7 +332,7 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
             <DialogDescription>
               اختر شاحنة من أسطولك — السائق المربوط بها يُسنَد تلقائيا.
               {heterogeneous && openLegSpec?.requiredTruckType && (
-                <span className="mt-1 block">هذه الساق تتطلّب نوع شاحنة: <span className="font-medium text-foreground">{openLegSpec.requiredTruckType}</span></span>
+                <span className="mt-1 block">هذه الرحلة الفرعية تتطلّب نوع شاحنة: <span className="font-medium text-foreground">{openLegSpec.requiredTruckType}</span></span>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -385,8 +401,8 @@ export function ConsolidatedPanel({ order, canDistribute = false }: { order: Ord
       <Dialog open={bidLeg != null} onOpenChange={(o) => { if (!o) { setBidLeg(null); setBidAmount(''); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>عرض سعر للساق رقم {bidLeg}</DialogTitle>
-            <DialogDescription>قدّم سعرك لهذه الساق. يختار العميل العرض المناسب.</DialogDescription>
+            <DialogTitle>عرض سعر للرحلة الفرعية رقم {bidLeg}</DialogTitle>
+            <DialogDescription>قدّم سعرك لهذه الرحلة الفرعية. يختار العميل العرض المناسب.</DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-2">
             <Label htmlFor="legBidAmount" className="text-sm font-medium">سعرك المقترح (ر.س.)</Label>

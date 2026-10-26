@@ -86,8 +86,8 @@
         "admin.wallet.manualTx": "حركة محفظة يدوية",
         "bid.accept": "قبول عرض — ترسية ناقل",
         "bid.reject": "رفض عرض",
-        "order.leg.assignCarrier": "إسناد ناقل لساق",
-        "order.leg.unassignCarrier": "إزالة ناقل ساق"
+        "order.leg.assignCarrier": "إسناد ناقل لرحلة فرعية",
+        "order.leg.unassignCarrier": "إزالة ناقل رحلة فرعية"
       }
     },
     "overview": {

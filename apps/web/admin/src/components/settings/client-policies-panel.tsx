@@ -446,7 +446,7 @@ function GroupCard({
 
 const FEATURE_DEFS: { key: string; label: string; hint: string }[] = [
   { key: 'consolidatedOrders', label: 'الطلبات المجمّعة', hint: 'إنشاء طلبات متعددة الشاحنات' },
-  { key: 'perLegCarriers', label: 'ناقل/مزايدة لكل ساق', hint: 'سيقان متغايرة بناقلين مستقلين' },
+  { key: 'perLegCarriers', label: 'ناقل/مزايدة لكل رحلة فرعية', hint: 'رحلات فرعية متغايرة بناقلين مستقلين' },
   { key: 'liveTracking', label: 'التتبّع اللحظي', hint: 'تتبّع الشحنات على الخريطة' },
   { key: 'freelancerFleet', label: 'الأسطول المستقل', hint: 'للمزوّد — شاحنات فري‑لانسر' },
   { key: 'whiteLabel', label: 'الوايت ليبل', hint: 'للمزوّد — علامة تجارية خاصة' },

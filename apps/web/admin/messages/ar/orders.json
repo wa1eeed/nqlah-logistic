@@ -166,15 +166,19 @@
  "notAssignedYet": "لم تُوزَّع بعد",
  "consolidatedInvoice": "الفاتورة المجمّعة",
  "trucksMultiplier": "{count} شاحنات × ",
-    "perLegPricing": "تسعير لكل ساق",
+    "perLegPricing": "تسعير لكل رحلة فرعية",
     "legCarrier": {
       "assign": "إسناد ناقل",
       "none": "— بدون ناقل —",
       "bids": "{count} عروض",
-      "bidsTitle": "عروض الساق {index}",
-      "bidsDesc": "اعتمد عرضاً لإسناد ناقله إلى الساق.",
-      "noBids": "لا عروض على هذه الساق بعد",
+      "bidsTitle": "عروض الرحلة الفرعية {index}",
+      "bidsDesc": "اعتمد عرضاً لإسناد ناقله إلى الرحلة الفرعية.",
+      "noBids": "لا عروض على هذه الرحلة الفرعية بعد",
       "award": "اعتماد"
+    },
+    "legStops": {
+      "label": "محطّات:",
+      "types": { "DROPOFF": "تسليم جزئي", "PICKUP": "استلام إضافي", "WAREHOUSE": "مستودع", "RETURN_EMPTY": "إرجاع حاوية فارغة", "EXCHANGE": "تبادل" }
     },
  "total": "الإجمالي",
  "singleInvoice": "فاتورة واحدة برقم الطلب {orderNumber}.",

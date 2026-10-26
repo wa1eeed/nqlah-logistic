@@ -110,6 +110,8 @@ export interface ConsolidatedLeg {
   bidCount?: number;
   myBidAmount?: number;
   myBidStatus?: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN' | 'EXPIRED';
+  /** Per-leg intermediate stops (waypoints) for this leg's own route. */
+  stops?: Array<{ type: string; city: string; region?: string; address?: string; instructions?: string | null; status?: string }>;
 }
 
 export interface Order {
