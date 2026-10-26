@@ -221,7 +221,9 @@ Authorization: Bearer <accessToken>
 | `PUT` | `/orders/:id` 🔒 | تحديث طلب (قبل النشر) |
 | `POST` | `/orders/:id/publish` 🔒 | نشر الطلب للسوق |
 | `POST` | `/orders/:id/cancel` 🔒 | إلغاء (مع منطق الرسوم) |
-| `POST` | `/orders/:id/confirm` 🔒 | تأكيد الاستلام النهائي |
+| `POST` | `/orders/:id/confirm` 🔒 | تأكيد الناقل للإسناد (ASSIGNED → CONFIRMED) |
+| `POST` | `/orders/:id/deliver` 🔒 | الناقل يضع "تم التسليم" (→ DELIVERED) |
+| `POST` | `/orders/:id/complete` 🔒 | العميل يؤكّد الاستلام (→ COMPLETED) — يُسوّي التحصيل ويُصدر الفواتير الضريبية |
 | `POST` | `/orders/:id/assign` 🔒👮 | إسناد إداري |
 | `GET` | `/orders/:id/tracking` 🔒 | tracking events |
 | `POST` | `/orders/:id/tracking` 🔒 | تحديث حالة/موقع |
@@ -357,13 +359,18 @@ POST /api/bids
 | `POST` | `/payments/:id/release` 🔒👮 | إفراج يدوي من Escrow |
 | `GET` | `/payments/transactions` 🔒 | سجل المعاملات |
 
-### 3.8 Invoices — `/api/invoices`
+### 3.8 Invoices — `/api/invoices` (see [`docs/INVOICES.md`](INVOICES.md))
+
+VAT-compliant tax invoices. Completing an order auto-issues a **SERVICE** invoice
+(carrier → client) and a **COMMISSION** invoice (platform → bearer); `BOTH` ⇒ two
+commission invoices. See [`INVOICES.md`](INVOICES.md) for the model & ZATCA snapshots.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/invoices` 🔒 | فواتيري |
-| `GET` | `/invoices/:id` 🔒 | فاتورة (مع رابط PDF) |
-| `POST` | `/invoices/:id/send` 🔒 | إرسال للعميل بالبريد |
+| `GET` | `/invoices` 🔒 | فواتيري (الصادرة والواردة؛ الأدمن يرى الكل) |
+| `GET` | `/invoices/:id` 🔒 | فاتورة مع الأطراف والطلب |
+| `POST` | `/invoices/:id/send` 🔒 | تعليم الفاتورة كمُصدَرة |
+| `POST` | `/invoices` 🔒 | فاتورة يدوية (back-office) |
 
 ### 3.9 Tracking — `/api/tracking`
 
@@ -412,6 +419,7 @@ POST /api/uploads/presign
 | `GET` | `/admin/dashboard/stats` 👮 | إحصاءات اللوحة |
 | `GET` | `/admin/companies` 👮 | كل الشركات + KYC queue |
 | `PUT` | `/admin/companies/:id/status` 👮 | اعتماد/رفض/تعليق (ACTIVE/SUSPENDED/REJECTED) |
+| `PATCH` | `/admin/companies/:id/tax` 👮 | تحديث حالة التسجيل الضريبي `{ vatRegistered?, vatNumber? }` (مُدقّق) |
 | `GET` | `/admin/companies/:id/trucks` 👮 | Company fleet (360° detail) |
 | `GET` | `/admin/companies/:id/drivers` 👮 | Company drivers (360° detail) |
 | `GET` | `/admin/companies/:id/statement` 👮 | Account statement (wallet, ledger) |

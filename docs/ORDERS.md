@@ -44,10 +44,17 @@ model OrderLeg {
   carrierId?                     // the carrier serving this leg
   status                         // PENDING | ASSIGNED | IN_TRANSIT | DELIVERED
   commissionAmount?, carrierAmount?   // per-leg financial split of `price`
+  serviceVatAmount?, commissionVatAmount?   // per-leg VAT breakdown (phase 2a)
   settledAt?                     // when the leg payout was released
   bids Bid[]                     // phase 2b — per-leg bids
 }
 ```
+
+**Order-level financials** (set at create / assign / bid-accept, see
+[`FINANCE.md`](FINANCE.md)): `agreedPrice`, `commissionAmount`, `carrierAmount`,
+and the VAT breakdown `serviceVatAmount`, `commissionVatAmount`, `clientTotalDue`.
+`Order.invoices[]` holds the tax invoices issued on completion
+([`INVOICES.md`](INVOICES.md)).
 
 Frontend shape (`packages/shared-utils/src/mock-data.ts`):
 

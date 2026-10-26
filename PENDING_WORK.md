@@ -365,10 +365,17 @@ capability layer), per the owner's direction.
    legacy group > default); enforced gates (consolidatedOrders / perLegCarriers /
    whiteLabel); plans API + admin «محرك السياسات والتشغيل» (Plans tab + Features
    section + company plan assignment). e2e `plans.e2e.mjs`.
-2. **Phase 2 — finance & tax**: dynamic commission (rate + appliesTo CLIENT/CARRIER/
-   BOTH + per-plan override), VAT model (`Company.vatRegistered` + VAT number at
-   carrier-company signup, 15 digits, "not VAT-registered" toggle), VAT-inclusive/
-   exclusive pricing, commission's own VAT, and VAT-compliant **tax invoices**
-   (carrier service invoice + platform commission invoice). ZATCA/Fatoora later.
-3. **Later:** bind a plan at registration + plan selection at signup; subscription
-   billing/cycle + upgrade/downgrade; profile versioning.
+2. ✅ **Phase 2a — dynamic commission + VAT** (v0.9.76): `computeOrderFinancials`
+   (commission appliesTo CLIENT/CARRIER/BOTH, VAT-inclusive/exclusive, commission's
+   own VAT), `Company.vatRegistered` + VAT number at carrier-company signup (15
+   digits, "not VAT-registered" toggle), `PATCH /admin/companies/:id/tax`, VAT
+   breakdown on orders/legs, admin Financials + Tax & VAT card. `finance.e2e.mjs`.
+   See [`docs/FINANCE.md`](docs/FINANCE.md).
+3. ✅ **Phase 2b — tax invoices** (v0.9.77): VAT-compliant invoices on completion —
+   carrier SERVICE invoice (→ client) + platform COMMISSION invoice(s) (→ bearer;
+   BOTH ⇒ two halves), `InvoiceKind`, ZATCA party snapshots, platform identity in
+   settings, admin Tax Invoices card. `tax-invoices.e2e.mjs`.
+   See [`docs/INVOICES.md`](docs/INVOICES.md).
+4. **Later:** invoice PDF + Fatoora Phase-2 QR/TLV; buyer-facing invoice lists in
+   the client/carrier apps; bind a plan at registration + plan selection at signup;
+   subscription billing/cycle + upgrade/downgrade; profile versioning.

@@ -6,6 +6,53 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.77 — VAT-compliant tax invoices (phase 2b) (2026-10-26)
+
+Completing an order now auto-issues ZATCA-aligned **tax invoices** from the stored
+financials, inside the completion transaction and idempotently. See
+[`docs/INVOICES.md`](docs/INVOICES.md).
+
+- **Invoices:** one **SERVICE** invoice (carrier → client; VAT only if the carrier
+  is VAT-registered) + one **COMMISSION** invoice per bearer (platform → bearer,
+  always VAT-bearing). `commissionAppliesTo = BOTH` ⇒ two commission invoices
+  (half each, summing to the full commission).
+- **Schema:** `InvoiceKind` enum (`SERVICE` | `COMMISSION`) + `Invoice.kind`;
+  `orderId` no longer unique (indexed); `issuerId`/`receiverId` now optional (the
+  platform is a party with no `Company` row); immutable ZATCA party snapshots
+  (`seller*`/`buyer*`); `Order.invoice` → `invoices` (one-to-many). Migration
+  `20261026300000_tax_invoices`. Platform legal identity seeded as settings
+  (`platform_vat_number`, `platform_cr_number`, `platform_address`).
+- **Engine:** `InvoicesService.generateForOrder(tx, orderId, financials)`, invoked
+  by `OrdersService.complete`.
+- **Web (admin):** order detail gains a **Tax Invoices** card (kind, parties,
+  base/VAT/total).
+- Verified: new `tax-invoices.e2e.mjs` (16 checks) + full e2e **7 suites** + API
+  jest 39/39; admin typecheck clean.
+
+### v0.9.76 — Dynamic commission + VAT math + VAT registration (phase 2a) (2026-10-26)
+
+The commission config on the Policy Profile becomes real money math, with Saudi
+VAT. See [`docs/FINANCE.md`](docs/FINANCE.md).
+
+- **Pricing:** `computeOrderFinancials()` (`apps/api/src/common/pricing/pricing.ts`)
+  — service base/VAT, platform commission with its **own** VAT, carrier net, client
+  total due. `commissionAppliesTo` `CLIENT`/`CARRIER`/`BOTH`; `priceVatInclusive`;
+  carriers that aren't VAT-registered charge no service VAT. Rate precedence
+  **plan/profile → carrier → default (0.08)**; `VAT_RATE = 0.15`.
+- **Schema:** `Company.vatRegistered`; `Order.serviceVatAmount /
+  commissionVatAmount / clientTotalDue`; `OrderLeg.serviceVatAmount /
+  commissionVatAmount`. Migration `20261026280000_finance_vat`.
+- **Wiring:** financials computed & stored on create / admin assign / per-leg
+  assign / bid-accept; `CollectionService` settles against `clientTotalDue` and
+  deducts commission VAT on COD.
+- **Registration & admin:** carrier (COMPANY) signup captures `crNumber`,
+  `vatNumber` (15 digits), and a "not VAT registered" toggle (VAT number required
+  when registered); `PATCH /admin/companies/:id/tax` (audited) edits it later.
+- **Web (admin):** order Financials shows service VAT / commission VAT / client
+  total due; company 360° profile gains a **Tax & VAT** card.
+- Verified: `pricing.spec.ts` (7) + new `finance.e2e.mjs` (9) + full e2e; all web
+  apps typecheck.
+
 ### v0.9.75 — Workflow & Policy Engine — Plans + capability layer (phase 1) (2026-10-26)
 
 Evolves the per-group policy settings into a real **Workflow & Policy Engine**:
