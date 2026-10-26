@@ -84,11 +84,21 @@
 7. اضبط `SEED_ADMIN_EMAIL` و `SEED_ADMIN_PASSWORD` (في Coolify) — كلمة مرور قوية،
    خاصّةً في production. هي مصدر بيانات دخول الأدمن.
 8. شغّل: `NODE_ENV={env} pnpm --filter @naqla/api start` — الـ validation يجب أن يمرّ
-9. طبّق migrations: `npx prisma migrate deploy` (لا `migrate dev` في staging/prod)
-10. أنشئ الأدمن:
-    - **production:** `node dist/prisma/ensure-admin.js` (أو `pnpm --filter @naqla/api db:ensure-admin`) — ينشئ/يحدّث الأدمن فقط من الـ env، بلا بيانات تجريبية.
-    - **staging / تجربة:** `node dist/prisma/seed.js` (أو `pnpm db:seed`) — يضيف الأدمن + كل البيانات التجريبية.
-    - **تغيير بيانات الأدمن لاحقاً:** حدّث `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` في Coolify ثم أعد تشغيل `db:ensure-admin` (يحدّث نفس السجل في مكانه).
+9. **خطوة قاعدة البيانات بعد كل نشر** — من داخل حاوية الـ API شغّل السكربت الموحّد
+   (يطبّق migrations + الأدمن + الهوية الضريبية، وكلها idempotent):
+
+   ```bash
+   bash scripts/deploy-db.sh                 # production (ensure-admin)
+   SEED_MODE=seed bash scripts/deploy-db.sh  # staging (demo seed)
+   ```
+
+   أو يدوياً، بنفس الترتيب:
+   - **migrations:** `npx prisma migrate deploy` (لا `migrate dev` في staging/prod)
+   - **الأدمن:** production → `pnpm --filter @naqla/api db:ensure-admin` (من الـ env، بلا بيانات تجريبية)؛ staging → `pnpm db:seed` (أدمن + بيانات تجريبية). لتغيير بيانات الأدمن لاحقاً: حدّث `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` ثم أعد تشغيل `db:ensure-admin`.
+   - **الهوية الضريبية للمنصّة:** `pnpm --filter @naqla/api db:ensure-platform-identity` — يضبط البائع في فواتير العمولة من الـ env (`PLATFORM_VAT_NUMBER` 15 رقماً، `PLATFORM_CR_NUMBER`، `PLATFORM_NAME_AR`، `PLATFORM_ADDRESS`). راجع [`INVOICES.md`](INVOICES.md).
+
+   > ⚠️ اضبط `PLATFORM_VAT_NUMBER` على الرقم الضريبي الحقيقي لنقلة في Coolify **قبل**
+   > أن يُكمَل أي طلب في production — وإلا ستصدر فواتير العمولة برقم فارغ/تجريبي.
 
 ---
 
