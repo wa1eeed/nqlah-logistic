@@ -44,8 +44,15 @@ export class OrdersController {
   constructor(private orders: OrdersService) {}
 
   @Get()
-  list(@Query() q: OrdersQueryDto, @CurrentUser() actor: AuthUser) {
-    return this.orders.list(q, actor);
+  list(
+    @Query() q: OrdersQueryDto,
+    // Read `mine` as a raw string: global `enableImplicitConversion` turns the
+    // literal "false" into the truthy boolean `true`, so the DTO's boolean
+    // cannot be trusted. Typed as string it stays "true"/"false" verbatim.
+    @Query('mine') mineRaw: string | undefined,
+    @CurrentUser() actor: AuthUser,
+  ) {
+    return this.orders.list({ ...q, mine: mineRaw === 'true' }, actor);
   }
 
   @Post()
