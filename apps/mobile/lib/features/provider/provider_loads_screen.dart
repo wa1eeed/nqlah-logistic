@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/orders/order_draft_controller.dart' show truckOptions;
 import '../../core/orders/order_models.dart';
 import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
@@ -11,7 +12,9 @@ import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/availability_card.dart' show MetaItem;
 import '../../design_system/button.dart';
+import '../../design_system/chip.dart';
 import '../../design_system/load_card.dart';
+import '../../design_system/segmented.dart';
 
 const _collectionLabels = {
   'COD': 'الدفع عند التسليم',
@@ -34,6 +37,12 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
   final _search = TextEditingController();
   String _query = '';
   String? _busyOrderId;
+  // 1g filters (client-side on the loaded list).
+  String _priceFilter = 'ALL'; // ALL / FIXED / TENDER / DIRECT
+  final Set<String> _truckFilter = {};
+
+  int get _activeFilterCount =>
+      (_priceFilter != 'ALL' ? 1 : 0) + (_truckFilter.isNotEmpty ? 1 : 0);
 
   @override
   void dispose() {
@@ -380,7 +389,13 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
           const SizedBox(height: 14),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _searchField(c),
+            child: Row(
+              children: [
+                _filterButton(c),
+                const SizedBox(width: 10),
+                Expanded(child: _searchField(c)),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -414,6 +429,27 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
               o.orderNumber.toLowerCase().contains(_query.toLowerCase()) ||
               o.originCity.contains(_query) ||
               o.destinationCity.contains(_query))
+          .toList();
+    }
+    // 1g pricing filter.
+    items = items.where((o) {
+      switch (_priceFilter) {
+        case 'FIXED':
+          return o.isFixedPrice && !o.isDirect;
+        case 'TENDER':
+          return !o.isFixedPrice && !o.isDirect;
+        case 'DIRECT':
+          return o.isDirect;
+        default:
+          return true;
+      }
+    }).toList();
+    // 1g truck-type filter.
+    if (_truckFilter.isNotEmpty) {
+      items = items
+          .where((o) =>
+              o.requiredTruckType != null &&
+              _truckFilter.contains(o.requiredTruckType!.toUpperCase()))
           .toList();
     }
     // Direct requests addressed to this carrier are pinned to the top (§5).
@@ -535,6 +571,155 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
             'سبق أن قدّمت عرضًا بمبلغ ${mine.amount?.toStringAsFixed(0) ?? '—'} ر.س.')));
+  }
+
+  Widget _filterButton(NqColors c) => GestureDetector(
+        onTap: _showFilterSheet,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: c.hero,
+                  borderRadius: BorderRadius.circular(NqRadius.input),
+                ),
+                child: NqIcon(NqIcons.slidersHorizontal,
+                    size: 20, color: NqFixed.heroText),
+              ),
+              if (_activeFilterCount > 0)
+                PositionedDirectional(
+                  top: -4,
+                  start: -4,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: c.mint,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: c.bg, width: 2),
+                    ),
+                    child: Text('$_activeFilterCount',
+                        style: NqType.caption.copyWith(
+                            color: c.onMint,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+
+  void _showFilterSheet() {
+    final c = context.nq;
+    const pricing = [
+      (value: 'ALL', label: 'الكل'),
+      (value: 'FIXED', label: 'سعر ثابت'),
+      (value: 'TENDER', label: 'مناقصة'),
+      (value: 'DIRECT', label: 'مباشر'),
+    ];
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: c.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          void set(void Function() fn) {
+            setSheet(fn);
+            setState(fn);
+          }
+
+          return SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                            color: c.bd,
+                            borderRadius: BorderRadius.circular(2))),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => set(() {
+                          _priceFilter = 'ALL';
+                          _truckFilter.clear();
+                        }),
+                        child: Text('مسح الكل',
+                            style:
+                                NqType.labelStrong.copyWith(color: c.mintTx)),
+                      ),
+                      const Spacer(),
+                      Text(
+                          'الفلاتر${_activeFilterCount > 0 ? ' ($_activeFilterCount)' : ''}',
+                          style: NqType.h2.copyWith(color: c.tx)),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Text('نوع التسعير',
+                      style: NqType.labelStrong.copyWith(color: c.tx),
+                      textAlign: TextAlign.right),
+                  const SizedBox(height: 8),
+                  NqSegmented(
+                    options: [for (final p in pricing) p.label],
+                    index: pricing.indexWhere((p) => p.value == _priceFilter),
+                    onChanged: (i) => set(() => _priceFilter = pricing[i].value),
+                    height: 48,
+                  ),
+                  const SizedBox(height: 18),
+                  Text('نوع الشاحنة',
+                      style: NqType.labelStrong.copyWith(color: c.tx),
+                      textAlign: TextAlign.right),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      for (final t in truckOptions)
+                        NqChip(
+                          label: t.label,
+                          selected: _truckFilter.contains(t.value),
+                          onTap: () => set(() {
+                            if (_truckFilter.contains(t.value)) {
+                              _truckFilter.remove(t.value);
+                            } else {
+                              _truckFilter.add(t.value);
+                            }
+                          }),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  NqButton(
+                    label: 'عرض النتائج',
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Widget _searchField(NqColors c) => Container(
