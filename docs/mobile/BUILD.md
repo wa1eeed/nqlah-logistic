@@ -226,7 +226,7 @@ assets/
 | 0 | Design system (tokens, theme, components, icons, gallery) | ✅ merged (#101) |
 | 1 | Shell + auth: login (2c), OTP (5d), register (1l/1m/5e/5f), per-role nav (2a) | ✅ merged (#102, #103) |
 | 2 | Customer: home (1a), create-order wizard (1b/4a–4e), shipments (4g), offers (4f), order detail (1c), tracking (1d), trucks (6a/6b), finance (4h), notifications (5b), account (5c) | ✅ complete — all customer screens built & verified; full shell nav works |
-| 3 | Provider: home (2d), loads (1f/1g), order view (3a), assignment (1h), assignments (3c), trip monitor (3d), fleet (3e/3f), maintenance (3g), finance (3h), owner-driver (1i/2e), availability (7a/7b/7c) | 🚧 home (2d) + loads (1f) + order view (3a) + assignment (1h) + assignments (3c) + fleet-drivers (3e) + maintenance (3g) + finance (3h) + owner-driver (1i/2e) + trip monitor (3d) done; fleet-trucks + add-driver (3f), availability publishing (7a/7b/7c) next |
+| 3 | Provider: home (2d), loads (1f/1g), order view (3a), assignment (1h), assignments (3c), trip monitor (3d), fleet (3e/3f), maintenance (3g), finance (3h), owner-driver (1i/2e), availability (7a/7b/7c) | 🚧 home (2d) + loads (1f) + order view (3a) + assignment (1h) + assignments (3c) + fleet (3e/3f) + maintenance (3g) + finance (3h) + owner-driver (1i/2e) + trip monitor (3d) + availability publishing (7a) done; load-detail bid sheet (7b/7c) next |
 | 4 | Employed driver: my trips (5a), trip execution (1j), ePOD (1k) | ✅ complete — driver flow built & verified (trips → acknowledge → execution → arrive → ePOD) |
 | 5 | Communication: chat (1n), voice/video call (1o), incoming call (5g) | ✅ core UI done & verified; provider internal-note chat variant (3b) remaining. **UI only — needs a new realtime backend (WebRTC/signaling/TURN).** |
 
@@ -235,7 +235,16 @@ assets/
   reverse marketplace (truck availability / backhaul) + customer nav change.
   - ✅ Applied: customer tab bar is now **الرئيسية · الشاحنات · شحناتي · العروض · حسابي**
     (Finance moved to a wallet button in the home header; Trucks tab added).
-  - ⏳ Pending (Phases 2–3): screens 6a/6b (available trucks) & 7a/7b/7c (load
-    detail, bid sheet, publish availability); home wallet button; finance (4h)
-    pushed; loads «طلب مباشر» chip; fleet «التوفّر» segment; new status chip
-    «بانتظار رد المزوّد»; `TruckAvailability` data model + server rules (§2, §8).
+  - ✅ Truck-availability marketplace (6a/6b + 7a) — **live end-to-end**:
+    - Backend `marketplace` module (#135): `TruckAvailability` model + migration;
+      `GET /marketplace/trucks` (customer), `POST`/`DELETE /fleet/trucks/:id/availability`
+      (publish/unpublish), `GET /fleet/availability` (provider's own).
+    - Visibility rules (§8): a busy truck (assigned/confirmed/in-transit, or
+      status ≠ AVAILABLE) is **always hidden** even if published; idle+published
+      shows; idle+unpublished hides; unpublish never changes the truck's status.
+    - Mobile: `core/marketplace` repo + providers; customer **Trucks** tab (6a)
+      and **truck detail** (6b) wired to live data (#137); «اطلب من هذا المزوّد»
+      pre-fills a **DIRECT** order pinned to the provider (`targetCarrierId`);
+      provider publishes from the **Fleet** screen via a bottom sheet (7a, #138).
+  - ⏳ Pending: load-detail + bid sheet (7b/7c); home wallet button; loads
+    «طلب مباشر» chip; new status chip «بانتظار رد المزوّد».
