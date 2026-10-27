@@ -266,4 +266,16 @@ the app; the customer releases escrow by confirming receipt (order `complete`).
     carrier's own work (the `enableImplicitConversion` ValidationPipe coerced the
     string "false" to truthy `true`), so the provider marketplace never worked;
     the controller now reads `mine` as a raw string.
-  - ⏳ Pending: load-detail + bid sheet (7b/7c); home wallet button.
+  - ✅ **Addendum fully applied** (#149–#155): design-fidelity pass restored the
+    6a chrome (filter button/badge, route selector, chips, sort row) and 6b
+    (chat button, caption); «بانتظار رد المزوّد» chip → info/clock (6b spec);
+    1f direct cards → compact «طلب مباشر» chip, pinned, «اعتذار»; **7a load-detail**
+    sheet; **1g loads filter** incl. the «مباشر» pricing option; **6a trucks
+    filter** (button + chips, client-side); fleet **«التوفّر» segment** (3e) +
+    provider-home **«أعلن عن توفّر شاحنة»** tile (2d); direct-order wizard **4c**
+    fixed-lock + «مزوّد محدّد» chip and **4e** «إرسال الطلب للمزوّد»; order-detail
+    (1c) «بانتظار رد المزوّد»; and the §0 wizard **«N شاحنات متاحة على هذا المسار»**
+    banner → 6a.
+  - ⏳ Needs new backend/assets (not faked): 7b bid sheet's live rank/offer-count,
+    maintenance 3g, realtime chat/calls, maps SDK, owner-driver self-assign
+    (needs `user.id` on `GET /fleet/drivers`), bundled Tajawal/Inter fonts.
