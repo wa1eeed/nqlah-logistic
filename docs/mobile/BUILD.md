@@ -1,0 +1,66 @@
+# NQLAH Mobile — Build Guide & Progress
+
+The Flutter implementation of the unified NQLAH app, built from the Claude Design
+handoff in [`design/`](design/). This doc is kept **up to date as the app is
+built** — structure, decisions, and per-phase status.
+
+## Stack
+- **Flutter** 3.47.8 / Dart 3.13.7 · **Riverpod** (state) · **GoRouter** (routing)
+- **google_fonts** (Tajawal + Inter) · **flutter_svg** (Phosphor icons as SVG)
+- Arabic-first, **RTL / `ar-SA`** by default · light + dark from design tokens.
+
+## Project layout (`apps/mobile/`)
+```
+lib/
+  main.dart                 ProviderScope → NqApp
+  app.dart                  MaterialApp.router (RTL, ar-SA, light/dark)
+  core/
+    router.dart             GoRouter routes
+    session/identity.dart   NqIdentity + per-role bottom-tab sets
+    theme/tokens.dart       NqColors (ThemeExtension) + spacing/radii/motion
+    theme/typography.dart   NqType (Tajawal/Inter scale)
+    theme/app_theme.dart    light/dark ThemeData
+    widgets/nq_icon.dart    NqIcon + NqIcons (Phosphor SVG names)
+    widgets/ltr.dart        LTR-isolated numbers/codes
+  design_system/            NqButton, NqTextField, NqStatusChip, NqSegmented,
+                            NqChip, NqToggle, NqTabBar, NqHeroPanel, NqLogoMark,
+                            form_fields, pressable
+  features/
+    auth/                   login, otp, register wizard
+    shell/app_shell.dart    policy-driven shell + bottom nav
+    gallery/                design-system gallery (dev reference)
+assets/
+  icons/{regular,fill}/     102 Phosphor SVGs (fill="currentColor")
+  logo/                     placeholder logo SVGs
+```
+
+## Key decisions
+- **Icons = Phosphor SVGs, not `phosphor_flutter`.** That package extends
+  `IconData`, which is `final` in Flutter 3.47, so it won't compile. We bundle the
+  Phosphor SVGs and render with `flutter_svg` (`NqIcon`). Add a new icon by
+  dropping its SVG in `assets/icons/{regular,fill}/` and a name in `NqIcons`.
+- **Never hard-code hex** in screens — read `context.nq.<role>`; the only fixed
+  colors are `NqFixed` (on-hero / call screens).
+- **Numbers/codes/prices/plates** always `Ltr(...)` + Inter.
+- Verified in the browser via `flutter run -d web-server --web-port=8090`; iOS
+  simulator pending full Xcode on the dev machine.
+
+## Phase status
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | Design system (tokens, theme, components, icons, gallery) | ✅ merged (#101) |
+| 1 | Shell + auth: login (2c), OTP (5d), register (1l/1m/5e/5f), per-role nav (2a) | 🚧 in progress — login/OTP/1l/shell done (#102); 1m/5e/5f next |
+| 2 | Customer: home (1a), create-order wizard, shipments, offers, order detail, tracking, finance, trucks (6a/6b) | ⏳ |
+| 3 | Provider: home, loads, assignments, fleet, finance, owner-driver, availability (7a/7b/7c) | ⏳ |
+| 4 | Driver: my trips, execution, ePOD | ⏳ |
+| 5 | Communication: chat, voice notes, calls | ⏳ |
+
+## Design updates applied
+- **Addendum 01** ([`design/HANDOFF-ADDENDUM-01.md`](design/HANDOFF-ADDENDUM-01.md)) —
+  reverse marketplace (truck availability / backhaul) + customer nav change.
+  - ✅ Applied: customer tab bar is now **الرئيسية · الشاحنات · شحناتي · العروض · حسابي**
+    (Finance moved to a wallet button in the home header; Trucks tab added).
+  - ⏳ Pending (Phases 2–3): screens 6a/6b (available trucks) & 7a/7b/7c (load
+    detail, bid sheet, publish availability); home wallet button; finance (4h)
+    pushed; loads «طلب مباشر» chip; fleet «التوفّر» segment; new status chip
+    «بانتظار رد المزوّد»; `TruckAvailability` data model + server rules (§2, §8).

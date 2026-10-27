@@ -58,3 +58,4 @@ temp/
 
 # Redis snapshot (created when running redis-server from the repo root)
 dump.rdb
+docs/mobile/*.zip
