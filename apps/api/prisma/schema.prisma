@@ -294,6 +294,7 @@ model Company {
   users   User[]
   trucks  Truck[]
   drivers DriverProfile[]
+  truckAvailabilities TruckAvailability[]
 
   ordersAsClient         Order[] @relation("ClientOrders")
   ordersAsCarrier        Order[] @relation("CarrierOrders")
@@ -378,9 +379,38 @@ model Truck {
   updatedAt DateTime @updatedAt
 
   orderTrucks OrderTruck[]
+  availability TruckAvailability?
 
   @@index([companyId])
   @@index([type])
+}
+
+/// A carrier-published listing that makes a truck visible in the customer-facing
+/// "available trucks" marketplace (handoff 6a/6b/7a-c). A truck is shown only
+/// when `active` is true AND the truck itself is idle (status AVAILABLE and not
+/// on an active order) — busy trucks are auto-excluded by the service, never by
+/// the carrier. `destCity` set = a backhaul/return-trip offer; null = available
+/// for work from `originCity`.
+model TruckAvailability {
+  id           String   @id @default(cuid())
+  truckId      String   @unique
+  truck        Truck    @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+  originCity   String
+  originRegion String
+  destCity     String?
+  destRegion   String?
+  availableFrom DateTime @default(now())
+  availableTo   DateTime?
+  pricePerTrip  Decimal? @db.Decimal(12, 2)
+  notes        String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active, originCity])
+  @@index([companyId])
 }
 
 model DriverProfile {
