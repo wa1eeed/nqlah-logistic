@@ -104,4 +104,6 @@ class NqIcons {
   static const truckTrailer = 'truck-trailer';
   static const flagCheckered = 'flag-checkered';
   static const mapPinLine = 'map-pin-line';
+  static const dotsThree = 'dots-three';
+  static const listBullets = 'list-bullets';
 }
