@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/marketplace/marketplace_repository.dart';
+import '../../core/orders/order_draft_controller.dart' show truckOptions;
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/availability_card.dart';
+import '../../design_system/button.dart';
 import '../../design_system/chip.dart';
 import '../../design_system/waybill_card.dart' show RoutePoint;
 
@@ -23,19 +25,38 @@ class CustomerTrucksScreen extends ConsumerStatefulWidget {
 }
 
 class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
-  final _filters = {0: true, 1: true, 2: false};
   // A null city shows every listing; a value filters by origin city.
   String? _city;
+  final Set<String> _truckTypeFilter = {};
+  bool _backhaulOnly = false;
+
+  int get _activeFilterCount =>
+      (_truckTypeFilter.isNotEmpty ? 1 : 0) + (_backhaulOnly ? 1 : 0);
+
+  List<TruckListing> _applyFilters(List<TruckListing> list) {
+    return list.where((t) {
+      if (_backhaulOnly && !t.isDirected) return false;
+      if (_truckTypeFilter.isNotEmpty &&
+          (t.truckType == null ||
+              !_truckTypeFilter.contains(t.truckType!.toUpperCase()))) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
     final async = ref.watch(marketplaceTrucksProvider(_city));
+    final shownCount = async.valueOrNull == null
+        ? null
+        : _applyFilters(async.valueOrNull!).length;
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _appBar(c, async.valueOrNull?.length),
+          _appBar(c, shownCount),
           const SizedBox(height: 14),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -61,14 +82,16 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
                   onRetry: () =>
                       ref.invalidate(marketplaceTrucksProvider(_city)),
                 ),
-                data: (listings) => listings.isEmpty
-                    ? const _EmptyState()
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        itemCount: listings.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 14),
-                        itemBuilder: (_, i) => _card(c, listings[i]),
-                      ),
+                data: (listings) {
+                  final filtered = _applyFilters(listings);
+                  if (filtered.isEmpty) return const _EmptyState();
+                  return ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
+                    itemBuilder: (_, i) => _card(c, filtered[i]),
+                  );
+                },
               ),
             ),
           ),
@@ -137,43 +160,162 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
         ),
       );
 
-  Widget _filterButton(NqColors c) => SizedBox(
-        width: 48,
-        height: 48,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: c.hero,
-                borderRadius: BorderRadius.circular(NqRadius.input),
-              ),
-              child: NqIcon(NqIcons.slidersHorizontal,
-                  size: 20, color: NqFixed.heroText),
-            ),
-            PositionedDirectional(
-              top: -4,
-              start: -4,
-              child: Container(
-                width: 20,
-                height: 20,
+  Widget _filterButton(NqColors c) => GestureDetector(
+        onTap: _showFilterSheet,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: c.mint,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: c.bg, width: 2),
+                  color: c.hero,
+                  borderRadius: BorderRadius.circular(NqRadius.input),
                 ),
-                child: Text('2',
-                    style: NqType.caption.copyWith(
-                        color: c.onMint,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11)),
+                child: NqIcon(NqIcons.slidersHorizontal,
+                    size: 20, color: NqFixed.heroText),
+              ),
+              if (_activeFilterCount > 0)
+                PositionedDirectional(
+                  top: -4,
+                  start: -4,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: c.mint,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: c.bg, width: 2),
+                    ),
+                    child: Text('$_activeFilterCount',
+                        style: NqType.caption.copyWith(
+                            color: c.onMint,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+
+  void _showFilterSheet() {
+    final c = context.nq;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: c.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          void set(void Function() fn) {
+            setSheet(fn);
+            setState(fn);
+          }
+
+          return SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                            color: c.bd,
+                            borderRadius: BorderRadius.circular(2))),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => set(() {
+                          _truckTypeFilter.clear();
+                          _backhaulOnly = false;
+                        }),
+                        child: Text('مسح الكل',
+                            style:
+                                NqType.labelStrong.copyWith(color: c.mintTx)),
+                      ),
+                      const Spacer(),
+                      Text(
+                          'الفلاتر${_activeFilterCount > 0 ? ' ($_activeFilterCount)' : ''}',
+                          style: NqType.h2.copyWith(color: c.tx)),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Text('نوع الشاحنة',
+                      style: NqType.labelStrong.copyWith(color: c.tx),
+                      textAlign: TextAlign.right),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      for (final t in truckOptions)
+                        NqChip(
+                          label: t.label,
+                          selected: _truckTypeFilter.contains(t.value),
+                          onTap: () => set(() =>
+                              _truckTypeFilter.contains(t.value)
+                                  ? _truckTypeFilter.remove(t.value)
+                                  : _truckTypeFilter.add(t.value)),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  GestureDetector(
+                    onTap: () => set(() => _backhaulOnly = !_backhaulOnly),
+                    behavior: HitTestBehavior.opaque,
+                    child: Row(
+                      children: [
+                        _toggle(c, _backhaulOnly),
+                        const Spacer(),
+                        Text('رحلات العودة فقط',
+                            style: NqType.bodyStrong.copyWith(color: c.tx)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  NqButton(
+                    label: 'عرض النتائج',
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
               ),
             ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _toggle(NqColors c, bool on) => Container(
+        width: 44,
+        height: 26,
+        alignment: on ? Alignment.centerLeft : Alignment.centerRight,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: on ? c.mint : c.sf2,
+          borderRadius: BorderRadius.circular(NqRadius.pill),
+        ),
+        child: Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+              color: on ? c.onMint : c.bg, shape: BoxShape.circle),
         ),
       );
 
@@ -216,21 +358,34 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
   }
 
   Widget _filterChips(NqColors c) {
-    const labels = ['هذا الأسبوع', 'تريلا سطحة', 'رحلات العودة فقط'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          for (var i = 0; i < labels.length; i++) ...[
-            NqChip(
-              label: labels[i],
-              selected: _filters[i] ?? false,
-              onTap: () =>
-                  setState(() => _filters[i] = !(_filters[i] ?? false)),
-            ),
-            if (i < labels.length - 1) const SizedBox(width: 8),
-          ],
+          NqChip(
+            label: 'رحلات العودة فقط',
+            selected: _backhaulOnly,
+            onTap: () => setState(() => _backhaulOnly = !_backhaulOnly),
+          ),
+          const SizedBox(width: 8),
+          NqChip(
+            label: 'تريلا سطحة',
+            selected: _truckTypeFilter.contains('LARGE_FLATBED'),
+            onTap: () => setState(() =>
+                _truckTypeFilter.contains('LARGE_FLATBED')
+                    ? _truckTypeFilter.remove('LARGE_FLATBED')
+                    : _truckTypeFilter.add('LARGE_FLATBED')),
+          ),
+          const SizedBox(width: 8),
+          NqChip(
+            label: 'مبرّدة',
+            selected: _truckTypeFilter.contains('REFRIGERATED'),
+            onTap: () => setState(() =>
+                _truckTypeFilter.contains('REFRIGERATED')
+                    ? _truckTypeFilter.remove('REFRIGERATED')
+                    : _truckTypeFilter.add('REFRIGERATED')),
+          ),
         ],
       ),
     );
