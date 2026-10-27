@@ -139,10 +139,17 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
 - **Customer finance (4h)** is wired to `GET /invoices` (reuses `invoicesProvider`): hero
   «المستحق عليك» total + due/paid segments + payable cards (provider, amount, due date,
   invoice no.), direct-pay info note, pull-to-refresh, loading/empty/error.
-- **Orders follow-ups (next slices):** maintenance (3g); owner-driver (1i/2e) incl. self-
-  assignment; add-driver form (3f) → `POST /fleet/drivers/invite`; report-payment action
-  (payments module); order actions (cancel/confirm); consolidated multi-leg; a real maps SDK;
-  comms backend.
+- **Employed-driver trips (5a)** is wired to `GET /driver/jobs` + `GET /driver/me`
+  (`core/driver/driver_repository.dart`): header (name/status), جديدة/قادمة/مكتملة segments
+  with counts (ASSIGNED / CONFIRMED+IN_TRANSIT / DELIVERED+COMPLETED), new-assignment card
+  («استلام التكليف») + trip cards → trip execution, pull-to-refresh, loading/empty/error.
+  Execution-only (no price/customer identity surfaced).
+- **No backend (deferred):** maintenance (3g — no module), in-app chat/calls (comms — needs
+  realtime), a real maps SDK for tracking.
+- **Orders follow-ups (next slices):** trip execution (1j) + ePOD (1k) via
+  `POST /orders/:id/tracking` / stop updates; owner-driver (1i/2e) incl. self-assignment;
+  add-driver form (3f) → `POST /fleet/drivers/invite`; report-payment; order actions
+  (cancel/confirm/deliver); consolidated multi-leg.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`
