@@ -115,10 +115,18 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   numbers, the late-order alert and client-messages row were dropped (they need the fleet /
   payments / tracking / comms modules) rather than faked. The shell passes
   `onLoads`/`onFinance` (tab switch) + `onAssign(id)`/`onOpenOrder(id)`.
-- **Orders follow-ups (next slices):** provider order view (3a, carrier-specific) +
-  assignment (1h) wired to driver assignment + `GET /orders/:id/legs`; fleet (3e/3f),
-  maintenance (3g), finance (3h), owner-driver (1i/2e); **customer finance (4h)** + order
-  actions (cancel/confirm); consolidated multi-leg; a real maps SDK; comms backend.
+- **Driver assignment (1h)** is wired. New `core/fleet/fleet_repository.dart` (`DriverModel`
+  + `availableDriversProvider` → `GET /fleet/drivers/available`) and
+  `OrdersRepository.assignDriver(orderId, driverId)` → `POST /orders/:id/assign-driver`.
+  `DriverAssignmentScreen` takes an `orderId` (route `/driver-assignment/:id`): a context bar
+  from the order detail, searchable available-driver list (single-select, rating/trips), and
+  "تأكيد إسناد <name>" → assign → invalidate work + pop. Loading/empty/error. The home &
+  assignments "إسناد" buttons now pass the order id.
+- **Orders follow-ups (next slices):** provider order view (3a, carrier-specific) wired to
+  `GET /orders/:id`; fleet trucks/drivers (3e/3f) + maintenance (3g) via the fleet module;
+  provider finance (3h); owner-driver (1i/2e) incl. self-assignment; **customer finance
+  (4h)** + order actions (cancel/confirm); consolidated multi-leg; a real maps SDK; comms
+  backend.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`

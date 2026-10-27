@@ -123,6 +123,18 @@ class OrdersRepository {
     }
   }
 
+  /// `POST /orders/:orderId/assign-driver` — assign a driver to an assigned
+  /// order (carrier action).
+  Future<void> assignDriver(String orderId, String driverId) async {
+    try {
+      final res = await _dio
+          .post('/orders/$orderId/assign-driver', data: {'driverId': driverId});
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `POST /orders/:id/publish` — moves a draft to the marketplace.
   Future<Map<String, dynamic>> publish(String id) async {
     try {
