@@ -125,6 +125,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             onAssign: (id) => context.push('/driver-assignment/$id'),
             onLoads: () => setState(() => _index = 1),
             onFinance: () => setState(() => _index = 4),
+            onAnnounceAvailability: () => setState(() => _index = 3),
             onOpenOrder: (id) => context.push('/provider-order/$id'),
           );
         case 1:
