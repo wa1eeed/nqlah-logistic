@@ -158,6 +158,28 @@ class OrdersRepository {
     }
   }
 
+  /// `POST /orders/:id/cancel` — the client cancels the order.
+  Future<void> cancelOrder(String orderId, String reason) async {
+    try {
+      final res = await _dio
+          .post('/orders/$orderId/cancel', data: {'reason': reason});
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// `POST /orders/:id/complete` — the client confirms receipt and closes a
+  /// DELIVERED order.
+  Future<void> completeOrder(String orderId) async {
+    try {
+      final res = await _dio.post('/orders/$orderId/complete');
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `POST /orders/:id/publish` — moves a draft to the marketplace.
   Future<Map<String, dynamic>> publish(String id) async {
     try {
