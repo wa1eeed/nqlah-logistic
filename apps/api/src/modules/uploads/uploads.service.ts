@@ -1,67 +1,48 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Client as MinioClient } from 'minio';
+import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import {
+  STORAGE_CONNECTOR,
+  type StorageConnector,
+} from '../../integrations/storage/storage.connector';
 
+/// Thin app-side service over the storage connector. The browser/app uploads
+/// files DIRECTLY to the object store via the pre-signed PUT URL and reads them
+/// via a pre-signed GET URL — no file bytes ever pass through our server (keeps
+/// egress/compute cost off our backend; ideal for Cloudflare R2).
 @Injectable()
-export class UploadsService implements OnModuleInit {
-  private client!: MinioClient;
-  private bucket = process.env.MINIO_BUCKET ?? 'naqla-files';
+export class UploadsService {
+  constructor(@Inject(STORAGE_CONNECTOR) private storage: StorageConnector) {}
 
-  async onModuleInit() {
-    this.client = new MinioClient({
-      endPoint: process.env.MINIO_ENDPOINT ?? 'localhost',
-      port: Number(process.env.MINIO_PORT ?? 9000),
-      useSSL: (process.env.MINIO_USE_SSL ?? 'false') === 'true',
-      accessKey: process.env.MINIO_ROOT_USER ?? 'minioadmin',
-      secretKey: process.env.MINIO_ROOT_PASSWORD ?? 'minioadmin',
-    });
-    try {
-      const exists = await this.client.bucketExists(this.bucket);
-      if (!exists) await this.client.makeBucket(this.bucket);
-    } catch {
-      /* ignore — bucket may already exist or MinIO not ready */
-    }
+  private buildKey(filename: string, folder: string) {
+    const safeName = (filename || 'file').replace(/[^\w.\-]/g, '_').slice(0, 80);
+    const safeFolder = (folder || 'general').replace(/[^\w\-]/g, '').slice(0, 30) || 'general';
+    return `${safeFolder}/${Date.now()}-${randomUUID()}-${safeName}`;
   }
 
-  /**
-   * Returns a pre-signed PUT URL plus the final public URL the client should use.
-   * Server-side magic-byte validation still happens via `verifyUploadedObject`
-   * once the client confirms the upload (or via a webhook in production).
-   */
-  async presignedUpload(filename: string, contentType: string, folder: string = 'general', sizeBytes?: number) {
-    const safeName = filename.replace(/[^\w.\-]/g, '_').slice(0, 80);
-    const key = `${folder}/${Date.now()}-${randomUUID()}-${safeName}`;
-    const uploadUrl = await this.client.presignedPutObject(this.bucket, key, 60 * 5);
-    const publicBase = process.env.MINIO_PUBLIC_URL ?? `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`;
+  /** A pre-signed PUT URL (client → store) plus the object key to store on the
+   *  resource once the upload completes. */
+  async presignedUpload(
+    filename: string,
+    contentType: string,
+    folder: string = 'general',
+    sizeBytes?: number,
+  ) {
+    const key = this.buildKey(filename, folder);
+    const uploadUrl = await this.storage.presignedPut(key, 60 * 5);
+    const base = this.storage.publicBaseUrl();
     return {
       uploadUrl,
-      publicUrl: `${publicBase}/${this.bucket}/${key}`,
       key,
+      publicUrl: base ? `${base}/${key}` : null,
       contentType,
       expiresIn: 300,
-      maxSizeBytes: 10 * 1024 * 1024,
+      maxSizeBytes: 25 * 1024 * 1024,
       declaredSizeBytes: sizeBytes ?? null,
     };
   }
 
-  /**
-   * Fetches the first 4 KB of an uploaded object and validates the magic
-   * bytes. Use this after the client confirms upload completion to reject
-   * spoofed Content-Type headers.
-   */
-  async verifyUploadedObject(key: string): Promise<{ ok: true; ext: string; mime: string } | { ok: false; reason: string }> {
-    try {
-      const stream = await this.client.getPartialObject(this.bucket, key, 0, 4096);
-      const chunks: Buffer[] = [];
-      for await (const chunk of stream) chunks.push(chunk as Buffer);
-      const buf = Buffer.concat(chunks);
-      // Lazy-import to keep this method optional in environments without MinIO
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { validateUploadBuffer } = require('../../common/security/file-validation') as typeof import('../../common/security/file-validation');
-      const result = validateUploadBuffer(buf, key);
-      return { ok: true, ext: result.ext, mime: result.mime };
-    } catch (err) {
-      return { ok: false, reason: (err as Error).message };
-    }
+  /** A short-lived pre-signed GET URL to read a stored object directly. */
+  presignedDownload(key: string, expirySeconds = 60 * 60) {
+    return this.storage.presignedGet(key, expirySeconds);
   }
 }
