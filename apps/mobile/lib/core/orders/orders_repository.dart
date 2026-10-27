@@ -182,6 +182,17 @@ class OrdersRepository {
     }
   }
 
+  /// `POST /orders/:id/decline-direct` — the targeted carrier declines a direct
+  /// request; the order reverts to the open marketplace.
+  Future<void> declineDirect(String orderId) async {
+    try {
+      final res = await _dio.post('/orders/$orderId/decline-direct');
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `POST /orders/:id/publish` — moves a draft to the marketplace.
   Future<Map<String, dynamic>> publish(String id) async {
     try {

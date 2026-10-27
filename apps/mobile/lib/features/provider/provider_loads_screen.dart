@@ -67,6 +67,52 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
     if (ok == true) await _submitBid(o, price);
   }
 
+  Future<void> _declineDirect(OrderSummary o) async {
+    final c = context.nq;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.sf,
+        title: Text('رفض الطلب المباشر', style: NqType.h2.copyWith(color: c.tx)),
+        content: Text(
+            'سيُعاد الطلب إلى السوق المفتوح ولن يبقى مخصّصًا لك. متابعة؟',
+            style: NqType.body.copyWith(color: c.tx2, height: 1.5)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text('تراجع',
+                  style: NqType.labelStrong.copyWith(color: c.tx2))),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text('رفض',
+                  style: NqType.labelStrong.copyWith(color: c.err))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _busyOrderId = o.id);
+    try {
+      await ref.read(ordersRepositoryProvider).declineDirect(o.id);
+      ref.invalidate(marketplaceLoadsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم رفض الطلب وإعادته للسوق.')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تعذّر رفض الطلب. حاول مجددًا.')));
+      }
+    } finally {
+      if (mounted) setState(() => _busyOrderId = null);
+    }
+  }
+
   Future<void> _bidTender(OrderSummary o) async {
     final result = await showModalBottomSheet<({num amount, String notes})>(
       context: context,
@@ -192,6 +238,51 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
   }
 
   Widget _loadCard(NqColors c, OrderSummary o, String? companyId) {
+    final directToMe = o.isDirectTo(companyId);
+    final card = _baseCard(c, o, companyId);
+    if (!directToMe) return card;
+    final busy = _busyOrderId == o.id;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.mintBg.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(NqRadius.card + 6),
+        border: Border.all(color: c.mint),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text('طلب مباشر لك — سعّر الحمولة أو ارفضها',
+                      style: NqType.caption.copyWith(
+                          color: c.mintTx, fontWeight: FontWeight.w700),
+                      textAlign: TextAlign.right),
+                ),
+                const SizedBox(width: 8),
+                NqIcon(NqIcons.paperPlaneTilt, size: 15, color: c.mintTx),
+              ],
+            ),
+          ),
+          card,
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: busy ? null : () => _declineDirect(o),
+              child: Text('رفض الطلب',
+                  style: NqType.labelStrong.copyWith(color: c.err)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _baseCard(NqColors c, OrderSummary o, String? companyId) {
     final mine = o.myBid(companyId);
     final busy = _busyOrderId == o.id;
     final price = o.agreedPrice ?? o.clientBudget;

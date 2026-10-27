@@ -9,6 +9,7 @@ import '../core/widgets/nq_icon.dart';
 enum NqStatus {
   draft,
   published,
+  awaitingProvider,
   tender,
   assigned,
   confirmed,
@@ -36,6 +37,8 @@ final Map<NqStatus, _StatusSpec> _specs = {
   NqStatus.draft: _StatusSpec('مسودة', NqIcons.notePencil, (c) => c.sf2, (c) => c.tx2),
   NqStatus.published:
       _StatusSpec('منشور', NqIcons.megaphone, (c) => c.infoBg, (c) => c.info),
+  NqStatus.awaitingProvider: _StatusSpec('بانتظار رد المزوّد',
+      NqIcons.hourglassMedium, (c) => c.warnBg, (c) => c.warn),
   NqStatus.tender: _StatusSpec('مناقصة', NqIcons.gavel, (c) => c.infoBg, (c) => c.info),
   NqStatus.assigned:
       _StatusSpec('مُسند', NqIcons.handshake, (c) => c.mintBg, (c) => c.mintTx),
