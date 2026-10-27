@@ -152,9 +152,13 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   «تأكيد التسليم» posts `DELIVERED` (→ DELIVERED) + note, invalidates driver jobs, pops. Photo
   upload, signature capture and the recipient OTP are the design's capture steps (need the
   uploads module + a POD-verify endpoint) and stay visual.
-- **Orders follow-ups (next slices):** owner-driver (1i/2e) incl. self-assignment; add-driver
-  form (3f) → `POST /fleet/drivers/invite`; report-payment (payments module); order actions
-  (cancel/confirm/deliver); trip monitor (3d); consolidated multi-leg.
+- **Add employed driver (3f)** is wired (`provider_add_driver_screen.dart`, route
+  `/add-driver`, from the fleet add button) → `POST /fleet/drivers/invite` (full name, phone,
+  national id, license number + expiry date-picker, read-only permissions card); invalidates
+  the driver roster on success.
+- **Orders follow-ups (next slices):** owner-driver (1i/2e) incl. self-assignment; order
+  actions (cancel/confirm/deliver); report-payment (payments module); trip monitor (3d);
+  consolidated multi-leg.
 - **New feature needing a backend module — truck availability marketplace (6a/6b/7a-c):** there
   is no `TruckAvailability` model or public trucks endpoint. Recommended model: a truck is
   auto-excluded from the customer marketplace when busy (active order / `ON_TRIP` / `MAINTENANCE`),

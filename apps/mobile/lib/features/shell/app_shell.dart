@@ -136,6 +136,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           );
         case 3:
           return ProviderFleetScreen(
+            onAddDriver: () => context.push('/add-driver'),
             onManagePlan: () => context.push('/register/plan'),
           );
         case 4:
