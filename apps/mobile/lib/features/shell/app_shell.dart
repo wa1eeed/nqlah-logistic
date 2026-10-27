@@ -21,6 +21,11 @@ import '../provider/provider_loads_screen.dart';
 import '../provider/owner_driver_home_screen.dart';
 import '../driver/driver_my_trips_screen.dart';
 
+/// A request to switch the shell to a specific tab index from outside the
+/// shell (e.g. the create-order wizard linking to the Trucks tab). The shell
+/// applies it on the next frame and resets it to null.
+final requestedShellTabProvider = StateProvider<int?>((ref) => null);
+
 /// The policy-driven app shell (handoff §2a): one app that mounts the matching
 /// bottom-tab set for the account's identity. Tab bodies are placeholders in
 /// Phase 1; the real per-role screens land in Phases 2–4.
@@ -62,6 +67,15 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget build(BuildContext context) {
     final c = context.nq;
     final tabs = _tabs;
+    // Honor an external tab request (e.g. the wizard linking to the Trucks tab).
+    final requested = ref.watch(requestedShellTabProvider);
+    if (requested != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _index = requested.clamp(0, _tabs.length - 1));
+        ref.read(requestedShellTabProvider.notifier).state = null;
+      });
+    }
     final index = _index.clamp(0, tabs.length - 1);
     return Scaffold(
       backgroundColor: c.bg,

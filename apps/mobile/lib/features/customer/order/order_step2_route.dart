@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/marketplace/marketplace_repository.dart';
 import '../../../core/orders/order_draft_controller.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/nq_icon.dart';
 import '../../../design_system/text_field.dart';
+import '../../shell/app_shell.dart' show requestedShellTabProvider;
 import 'order_wizard_scaffold.dart';
 
 /// Create-order step 2/6 — route & stops (handoff 4a). Single-order origin and
@@ -116,7 +119,48 @@ class _OrderStep2RouteState extends ConsumerState<OrderStep2Route> {
           addrController: _destAddr,
           onAddr: (v) => n.patch((x) => x.copyWith(destinationAddress: v)),
         ),
+        _availableTrucksBanner(c, d.originCity),
       ],
+    );
+  }
+
+  /// Info banner (Addendum §0): once the route is known, surface the count of
+  /// trucks available from the origin city with a link to the Trucks tab (6a).
+  Widget _availableTrucksBanner(NqColors c, String originCity) {
+    final count =
+        ref.watch(marketplaceTrucksProvider(originCity)).valueOrNull?.length ?? 0;
+    if (count == 0) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: GestureDetector(
+        onTap: () {
+          ref.read(requestedShellTabProvider.notifier).state = 1;
+          context.go('/app');
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: c.mintBg,
+            borderRadius: BorderRadius.circular(NqRadius.card),
+            border: Border.all(color: c.mint.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              NqIcon(NqIcons.caretLeft, size: 18, color: c.mintTx),
+              const Spacer(),
+              Flexible(
+                child: Text('$count شاحنة متاحة على هذا المسار — تصفّحها',
+                    style: NqType.bodyStrong.copyWith(color: c.tx),
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis),
+              ),
+              const SizedBox(width: 10),
+              NqIcon(NqIcons.truck, size: 18, color: c.mintTx),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
