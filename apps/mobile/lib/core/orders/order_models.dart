@@ -267,6 +267,9 @@ class OrderDetail {
     this.specialInstructions,
     this.bidsCount = 0,
     this.carrier,
+    this.client,
+    this.driverName,
+    this.driverPhone,
     this.clientBudget,
     this.agreedPrice,
     this.carrierAmount,
@@ -300,6 +303,9 @@ class OrderDetail {
   final String? specialInstructions;
   final int bidsCount;
   final CarrierParty? carrier;
+  final CarrierParty? client; // the customer who posted (for the provider view)
+  final String? driverName;
+  final String? driverPhone;
   final num? clientBudget;
   final num? agreedPrice;
   final num? carrierAmount;
@@ -316,11 +322,27 @@ class OrderDetail {
 
   factory OrderDetail.fromJson(Map<String, dynamic> j) {
     final carrier = j['carrier'];
+    final client = j['client'];
     final count = j['_count'];
     final bids = j['bids'];
     final te = j['trackingEvents'];
+    final drivers = j['orderDrivers'];
     final bidsCount = (count is Map ? _num(count['bids'])?.toInt() : null) ??
         (bids is List ? bids.length : 0);
+    String? driverName;
+    String? driverPhone;
+    if (drivers is List && drivers.isNotEmpty) {
+      final first = drivers.first;
+      final u = first is Map ? first['driver'] : null;
+      final user = u is Map ? u['user'] : null;
+      if (user is Map) {
+        final f = user['firstName']?.toString() ?? '';
+        final l = user['lastName']?.toString() ?? '';
+        final n = [f, l].where((p) => p.isNotEmpty).join(' ').trim();
+        driverName = n.isNotEmpty ? n : null;
+        driverPhone = user['phone']?.toString();
+      }
+    }
     return OrderDetail(
       id: j['id'].toString(),
       orderNumber: (j['orderNumber'] ?? j['id']).toString(),
@@ -347,6 +369,11 @@ class OrderDetail {
       carrier: carrier is Map
           ? CarrierParty.fromJson(Map<String, dynamic>.from(carrier))
           : null,
+      client: client is Map
+          ? CarrierParty.fromJson(Map<String, dynamic>.from(client))
+          : null,
+      driverName: driverName,
+      driverPhone: driverPhone,
       clientBudget: _num(j['clientBudget']),
       agreedPrice: _num(j['agreedPrice']),
       carrierAmount: _num(j['carrierAmount']),

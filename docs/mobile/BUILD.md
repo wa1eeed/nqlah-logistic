@@ -122,11 +122,15 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   from the order detail, searchable available-driver list (single-select, rating/trips), and
   "تأكيد إسناد <name>" → assign → invalidate work + pop. Loading/empty/error. The home &
   assignments "إسناد" buttons now pass the order id.
-- **Orders follow-ups (next slices):** provider order view (3a, carrier-specific) wired to
-  `GET /orders/:id`; fleet trucks/drivers (3e/3f) + maintenance (3g) via the fleet module;
-  provider finance (3h); owner-driver (1i/2e) incl. self-assignment; **customer finance
-  (4h)** + order actions (cancel/confirm); consolidated multi-leg; a real maps SDK; comms
-  backend.
+- **Provider order view (3a)** is wired to `GET /orders/:id` (route `/provider-order/:id`):
+  the customer party card (revealed post-acceptance), the assigned-driver card (internal;
+  from `orderDrivers`, or an "إسناد سائق" CTA when none), the route timeline, a cargo card, and
+  footer actions (track → `/tracking/:id`, chat → `/chat`). `OrderDetail` gained `client`,
+  `driverName`, `driverPhone`. Provider home/assignments "open" now routes here.
+- **Orders follow-ups (next slices):** fleet trucks/drivers (3e/3f) + maintenance (3g) via
+  the fleet module; provider finance (3h); owner-driver (1i/2e) incl. self-assignment;
+  **customer finance (4h)** + order actions (cancel/confirm); consolidated multi-leg; a real
+  maps SDK; comms backend.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`
