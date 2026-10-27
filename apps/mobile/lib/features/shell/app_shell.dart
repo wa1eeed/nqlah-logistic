@@ -11,6 +11,8 @@ import '../customer/customer_home_screen.dart';
 import '../customer/customer_offers_screen.dart';
 import '../customer/customer_shipments_screen.dart';
 import '../customer/customer_trucks_screen.dart';
+import '../provider/provider_home_screen.dart';
+import '../provider/provider_loads_screen.dart';
 
 /// The policy-driven app shell (handoff §2a): one app that mounts the matching
 /// bottom-tab set for the account's identity. Tab bodies are placeholders in
@@ -86,6 +88,16 @@ class _AppShellState extends State<AppShell> {
           return const CustomerOffersScreen();
         case 4:
           return const CustomerAccountScreen();
+      }
+    }
+    if (_identity == NqIdentity.provider && !_ownerDriver) {
+      switch (index) {
+        case 0:
+          return ProviderHomeScreen(
+            onBell: () => context.push('/notifications'),
+          );
+        case 1:
+          return const ProviderLoadsScreen();
       }
     }
     return _placeholderBody(c, tab);
