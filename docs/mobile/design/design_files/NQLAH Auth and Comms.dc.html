@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css"><style>body{margin:0;background:#E9ECEB;font-family:Tajawal,Inter,system-ui,sans-serif}a{color:#007A66}a:hover{color:#0A3D3A}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08)}.dv-opts{display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:12px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:500 13px/1.3 Tajawal,Inter,sans-serif;color:rgba(0,0,0,.7)}.dv-opt:target .dv-oid{background:#00A88A;color:#fff}.dv-next{margin:28px 0 0;font:12px/1.5 Inter,system-ui,sans-serif;color:rgba(0,0,0,.5)}</style></helmet>
+<section class="dv-turn" id="t1">
+<div style="max-width:620px;display:flex;flex-direction:column;gap:10px;margin:0 0 36px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:10px;background:#0A3D3A;display:grid;place-items:center"><div style="width:12px;height:12px;background:#00C9A7;transform:rotate(45deg);border-radius:2px"></div></div><div style="font:800 24px Tajawal,sans-serif;color:#0A3D3A">نقلة · Auth &amp; Communication</div></div>
+<div style="font:400 14px/1.6 Inter,sans-serif;color:#3d4a48">Register mirrors the web account model (Client/Carrier × Company/Individual, CR + 15-digit VAT with a not-registered toggle). Chat shows the <b>pre-acceptance</b> state: a lock banner and no phone number. Compare with <a href="NQLAH Customer.dc.html#1c">1c</a>, where contact is revealed after acceptance.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;font:500 12px Inter,sans-serif"><a href="NQLAH Customer.dc.html">Customer</a>·<a href="NQLAH Provider and Drivers.dc.html">Provider &amp; Drivers</a>·<a href="NQLAH Auth and Comms.dc.html">Auth &amp; Comms</a>·<a href="NQLAH Design System.dc.html">Design system</a></div>
+</div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1l"><div class="dv-olabel"><a class="dv-oid" href="#1l">1l</a>التسجيل — نوع الحساب · Register</div>
+<div style="display:flex;gap:28px;align-items:flex-start">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font:600 11px ui-monospace,monospace;color:rgba(0,0,0,.45)">{{ t.label }}</div>
+<div style="{{ t.frame }}"><div dir="rtl" style="width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:var(--bg);color:var(--tx);font-family:Tajawal,Inter,sans-serif;display:flex;flex-direction:column">
+<div dir="ltr" style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font:600 13px Inter,sans-serif;flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:15px"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px 4px 16px;height:52px"><span style="width:44px;height:44px;display:grid;place-items:center;font-size:22px"><i class="ph ph-arrow-right"></i></span><span style="font-size:13px;color:var(--tx2)">الخطوة <bdi dir="ltr" style="font-family:Inter">1/4</bdi></span></div>
+<div style="padding:4px 16px 0;font-size:24px;font-weight:800">إنشاء حساب</div>
+<div style="padding:4px 16px 0;font-size:14px;color:var(--tx2)">اختر كيف ستستخدم نقلة</div>
+<div style="padding:16px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div style="border-radius:16px;border:1px solid var(--bd);background:var(--sf);padding:14px;display:flex;flex-direction:column;gap:10px;min-height:112px"><span style="width:40px;height:40px;border-radius:12px;background:var(--sf2);display:grid;place-items:center;font-size:22px;color:var(--tx2)"><i class="ph ph-package"></i></span><div><div style="font-size:16px;font-weight:700">عميل</div><div style="font-size:12px;color:var(--tx2)">أشحن بضائع</div></div></div>
+<div style="border-radius:16px;border:2px solid var(--mintS);background:var(--mintBg);padding:13px;display:flex;flex-direction:column;gap:10px;min-height:112px;position:relative"><span style="width:40px;height:40px;border-radius:12px;background:var(--hero);display:grid;place-items:center;font-size:22px;color:var(--mint)"><i class="ph-fill ph-truck"></i></span><div><div style="font-size:16px;font-weight:700">ناقل</div><div style="font-size:12px;color:var(--tx2)">أنقل الحمولات</div></div><span style="position:absolute;top:12px;left:12px;width:22px;height:22px;border-radius:50%;background:var(--mintS);color:#fff;display:grid;place-items:center;font-size:12px"><i class="ph-fill ph-check"></i></span></div>
+</div>
+<div style="margin:12px 16px 0;padding:4px;background:var(--sf2);border-radius:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px"><span style="height:40px;border-radius:9px;background:var(--sf);box-shadow:var(--sh);display:grid;place-items:center;font-size:14px;font-weight:700">منشأة</span><span style="height:40px;display:grid;place-items:center;font-size:14px;color:var(--tx2)">فرد</span></div>
+<div style="padding:16px 16px 0;display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">رقم السجل التجاري</span><div style="height:52px;border-radius:12px;border:1px solid var(--bd);background:var(--sf);display:flex;align-items:center;padding:0 14px"><bdi dir="ltr" style="font:500 16px Inter,sans-serif;letter-spacing:1px">2050 118 472</bdi><i class="ph-fill ph-check-circle" style="margin-right:auto;color:var(--ok);font-size:20px"></i></div></div>
+<div style="padding:14px 16px 0;display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">الرقم الضريبي</span><div style="height:52px;border-radius:12px;border:1.5px solid var(--err);background:var(--sf);display:flex;align-items:center;padding:0 14px"><bdi dir="ltr" style="font:500 16px Inter,sans-serif;letter-spacing:1px">310 4829 1730</bdi><bdi dir="ltr" style="margin-right:auto;font:500 12px Inter,sans-serif;color:var(--err)">11/15</bdi></div><span style="font-size:12px;color:var(--err);display:flex;align-items:center;gap:4px"><i class="ph ph-warning-circle"></i>يجب أن يتكوّن الرقم الضريبي من <bdi dir="ltr" style="font-family:Inter">15</bdi> رقمًا</span></div>
+<div style="padding:12px 16px 0;display:flex;align-items:center;gap:10px"><span style="width:22px;height:22px;border-radius:6px;border:2px solid var(--bd);box-sizing:border-box"></span><span style="font-size:14px">المنشأة غير مسجّلة في ضريبة القيمة المضافة</span></div>
+<div style="padding:14px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">المنطقة</span><div style="height:52px;border-radius:12px;border:1px solid var(--bd);background:var(--sf);display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:15px">الشرقية<i class="ph ph-caret-down" style="color:var(--tx2)"></i></div></div><div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">المدينة</span><div style="height:52px;border-radius:12px;border:1px solid var(--bd);background:var(--sf);display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:15px">الدمام<i class="ph ph-caret-down" style="color:var(--tx2)"></i></div></div></div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:12px 16px 24px;background:var(--bg)"><div style="height:52px;border-radius:14px;background:var(--mint);color:var(--onMint);display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:800">التالي: اختيار الباقة<i class="ph ph-arrow-left"></i></div></div>
+</div></div></div>
+</sc-for>
+</div></div>
+
+<div class="dv-opt" id="1m"><div class="dv-olabel"><a class="dv-oid" href="#1m">1m</a>اختيار الباقة · Carrier plan picker</div>
+<div style="display:flex;gap:28px;align-items:flex-start">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font:600 11px ui-monospace,monospace;color:rgba(0,0,0,.45)">{{ t.label }}</div>
+<div style="{{ t.frame }}"><div dir="rtl" style="width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:var(--bg);color:var(--tx);font-family:Tajawal,Inter,sans-serif;display:flex;flex-direction:column">
+<div dir="ltr" style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font:600 13px Inter,sans-serif;flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:15px"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px 4px 16px;height:52px"><span style="width:44px;height:44px;display:grid;place-items:center;font-size:22px"><i class="ph ph-arrow-right"></i></span><span style="font-size:13px;color:var(--tx2)">الخطوة <bdi dir="ltr" style="font-family:Inter">2/4</bdi></span></div>
+<div style="padding:4px 16px 0;font-size:24px;font-weight:800">اختر باقتك</div>
+<div style="padding:4px 16px 0;font-size:14px;color:var(--tx2)">تجربة مجانية <bdi dir="ltr" style="font-family:Inter">14</bdi> يومًا على كل الباقات</div>
+<div style="flex:1;min-height:0;overflow-y:auto;padding-bottom:120px">
+<div style="margin:16px 16px 0;border-radius:16px;border:1px solid var(--bd);background:var(--sf);padding:12px 14px;display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-size:16px;font-weight:700">أساسي</div><div style="font-size:12px;color:var(--tx2)">حتى <bdi dir="ltr" style="font-family:Inter">3</bdi> شاحنات · سوق الأحمال</div></div><bdi dir="ltr" style="font:700 17px Inter,sans-serif">199<span style="font:500 12px Tajawal;color:var(--tx2)"> ر.س/شهر</span></bdi></div>
+<div style="margin:14px 16px 0;border-radius:18px;background:var(--hero);color:#E8F0EF;padding:16px;display:flex;flex-direction:column;gap:14px;position:relative;box-shadow:0 0 0 2px var(--mint)">
+<span style="position:absolute;top:-11px;right:16px;height:22px;padding:0 10px;border-radius:999px;background:var(--mint);color:var(--onMint);font-size:12px;font-weight:800;display:flex;align-items:center">الأكثر اختيارًا</span>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div style="flex:1;min-width:0"><div style="font-size:19px;font-weight:800">احترافي</div><div style="font-size:13px;color:#9FC7C1;line-height:1.5">من <bdi dir="ltr" style="font-family:Inter">299</bdi> ر.س · <bdi dir="ltr" style="font-family:Inter">5</bdi> شاحنات مشمولة</div></div><span style="width:26px;height:26px;border-radius:50%;background:var(--mint);color:var(--onMint);display:grid;place-items:center;font-size:14px"><i class="ph-fill ph-check"></i></span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:700">عدد الشاحنات</span><span style="color:#9FC7C1"><bdi dir="ltr" style="font-family:Inter">+39</bdi> ر.س لكل شاحنة إضافية</span></div>
+<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);border-radius:14px;padding:6px">
+<span onClick="{{ incTrucks }}" style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-size:18px;cursor:pointer"><i class="ph ph-plus"></i></span>
+<div style="flex:1;text-align:center"><bdi dir="ltr" style="font:700 24px Inter,sans-serif">{{ trucks }}</bdi><div style="font-size:11px;color:#9FC7C1">شاحنة</div></div>
+<span onClick="{{ decTrucks }}" style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-size:18px;cursor:pointer;opacity:{{ decOpacity }}"><i class="ph ph-minus"></i></span>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:13px;font-weight:700;padding-bottom:4px">ميزات إضافية</div>
+<sc-for list="{{ addons }}" as="a" hint-placeholder-count="4">
+<div onClick="{{ a.toggle }}" style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer;border-top:1px solid rgba(255,255,255,.08)">
+<i class="ph {{ a.icon }}" style="font-size:20px;color:#1FE0C0"></i>
+<div style="flex:1"><div style="font-size:14px;font-weight:600">{{ a.name }}</div><div style="font-size:11px;color:#9FC7C1">{{ a.desc }}</div></div>
+<bdi dir="ltr" style="font:600 12px Inter,sans-serif;color:#9FC7C1">+{{ a.price }}</bdi>
+<span style="{{ a.track }}"><span style="{{ a.knob }}"></span></span>
+</div>
+</sc-for></div>
+<div style="display:flex;flex-direction:column;gap:4px;padding-top:10px;border-top:1px solid rgba(255,255,255,.12);font-size:12px;color:#9FC7C1">
+<div style="display:flex;justify-content:space-between"><span>الباقة الأساسية (<bdi dir="ltr" style="font-family:Inter">5</bdi> شاحنات)</span><bdi dir="ltr" style="font-family:Inter">299</bdi></div>
+<div style="display:flex;justify-content:space-between"><span>شاحنات إضافية × <bdi dir="ltr" style="font-family:Inter">{{ extraTrucks }}</bdi></span><bdi dir="ltr" style="font-family:Inter">{{ extraCost }}</bdi></div>
+<div style="display:flex;justify-content:space-between"><span>الميزات الإضافية</span><bdi dir="ltr" style="font-family:Inter">{{ addonCost }}</bdi></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;color:#E8F0EF;padding-top:4px"><span style="font-size:14px;font-weight:700">الإجمالي الشهري</span><bdi dir="ltr" style="font:700 26px Inter,sans-serif">{{ total }}<span style="font:500 13px Tajawal;color:#9FC7C1"> ر.س</span></bdi></div>
+</div>
+</div>
+<div style="margin:12px 16px 0;border-radius:16px;border:1px solid var(--bd);background:var(--sf);padding:12px 14px;display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-size:16px;font-weight:700">مؤسسات</div><div style="font-size:12px;color:var(--tx2)">أكثر من <bdi dir="ltr" style="font-family:Inter">50</bdi> شاحنة · ربط الأنظمة</div></div><span style="font-size:14px;font-weight:700;color:var(--mintTx)">تواصل معنا</span></div>
+<div style="padding:14px 16px 0;font-size:12px;color:var(--tx2);line-height:1.6">الأسعار لا تشمل ضريبة القيمة المضافة <bdi dir="ltr" style="font-family:Inter">15%</bdi>. يمكنك تعديل عدد الشاحنات والميزات لاحقًا من الإعدادات، ويُحتسب الفرق تناسبيًا.</div>
+</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:12px 16px 24px;background:var(--bg);border-top:1px solid var(--bd);display:flex;align-items:center;gap:12px"><div style="flex:none"><div style="font-size:11px;color:var(--tx2)">بعد التجربة</div><bdi dir="ltr" style="font:700 18px Inter,sans-serif">{{ total }}<span style="font:500 12px Tajawal;color:var(--tx2)"> ر.س/شهر</span></bdi></div><div style="flex:1;height:52px;border-radius:14px;background:var(--mint);color:var(--onMint);display:grid;place-items:center;font-size:16px;font-weight:800">ابدأ التجربة المجانية</div></div>
+</div></div></div>
+</sc-for>
+</div></div>
+
+<div class="dv-opt" id="1n"><div class="dv-olabel"><a class="dv-oid" href="#1n">1n</a>المحادثة قبل القبول + تسجيل صوتي · Chat (pre-acceptance) + voice-note recording</div>
+<div style="display:flex;gap:28px;align-items:flex-start">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font:600 11px ui-monospace,monospace;color:rgba(0,0,0,.45)">{{ t.label }}</div>
+<div style="{{ t.frame }}"><div dir="rtl" style="width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:var(--bg);color:var(--tx);font-family:Tajawal,Inter,sans-serif;display:flex;flex-direction:column">
+<div style="background:var(--sf);border-bottom:1px solid var(--bd)">
+<div dir="ltr" style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font:600 13px Inter,sans-serif"><span>9:41</span><span style="display:flex;gap:6px;font-size:15px"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+<div style="display:flex;align-items:center;gap:8px;padding:4px 8px 10px"><span style="width:44px;height:44px;display:grid;place-items:center;font-size:22px"><i class="ph ph-arrow-right"></i></span><div style="width:40px;height:40px;border-radius:12px;background:var(--hero);color:#fff;display:grid;place-items:center;font-weight:800">أ</div><div style="flex:1"><div style="display:flex;align-items:center;gap:4px;font-size:15px;font-weight:700">شركة الأفق للنقل<i class="ph-fill ph-seal-check" style="color:var(--mintTx)"></i></div><div style="font-size:12px;color:var(--tx2)"><bdi dir="ltr" style="font-family:Inter">★ 4.8</bdi> · متصل الآن</div></div><span style="width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;color:var(--mintTx)"><i class="ph ph-phone"></i></span><span style="width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;color:var(--mintTx)"><i class="ph ph-video-camera"></i></span></div>
+</div>
+<div style="margin:12px 16px 0;padding:10px 12px;border-radius:12px;background:var(--sf2);display:flex;gap:8px;font-size:12px;line-height:1.5;color:var(--tx2)"><i class="ph ph-lock-simple" style="font-size:16px;color:var(--tx);flex:none"></i><span>التواصل داخل التطبيق فقط. تظهر أرقام الجوال بعد قبول العرض.</span></div>
+<div style="margin:10px 16px 0;padding:10px 12px;border-radius:12px;border:1px solid var(--bd);background:var(--sf);display:flex;align-items:center;gap:10px;font-size:13px"><i class="ph ph-hand-coins" style="font-size:18px;color:var(--mintTx)"></i><span style="flex:1">عرض على <bdi dir="ltr" style="font-family:Inter">NQ-24-08840</bdi></span><bdi dir="ltr" style="font:700 14px Inter,sans-serif">1,950</bdi></div>
+<div style="text-align:center;font-size:12px;color:var(--tx3);padding:14px 0 8px">اليوم</div>
+<div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+<div style="align-self:flex-start;max-width:76%;padding:10px 12px;border-radius:16px 16px 4px 16px;background:var(--hero);color:#E8F0EF;font-size:15px;line-height:1.5">هل الحمولة على طبليات؟ ونحتاج نعرف وقت التحميل بالضبط.<div style="display:flex;justify-content:flex-start;align-items:center;gap:4px;margin-top:4px;font:500 11px Inter,sans-serif;color:#9FC7C1"><bdi dir="ltr">10:24</bdi><i class="ph ph-checks" style="color:#1FE0C0;font-size:14px"></i></div></div>
+<div style="align-self:flex-end;max-width:80%;padding:10px 12px;border-radius:16px 16px 16px 4px;background:var(--sf);border:1px solid var(--bd);display:flex;align-items:center;gap:10px"><span style="width:36px;height:36px;border-radius:50%;background:var(--mint);color:var(--onMint);display:grid;place-items:center;font-size:16px;flex:none"><i class="ph-fill ph-play"></i></span><div dir="ltr" style="display:flex;align-items:center;gap:2px;height:28px"><sc-for list="{{ bars }}" as="b" hint-placeholder-count="26"><span style="{{ b.s }}"></span></sc-for></div><bdi dir="ltr" style="font:500 11px Inter,sans-serif;color:var(--tx2);flex:none">0:18</bdi></div>
+<div style="align-self:flex-end;width:62%;border-radius:16px 16px 16px 4px;background:var(--sf);border:1px solid var(--bd);padding:4px;display:flex;flex-direction:column;gap:6px"><div style="height:110px;border-radius:12px;background:repeating-linear-gradient(45deg,var(--sf2) 0 8px,var(--bd) 8px 9px);display:grid;place-items:center;font:500 10px ui-monospace,monospace;color:var(--tx3)">cargo photo</div><div style="padding:0 6px 4px;font-size:13px">صورة الطبليات من المستودع</div></div>
+</div>
+<div style="position:absolute;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--bd);padding:10px 12px 24px;display:flex;align-items:center;gap:10px">
+<span style="width:10px;height:10px;border-radius:50%;background:var(--err);flex:none;box-shadow:0 0 0 4px var(--errBg)"></span>
+<bdi dir="ltr" style="font:600 14px Inter,sans-serif;flex:none">0:14</bdi>
+<div dir="ltr" style="flex:1;display:flex;align-items:center;gap:2px;height:32px;overflow:hidden;justify-content:flex-end"><sc-for list="{{ rec }}" as="b" hint-placeholder-count="30"><span style="{{ b.s }}"></span></sc-for></div>
+<span style="font-size:12px;color:var(--tx3);flex:none;display:flex;align-items:center;gap:2px"><i class="ph ph-caret-double-right"></i>اسحب للإلغاء</span>
+<span style="width:52px;height:52px;border-radius:50%;background:var(--mint);color:var(--onMint);display:grid;place-items:center;font-size:24px;flex:none;box-shadow:0 0 0 6px var(--mintBg)"><i class="ph-fill ph-microphone"></i></span>
+</div>
+</div></div></div>
+</sc-for>
+</div></div>
+
+<div class="dv-opt" id="1o"><div class="dv-olabel"><a class="dv-oid" href="#1o">1o</a>مكالمة فيديو · Video call (theme-independent)</div>
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font:600 11px ui-monospace,monospace;color:rgba(0,0,0,.45)">BOTH THEMES</div>
+<div style="{{ callFrame }}"><div dir="rtl" style="width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:#0B1413;color:#fff;font-family:Tajawal,Inter,sans-serif">
+<div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,#13201E 0 10px,#172624 10px 11px);display:grid;place-items:center;font:500 11px ui-monospace,monospace;color:#5E7572">remote video · carrier</div>
+<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent 22%,transparent 70%,rgba(0,0,0,.7))"></div>
+<div dir="ltr" style="position:relative;height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font:600 13px Inter,sans-serif"><span>9:41</span><span style="display:flex;gap:6px;font-size:15px"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+<div style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;padding:10px 20px"><div><div style="display:flex;align-items:center;gap:4px;font-size:18px;font-weight:700">عبدالرحمن السبيعي<i class="ph-fill ph-seal-check" style="color:#1FE0C0"></i></div><div style="font-size:13px;color:#B9CCC9">شركة الأفق للنقل · <bdi dir="ltr" style="font-family:Inter">04:12</bdi></div></div><span style="height:30px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.14);display:flex;align-items:center;gap:6px;font-size:12px"><span dir="ltr" style="display:flex;align-items:flex-end;gap:2px;height:12px"><span style="width:3px;height:4px;background:#22C55E;border-radius:1px"></span><span style="width:3px;height:7px;background:#22C55E;border-radius:1px"></span><span style="width:3px;height:10px;background:#22C55E;border-radius:1px"></span><span style="width:3px;height:12px;background:rgba(255,255,255,.3);border-radius:1px"></span></span>اتصال جيد</span></div>
+<div style="position:absolute;top:130px;left:16px;width:104px;height:150px;border-radius:16px;border:2px solid rgba(255,255,255,.3);background:repeating-linear-gradient(45deg,#1F3431 0 8px,#26403C 8px 9px);display:grid;place-items:center;font:500 10px ui-monospace,monospace;color:#8FA9A5">you</div>
+<div style="position:absolute;bottom:34px;left:0;right:0;display:flex;justify-content:center;gap:14px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#B9CCC9"><span style="width:56px;height:56px;border-radius:50%;background:#fff;color:#0A3D3A;display:grid;place-items:center;font-size:24px"><i class="ph-fill ph-microphone-slash"></i></span>كتم</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#B9CCC9"><span style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:24px"><i class="ph ph-speaker-high"></i></span>السماعة</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#B9CCC9"><span style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:24px"><i class="ph ph-camera-rotate"></i></span>تبديل</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#B9CCC9"><span style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:24px"><i class="ph ph-video-camera"></i></span>الكاميرا</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#B9CCC9"><span style="width:56px;height:56px;border-radius:50%;background:#DC2626;display:grid;place-items:center;font-size:24px"><i class="ph-fill ph-phone-disconnect"></i></span>إنهاء</div>
+</div>
+</div></div></div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "voice call ringing + incoming states" · "login + OTP screen" · "pending approval / rejected states"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showDark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;phoneWidth&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;360&quot;,&quot;390&quot;,&quot;430&quot;],&quot;default&quot;:&quot;390&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { trucks: 8, on: { maint: true } };
+  renderVals() {
+    const ADD = [
+      { id: 'maint', icon: 'ph-wrench', name: 'إدارة صيانة الأسطول', desc: 'جدولة الصيانة وتنبيهات الفحص الدوري', price: 99 },
+      { id: 'fuel', icon: 'ph-gas-pump', name: 'الوقود والمصاريف', desc: 'تسجيل التعبئة وتكلفة كل رحلة', price: 79 },
+      { id: 'reports', icon: 'ph-chart-line-up', name: 'تقارير متقدمة', desc: 'ربحية الشاحنة والسائق وتصدير Excel', price: 69 },
+      { id: 'support', icon: 'ph-headset', name: 'دعم بأولوية', desc: 'استجابة خلال ساعة على مدار الأسبوع', price: 49 }
+    ];
+    const { trucks, on } = this.state;
+    const extraTrucks = Math.max(0, trucks - 5), extraCost = extraTrucks * 39;
+    const addonCost = ADD.reduce((s, a) => s + (on[a.id] ? a.price : 0), 0);
+    const total = 299 + extraCost + addonCost;
+    const addons = ADD.map(a => { const v = !!on[a.id]; return { ...a,
+      toggle: () => this.setState(s => ({ on: { ...s.on, [a.id]: !s.on[a.id] } })),
+      track: { width: '40px', height: '24px', borderRadius: '999px', background: v ? '#1FE0C0' : 'rgba(255,255,255,.18)', position: 'relative', flex: 'none', transition: 'background .15s' },
+      knob: { position: 'absolute', top: '3px', left: v ? '19px' : '3px', width: '18px', height: '18px', borderRadius: '50%', background: v ? '#0B1413' : '#E8F0EF', transition: 'left .15s' } }; });
+    const pricing = { trucks, extraTrucks, extraCost, addonCost, total, addons, decOpacity: trucks <= 5 ? .35 : 1,
+      incTrucks: () => this.setState(s => ({ trucks: Math.min(50, s.trucks + 1) })),
+      decTrucks: () => this.setState(s => ({ trucks: Math.max(5, s.trucks - 1) })) };
+    const w = Number(this.props.phoneWidth ?? 390);
+    const L = {'--bg':'#F6F8F8','--sf':'#FFFFFF','--sf2':'#EDF2F1','--bd':'#E2E8E7','--tx':'#0F1A19','--tx2':'#566664','--tx3':'#7E8E8C','--mint':'#00C9A7','--mintS':'#00A88A','--mintTx':'#007A66','--mintBg':'#E2F7F2','--onMint':'#06302D','--hero':'#0A3D3A','--hero2':'#0D5C57','--ok':'#15803D','--okBg':'#E6F5EB','--warn':'#B45309','--warnBg':'#FEF3E2','--err':'#DC2626','--errBg':'#FDECEC','--info':'#1D4ED8','--infoBg':'#E8EFFD','--sh':'0 1px 2px rgba(10,26,25,.05), 0 8px 24px -14px rgba(10,26,25,.22)','--scrim':'rgba(10,26,25,.45)'};
+    const D = {'--bg':'#0B1413','--sf':'#111E1C','--sf2':'#182725','--bd':'#243533','--tx':'#E8F0EF','--tx2':'#9FB4B1','--tx3':'#7A918E','--mint':'#1FE0C0','--mintS':'#00C9A7','--mintTx':'#1FE0C0','--mintBg':'rgba(31,224,192,.12)','--onMint':'#062724','--hero':'#0E2F2C','--hero2':'#123F3B','--ok':'#22C55E','--okBg':'rgba(34,197,94,.14)','--warn':'#FBBF24','--warnBg':'rgba(251,191,36,.13)','--err':'#F87171','--errBg':'rgba(248,113,113,.14)','--info':'#60A5FA','--infoBg':'rgba(96,165,250,.14)','--sh':'0 0 0 0 transparent','--scrim':'rgba(0,0,0,.6)'};
+    const frame = v => ({...v, width: (w + 20) + 'px', height: '864px', padding: '10px', boxSizing: 'border-box', background: '#070B0A', borderRadius: '52px', boxShadow: '0 30px 60px -30px rgba(0,0,0,.45)'});
+    const themes = [{label: 'LIGHT · فاتح · ' + w + 'dp', frame: frame(L)}];
+    if (this.props.showDark !== false) themes.push({label: 'DARK · داكن · ' + w + 'dp', frame: frame(D)});
+    const hs = [6,10,16,22,14,8,12,20,26,18,10,6,14,22,16,10,8,18,24,12,8,6,10,14,8,6];
+    const bars = hs.map((h, i) => ({ s: { width: '3px', height: h + 'px', borderRadius: '2px', background: i < 9 ? 'var(--mintS)' : 'var(--bd)', flex: 'none' } }));
+    const rs = [8,12,18,24,30,20,12,8,16,26,22,14,10,18,28,24,14,8,12,20,30,22,16,10,14,24,18,10,6,12];
+    const rec = rs.map(h => ({ s: { width: '3px', height: h + 'px', borderRadius: '2px', background: 'var(--err)', opacity: .75, flex: 'none' } }));
+    return { themes, bars, rec, callFrame: frame(D), ...pricing };
+  }
+}
+</script>
+</body>
+</html>

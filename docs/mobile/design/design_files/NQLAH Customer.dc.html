@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css"><style>body{margin:0;background:#E9ECEB;font-family:Tajawal,Inter,system-ui,sans-serif}a{color:#007A66}a:hover{color:#0A3D3A}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08)}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#0A3D3A;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 Inter,system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:12px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:500 13px/1.3 Tajawal,Inter,sans-serif;color:rgba(0,0,0,.7)}.dv-opt:target .dv-oid{background:#00A88A;color:#fff}.dv-next{margin:28px 0 0;font:12px/1.5 Inter,system-ui,sans-serif;color:rgba(0,0,0,.5)}</style></helmet>
+<section class="dv-turn" id="t1">
+<div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;margin:0 0 36px">
+<div style="max-width:560px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:10px;background:#0A3D3A;display:grid;place-items:center"><div style="width:12px;height:12px;background:#00C9A7;transform:rotate(45deg);border-radius:2px"></div></div><div style="font:800 24px Tajawal,sans-serif;color:#0A3D3A">نقلة · NQLAH — Customer</div></div>
+<div style="font:400 14px/1.6 Inter,sans-serif;color:#3d4a48">Round 1, Customer role. Arabic RTL, light and dark side by side. Visual language: <b>waybill cards</b> (perforated ticket divider, LTR codes), a <b>route strip</b> that reads right→left like the Arabic sentence, and a teal <b>hero panel</b> with a faint map-grid texture. Mint is for action and "live" only.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;font:500 12px Inter,sans-serif"><a href="NQLAH Customer.dc.html">Customer</a>·<a href="NQLAH Provider and Drivers.dc.html">Provider &amp; Drivers</a>·<a href="NQLAH Auth and Comms.dc.html">Auth &amp; Comms</a>·<a href="NQLAH Design System.dc.html">Design system</a></div>
+</div>
+<div style="max-width:420px;font:400 12px/1.6 Inter,sans-serif;color:#5b6b69;display:flex;flex-direction:column;gap:4px"><b style="color:#0F1A19">Assumptions</b><span>• Logo not provided: wordmark + mint diamond is a placeholder mark.</span><span>• Map is a styled placeholder; real tiles come from the provider (light/dark styles specced in DS).</span><span>• Use Tweaks to view at 360 / 390 / 430dp or hide dark.</span></div>
+</div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>الرئيسية · Customer home</div>
+<div style="display:flex;gap:28px;align-items:flex-start">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font:600 11px ui-monospace,monospace;color:rgba(0,0,0,.45)">{{ t.label }}</div>
+<div style="{{ t.frame }}"><div dir="rtl" style="width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:var(--bg);color:var(--tx);font-family:Tajawal,Inter,sans-serif;display:flex;flex-direction:column">
+<div style="background:radial-gradient(120% 70% at 0% 0%, rgba(0,201,167,.22), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 26px), repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 26px), var(--hero);color:#E8F0EF;padding:0 16px 60px">
+<div dir="ltr" style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font:600 13px Inter,sans-serif"><span>9:41</span><span style="display:flex;gap:6px;font-size:15px"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 22px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-weight:800;font-size:18px">ر</div><div><div style="font-size:13px;color:#9FC7C1">مساء الخير</div><div style="font-size:16px;font-weight:700">مصنع الروّاد للبلاستيك</div></div></div>
+<div style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.1);display:grid;place-items:center;position:relative;font-size:22px"><i class="ph ph-bell"></i><span style="position:absolute;top:10px;left:11px;width:8px;height:8px;border-radius:50%;background:#00C9A7;box-shadow:0 0 0 2px #0A3D3A"></span></div>
+</div>
+<div style="font-size:27px;font-weight:800;line-height:1.3;text-wrap:pretty">إلى أين تتجه شحنتك اليوم؟</div>
+<div style="height:56px;margin-top:18px;border-radius:14px;background:var(--mint);color:var(--onMint);display:flex;align-items:center;justify-content:center;gap:10px;font-size:17px;font-weight:800"><i class="ph ph-plus" style="font-size:20px"></i>طلب نقل جديد</div>
+</div>
+<div style="margin:-38px 16px 0;background:var(--sf);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:18px;display:grid;grid-template-columns:1fr 1fr 1fr;padding:14px 4px">
+<div style="text-align:center;display:flex;flex-direction:column;gap:2px"><span style="font:700 22px Inter,sans-serif">4</span><span style="font-size:12px;color:var(--tx2)">شحنات نشطة</span></div>
+<div style="text-align:center;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--bd);border-left:1px solid var(--bd)"><span style="font:700 22px Inter,sans-serif;color:var(--info)">2</span><span style="font-size:12px;color:var(--tx2)">بانتظار العروض</span></div>
+<div style="text-align:center;display:flex;flex-direction:column;gap:2px"><span style="font:700 22px Inter,sans-serif;color:var(--warn)">1</span><span style="font-size:12px;color:var(--tx2)">تحتاج إجراءك</span></div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:22px 16px 10px"><span style="font-size:18px;font-weight:700">شحنات نشطة</span><span style="font-size:14px;font-weight:700;color:var(--mintTx)">عرض الكل</span></div>
+<div style="margin:0 16px;background:var(--sf);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:16px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;flex-direction:column;gap:2px"><bdi dir="ltr" style="font:600 13px Inter,sans-serif;color:var(--tx2);letter-spacing:.3px">NQ-24-08812</bdi><span style="font-size:12px;color:var(--tx3)">مجمّع · رحلتان</span></div><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:var(--infoBg);color:var(--info);font-size:13px;font-weight:700"><span style="width:7px;height:7px;border-radius:50%;background:var(--info);box-shadow:0 0 0 3px var(--infoBg)"></span>في الطريق</span></div>
+<div style="display:flex;align-items:center;gap:10px">
+<div style="display:flex;flex-direction:column"><span style="font-size:18px;font-weight:800">الدمام</span><span style="font-size:12px;color:var(--tx2)">ميناء الملك عبدالعزيز</span></div>
+<div style="flex:1;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--mint)"></span><span style="flex:1.3;height:2px;background:var(--mint)"></span><span style="width:30px;height:30px;border-radius:50%;background:var(--mintBg);color:var(--mintTx);display:grid;place-items:center;font-size:16px"><i class="ph-fill ph-truck" style="transform:scaleX(-1)"></i></span><span style="flex:1;border-top:2px dashed var(--bd)"></span><span style="width:10px;height:10px;border-radius:50%;border:2px solid var(--tx3);box-sizing:border-box"></span></div>
+<div style="display:flex;flex-direction:column;text-align:left"><span style="font-size:18px;font-weight:800">الرياض</span><span style="font-size:12px;color:var(--tx2)">الصناعية الثانية</span></div>
+</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx2)"><i class="ph ph-broadcast" style="color:var(--mintTx);font-size:16px"></i><span>مباشر · آخر تحديث قبل <bdi dir="ltr" style="font-family:Inter">2</bdi> د</span><span style="margin-right:auto">التوقف <bdi dir="ltr" style="font-family:Inter">2/3</bdi></span></div>
+<div style="position:relative;margin:0 -16px;border-top:1.5px dashed var(--bd)"><span style="position:absolute;top:-10px;right:-10px;width:18px;height:18px;border-radius:50%;background:var(--bg);border-left:1px solid var(--bd)"></span><span style="position:absolute;top:-10px;left:-10px;width:18px;height:18px;border-radius:50%;background:var(--bg);border-right:1px solid var(--bd)"></span></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2)"><span style="display:flex;align-items:center;gap:6px"><i class="ph ph-truck-trailer" style="font-size:17px"></i>تريلا سطحة · <bdi dir="ltr" style="font:600 13px Inter,sans-serif;color:var(--tx)">7342 KHD</bdi></span><span style="display:flex;align-items:center;gap:6px"><i class="ph ph-shipping-container" style="font-size:17px"></i><bdi dir="ltr" style="font:600 13px Inter,sans-serif;color:var(--tx)">TGHU 771392-0</bdi></span></div>
+</div>
+<div style="margin:12px 16px 0;background:var(--warnBg);border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:12px"><span style="width:40px;height:40px;border-radius:12px;background:var(--sf);color:var(--warn);display:grid;place-items:center;font-size:20px"><i class="ph ph-hand-coins"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:700">3 عروض بانتظار قرارك</div><div style="font-size:12px;color:var(--tx2)"><bdi dir="ltr" style="font-family:Inter">NQ-24-08840</bdi> · جدة ← مكة · تنتهي خلال <bdi dir="ltr" style="font-family:Inter">5h</bdi></div></div><i class="ph ph-caret-left" style="font-size:18px;color:var(--tx2)"></i></div>
+<div style="padding:20px 16px 8px;font-size:16px;font-weight:700">أعد الطلب</div>
+<div style="display:flex;gap:8px;padding:0 16px;overflow:hidden"><span style="flex:none;height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--bd);background:var(--sf);display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500"><i class="ph ph-arrow-counter-clockwise" style="color:var(--mintTx)"></i>الجبيل ← الرياض</span><span style="flex:none;height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--bd);background:var(--sf);display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500"><i class="ph ph-arrow-counter-clockwise" style="color:var(--mintTx)"></i>جدة ← بريدة</span></div>
+<div style="position:absolute;bottom:0;left:0;right:0;height:78px;background:var(--sf);border-top:1px solid var(--bd);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 4px 14px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:700;color:var(--mintTx)"><span style="width:52px;height:30px;border-radius:999px;background:var(--mintBg);display:grid;place-items:center;font-size:21px"><i class="ph-fill ph-house-simple"></i></span>الرئيسية</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--tx2)"><span style="height:30px;display:grid;place-items:center;font-size:21px"><i class="ph ph-package"></i></span>شحناتي</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--tx2)"><span style="height:30px;display:grid;place-items:center;font-size:21px;position:relative"><i class="ph ph-hand-coins"></i></span>العروض</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--tx2)"><span style="height:30px;display:grid;place-items:center;font-size:21px"><i class="ph ph-receipt"></i></span>المالية</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--tx2)"><span style="height:30px;display:grid;place-items:center;font-size:21px"><i class="ph ph-user-circle"></i></span>حسابي</div>
+</div>
+</div></div></div>
+</sc-for>
+</div></div>
+
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>إنشاء طلب — الحمولة (مجمّع) · Create order, step 1</div>
+<div style="display:flex;gap:28px;align-items:flex-start">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font:600 11px ui-monospace,monospace;color:rgba(0,0,0,.45)">{{ t.label }}</div>
+<div style="{{ t.frame }}"><div dir="rtl" style="width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:var(--bg);color:var(--tx);font-family:Tajawal,Inter,sans-serif;display:flex;flex-direction:column">
+<div dir="ltr" style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font:600 13px Inter,sans-serif;flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:15px"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px 4px 16px;height:52px"><span style="width:44px;height:44px;display:grid;place-items:center;font-size:22px"><i class="ph ph-x"></i></span><span style="font-size:17px;font-weight:700">طلب نقل جديد</span><span style="font-size:14px;font-weight:700;color:var(--mintTx)">حفظ كمسودة</span></div>
+<div style="padding:6px 16px 0;display:flex;flex-direction:column;gap:8px">
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px"><span style="height:4px;border-radius:2px;background:var(--mint)"></span><span style="height:4px;border-radius:2px;background:var(--bd)"></span><span style="height:4px;border-radius:2px;background:var(--bd)"></span><span style="height:4px;border-radius:2px;background:var(--bd)"></span><span style="height:4px;border-radius:2px;background:var(--bd)"></span><span style="height:4px;border-radius:2px;background:var(--bd)"></span></div>
+<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2)"><span><b style="color:var(--tx)">الحمولة</b> · الخطوة <bdi dir="ltr" style="font-family:Inter">1/6</bdi></span><span>التالي: المسار</span></div>
+</div>
+<div style="padding:18px 16px 0;font-size:22px;font-weight:800">ما نوع الطلب؟</div>
+<div style="margin:12px 16px 0;padding:4px;background:var(--sf2);border-radius:14px;display:grid;grid-template-columns:1fr 1fr;gap:4px">
+<div style="height:48px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;color:var(--tx2)"><i class="ph ph-truck" style="font-size:18px"></i>شحنة واحدة</div>
+<div style="height:48px;border-radius:11px;background:var(--sf);box-shadow:var(--sh);display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:700"><i class="ph-fill ph-stack" style="font-size:18px;color:var(--mintTx)"></i>مجمّع</div>
+</div>
+<div style="padding:8px 16px 0;font-size:13px;color:var(--tx2);line-height:1.5">لكل رحلة فرعية نوع شاحنة ووجهة وسعر وتوقفات خاصة بها.</div>
+<div style="margin:14px 16px 0;background:var(--sf);border:1.5px solid var(--mint);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:8px;background:var(--hero);color:#fff;display:grid;place-items:center;font:700 13px Inter,sans-serif">1</span><span style="font-size:16px;font-weight:700;flex:1">رحلة فرعية</span><i class="ph ph-caret-up" style="font-size:18px;color:var(--tx2)"></i></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--tx2)">نوع الشاحنة</span><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="height:36px;padding:0 12px;border-radius:999px;background:var(--hero);color:#fff;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700"><i class="ph ph-check"></i>تريلا سطحة</span><span style="height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--bd);display:flex;align-items:center;font-size:13px">ستارة</span><span style="height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--bd);display:flex;align-items:center;font-size:13px">لوري</span><span style="height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--bd);display:flex;align-items:center;font-size:13px">مبرّدة</span></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--tx2)">الوجهة</span><div style="height:48px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);display:flex;align-items:center;gap:8px;padding:0 12px;font-size:15px"><i class="ph-fill ph-map-pin" style="color:var(--err);font-size:18px"></i>الرياض — المدينة الصناعية الثانية</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:var(--tx2)">توقفات وسيطة</span>
+<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--warnBg)"><i class="ph ph-shipping-container" style="font-size:20px;color:var(--warn)"></i><div style="flex:1"><div style="font-size:14px;font-weight:700">إرجاع حاوية فارغة</div><div style="font-size:12px;color:var(--tx2)">ميناء الملك عبدالعزيز · الدمام</div></div><i class="ph ph-dots-three-vertical" style="font-size:18px;color:var(--tx2)"></i></div>
+<div style="height:40px;border-radius:12px;border:1.5px dashed var(--bd);display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:var(--mintTx)"><i class="ph ph-plus"></i>إضافة توقف (استلام إضافي، تفريغ…)</div></div>
+</div>
+<div style="margin:10px 16px 0;background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:14px;display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:8px;background:var(--sf2);color:var(--tx);display:grid;place-items:center;font:700 13px Inter,sans-serif">2</span><div style="flex:1"><div style="font-size:15px;font-weight:700">مبرّدة · جدة</div><div style="font-size:12px;color:var(--tx2)">بدون توقفات</div></div><bdi dir="ltr" style="font:700 15px Inter,sans-serif">1,850 <span style="font:500 12px Tajawal;color:var(--tx2)">ر.س</span></bdi><i class="ph ph-caret-down" style="font-size:18px;color:var(--tx2)"></i></div>
+<div style="margin:10px 16px 0;height:48px;border-radius:14px;border:1.5px dashed var(--mintS);display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:700;color:var(--mintTx)"><i class="ph ph-plus-circle" style="font-size:19px"></i>إضافة رحلة فرعية</div>
+<div style="position:absolute;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--bd);padding:12px 16px 22px;display:flex;align-items:center;gap:12px">
+<div style="display:flex;flex-direction:column"><span style="font-size:12px;color:var(--tx2)">رحلتان · تقديري</span><bdi dir="ltr" style="font:700 20px Inter,sans-serif">4,250 <span style="font:500 13px Tajawal;color:var(--tx2)">ر.س</span></bdi></div>
+<div style="flex:1;height:52px;border-radius:14px;background:var(--mint);color:var(--onMint);display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:800">التالي: المسار<i class="ph ph-arrow-left"></i></div>
+</div>
+</div></div></div>
+</sc-for>
+</div></div>
+
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>تفاصيل الطلب — بعد القبول · Order detail (contact revealed)</div>
+<div style="display:flex;gap:28px;align-items:flex-start">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font:600 11px ui-monospace,monospace;color:rgba(0,0,0,.45)">{{ t.label }}</div>
+<div style="{{ t.frame }}"><div dir="rtl" style="width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:var(--bg);color:var(--tx);font-family:Tajawal,Inter,sans-serif;display:flex;flex-direction:column">
+<div dir="ltr" style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font:600 13px Inter,sans-serif;flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:15px"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;height:52px"><span style="width:44px;height:44px;display:grid;place-items:center;font-size:22px"><i class="ph ph-arrow-right"></i></span><div style="flex:1;display:flex;flex-direction:column"><bdi dir="ltr" style="font:700 16px Inter,sans-serif;text-align:right">NQ-24-08812</bdi><span style="font-size:12px;color:var(--tx2)">طلب مجمّع · رحلتان</span></div><span style="width:44px;height:44px;display:grid;place-items:center;font-size:22px"><i class="ph ph-dots-three"></i></span></div>
+<div style="margin:4px 16px 0;padding:4px;background:var(--sf2);border-radius:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px">
+<div style="height:40px;border-radius:9px;background:var(--sf);box-shadow:var(--sh);display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:700">رحلة 1 <span style="width:7px;height:7px;border-radius:50%;background:var(--info)"></span></div>
+<div style="height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;color:var(--tx2)">رحلة 2 <span style="width:7px;height:7px;border-radius:50%;background:var(--mintS)"></span></div>
+</div>
+<div style="margin:12px 16px 0;background:var(--sf);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:44px;height:44px;border-radius:14px;background:var(--hero);color:#fff;display:grid;place-items:center;font-weight:800">أ</div><div style="flex:1"><div style="display:flex;align-items:center;gap:4px;font-size:15px;font-weight:700">شركة الأفق للنقل<i class="ph-fill ph-seal-check" style="color:var(--mintTx);font-size:16px"></i></div><div style="font-size:12px;color:var(--tx2)">المزوّد المتعاقد · <bdi dir="ltr" style="font-family:Inter">★ 4.8</bdi></div></div>
+<span style="width:44px;height:44px;border-radius:12px;background:var(--mintBg);color:var(--mintTx);display:grid;place-items:center;font-size:20px"><i class="ph ph-chat-circle-dots"></i></span><span style="width:44px;height:44px;border-radius:12px;background:var(--mintBg);color:var(--mintTx);display:grid;place-items:center;font-size:20px"><i class="ph ph-phone"></i></span></div>
+<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--okBg);font-size:13px"><i class="ph ph-lock-open" style="color:var(--ok);font-size:16px"></i><span style="flex:1;color:var(--tx)">تواصل المزوّد متاح بعد القبول</span><bdi dir="ltr" style="font:600 13px Inter,sans-serif">+966 13 812 4400</bdi></div>
+<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2)"><i class="ph ph-steering-wheel" style="font-size:16px"></i>تم إسناد سائق · المزوّد يتولّى التنسيق معه</div>
+</div>
+<div style="padding:18px 16px 8px;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:17px;font-weight:700">مسار الرحلة</span><span style="font-size:13px;font-weight:700;color:var(--mintTx);display:flex;align-items:center;gap:4px"><i class="ph ph-map-trifold"></i>تتبّع</span></div>
+<div style="margin:0 16px;background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:14px 14px 4px">
+<div style="display:grid;grid-template-columns:28px 1fr auto;column-gap:10px">
+<div style="display:flex;flex-direction:column;align-items:center"><span style="width:24px;height:24px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:13px"><i class="ph-fill ph-check"></i></span><span style="flex:1;width:2px;background:var(--ok);min-height:28px"></span></div>
+<div style="padding-bottom:14px"><div style="font-size:15px;font-weight:700">الاستلام · ميناء الملك عبدالعزيز</div><div style="font-size:12px;color:var(--tx2)">حاوية <bdi dir="ltr" style="font-family:Inter">TGHU 771392-0</bdi> · <bdi dir="ltr" style="font-family:Inter">40ft</bdi></div></div><bdi dir="ltr" style="font:500 12px Inter,sans-serif;color:var(--tx2)">08:40</bdi>
+<div style="display:flex;flex-direction:column;align-items:center"><span style="width:24px;height:24px;border-radius:50%;background:var(--info);color:#fff;display:grid;place-items:center;font-size:13px;box-shadow:0 0 0 5px var(--infoBg)"><i class="ph-fill ph-truck" style="transform:scaleX(-1)"></i></span><span style="flex:1;width:0;border-right:2px dashed var(--bd);min-height:28px"></span></div>
+<div style="padding-bottom:14px"><div style="font-size:15px;font-weight:700">التفريغ · الرياض</div><div style="font-size:12px;color:var(--info);font-weight:700">في الطريق · متبقٍ <bdi dir="ltr" style="font-family:Inter">186 km</bdi></div></div><bdi dir="ltr" style="font:500 12px Inter,sans-serif;color:var(--tx3)">~14:20</bdi>
+<div style="display:flex;flex-direction:column;align-items:center"><span style="width:24px;height:24px;border-radius:7px;transform:rotate(45deg) scale(.85);border:2px solid var(--warn);background:var(--sf)"></span></div>
+<div style="padding-bottom:12px"><div style="font-size:15px;font-weight:700">إرجاع الحاوية الفارغة</div><div style="display:inline-flex;margin-top:4px;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:999px;background:var(--warnBg);color:var(--warn);font-size:12px;font-weight:700"><i class="ph ph-shipping-container"></i>منفصل عن تسليم البضاعة</div></div><span style="font-size:12px;color:var(--tx3)">لاحقًا</span>
+</div></div>
+<div style="padding:18px 16px 8px;font-size:17px;font-weight:700">تفصيل السعر</div>
+<div style="margin:0 16px;background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:14px">
+<div style="display:flex;justify-content:space-between"><span style="color:var(--tx2)">أجرة النقل</span><bdi dir="ltr" style="font:500 14px Inter,sans-serif">2,400.00</bdi></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--tx2)">رسوم الخدمة</span><bdi dir="ltr" style="font:500 14px Inter,sans-serif">120.00</bdi></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--tx2)">ضريبة القيمة المضافة <bdi dir="ltr" style="font-family:Inter">15%</bdi></span><bdi dir="ltr" style="font:500 14px Inter,sans-serif">378.00</bdi></div>
+</div>
+</div></div></div>
+</sc-for>
+</div></div>
+
+<div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>التتبّع المباشر · Live tracking</div>
+<div style="display:flex;gap:28px;align-items:flex-start">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font:600 11px ui-monospace,monospace;color:rgba(0,0,0,.45)">{{ t.label }}</div>
+<div style="{{ t.frame }}"><div dir="rtl" style="width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:var(--map);color:var(--tx);font-family:Tajawal,Inter,sans-serif">
+<div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg, transparent 0 58px, var(--road) 58px 62px), repeating-linear-gradient(90deg, transparent 0 74px, var(--road) 74px 77px)"></div>
+<div style="position:absolute;width:640px;height:14px;background:var(--road);top:300px;left:-120px;transform:rotate(-28deg)"></div>
+<div style="position:absolute;width:120px;height:90px;top:120px;right:30px;border-radius:30px;background:var(--park)"></div>
+<svg viewBox="0 0 390 844" style="position:absolute;inset:0;width:100%;height:100%"><path d="M300 640 C 250 560, 330 500, 250 430" stroke="var(--mintS)" stroke-width="6" fill="none" stroke-linecap="round"></path><path d="M250 430 C 190 360, 150 300, 100 160" stroke="var(--mintS)" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="2 12"></path></svg>
+<div style="position:absolute;top:628px;left:288px;width:24px;height:24px;border-radius:50%;background:var(--ok);border:3px solid #fff;box-sizing:border-box"></div>
+<div style="position:absolute;top:148px;left:86px;width:28px;height:28px;border-radius:50%;background:var(--err);border:3px solid #fff;display:grid;place-items:center;color:#fff;font-size:13px;box-sizing:border-box"><i class="ph-fill ph-flag-checkered"></i></div>
+<div style="position:absolute;top:404px;left:224px;width:52px;height:52px;border-radius:50%;background:rgba(0,201,167,.22);display:grid;place-items:center"><div style="width:38px;height:38px;border-radius:50%;background:var(--hero);border:2px solid var(--mint);color:var(--mint);display:grid;place-items:center;font-size:18px"><i class="ph-fill ph-truck" style="transform:scaleX(-1)"></i></div></div>
+<div dir="ltr" style="position:relative;height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font:600 13px Inter,sans-serif"><span>9:41</span><span style="display:flex;gap:6px;font-size:15px"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+<div style="position:relative;display:flex;align-items:center;gap:8px;padding:6px 16px">
+<span style="width:44px;height:44px;border-radius:14px;background:var(--sf);box-shadow:var(--sh);display:grid;place-items:center;font-size:20px"><i class="ph ph-arrow-right"></i></span>
+<span style="height:36px;padding:0 12px;border-radius:999px;background:var(--sf);box-shadow:var(--sh);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700"><span style="width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px var(--okBg)"></span>مباشر · قبل <bdi dir="ltr" style="font-family:Inter">30s</bdi></span>
+<span style="margin-right:auto;width:44px;height:44px;border-radius:14px;background:var(--sf);box-shadow:var(--sh);display:grid;place-items:center;font-size:20px"><i class="ph ph-list-bullets"></i></span>
+</div>
+<div style="position:absolute;bottom:0;left:0;right:0;background:var(--sf);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px -12px rgba(0,0,0,.25);padding:10px 16px 26px;display:flex;flex-direction:column;gap:14px">
+<span style="align-self:center;width:40px;height:4px;border-radius:2px;background:var(--bd)"></span>
+<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:13px;color:var(--tx2)">التوقف التالي</div><div style="font-size:20px;font-weight:800">التفريغ · الرياض</div></div><div style="text-align:left"><div style="font-size:12px;color:var(--tx2)">الوصول المتوقع</div><bdi dir="ltr" style="font:700 20px Inter,sans-serif">14:20</bdi></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="height:8px;border-radius:4px;background:var(--sf2);overflow:hidden;display:flex"><span style="width:53%;background:var(--mintS);border-radius:4px"></span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2)"><span>قُطع <bdi dir="ltr" style="font-family:Inter">212 km</bdi></span><span>متبقٍ <bdi dir="ltr" style="font-family:Inter">186 km</bdi> · حسب المسار</span></div></div>
+<div style="display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px solid var(--bd)"><div style="width:44px;height:44px;border-radius:14px;background:var(--hero);color:#fff;display:grid;place-items:center;font-weight:800">أ</div><div style="flex:1"><div style="display:flex;align-items:center;gap:4px;font-size:15px;font-weight:700">شركة الأفق للنقل<i class="ph-fill ph-seal-check" style="color:var(--mintTx)"></i></div><div style="font-size:12px;color:var(--tx2)">المزوّد · ينسّق مع السائق</div></div><span style="width:44px;height:44px;border-radius:12px;background:var(--mintBg);color:var(--mintTx);display:grid;place-items:center;font-size:20px"><i class="ph ph-chat-circle-dots"></i></span><span style="width:44px;height:44px;border-radius:12px;background:var(--mint);color:var(--onMint);display:grid;place-items:center;font-size:20px"><i class="ph-fill ph-phone"></i></span></div>
+</div>
+</div></div></div>
+</sc-for>
+</div></div>
+
+<div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>English LTR reference · Customer home</div>
+<div style="display:flex;gap:28px;align-items:flex-start">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font:600 11px ui-monospace,monospace;color:rgba(0,0,0,.45)">{{ t.label }}</div>
+<div style="{{ t.frame }}"><div dir="ltr" style="width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;display:flex;flex-direction:column">
+<div style="background:radial-gradient(120% 70% at 100% 0%, rgba(0,201,167,.22), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 26px), repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 26px), var(--hero);color:#E8F0EF;padding:0 16px 60px">
+<div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font:600 13px Inter,sans-serif"><span>9:41</span><span style="display:flex;gap:6px;font-size:15px"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 22px"><div style="display:flex;align-items:center;gap:10px"><div style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-weight:700;font-size:17px">R</div><div><div style="font-size:12px;color:#9FC7C1">Good evening</div><div style="font-size:15px;font-weight:600">Al Rowad Plastics Factory</div></div></div><div style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-size:22px"><i class="ph ph-bell"></i></div></div>
+<div style="font-size:25px;font-weight:700;line-height:1.25;letter-spacing:-.3px">Where is your cargo heading today?</div>
+<div style="height:56px;margin-top:18px;border-radius:14px;background:var(--mint);color:var(--onMint);display:flex;align-items:center;justify-content:center;gap:10px;font-size:16px;font-weight:700"><i class="ph ph-plus" style="font-size:20px"></i>New transport order</div>
+</div>
+<div style="margin:-38px 16px 0;background:var(--sf);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:18px;display:grid;grid-template-columns:1fr 1fr 1fr;padding:14px 4px">
+<div style="text-align:center;display:flex;flex-direction:column;gap:2px"><span style="font:700 22px Inter">4</span><span style="font-size:12px;color:var(--tx2)">Active</span></div>
+<div style="text-align:center;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--bd);border-left:1px solid var(--bd)"><span style="font:700 22px Inter;color:var(--info)">2</span><span style="font-size:12px;color:var(--tx2)">Awaiting offers</span></div>
+<div style="text-align:center;display:flex;flex-direction:column;gap:2px"><span style="font:700 22px Inter;color:var(--warn)">1</span><span style="font-size:12px;color:var(--tx2)">Needs action</span></div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:22px 16px 10px"><span style="font-size:17px;font-weight:700">Active shipments</span><span style="font-size:14px;font-weight:600;color:var(--mintTx)">See all</span></div>
+<div style="margin:0 16px;background:var(--sf);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:16px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px Inter;color:var(--tx2)">NQ-24-08812</span><span style="font-size:12px;color:var(--tx3)">Consolidated · 2 trips</span></div><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:var(--infoBg);color:var(--info);font-size:12px;font-weight:600"><span style="width:7px;height:7px;border-radius:50%;background:var(--info)"></span>In transit</span></div>
+<div style="display:flex;align-items:center;gap:10px"><div style="display:flex;flex-direction:column"><span style="font-size:17px;font-weight:700">Dammam</span><span style="font-size:12px;color:var(--tx2)">King Abdulaziz Port</span></div><div style="flex:1;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--mint)"></span><span style="flex:1.3;height:2px;background:var(--mint)"></span><span style="width:30px;height:30px;border-radius:50%;background:var(--mintBg);color:var(--mintTx);display:grid;place-items:center;font-size:16px"><i class="ph-fill ph-truck"></i></span><span style="flex:1;border-top:2px dashed var(--bd)"></span><span style="width:10px;height:10px;border-radius:50%;border:2px solid var(--tx3);box-sizing:border-box"></span></div><div style="display:flex;flex-direction:column;text-align:right"><span style="font-size:17px;font-weight:700">Riyadh</span><span style="font-size:12px;color:var(--tx2)">2nd Industrial</span></div></div>
+<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx2)"><i class="ph ph-broadcast" style="color:var(--mintTx);font-size:16px"></i>Live · updated 2 min ago<span style="margin-left:auto">Stop 2/3</span></div>
+<div style="position:relative;margin:0 -16px;border-top:1.5px dashed var(--bd)"><span style="position:absolute;top:-10px;right:-10px;width:18px;height:18px;border-radius:50%;background:var(--bg);border-left:1px solid var(--bd)"></span><span style="position:absolute;top:-10px;left:-10px;width:18px;height:18px;border-radius:50%;background:var(--bg);border-right:1px solid var(--bd)"></span></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2)"><span style="display:flex;align-items:center;gap:6px"><i class="ph ph-truck-trailer" style="font-size:17px"></i>Flatbed · <b style="color:var(--tx);font-weight:600">7342 KHD</b></span><span style="display:flex;align-items:center;gap:6px"><i class="ph ph-shipping-container" style="font-size:17px"></i><b style="color:var(--tx);font-weight:600">TGHU 771392-0</b></span></div>
+</div>
+<div style="margin:12px 16px 0;background:var(--warnBg);border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:12px"><span style="width:40px;height:40px;border-radius:12px;background:var(--sf);color:var(--warn);display:grid;place-items:center;font-size:20px"><i class="ph ph-hand-coins"></i></span><div style="flex:1"><div style="font-size:14px;font-weight:600">3 offers awaiting your decision</div><div style="font-size:12px;color:var(--tx2)">NQ-24-08840 · Jeddah → Makkah · ends in 5h</div></div><i class="ph ph-caret-right" style="font-size:18px;color:var(--tx2)"></i></div>
+<div style="position:absolute;bottom:0;left:0;right:0;height:78px;background:var(--sf);border-top:1px solid var(--bd);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 4px 14px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--mintTx)"><span style="width:52px;height:30px;border-radius:999px;background:var(--mintBg);display:grid;place-items:center;font-size:21px"><i class="ph-fill ph-house-simple"></i></span>Home</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--tx2)"><span style="height:30px;display:grid;place-items:center;font-size:21px"><i class="ph ph-package"></i></span>Shipments</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--tx2)"><span style="height:30px;display:grid;place-items:center;font-size:21px"><i class="ph ph-hand-coins"></i></span>Offers</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--tx2)"><span style="height:30px;display:grid;place-items:center;font-size:21px"><i class="ph ph-receipt"></i></span>Finance</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--tx2)"><span style="height:30px;display:grid;place-items:center;font-size:21px"><i class="ph ph-user-circle"></i></span>Account</div>
+</div>
+</div></div></div>
+</sc-for>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "make <a class="dv-oid" href="#1a">1a</a> clickable through the order wizard" · "add My shipments list + filter sheet" · "remaining wizard steps (Route → Review)"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showDark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;phoneWidth&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;360&quot;,&quot;390&quot;,&quot;430&quot;],&quot;default&quot;:&quot;390&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const w = Number(this.props.phoneWidth ?? 390);
+    const L = {'--bg':'#F6F8F8','--sf':'#FFFFFF','--sf2':'#EDF2F1','--bd':'#E2E8E7','--tx':'#0F1A19','--tx2':'#566664','--tx3':'#7E8E8C','--mint':'#00C9A7','--mintS':'#00A88A','--mintTx':'#007A66','--mintBg':'#E2F7F2','--onMint':'#06302D','--hero':'#0A3D3A','--hero2':'#0D5C57','--ok':'#15803D','--okBg':'#E6F5EB','--warn':'#B45309','--warnBg':'#FEF3E2','--err':'#DC2626','--errBg':'#FDECEC','--info':'#1D4ED8','--infoBg':'#E8EFFD','--sh':'0 1px 2px rgba(10,26,25,.05), 0 8px 24px -14px rgba(10,26,25,.22)','--map':'#E3EBE8','--road':'#FFFFFF','--park':'#D3E6DC','--scrim':'rgba(10,26,25,.45)'};
+    const D = {'--bg':'#0B1413','--sf':'#111E1C','--sf2':'#182725','--bd':'#243533','--tx':'#E8F0EF','--tx2':'#9FB4B1','--tx3':'#7A918E','--mint':'#1FE0C0','--mintS':'#00C9A7','--mintTx':'#1FE0C0','--mintBg':'rgba(31,224,192,.12)','--onMint':'#062724','--hero':'#0E2F2C','--hero2':'#123F3B','--ok':'#22C55E','--okBg':'rgba(34,197,94,.14)','--warn':'#FBBF24','--warnBg':'rgba(251,191,36,.13)','--err':'#F87171','--errBg':'rgba(248,113,113,.14)','--info':'#60A5FA','--infoBg':'rgba(96,165,250,.14)','--sh':'0 0 0 0 transparent','--map':'#0E1A19','--road':'#1A2A28','--park':'#12241F','--scrim':'rgba(0,0,0,.6)'};
+    const frame = v => ({...v, width: (w + 20) + 'px', height: '864px', padding: '10px', boxSizing: 'border-box', background: '#070B0A', borderRadius: '52px', boxShadow: '0 30px 60px -30px rgba(0,0,0,.45)'});
+    const themes = [{label: 'LIGHT · فاتح · ' + w + 'dp', frame: frame(L)}];
+    if (this.props.showDark !== false) themes.push({label: 'DARK · داكن · ' + w + 'dp', frame: frame(D)});
+    return { themes };
+  }
+}
+</script>
+</body>
+</html>
