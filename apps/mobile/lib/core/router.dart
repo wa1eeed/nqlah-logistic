@@ -145,8 +145,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     GoRoute(
       path: '/order/review',
-      builder: (context, state) =>
-          OrderStep6Review(onPublish: () => context.go('/app')),
+      builder: (context, state) => OrderStep6Review(
+          onPublished: (id) => context.go('/order-detail/$id')),
     ),
     GoRoute(
       path: '/order-detail/:id',
