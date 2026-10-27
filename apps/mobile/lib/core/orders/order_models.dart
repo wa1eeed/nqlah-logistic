@@ -303,6 +303,8 @@ class OrderDetail {
     this.commissionVatAmount,
     this.clientTotalDue,
     this.tracking = const [],
+    this.mode = 'OPEN',
+    this.targetCarrierId,
   });
 
   final String id;
@@ -339,8 +341,19 @@ class OrderDetail {
   final num? commissionVatAmount;
   final num? clientTotalDue;
   final List<TrackingEventModel> tracking;
+  final String mode; // OPEN or DIRECT
+  final String? targetCarrierId;
 
   NqStatus get nqStatus => nqStatusFromApi(status);
+
+  /// A DIRECT order still awaiting its pinned provider shows «بانتظار رد المزوّد».
+  bool get isAwaitingProvider =>
+      mode.toUpperCase() == 'DIRECT' &&
+      (targetCarrierId ?? '').isNotEmpty &&
+      (status.toUpperCase() == 'PUBLISHED' || status.toUpperCase() == 'BIDDING');
+  NqStatus get displayStatus =>
+      isAwaitingProvider ? NqStatus.awaitingProvider : nqStatus;
+
   String get route => '$originCity ← $destinationCity';
   bool get isConsolidated => orderType.toUpperCase() == 'CONSOLIDATED';
   bool get hasCarrier => carrier != null;
@@ -412,6 +425,8 @@ class OrderDetail {
               .map((e) => TrackingEventModel.fromJson(Map<String, dynamic>.from(e)))
               .toList()
           : const [],
+      mode: (j['mode'] ?? 'OPEN').toString(),
+      targetCarrierId: j['targetCarrierId']?.toString(),
     );
   }
 }
