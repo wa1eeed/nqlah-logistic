@@ -130,7 +130,7 @@ class _CustomerShipmentsScreenState
           status: o.nqStatus,
           route: o.route,
           statusLine: _statusLine(c, o),
-          onTap: () => context.push('/order-detail'),
+          onTap: () => context.push('/order-detail/${o.id}'),
         );
       },
     );

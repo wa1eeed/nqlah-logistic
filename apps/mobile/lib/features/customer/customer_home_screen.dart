@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -55,7 +54,9 @@ class CustomerHomeScreen extends StatelessWidget {
                 truckType: 'تريلا سطحة',
                 plate: '7342 KHD',
                 containerNo: 'TGHU 771392-0',
-                onTap: () => context.push('/order-detail'),
+                // TODO(home): wire Home (1a) to real orders, then
+                // push('/order-detail/<id>'). Demo card is non-navigating for now.
+                onTap: () {},
               ),
               const SizedBox(height: 14),
               _offersAlert(c),

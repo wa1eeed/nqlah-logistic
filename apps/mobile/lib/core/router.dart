@@ -149,13 +149,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           OrderStep6Review(onPublish: () => context.go('/app')),
     ),
     GoRoute(
-      path: '/order-detail',
-      builder: (context, state) =>
-          OrderDetailScreen(onTrack: () => context.push('/tracking')),
+      path: '/order-detail/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return OrderDetailScreen(
+          orderId: id,
+          onTrack: () => context.push('/tracking/$id'),
+        );
+      },
     ),
     GoRoute(
-      path: '/tracking',
-      builder: (context, state) => const TrackingScreen(),
+      path: '/tracking/:id',
+      builder: (context, state) =>
+          TrackingScreen(orderId: state.pathParameters['id']!),
     ),
     GoRoute(
       path: '/truck-detail',

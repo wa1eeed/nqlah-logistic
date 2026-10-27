@@ -147,3 +147,196 @@ class OrderSummary {
     );
   }
 }
+
+/// The contracted carrier on an order (for the party card + contact reveal).
+class CarrierParty {
+  CarrierParty({required this.nameAr, this.phone, this.city, this.region});
+  final String nameAr;
+  final String? phone;
+  final String? city;
+  final String? region;
+
+  factory CarrierParty.fromJson(Map<String, dynamic> j) => CarrierParty(
+        nameAr: (j['nameAr'] ?? 'المزوّد').toString(),
+        phone: j['contactPhone']?.toString(),
+        city: j['city']?.toString(),
+        region: j['region']?.toString(),
+      );
+}
+
+/// One tracking event (`GET /orders/:id/tracking`, newest first).
+class TrackingEventModel {
+  TrackingEventModel({
+    required this.status,
+    required this.description,
+    this.city,
+    this.lat,
+    this.lng,
+    this.createdAt,
+  });
+  final String status;
+  final String description;
+  final String? city;
+  final num? lat;
+  final num? lng;
+  final DateTime? createdAt;
+
+  factory TrackingEventModel.fromJson(Map<String, dynamic> j) =>
+      TrackingEventModel(
+        status: (j['status'] ?? '').toString(),
+        description: (j['description'] ?? '').toString(),
+        city: j['city']?.toString(),
+        lat: _num(j['lat']),
+        lng: _num(j['lng']),
+        createdAt: _date(j['createdAt']),
+      );
+}
+
+/// Full order detail (`GET /orders/:id`) — scalars + carrier + tracking + price.
+class OrderDetail {
+  OrderDetail({
+    required this.id,
+    required this.orderNumber,
+    required this.status,
+    required this.orderType,
+    this.truckCount,
+    required this.originCity,
+    required this.originRegion,
+    required this.originAddress,
+    required this.destinationCity,
+    required this.destinationRegion,
+    required this.destinationAddress,
+    this.cargoType,
+    this.cargoDescription,
+    this.requiredTruckType,
+    this.weight,
+    this.pallets,
+    this.pickupDate,
+    this.deliveryDate,
+    this.actualPickupAt,
+    this.actualDeliveryAt,
+    this.specialInstructions,
+    this.bidsCount = 0,
+    this.carrier,
+    this.clientBudget,
+    this.agreedPrice,
+    this.carrierAmount,
+    this.serviceVatAmount,
+    this.commissionAmount,
+    this.commissionVatAmount,
+    this.clientTotalDue,
+    this.tracking = const [],
+  });
+
+  final String id;
+  final String orderNumber;
+  final String status;
+  final String orderType;
+  final int? truckCount;
+  final String originCity;
+  final String originRegion;
+  final String originAddress;
+  final String destinationCity;
+  final String destinationRegion;
+  final String destinationAddress;
+  final String? cargoType;
+  final String? cargoDescription;
+  final String? requiredTruckType;
+  final num? weight;
+  final int? pallets;
+  final DateTime? pickupDate;
+  final DateTime? deliveryDate;
+  final DateTime? actualPickupAt;
+  final DateTime? actualDeliveryAt;
+  final String? specialInstructions;
+  final int bidsCount;
+  final CarrierParty? carrier;
+  final num? clientBudget;
+  final num? agreedPrice;
+  final num? carrierAmount;
+  final num? serviceVatAmount;
+  final num? commissionAmount;
+  final num? commissionVatAmount;
+  final num? clientTotalDue;
+  final List<TrackingEventModel> tracking;
+
+  NqStatus get nqStatus => nqStatusFromApi(status);
+  String get route => '$originCity ← $destinationCity';
+  bool get isConsolidated => orderType.toUpperCase() == 'CONSOLIDATED';
+  bool get hasCarrier => carrier != null;
+
+  factory OrderDetail.fromJson(Map<String, dynamic> j) {
+    final carrier = j['carrier'];
+    final count = j['_count'];
+    final bids = j['bids'];
+    final te = j['trackingEvents'];
+    final bidsCount = (count is Map ? _num(count['bids'])?.toInt() : null) ??
+        (bids is List ? bids.length : 0);
+    return OrderDetail(
+      id: j['id'].toString(),
+      orderNumber: (j['orderNumber'] ?? j['id']).toString(),
+      status: (j['status'] ?? 'PUBLISHED').toString(),
+      orderType: (j['orderType'] ?? 'SINGLE').toString(),
+      truckCount: _num(j['truckCount'])?.toInt(),
+      originCity: (j['originCity'] ?? '—').toString(),
+      originRegion: (j['originRegion'] ?? '').toString(),
+      originAddress: (j['originAddress'] ?? '').toString(),
+      destinationCity: (j['destinationCity'] ?? '—').toString(),
+      destinationRegion: (j['destinationRegion'] ?? '').toString(),
+      destinationAddress: (j['destinationAddress'] ?? '').toString(),
+      cargoType: j['cargoType']?.toString(),
+      cargoDescription: j['cargoDescription']?.toString(),
+      requiredTruckType: j['requiredTruckType']?.toString(),
+      weight: _num(j['weight']),
+      pallets: _num(j['pallets'])?.toInt(),
+      pickupDate: _date(j['pickupDate']),
+      deliveryDate: _date(j['deliveryDate']),
+      actualPickupAt: _date(j['actualPickupAt']),
+      actualDeliveryAt: _date(j['actualDeliveryAt']),
+      specialInstructions: j['specialInstructions']?.toString(),
+      bidsCount: bidsCount,
+      carrier: carrier is Map
+          ? CarrierParty.fromJson(Map<String, dynamic>.from(carrier))
+          : null,
+      clientBudget: _num(j['clientBudget']),
+      agreedPrice: _num(j['agreedPrice']),
+      carrierAmount: _num(j['carrierAmount']),
+      serviceVatAmount: _num(j['serviceVatAmount']),
+      commissionAmount: _num(j['commissionAmount']),
+      commissionVatAmount: _num(j['commissionVatAmount']),
+      clientTotalDue: _num(j['clientTotalDue']),
+      tracking: te is List
+          ? te
+              .whereType<Map>()
+              .map((e) => TrackingEventModel.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+          : const [],
+    );
+  }
+}
+
+String _two(int n) => n.toString().padLeft(2, '0');
+
+/// Formats a DateTime as "d/M/yyyy · HH:mm" inside an LTR run.
+String fmtDateTime(DateTime? d) {
+  if (d == null) return '—';
+  return '${d.day}/${d.month}/${d.year} · ${_two(d.hour)}:${_two(d.minute)}';
+}
+
+/// Formats a DateTime as "HH:mm".
+String fmtTime(DateTime? d) => d == null ? '—' : '${_two(d.hour)}:${_two(d.minute)}';
+
+String fmtDate(DateTime? d) {
+  if (d == null) return '—';
+  return '${d.day}/${d.month}/${d.year}';
+}
+
+/// "منذ س دقيقة/ساعة/يوم" relative label for a tracking timestamp.
+String relativeArabic(DateTime? d) {
+  if (d == null) return '';
+  final diff = DateTime.now().difference(d);
+  if (diff.inMinutes < 1) return 'الآن';
+  if (diff.inMinutes < 60) return 'قبل ${diff.inMinutes} د';
+  if (diff.inHours < 24) return 'قبل ${diff.inHours} س';
+  return 'قبل ${diff.inDays} يوم';
+}
