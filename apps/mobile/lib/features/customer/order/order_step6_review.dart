@@ -70,9 +70,11 @@ class _OrderStep6ReviewState extends ConsumerState<OrderStep6Review> {
       stepName: 'المراجعة',
       nextLabel: '',
       nextHint: 'الأخيرة',
-      nextButtonLabel: _busy ? 'جارٍ النشر…' : 'نشر الطلب',
-      nextIcon: NqIcons.megaphone,
-      title: 'راجع وانشر',
+      nextButtonLabel: _busy
+          ? 'جارٍ الإرسال…'
+          : (d.isDirectTargeted ? 'إرسال الطلب للمزوّد' : 'نشر الطلب'),
+      nextIcon: d.isDirectTargeted ? NqIcons.paperPlaneTilt : NqIcons.megaphone,
+      title: d.isDirectTargeted ? 'راجع وأرسِل' : 'راجع وانشر',
       showPrev: true,
       nextEnabled: _agreed && !_busy,
       onNext: _busy ? null : _publish,
@@ -156,8 +158,11 @@ class _OrderStep6ReviewState extends ConsumerState<OrderStep6Review> {
         children: [
           row('الوزن', d.weight != null ? '${d.weight} طن' : '—'),
           row('الاستلام', '${fmtDate(d.pickupDate)} · $windowLabel'),
-          row('التسعير',
-              '${d.fixedPrice ? 'سعر ثابت' : 'مناقصة'} · ${d.openMarket ? 'السوق المفتوح' : 'مزوّدون محدّدون'}'),
+          row(
+              'التسعير',
+              d.isDirectTargeted
+                  ? 'سعر ثابت · مزوّد محدّد: ${d.targetCarrierName ?? 'محدّد'}'
+                  : '${d.fixedPrice ? 'سعر ثابت' : 'مناقصة'} · ${d.openMarket ? 'السوق المفتوح' : 'مزوّدون محدّدون'}'),
           row('الدفع', _paymentLabel(d.collectionMethod)),
           row('المستلم', consignee),
         ],
