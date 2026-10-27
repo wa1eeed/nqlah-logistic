@@ -9,6 +9,7 @@ import '../../design_system/tab_bar.dart';
 import '../customer/customer_home_screen.dart';
 import '../customer/customer_offers_screen.dart';
 import '../customer/customer_shipments_screen.dart';
+import '../customer/customer_trucks_screen.dart';
 
 /// The policy-driven app shell (handoff §2a): one app that mounts the matching
 /// bottom-tab set for the account's identity. Tab bodies are placeholders in
@@ -72,6 +73,8 @@ class _AppShellState extends State<AppShell> {
       switch (index) {
         case 0:
           return CustomerHomeScreen(onNewOrder: () => context.push('/order'));
+        case 1:
+          return const CustomerTrucksScreen();
         case 2:
           return const CustomerShipmentsScreen();
         case 3:
