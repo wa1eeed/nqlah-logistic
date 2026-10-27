@@ -46,9 +46,20 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
 - **OTP** is now **6 digits** (the API issues 6-digit codes; the design showed 4) with
   a live resend countdown and paste support. `OtpScreen` is reusable (async
   `onVerify`/`onResend`).
+- **Orders** (`core/orders/`): `order_models.dart` (`OrderSummary` + `OrderStatus`→
+  `NqStatus` map, cargo/truck Arabic labels, `ShipmentBucket`), `orders_repository.dart`
+  (`GET /orders`, `GET /orders/:id`, `GET /orders/:id/tracking`, `POST /orders`,
+  `POST /orders/:id/publish`) + providers (`myShipmentsProvider`,
+  `orderDetailProvider` family). **Customer shipments (4g)** is wired to
+  `GET /orders?mine=true`: segments (active/drafts/completed from `OrderStatus`) with
+  live counts, search, pull-to-refresh, and loading/empty/error+retry states.
 - **Note:** on **web** the staging API blocks the browser origin via CORS, so live
-  login/register can only be exercised on a device/emulator (or against a dev API with
-  CORS open). The request/response plumbing is otherwise verified end-to-end.
+  login/register/orders can only be exercised on a device/emulator (or against a dev API
+  with CORS open). The request/response plumbing is otherwise verified end-to-end
+  (the order list GET fires to the correct endpoint; states render).
+- **Orders follow-ups (next slices):** wire **order detail (1c)** + **tracking (1d)** to
+  `GET /orders/:id` (+`/tracking`); wire the **create-order wizard** (1b/4a–4e) →
+  `POST /orders` + `/publish`; wire **offers (4f)** to the bids module.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`
