@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/fleet/fleet_repository.dart';
+import '../../core/marketplace/marketplace_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/segmented.dart';
+import 'truck_availability_sheet.dart';
 
 /// Provider fleet (handoff 3e/3f) — trucks + drivers segments, wired to
 /// `GET /fleet/trucks` and `GET /fleet/drivers`.
@@ -38,6 +40,10 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
     final c = context.nq;
     final trucks = ref.watch(fleetTrucksProvider);
     final drivers = ref.watch(fleetDriversProvider);
+    final published = <String, MyAvailability>{
+      for (final a in ref.watch(myAvailabilityProvider).valueOrNull ?? const [])
+        a.truckId: a,
+    };
     final truckCount = trucks.valueOrNull?.length;
     final driverCount = drivers.valueOrNull?.length;
     return SafeArea(
@@ -85,7 +91,9 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
           ),
           const SizedBox(height: 14),
           Expanded(
-            child: _seg == 0 ? _trucksView(c, trucks) : _driversView(c, drivers),
+            child: _seg == 0
+                ? _trucksView(c, trucks, published)
+                : _driversView(c, drivers),
           ),
         ],
       ),
@@ -118,9 +126,13 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
     );
   }
 
-  Widget _trucksView(NqColors c, AsyncValue<List<TruckModel>> async) {
+  Widget _trucksView(NqColors c, AsyncValue<List<TruckModel>> async,
+      Map<String, MyAvailability> published) {
     return RefreshIndicator(
-      onRefresh: () => ref.refresh(fleetTrucksProvider.future),
+      onRefresh: () {
+        ref.invalidate(myAvailabilityProvider);
+        return ref.refresh(fleetTrucksProvider.future);
+      },
       color: c.mintTx,
       child: async.when(
         loading: () => _centered(_loader(c)),
@@ -141,7 +153,8 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             itemCount: items.length,
             separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (_, i) => _truckRow(c, items[i]),
+            itemBuilder: (_, i) =>
+                _truckRow(c, items[i], published[items[i].id]),
           );
         },
       ),
@@ -161,13 +174,17 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
     );
   }
 
-  Widget _truckRow(NqColors c, TruckModel t) => _rowCard(
+  Widget _truckRow(NqColors c, TruckModel t, MyAvailability? availability) =>
+      _rowCard(
         c,
         name: t.typeLabel,
         sub: t.makeModel.isNotEmpty ? t.makeModel : 'شاحنة',
         plate: t.plateNumber,
         initial: 'ش',
         status: _truckStatus(t.status),
+        published: availability != null,
+        onTap: () =>
+            showTruckAvailabilitySheet(context, ref, t, availability),
       );
 
   Widget _rowCard(NqColors c,
@@ -175,17 +192,23 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
       required String sub,
       String? plate,
       required String initial,
-      required (String, Color) status}) {
-    return Container(
+      required (String, Color) status,
+      bool published = false,
+      VoidCallback? onTap}) {
+    final card = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: c.sf,
         borderRadius: BorderRadius.circular(NqRadius.card),
-        border: Border.all(color: c.bd),
+        border: Border.all(color: published ? c.mint : c.bd),
       ),
       child: Row(
         children: [
           _statusPill(c, status.$1, status.$2),
+          if (published) ...[
+            const SizedBox(width: 8),
+            _publishedPill(c),
+          ],
           const Spacer(),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -210,7 +233,23 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
         ],
       ),
     );
+    if (onTap == null) return card;
+    return GestureDetector(onTap: onTap, child: card);
   }
+
+  Widget _publishedPill(NqColors c) => Container(
+        height: 26,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+            color: c.mintBg, borderRadius: BorderRadius.circular(NqRadius.pill)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          NqIcon(NqIcons.broadcast, size: 12, color: c.mintTx),
+          const SizedBox(width: 5),
+          Text('في السوق',
+              style: NqType.caption
+                  .copyWith(color: c.mintTx, fontWeight: FontWeight.w700)),
+        ]),
+      );
 
   (String, Color) _driverStatus(String s) {
     final c = context.nq;
