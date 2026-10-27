@@ -340,3 +340,44 @@ String relativeArabic(DateTime? d) {
   if (diff.inHours < 24) return 'قبل ${diff.inHours} س';
   return 'قبل ${diff.inDays} يوم';
 }
+
+/// A bid/offer on an order (`GET /orders/:id/bids`, cheapest first).
+class BidModel {
+  BidModel({
+    required this.id,
+    required this.carrierId,
+    required this.carrierName,
+    required this.amount,
+    required this.status,
+    this.proposedPickupDate,
+    this.proposedDeliveryDate,
+    this.notes,
+  });
+
+  final String id;
+  final String carrierId;
+  final String carrierName;
+  final num? amount;
+  final String status; // PENDING / ACCEPTED / REJECTED / WITHDRAWN / EXPIRED
+  final DateTime? proposedPickupDate;
+  final DateTime? proposedDeliveryDate;
+  final String? notes;
+
+  bool get isPending => status.toUpperCase() == 'PENDING';
+  bool get isAccepted => status.toUpperCase() == 'ACCEPTED';
+
+  factory BidModel.fromJson(Map<String, dynamic> j) {
+    final carrier = j['carrier'];
+    return BidModel(
+      id: j['id'].toString(),
+      carrierId: (j['carrierId'] ?? (carrier is Map ? carrier['id'] : '')).toString(),
+      carrierName:
+          carrier is Map ? (carrier['nameAr']?.toString() ?? 'مزوّد') : 'مزوّد',
+      amount: _num(j['amount']),
+      status: (j['status'] ?? 'PENDING').toString(),
+      proposedPickupDate: _date(j['proposedPickupDate']),
+      proposedDeliveryDate: _date(j['proposedDeliveryDate']),
+      notes: j['notes']?.toString(),
+    );
+  }
+}

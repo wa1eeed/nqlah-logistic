@@ -77,10 +77,17 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   Per the chosen approach, **consolidated/multi-leg**, document upload, map-based route
   editing, and a `DIRECT` carrier picker stay visual/next-slice. City→region via a lookup
   (`regionForCity`).
-- **Orders follow-ups (next slices):** wire **offers (4f)** to the bids module; wire
-  **Home (1a)** to real orders; consolidated multi-leg create + leg detail
-  (`/orders/:id/legs`,`/stops`); a real maps SDK for tracking; order actions
-  (cancel/confirm).
+- **Offers (4f)** is wired to the bids module. `BidModel` + `orderBidsProvider` (`GET
+  /orders/:id/bids`) + `offersFocusOrderProvider` (the most recent PUBLISHED/BIDDING order
+  with bids — the tab has no order id). Shows that order's pending offers as `NqOfferCard`s
+  (cheapest = "أفضل قيمة"), sort by price/pickup, and **accept** (`POST …/bids/:id/accept`,
+  with a confirm + loading) → invalidates + routes to the order detail. `NqOfferCard` now
+  takes optional `rating`/`trips` (the API carries neither on the carrier) + a `loading`
+  flag; empty/loading/error+retry states included.
+- **Orders follow-ups (next slices):** wire **Home (1a)** to real orders; a per-order
+  offers entry + a carrier rating/trips stats endpoint; consolidated multi-leg create + leg
+  detail (`/orders/:id/legs`,`/stops`); a real maps SDK for tracking; order actions
+  (cancel/confirm); in-app chat/calls (comms) backend.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`

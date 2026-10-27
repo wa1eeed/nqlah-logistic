@@ -14,26 +14,36 @@ class NqOfferCard extends StatelessWidget {
     super.key,
     required this.initial,
     required this.name,
-    required this.rating,
-    required this.trips,
+    this.rating,
+    this.trips,
     required this.price,
     required this.date,
     this.providerType,
     this.best = false,
+    this.loading = false,
     this.onAccept,
     this.onChat,
   });
 
   final String initial;
   final String name;
-  final String rating; // "4.8"
-  final int trips;
+  final String? rating; // "4.8" — null when unknown
+  final int? trips; // null when unknown
   final String price; // "1,950"
   final String date; // "الأربعاء 07:00"
   final String? providerType; // e.g. "مزوّد فرد"
   final bool best;
+  final bool loading;
   final VoidCallback? onAccept;
   final VoidCallback? onChat;
+
+  String get _subtitle {
+    final parts = <String>[];
+    if (rating != null) parts.add('★ $rating');
+    if (trips != null) parts.add('$trips رحلة');
+    if (providerType != null) parts.add(providerType!);
+    return parts.isEmpty ? 'مزوّد معتمد' : parts.join(' · ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +84,8 @@ class NqOfferCard extends StatelessWidget {
                           ? NqButtonVariant.primary
                           : NqButtonVariant.secondary,
                       size: NqButtonSize.regular,
-                      onPressed: onAccept ?? () {},
+                      loading: loading,
+                      onPressed: loading ? null : (onAccept ?? () {}),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -134,11 +145,7 @@ class NqOfferCard extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                  providerType != null
-                      ? '★ $rating · $trips رحلة · $providerType'
-                      : '★ $rating · $trips رحلة',
-                  style: NqType.caption.copyWith(color: c.tx2)),
+              Text(_subtitle, style: NqType.caption.copyWith(color: c.tx2)),
             ],
           ),
         ],
