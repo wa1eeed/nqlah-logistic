@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'auth/auth_controller.dart';
+import 'auth/registration_controller.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/otp_screen.dart';
+import '../features/auth/register_credentials_screen.dart';
 import '../features/auth/register_account_type_screen.dart';
 import '../features/auth/plan_picker_screen.dart';
 import '../features/auth/register_documents_screen.dart';
+import '../features/auth/register_otp_screen.dart';
 import '../features/auth/register_pending_screen.dart';
 import '../features/customer/order/order_step1_cargo.dart';
 import '../features/customer/order/order_step2_route.dart';
@@ -65,15 +68,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ),
     GoRoute(
+      // Login-by-OTP: UI only — the backend has no token-issuing OTP login yet,
+      // so verification here is a stub (see follow-up).
       path: '/otp',
       builder: (context, state) => OtpScreen(
-        onVerify: () => context.go('/app'),
+        onSuccess: () => context.go('/app'),
       ),
     ),
     GoRoute(
       path: '/register',
+      builder: (context, state) => RegisterCredentialsScreen(
+        onNext: () => context.push('/register/account-type'),
+      ),
+    ),
+    GoRoute(
+      path: '/register/account-type',
       builder: (context, state) => RegisterAccountTypeScreen(
-        onNext: () => context.push('/register/plan'),
+        onNext: () => ref.read(registrationControllerProvider).isCarrier
+            ? context.push('/register/plan')
+            : context.push('/register/documents'),
       ),
     ),
     GoRoute(
@@ -85,7 +98,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/register/documents',
       builder: (context, state) => RegisterDocumentsScreen(
-        onNext: () => context.push('/register/pending'),
+        onSubmitted: () => context.push('/register/otp'),
+      ),
+    ),
+    GoRoute(
+      path: '/register/otp',
+      builder: (context, state) => RegisterOtpScreen(
+        onVerified: () => context.go('/register/pending'),
       ),
     ),
     GoRoute(

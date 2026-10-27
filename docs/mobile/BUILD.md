@@ -25,17 +25,34 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   or `{statusCode,message}`) into one Arabic-ready message.
 - **`core/auth/auth_models.dart`** — `AuthUser` (+ role→`NqIdentity` map:
   `CLIENT_*`→customer, `CARRIER_*`→provider, `DRIVER`→employed driver), `AuthSession`.
-- **`core/auth/auth_repository.dart`** — `POST /auth/login`, `GET /users/me`,
-  `POST /auth/logout`.
+- **`core/auth/auth_repository.dart`** — `POST /auth/login`, `POST /auth/register`,
+  `POST /auth/send-otp`, `POST /auth/verify-phone`, `GET /users/me`, `POST /auth/logout`.
 - **`core/auth/auth_controller.dart`** — `NotifierProvider<AuthController,AuthState>`:
   bootstraps from a stored token on launch, `login()`, `logout()`.
+- **`core/auth/registration_controller.dart`** — `RegistrationData` draft +
+  `NotifierProvider` accumulated across the wizard; `submit()` → `POST /auth/register`.
 - **`core/router.dart`** — now `routerProvider`; redirect gate: no session → auth
   pages, session → shell. Shell identity comes from the signed-in user's role.
 - **Login** (`features/auth/login_screen.dart`) is wired to the live API (loading +
   Arabic error states). Customer **account → sign-out** calls `logout()`.
+- **Registration wizard** wired to the API. Flow (providers 5 steps, customers 4):
+  **بيانات الدخول** (new `register_credentials_screen` — name/phone/email/password/
+  company + consent; the fields the design omits but the API requires) → **نوع الحساب**
+  (1l, real CR/VAT/type/entity/region+city) → **الباقة** (1m, providers only) →
+  **المستندات** (5e; "إرسال للمراجعة" → `POST /auth/register`, which also sends the
+  OTP) → **OTP** (`register_otp_screen` → `/auth/verify-phone`, resend via
+  `/auth/send-otp`) → **قيد المراجعة** (5f; "تصفّح الأحمال" signs in with the new
+  credentials → shell).
+- **OTP** is now **6 digits** (the API issues 6-digit codes; the design showed 4) with
+  a live resend countdown and paste support. `OtpScreen` is reusable (async
+  `onVerify`/`onResend`).
 - **Note:** on **web** the staging API blocks the browser origin via CORS, so live
-  login can only be exercised on a device/emulator (or against a dev API with CORS
-  open). The request/response plumbing is otherwise verified end-to-end.
+  login/register can only be exercised on a device/emulator (or against a dev API with
+  CORS open). The request/response plumbing is otherwise verified end-to-end.
+- **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
+  exists yet; document **upload** on 5e is a separate backend track (the step currently
+  submits account data only); plan selection (1m) doesn't yet map to a real `planId`
+  (registers on the default plan).
 
 ## Project layout (`apps/mobile/`)
 ```

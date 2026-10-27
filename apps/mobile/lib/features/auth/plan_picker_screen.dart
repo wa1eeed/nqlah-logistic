@@ -52,8 +52,8 @@ class _PlanPickerScreenState extends State<PlanPickerScreen> {
   Widget build(BuildContext context) {
     final c = context.nq;
     return WizardScaffold(
-      step: 2,
-      totalSteps: 4,
+      step: 3,
+      totalSteps: 5,
       title: 'اختر باقتك',
       subtitle: 'تجربة مجانية 14 يومًا على كل الباقات',
       nextLabel: 'ابدأ التجربة المجانية',

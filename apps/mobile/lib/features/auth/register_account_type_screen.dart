@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/registration_controller.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
@@ -8,30 +10,99 @@ import '../../design_system/segmented.dart';
 import '../../design_system/text_field.dart';
 import 'wizard_scaffold.dart';
 
-/// Register step 1/4 — account type (handoff 1l). Carrier (= Provider) vs
+const _regions = [
+  'الرياض', 'مكة المكرمة', 'المدينة المنورة', 'القصيم', 'الشرقية', 'عسير',
+  'تبوك', 'حائل', 'الحدود الشمالية', 'جازان', 'نجران', 'الباحة', 'الجوف',
+];
+const _cities = [
+  'الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر',
+  'الظهران', 'الأحساء', 'الطائف', 'بريدة', 'عنيزة', 'تبوك', 'أبها',
+  'خميس مشيط', 'حائل', 'نجران', 'جازان', 'الجبيل', 'ينبع', 'عرعر', 'سكاكا',
+];
+
+/// Register step 2 — account type (handoff 1l). Carrier (= Provider) vs
 /// Customer; Company vs Individual; CR + VAT (15-digit) with a
 /// "not VAT-registered" toggle; region + city.
-class RegisterAccountTypeScreen extends StatefulWidget {
+class RegisterAccountTypeScreen extends ConsumerStatefulWidget {
   const RegisterAccountTypeScreen({super.key, this.onNext});
 
   final VoidCallback? onNext;
 
   @override
-  State<RegisterAccountTypeScreen> createState() =>
+  ConsumerState<RegisterAccountTypeScreen> createState() =>
       _RegisterAccountTypeScreenState();
 }
 
-class _RegisterAccountTypeScreenState extends State<RegisterAccountTypeScreen> {
-  bool _isCarrier = true; // true = ناقل (provider), false = عميل
-  int _entityType = 0; // 0 = منشأة, 1 = فرد
-  bool _notVatRegistered = false;
+class _RegisterAccountTypeScreenState
+    extends ConsumerState<RegisterAccountTypeScreen> {
+  late final TextEditingController _cr;
+  late final TextEditingController _vat;
+
+  @override
+  void initState() {
+    super.initState();
+    final d = ref.read(registrationControllerProvider);
+    _cr = TextEditingController(text: d.crNumber);
+    _vat = TextEditingController(text: d.vatNumber);
+  }
+
+  @override
+  void dispose() {
+    _cr.dispose();
+    _vat.dispose();
+    super.dispose();
+  }
+
+  void _pick(String title, List<String> options, ValueChanged<String> onPick) {
+    final c = context.nq;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: c.sf,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(title,
+                  style: NqType.h3.copyWith(color: c.tx),
+                  textAlign: TextAlign.center),
+            ),
+            for (final o in options)
+              ListTile(
+                title: Text(o,
+                    style: NqType.body.copyWith(color: c.tx),
+                    textAlign: TextAlign.right),
+                onTap: () {
+                  onPick(o);
+                  Navigator.of(context).maybePop();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final notifier = ref.read(registrationControllerProvider.notifier);
+    final d = ref.watch(registrationControllerProvider);
+    final notVat = !d.vatRegistered;
+    final vatLen = _vat.text.trim().length;
+    final vatError = !notVat && vatLen > 0 && vatLen != 15
+        ? 'يجب أن يتكوّن الرقم الضريبي من 15 رقمًا'
+        : null;
+
     return WizardScaffold(
-      step: 1,
-      totalSteps: 4,
-      nextLabel: 'التالي: اختيار الباقة',
+      step: 2,
+      totalSteps: d.isCarrier ? 5 : 4,
+      nextLabel: d.isCarrier ? 'التالي: اختيار الباقة' : 'التالي: المستندات',
       nextIcon: NqIcons.arrowLeft,
       title: 'إنشاء حساب',
       subtitle: 'اختر كيف ستستخدم نقلة',
@@ -44,8 +115,9 @@ class _RegisterAccountTypeScreenState extends State<RegisterAccountTypeScreen> {
                 title: 'عميل',
                 subtitle: 'أشحن بضائع',
                 icon: NqIcons.package,
-                selected: !_isCarrier,
-                onTap: () => setState(() => _isCarrier = false),
+                selected: !d.isCarrier,
+                onTap: () =>
+                    notifier.patch((x) => x.copyWith(isCarrier: false)),
               ),
             ),
             const SizedBox(width: 14),
@@ -54,8 +126,9 @@ class _RegisterAccountTypeScreenState extends State<RegisterAccountTypeScreen> {
                 title: 'ناقل',
                 subtitle: 'أنقل الحمولات',
                 icon: NqIcons.truck,
-                selected: _isCarrier,
-                onTap: () => setState(() => _isCarrier = true),
+                selected: d.isCarrier,
+                onTap: () =>
+                    notifier.patch((x) => x.copyWith(isCarrier: true)),
               ),
             ),
           ],
@@ -63,40 +136,60 @@ class _RegisterAccountTypeScreenState extends State<RegisterAccountTypeScreen> {
         const SizedBox(height: 16),
         NqSegmented(
           options: const ['منشأة', 'فرد'],
-          index: _entityType,
-          onChanged: (i) => setState(() => _entityType = i),
+          index: d.isIndividual ? 1 : 0,
+          onChanged: (i) =>
+              notifier.patch((x) => x.copyWith(isIndividual: i == 1)),
           height: 52,
         ),
         const SizedBox(height: 20),
-        const NqTextField(
+        NqTextField(
           label: 'رقم السجل التجاري',
-          valid: true,
+          controller: _cr,
           keyboardType: TextInputType.number,
+          valid: _cr.text.trim().length == 10,
+          onChanged: (v) {
+            notifier.patch((x) => x.copyWith(crNumber: v));
+            setState(() {});
+          },
         ),
         const SizedBox(height: 18),
         NqTextField(
           label: 'الرقم الضريبي',
+          controller: _vat,
           keyboardType: TextInputType.number,
-          counter: _notVatRegistered ? null : '11/15',
-          error: _notVatRegistered
-              ? null
-              : 'يجب أن يتكوّن الرقم الضريبي من 15 رقمًا',
+          counter: notVat ? null : '$vatLen/15',
+          error: vatError,
+          onChanged: (v) {
+            notifier.patch((x) => x.copyWith(vatNumber: v));
+            setState(() {});
+          },
         ),
         const SizedBox(height: 16),
         NqCheckbox(
-          value: _notVatRegistered,
-          onChanged: (v) => setState(() => _notVatRegistered = v),
+          value: notVat,
+          onChanged: (v) =>
+              notifier.patch((x) => x.copyWith(vatRegistered: !v)),
           label: 'المنشأة غير مسجّلة في ضريبة القيمة المضافة',
         ),
         const SizedBox(height: 20),
         Row(
           children: [
-            const Expanded(
-              child: NqDropdownField(label: 'المنطقة', value: 'الشرقية'),
+            Expanded(
+              child: NqDropdownField(
+                label: 'المنطقة',
+                value: d.region,
+                onTap: () => _pick('المنطقة', _regions,
+                    (v) => notifier.patch((x) => x.copyWith(region: v))),
+              ),
             ),
             const SizedBox(width: 14),
-            const Expanded(
-              child: NqDropdownField(label: 'المدينة', value: 'الدمام'),
+            Expanded(
+              child: NqDropdownField(
+                label: 'المدينة',
+                value: d.city,
+                onTap: () => _pick('المدينة', _cities,
+                    (v) => notifier.patch((x) => x.copyWith(city: v))),
+              ),
             ),
           ],
         ),
@@ -138,7 +231,6 @@ class _TypeCard extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // icon tile at the start (right in RTL)
             PositionedDirectional(
               top: 0,
               start: 0,

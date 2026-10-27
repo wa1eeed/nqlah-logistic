@@ -1,20 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/auth/auth_controller.dart';
+import '../../core/auth/registration_controller.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 
-/// Register step 4/4 — pending approval (handoff 5f). Browsing is allowed while
-/// the account is under review.
-class RegisterPendingScreen extends StatelessWidget {
+/// Register final step — pending approval (handoff 5f). The phone is verified
+/// and the account is `isActive`, so "تصفّح الأحمال" signs the user in with the
+/// credentials they just set and enters the shell (browsing is allowed while
+/// the company is still under review).
+class RegisterPendingScreen extends ConsumerStatefulWidget {
   const RegisterPendingScreen({super.key, this.onBrowse});
 
+  /// Navigates into the shell once signed in.
   final VoidCallback? onBrowse;
+
+  @override
+  ConsumerState<RegisterPendingScreen> createState() =>
+      _RegisterPendingScreenState();
+}
+
+class _RegisterPendingScreenState extends ConsumerState<RegisterPendingScreen> {
+  bool _busy = false;
+
+  Future<void> _browse() async {
+    final data = ref.read(registrationControllerProvider);
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(authControllerProvider.notifier)
+          .login(data.phone, data.password);
+      ref.read(registrationControllerProvider.notifier).reset();
+      if (mounted) (widget.onBrowse ?? () {})();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذّر الدخول. حاول مجددًا.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
+    final carrier = ref.watch(registrationControllerProvider).isCarrier;
     return Scaffold(
       backgroundColor: c.bg,
       body: SafeArea(
@@ -24,7 +66,8 @@ class RegisterPendingScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Row(
                 children: [
-                  Text('الخطوة 4/4', style: NqType.label.copyWith(color: c.tx2)),
+                  Text(carrier ? 'الخطوة 5/5' : 'الخطوة 4/4',
+                      style: NqType.label.copyWith(color: c.tx2)),
                 ],
               ),
             ),
@@ -69,7 +112,11 @@ class RegisterPendingScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  NqButton(label: 'تصفّح الأحمال', onPressed: onBrowse ?? () {}),
+                  NqButton(
+                    label: 'تصفّح الأحمال',
+                    loading: _busy,
+                    onPressed: _busy ? null : _browse,
+                  ),
                   const SizedBox(height: 12),
                   NqButton(
                     label: 'تواصل مع الدعم',
