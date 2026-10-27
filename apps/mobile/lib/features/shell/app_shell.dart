@@ -11,6 +11,7 @@ import '../customer/customer_home_screen.dart';
 import '../customer/customer_offers_screen.dart';
 import '../customer/customer_shipments_screen.dart';
 import '../customer/customer_trucks_screen.dart';
+import '../provider/provider_assignments_screen.dart';
 import '../provider/provider_home_screen.dart';
 import '../provider/provider_loads_screen.dart';
 
@@ -95,9 +96,15 @@ class _AppShellState extends State<AppShell> {
         case 0:
           return ProviderHomeScreen(
             onBell: () => context.push('/notifications'),
+            onAssign: () => context.push('/driver-assignment'),
           );
         case 1:
           return const ProviderLoadsScreen();
+        case 2:
+          return ProviderAssignmentsScreen(
+            onAssign: () => context.push('/driver-assignment'),
+            onOpen: () => context.push('/provider-order'),
+          );
       }
     }
     return _placeholderBody(c, tab);

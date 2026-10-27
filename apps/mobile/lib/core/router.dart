@@ -17,6 +17,8 @@ import '../features/customer/tracking_screen.dart';
 import '../features/customer/truck_detail_screen.dart';
 import '../features/customer/customer_finance_screen.dart';
 import '../features/customer/customer_notifications_screen.dart';
+import '../features/provider/driver_assignment_screen.dart';
+import '../features/provider/provider_order_screen.dart';
 import '../features/shell/app_shell.dart';
 
 /// App routes (Phase 1). The post-login shell is resolved from the account's
@@ -119,6 +121,18 @@ final router = GoRouter(
     GoRoute(
       path: '/notifications',
       builder: (context, state) => const CustomerNotificationsScreen(),
+    ),
+    GoRoute(
+      path: '/driver-assignment',
+      builder: (context, state) =>
+          DriverAssignmentScreen(onConfirm: () => context.pop()),
+    ),
+    GoRoute(
+      path: '/provider-order',
+      builder: (context, state) => ProviderOrderScreen(
+        onChangeDriver: () => context.push('/driver-assignment'),
+        onTrack: () => context.push('/tracking'),
+      ),
     ),
   ],
 );
