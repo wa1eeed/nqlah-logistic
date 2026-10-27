@@ -156,9 +156,12 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   `/add-driver`, from the fleet add button) → `POST /fleet/drivers/invite` (full name, phone,
   national id, license number + expiry date-picker, read-only permissions card); invalidates
   the driver roster on success.
-- **Orders follow-ups (next slices):** owner-driver (1i/2e) incl. self-assignment; order
-  actions (cancel/confirm/deliver); report-payment (payments module); trip monitor (3d);
-  consolidated multi-leg.
+- **Order actions (customer)** are wired on the order detail's ⋮ menu: **cancel** (`POST
+  /orders/:id/cancel` with a reason, for any non-terminal status) and **complete** (`POST
+  /orders/:id/complete`, when DELIVERED → «تأكيد الاستلام»); both invalidate the detail + shipments.
+- **Orders follow-ups (next slices):** owner-driver (1i/2e) incl. self-assignment; provider
+  deliver/confirm actions; report-payment (payments module); trip monitor (3d); consolidated
+  multi-leg; **truck-availability marketplace (6a/6b/7a-c) — needs a new backend module.**
 - **New feature needing a backend module — truck availability marketplace (6a/6b/7a-c):** there
   is no `TruckAvailability` model or public trucks endpoint. Recommended model: a truck is
   auto-excluded from the customer marketplace when busy (active order / `ON_TRIP` / `MAINTENANCE`),

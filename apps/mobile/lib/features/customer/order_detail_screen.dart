@@ -42,13 +42,14 @@ class OrderDetailScreen extends ConsumerWidget {
             e is ApiException ? e.message : 'تعذّر تحميل الطلب.',
             () => ref.invalidate(orderDetailModelProvider(orderId)),
           ),
-          data: (o) => _content(context, c, o),
+          data: (o) => _content(context, ref, c, o),
         ),
       ),
     );
   }
 
-  Widget _content(BuildContext context, NqColors c, OrderDetail o) {
+  Widget _content(
+      BuildContext context, WidgetRef ref, NqColors c, OrderDetail o) {
     final trackable = o.nqStatus == NqStatus.inTransit ||
         o.nqStatus == NqStatus.assigned ||
         o.nqStatus == NqStatus.confirmed ||
@@ -56,7 +57,7 @@ class OrderDetailScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _appBar(context, c, o),
+        _appBar(context, ref, c, o),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -93,17 +94,25 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _appBar(BuildContext context, NqColors c, OrderDetail o) {
+  Widget _appBar(
+      BuildContext context, WidgetRef ref, NqColors c, OrderDetail o) {
     final sub = o.isConsolidated
         ? 'طلب مجمّع · ${o.truckCount ?? '—'} رحلات'
         : 'طلب مفرد';
+    final s = o.status.toUpperCase();
+    final canCancel = !['COMPLETED', 'CANCELLED', 'DELIVERED'].contains(s);
+    final canComplete = s == 'DELIVERED';
+    final hasActions = canCancel || canComplete;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
         children: [
           GestureDetector(
-            onTap: () {},
-            child: NqIcon(NqIcons.dotsThree, size: 22, color: c.tx),
+            onTap: hasActions
+                ? () => _showActions(context, ref, o, canCancel, canComplete)
+                : null,
+            child: NqIcon(NqIcons.dotsThree,
+                size: 22, color: hasActions ? c.tx : c.tx3),
           ),
           const Spacer(),
           Column(
@@ -476,6 +485,114 @@ class OrderDetailScreen extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+extension _OrderActions on OrderDetailScreen {
+  void _showActions(BuildContext context, WidgetRef ref, OrderDetail o,
+      bool canCancel, bool canComplete) {
+    final c = context.nq;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: c.sf,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (canComplete)
+              ListTile(
+                leading: NqIcon(NqIcons.sealCheck, fill: true, size: 22, color: c.ok),
+                title: Text('تأكيد الاستلام وإغلاق الطلب',
+                    style: NqType.body.copyWith(color: c.tx)),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _complete(context, ref, o);
+                },
+              ),
+            if (canCancel)
+              ListTile(
+                leading: NqIcon(NqIcons.xCircle, size: 22, color: c.err),
+                title: Text('إلغاء الطلب',
+                    style: NqType.body.copyWith(color: c.err)),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _cancel(context, ref, o);
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _cancel(
+      BuildContext context, WidgetRef ref, OrderDetail o) async {
+    final c = context.nq;
+    final messenger = ScaffoldMessenger.of(context);
+    final nav = Navigator.of(context);
+    final reasonCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.sf,
+        title: Text('إلغاء الطلب', style: NqType.h2.copyWith(color: c.tx)),
+        content: TextField(
+          controller: reasonCtrl,
+          textAlign: TextAlign.right,
+          style: NqType.body.copyWith(color: c.tx),
+          cursorColor: c.mintS,
+          decoration: InputDecoration(
+            hintText: 'سبب الإلغاء',
+            hintStyle: NqType.body.copyWith(color: c.tx3),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text('تراجع',
+                  style: NqType.labelStrong.copyWith(color: c.tx2))),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text('تأكيد الإلغاء',
+                  style: NqType.labelStrong.copyWith(color: c.err))),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(ordersRepositoryProvider).cancelOrder(
+          o.id, reasonCtrl.text.trim().isEmpty ? 'إلغاء من العميل' : reasonCtrl.text.trim());
+      ref.invalidate(myShipmentsProvider);
+      ref.invalidate(orderDetailModelProvider(o.id));
+      messenger.showSnackBar(const SnackBar(content: Text('تم إلغاء الطلب.')));
+      nav.maybePop();
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(content: Text('تعذّر الإلغاء.')));
+    }
+  }
+
+  Future<void> _complete(
+      BuildContext context, WidgetRef ref, OrderDetail o) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(ordersRepositoryProvider).completeOrder(o.id);
+      ref.invalidate(myShipmentsProvider);
+      ref.invalidate(orderDetailModelProvider(o.id));
+      messenger.showSnackBar(
+          const SnackBar(content: Text('تم تأكيد الاستلام وإغلاق الطلب.')));
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger
+          .showSnackBar(const SnackBar(content: Text('تعذّر إغلاق الطلب.')));
+    }
   }
 }
 
