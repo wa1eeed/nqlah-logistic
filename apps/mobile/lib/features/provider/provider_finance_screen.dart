@@ -1,51 +1,162 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/finance/finance_repository.dart';
+import '../../core/orders/order_models.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/segmented.dart';
 
-/// Provider finance (handoff 3h). Receivables from customers; confirm reported
-/// direct payments.
-class ProviderFinanceScreen extends StatefulWidget {
+/// Provider finance (handoff 3h) — receivables, wired to `GET /invoices`.
+class ProviderFinanceScreen extends ConsumerStatefulWidget {
   const ProviderFinanceScreen({super.key});
 
   @override
-  State<ProviderFinanceScreen> createState() => _ProviderFinanceScreenState();
+  ConsumerState<ProviderFinanceScreen> createState() =>
+      _ProviderFinanceScreenState();
 }
 
-class _ProviderFinanceScreenState extends State<ProviderFinanceScreen> {
-  int _seg = 0;
+class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
+  int _seg = 0; // 0 = due, 1 = paid
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
+    final async = ref.watch(invoicesProvider);
+    final all = async.valueOrNull ?? const [];
+    final due = all.where((i) => i.isDue).toList();
+    final paid = all.where((i) => i.isPaid).toList();
+    final totalDue = due.fold<num>(0, (s, i) => s + i.totalAmount);
+    final now = DateTime.now();
+    final paidThisMonth = paid
+        .where((i) =>
+            i.paidAt != null &&
+            i.paidAt!.year == now.year &&
+            i.paidAt!.month == now.month)
+        .fold<num>(0, (s, i) => s + i.totalAmount);
+
     return SafeArea(
       top: false,
-      child: ListView(
-        padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _hero(context, c),
+          _hero(context, c, totalDue, due.length, paidThisMonth),
+          const SizedBox(height: 16),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: NqSegmented(
+              options: ['مستحقة ${due.length}', 'مدفوعة ${paid.length}'],
+              index: _seg,
+              onChanged: (i) => setState(() => _seg = i),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => ref.refresh(invoicesProvider.future),
+              color: c.mintTx,
+              child: async.when(
+                loading: () => _centered(_loader(c)),
+                error: (e, _) => _centered(_errorState(
+                    c,
+                    e is ApiException ? e.message : 'تعذّر تحميل الفواتير.',
+                    () => ref.invalidate(invoicesProvider))),
+                data: (_) => _list(c, _seg == 0 ? due : paid),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _list(NqColors c, List<InvoiceModel> items) {
+    if (items.isEmpty) {
+      return _centered(Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NqIcon(NqIcons.wallet, size: 40, color: c.tx3),
+          const SizedBox(height: 12),
+          Text(_seg == 0 ? 'لا مستحقات' : 'لا مدفوعات',
+              style: NqType.h3.copyWith(color: c.tx2)),
+        ],
+      ));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      itemCount: items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (_, i) => _invoiceCard(c, items[i]),
+    );
+  }
+
+  Widget _invoiceCard(NqColors c, InvoiceModel inv) {
+    final party = inv.receiverName ?? inv.issuerName ?? 'فاتورة';
+    final (statusLabel, statusColor) = switch (inv.status.toUpperCase()) {
+      'PAID' => ('مدفوعة', c.ok),
+      'OVERDUE' => ('متأخرة', c.err),
+      'ISSUED' => ('مستحقة', c.info),
+      'DRAFT' => ('مسودة', c.tx2),
+      'CANCELLED' => ('ملغاة', c.tx3),
+      _ => (inv.status, c.tx2),
+    };
+    final sub = [
+      if (inv.orderNumber != null) inv.orderNumber!,
+      if (inv.paidAt != null)
+        'سُددت ${fmtDate(inv.paidAt)}'
+      else if (inv.dueDate != null)
+        'تستحق ${fmtDate(inv.dueDate)}',
+    ].join(' · ');
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.sf,
+        borderRadius: BorderRadius.circular(NqRadius.card),
+        border: Border.all(color: c.bd),
+      ),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Ltr(inv.totalAmount.toStringAsFixed(2),
+                    style: NqType.price(size: 18).copyWith(color: c.tx)),
+                const SizedBox(width: 3),
+                Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+              ]),
+              const SizedBox(height: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(NqRadius.pill)),
+                child: Text(statusLabel,
+                    style: NqType.caption.copyWith(
+                        color: statusColor, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Flexible(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                NqSegmented(
-                  options: const ['مُبلّغة 3', 'مستحقة 5', 'مؤكّدة'],
-                  index: _seg,
-                  onChanged: (i) => setState(() => _seg = i),
-                ),
-                const SizedBox(height: 14),
-                _payCard(c, 'مصنع الرّواد للبلاستيك',
-                    'NQ-24-08812 · حوالة بنكية · قبل 2 س', '2,898.00'),
-                const SizedBox(height: 12),
-                _payCard(c, 'شركة البناء الحديث',
-                    'NQ-24-08790 · حوالة بنكية · أمس', '1,610.00'),
-                const SizedBox(height: 12),
-                _payCard(c, 'مؤسسة النخبة التجارية',
-                    'NQ-24-08771 · نقدًا عند التسليم', '1,692.00'),
+                Text(party,
+                    style: NqType.bodyStrong.copyWith(color: c.tx),
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis),
+                if (sub.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(sub,
+                      style: NqType.caption.copyWith(color: c.tx2),
+                      textAlign: TextAlign.right,
+                      overflow: TextOverflow.ellipsis),
+                ],
               ],
             ),
           ),
@@ -54,7 +165,9 @@ class _ProviderFinanceScreenState extends State<ProviderFinanceScreen> {
     );
   }
 
-  Widget _hero(BuildContext context, NqColors c) => Container(
+  Widget _hero(BuildContext context, NqColors c, num totalDue, int dueCount,
+          num paidThisMonth) =>
+      Container(
         color: c.hero,
         padding: EdgeInsets.fromLTRB(
             16, MediaQuery.of(context).padding.top + 12, 16, 20),
@@ -63,20 +176,9 @@ class _ProviderFinanceScreenState extends State<ProviderFinanceScreen> {
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: NqFixed.heroFill2,
-                    borderRadius: BorderRadius.circular(NqRadius.pill),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    NqIcon(NqIcons.calendarBlank, size: 14, color: NqFixed.heroTextSecondary),
-                    const SizedBox(width: 6),
-                    Text('أكتوبر', style: NqType.caption.copyWith(color: NqFixed.heroText)),
-                  ]),
-                ),
                 const Spacer(),
-                Text('المالية', style: NqType.h1.copyWith(color: NqFixed.heroText)),
+                Text('المالية',
+                    style: NqType.h1.copyWith(color: NqFixed.heroText)),
               ],
             ),
             const SizedBox(height: 12),
@@ -86,18 +188,22 @@ class _ProviderFinanceScreenState extends State<ProviderFinanceScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Ltr('18,400.00',
-                    style: NqType.price(size: 30).copyWith(color: NqFixed.heroText)),
+                Ltr(totalDue.toStringAsFixed(2),
+                    style:
+                        NqType.price(size: 30).copyWith(color: NqFixed.heroText)),
                 const SizedBox(width: 4),
-                Text('ر.س', style: NqType.h3.copyWith(color: NqFixed.heroTextSecondary)),
+                Text('ر.س',
+                    style:
+                        NqType.h3.copyWith(color: NqFixed.heroTextSecondary)),
               ],
             ),
             const SizedBox(height: 14),
             Row(
               children: [
-                _heroTile(c, '6,200', 'مُبلّغة بانتظار تأكيدك · 3'),
+                _heroTile(c, '$dueCount', 'فواتير مستحقة'),
                 const SizedBox(width: 12),
-                _heroTile(c, '42,750', 'مستلمة هذا الشهر'),
+                _heroTile(c, paidThisMonth.toStringAsFixed(0),
+                    'مستلمة هذا الشهر'),
               ],
             ),
           ],
@@ -115,102 +221,53 @@ class _ProviderFinanceScreenState extends State<ProviderFinanceScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Ltr(value,
-                  style: NqType.numeric(22, FontWeight.w700).copyWith(color: NqFixed.heroText)),
+                  style: NqType.numeric(22, FontWeight.w700)
+                      .copyWith(color: NqFixed.heroText)),
               const SizedBox(height: 2),
               Text(label,
-                  style: NqType.caption.copyWith(color: NqFixed.heroTextSecondary),
+                  style: NqType.caption
+                      .copyWith(color: NqFixed.heroTextSecondary),
                   textAlign: TextAlign.right),
             ],
           ),
         ),
       );
 
-  Widget _payCard(NqColors c, String payer, String meta, String amount) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: c.sf,
-          borderRadius: BorderRadius.circular(NqRadius.card),
-          border: Border.all(color: c.bd),
-        ),
+  Widget _centered(Widget child) => ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [SizedBox(height: 360, child: Center(child: child))],
+      );
+
+  Widget _loader(NqColors c) => SizedBox(
+        width: 30,
+        height: 30,
+        child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
+      );
+
+  Widget _errorState(NqColors c, String msg, VoidCallback onRetry) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Ltr(amount, style: NqType.price(size: 18).copyWith(color: c.tx)),
-                  const SizedBox(width: 3),
-                  Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
-                ]),
-                const Spacer(),
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(payer, style: NqType.h3.copyWith(color: c.tx)),
-                      const SizedBox(height: 2),
-                      Text(meta,
-                          style: NqType.caption.copyWith(color: c.tx2),
-                          textAlign: TextAlign.right),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _confirmBtn(c),
-                const SizedBox(width: 8),
-                _receiptBtn(c),
-                const Spacer(),
-                _reportedChip(c),
-              ],
+            NqIcon(NqIcons.warningCircle, size: 40, color: c.err),
+            const SizedBox(height: 12),
+            Text(msg,
+                style: NqType.body.copyWith(color: c.tx2),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                    color: c.mintBg,
+                    borderRadius: BorderRadius.circular(NqRadius.pill)),
+                child: Text('إعادة المحاولة',
+                    style: NqType.labelStrong.copyWith(color: c.mintTx)),
+              ),
             ),
           ],
         ),
-      );
-
-  Widget _reportedChip(NqColors c) => Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: c.warnBg,
-          borderRadius: BorderRadius.circular(NqRadius.pill),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          NqIcon(NqIcons.handCoins, size: 14, color: c.warn),
-          const SizedBox(width: 6),
-          Text('دفع مُبلّغ',
-              style: NqType.caption.copyWith(color: c.warn, fontWeight: FontWeight.w700)),
-        ]),
-      );
-
-  Widget _receiptBtn(NqColors c) => Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(NqRadius.button),
-          border: Border.all(color: c.bd),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          NqIcon(NqIcons.receipt, size: 16, color: c.tx),
-          const SizedBox(width: 6),
-          Text('الإيصال', style: NqType.labelStrong.copyWith(color: c.tx)),
-        ]),
-      );
-
-  Widget _confirmBtn(NqColors c) => Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: c.mint,
-          borderRadius: BorderRadius.circular(NqRadius.button),
-        ),
-        child: Text('تأكيد الاستلام',
-            style: NqType.labelStrong.copyWith(color: c.onMint)),
       );
 }

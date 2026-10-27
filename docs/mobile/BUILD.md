@@ -132,10 +132,14 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   live counts, status pills (driver AVAILABLE/ON_TRIP/OFF_DUTY; truck AVAILABLE/ON_TRIP/
   MAINTENANCE/OUT_OF_SERVICE), search, pull-to-refresh, loading/empty/error. Add-driver stays
   a visual CTA (the invite form 3f is a follow-up).
-- **Orders follow-ups (next slices):** maintenance (3g); provider finance (3h); owner-driver
-  (1i/2e) incl. self-assignment; add-driver form (3f) → `POST /fleet/drivers/invite`;
-  **customer finance (4h)** + order actions (cancel/confirm); consolidated multi-leg; a real
-  maps SDK; comms backend.
+- **Provider finance (3h)** is wired to `GET /invoices` (`core/finance/finance_repository.dart`
+  → `InvoiceModel` + `invoicesProvider`): hero total receivables + due-count + paid-this-month,
+  due/paid segments, invoice cards with status pills (PAID/OVERDUE/ISSUED/DRAFT/CANCELLED),
+  pull-to-refresh, loading/empty/error. Reusable for customer finance (4h).
+- **Orders follow-ups (next slices):** maintenance (3g); owner-driver (1i/2e) incl. self-
+  assignment; add-driver form (3f) → `POST /fleet/drivers/invite`; **customer finance (4h)**
+  via `invoicesProvider`; order actions (cancel/confirm); consolidated multi-leg; a real maps
+  SDK; comms backend.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`
