@@ -167,7 +167,7 @@ class _CustomerOffersScreenState extends ConsumerState<CustomerOffersScreen> {
             best: b.id == cheapestId,
             loading: _acceptingBidId == b.id,
             onAccept: () => _accept(order, b),
-            onChat: () => context.push('/chat'),
+            onChat: () => context.push('/chat/${order.id}', extra: b.carrierName),
           ),
           const SizedBox(height: 16),
         ],

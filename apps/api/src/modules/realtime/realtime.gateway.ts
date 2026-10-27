@@ -178,4 +178,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   emitNotification(userId: string, payload: unknown) {
     this.server.to(`user:${userId}`).emit('notification:new', payload);
   }
+  emitChatMessage(orderId: string, payload: unknown) {
+    this.server.to(`order:${orderId}`).emit('chat:message', payload);
+  }
 }

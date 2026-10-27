@@ -554,12 +554,29 @@ model Order {
   invoices       Invoice[]
   dispute        Dispute?
   review         Review?
+  messages       Message[]
 
   @@index([clientId, status])
   @@index([carrierId, status])
   @@index([status])
   @@index([pickupDate])
   @@index([originCity, destinationCity])
+}
+
+/// A chat message on an order's thread (customer ⇄ carrier). `senderId` is the
+/// author's User id and `senderCompanyId` their company, stored as scalars so
+/// the thread survives independently of user/company lifecycles.
+model Message {
+  id              String   @id @default(cuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  senderId        String
+  senderCompanyId String?
+  body            String
+  readAt          DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([orderId, createdAt])
 }
 
 /// A single stop on an order's route. The route is an ordered list of stops;
