@@ -122,4 +122,12 @@ class NqIcons {
   static const gauge = 'gauge';
   static const navigationArrow = 'navigation-arrow';
   static const cameraPlus = 'camera-plus';
+  static const play = 'play';
+  static const microphone = 'microphone';
+  static const microphoneSlash = 'microphone-slash';
+  static const caretDoubleRight = 'caret-double-right';
+  static const phoneDisconnect = 'phone-disconnect';
+  static const cameraRotate = 'camera-rotate';
+  static const speakerHigh = 'speaker-high';
+  static const cellSignalFull = 'cell-signal-full';
 }
