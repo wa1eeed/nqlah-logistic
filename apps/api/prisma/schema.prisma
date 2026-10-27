@@ -233,6 +233,7 @@ model User {
 
   driverProfile DriverProfile?
   notifications Notification[]
+  pushTokens    PushToken[]
   auditLogs     AuditLog[]
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
@@ -561,6 +562,20 @@ model Order {
   @@index([status])
   @@index([pickupDate])
   @@index([originCity, destinationCity])
+}
+
+/// A registered device push token (FCM / APNs / web push). Used by the
+/// notifications gateway to deliver push messages to a user's devices.
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String   @default("android") // android | ios | web
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 /// A chat message on an order's thread (customer ⇄ carrier). `senderId` is the
