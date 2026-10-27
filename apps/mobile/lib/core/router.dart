@@ -24,6 +24,7 @@ import '../features/customer/truck_detail_screen.dart';
 import '../features/customer/customer_finance_screen.dart';
 import '../features/customer/customer_notifications_screen.dart';
 import '../features/provider/driver_assignment_screen.dart';
+import '../features/provider/provider_add_driver_screen.dart';
 import '../features/provider/provider_maintenance_screen.dart';
 import '../features/provider/provider_order_screen.dart';
 import '../features/provider/trip_monitor_screen.dart';
@@ -200,6 +201,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/maintenance',
       builder: (context, state) => const ProviderMaintenanceScreen(),
+    ),
+    GoRoute(
+      path: '/add-driver',
+      builder: (context, state) => const ProviderAddDriverScreen(),
     ),
     GoRoute(
       path: '/trip-execution/:id',

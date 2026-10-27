@@ -118,6 +118,19 @@ class FleetRepository {
     }
   }
 
+  /// `POST /fleet/drivers/invite` — invite a driver to the carrier's fleet.
+  /// Returns the server payload (may include a generated temporary password).
+  Future<Map<String, dynamic>> inviteDriver(Map<String, dynamic> body) async {
+    try {
+      final res =
+          await _dio.post<Map<String, dynamic>>('/fleet/drivers/invite', data: body);
+      _ensureOk(res);
+      return res.data ?? const {};
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `GET /fleet/trucks` — the carrier's trucks.
   Future<List<TruckModel>> trucks() => _listOf('/fleet/trucks', TruckModel.fromJson);
 
