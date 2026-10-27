@@ -25,8 +25,40 @@ are businesses and professional drivers, not casual consumers. The app must feel
   first-class second.
 - **Fast & legible on mid-range Android** — large tap targets, strong hierarchy,
   one-handed primary actions, readable numbers (prices, plates, container codes).
-- **Role-specialized** — a customer, a provider, an owner-driver, and an employed
-  driver each get a purpose-built home and navigation, not one shared screen.
+- **Role-specialized inside ONE unified app** — a single download and a single
+  login for everyone. After login the server's policy engine resolves the account's
+  role, and the **same app** renders the matching shell (home, bottom nav,
+  permissions). It is **not** four separate apps; each role simply gets a
+  purpose-built home and navigation within the one product.
+
+---
+
+## 0.1 One unified app & the role model
+
+One app, role-driven. The account model collapses to three real identities (the
+server decides capabilities):
+
+- **Customer (عميل)** — posts orders, compares/accepts offers, chats, tracks, pays,
+  invoices.
+- **Transport Provider (مزوّد)** — receives orders from customers (open market or
+  direct assignment), wins them, then **assigns each order to one of its own
+  drivers**; manages fleet, drivers, finances, performance. The provider is the
+  **contracting party** with the customer.
+- **Employed driver (سائق تابع)** — a sub-account under a provider; execution-only,
+  sees only the trips assigned to it.
+
+**Independent owner-driver = a Provider account whose only driver is himself.** He
+receives the order directly, interacts with the customer **as the provider**, and
+then dispatches it **to himself** and drives it. So he is not a fourth type — he is
+a provider wearing both hats, and the app gives him a role-aware home with a light
+context toggle (**"operate as provider" ↔ "drive now"**), not a role picker on
+every screen.
+
+**Who the customer communicates with:** always the **provider** (the contracting
+entity) — before ordering and during the order. When a provider assigns an employed
+driver, the driver's personal contact is **not** revealed to the customer; the
+provider coordinates. (For an independent owner-driver the provider and the driver
+are the same person, so there is no distinction.)
 
 ---
 
@@ -223,8 +255,9 @@ A single verified account with a smart composed home / two modes:
 
 ## 6. In-app communication (new — design the screens now)
 
-The customer can contact the carrier **both before ordering and inside the order
-screen**, with privacy-preserving rules:
+The customer can contact the **provider** (the contracting carrier — never the
+employed driver directly) **both before ordering and inside the order screen**, with
+privacy-preserving rules:
 
 - **Chat:** text + **voice notes** + attachments (image/doc). Bubbles RTL, clear
   sent/delivered/read, recording UI with waveform, playback with scrubber.
@@ -233,8 +266,11 @@ screen**, with privacy-preserving rules:
 - **Contact reveal rules (privacy-first, like major platforms):**
   - **Before acceptance / while browsing:** communication is **in-app only** (chat/
     call) — phone numbers are **hidden**; show name + verified badge + rating only.
-  - **After the carrier is accepted (order ASSIGNED+):** reveal both parties' full
-    contact details to each other (name, phone, company) in the order screen.
+  - **After the carrier is accepted (order ASSIGNED+):** reveal the **customer** and
+    the **provider**'s full contact details to each other (name, phone, company) in
+    the order screen. The employed driver executing the trip is **not** exposed to
+    the customer — the provider remains the contact. (Independent owner-driver =
+    provider, so his own details are the ones revealed.)
 - Design an "entry point to chat/call" on the offer card and the order detail, plus
   the full chat thread, the voice-note composer, and the voice/video call screens —
   in light & dark, RTL & LTR.

@@ -18,17 +18,34 @@ real product with a real backend; make it beautiful **and** buildable.
 Businesses (customers) post freight; transport providers (carriers) win it via the
 **open market** or **direct assignment**; pricing is either **bidding (مناقصة)** or
 a **fixed price**; drivers execute multi-stop trips (including container pickup →
-unload → **empty-container return**) and submit proof of delivery. There are four
-real user roles, each needing a purpose-built experience:
+unload → **empty-container return**) and submit proof of delivery.
+
+**This is ONE unified app** — a single download and a single login for everyone.
+After login the server's policy engine resolves the account's role and the **same
+app** renders the matching shell (home, bottom navigation, permissions). It is
+**not** four separate apps; each role gets a purpose-built experience inside the one
+product. The account model collapses to three real identities:
 - **Customer** — create orders (single, or **consolidated/مجمّع** with multiple
   **sub-trips/رحلات فرعية**, each its own truck type / destination / price /
   intermediate stops), compare offers, accept, track, pay-on-delivery, invoices.
-- **Transport Provider** — browse eligible loads, bid or accept fixed price, manage
-  fleet & drivers, **assign a load to one of its drivers**, finances, performance.
-- **Independent owner-driver** — is both provider & driver; finds loads, dispatches
-  **to self**, then drives the trip.
-- **Employed driver** — execution-only: sees only assigned trips; big touch targets,
-  stop-by-stop actions, ePOD. No marketplace, no pricing, no fleet.
+- **Transport Provider** — receives orders from customers (open market or direct
+  assignment), bids or accepts fixed price, then **assigns each order to one of its
+  own drivers**; manages fleet & drivers, finances, performance. The provider is the
+  **contracting party** the customer deals with.
+- **Employed driver** — a sub-account under a provider; execution-only, sees only
+  the trips assigned to it. Big touch targets, stop-by-stop actions, ePOD. No
+  marketplace, no pricing, no fleet.
+
+**Independent owner-driver = a Provider account whose only driver is himself** — not
+a fourth type. He receives the order directly, interacts with the customer **as the
+provider**, then dispatches it **to himself** and drives it. Give him a role-aware
+home with a light context toggle (**"operate as provider" ↔ "drive now"**), never a
+role picker on every screen.
+
+**Who the customer communicates with:** always the **provider** (the contracting
+entity), before and during the order. When a provider assigns an employed driver,
+the driver's personal contact is **not** revealed to the customer — the provider
+coordinates. (For an owner-driver the provider and driver are the same person.)
 
 A **group/policy engine on the server** decides what each account can do (dispatch,
 pricing, payment, visibility, tracking). Treat available actions as server-driven.
@@ -47,10 +64,11 @@ pricing, payment, visibility, tracking). Treat available actions as server-drive
 - **Mobile, phone-first** (design at ~390dp; check ~360 and ~430).
 - **Faithful to the real flows & data** in `design-brief.md` (order journey,
   account types/fields, status model, stop/ container-return semantics).
-- **In-app communication** between customer and carrier: chat (text + voice notes +
-  attachments) and **voice/video calls** — usable **before ordering** (in-app only,
-  phone numbers hidden) and **after acceptance** (full contact revealed). Design
-  these screens too.
+- **In-app communication** between the customer and the **provider** (the
+  contracting carrier — never the employed driver directly): chat (text + voice
+  notes + attachments) and **voice/video calls** — usable **before ordering** (in-app
+  only, phone numbers hidden) and **after acceptance** (customer ↔ provider full
+  contact revealed; the employed driver is not exposed). Design these screens too.
 
 ## Be creative on
 The overall visual identity & mood, layout/composition (don't default to boring
