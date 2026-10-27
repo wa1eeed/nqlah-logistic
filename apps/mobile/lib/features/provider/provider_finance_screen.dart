@@ -21,11 +21,33 @@ class ProviderFinanceScreen extends ConsumerStatefulWidget {
 
 class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
   int _seg = 0; // 0 = due, 1 = paid
+  String? _collectingId;
+
+  Future<void> _collect(PaymentModel p) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _collectingId = p.id);
+    try {
+      await ref.read(financeRepositoryProvider).collect(p.id);
+      ref.invalidate(paymentsProvider);
+      messenger.showSnackBar(
+          const SnackBar(content: Text('تم تأكيد استلام النقد.')));
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(
+          const SnackBar(content: Text('تعذّر تأكيد الاستلام. حاول مجددًا.')));
+    } finally {
+      if (mounted) setState(() => _collectingId = null);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
     final async = ref.watch(invoicesProvider);
+    final codToCollect = (ref.watch(paymentsProvider).valueOrNull ?? const [])
+        .where((p) => p.needsCodCollection)
+        .toList();
     final all = async.valueOrNull ?? const [];
     final due = all.where((i) => i.isDue).toList();
     final paid = all.where((i) => i.isPaid).toList();
@@ -45,6 +67,10 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
         children: [
           _hero(context, c, totalDue, due.length, paidThisMonth),
           const SizedBox(height: 16),
+          if (codToCollect.isNotEmpty) ...[
+            _codSection(c, codToCollect),
+            const SizedBox(height: 16),
+          ],
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: NqSegmented(
@@ -56,7 +82,10 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
           const SizedBox(height: 14),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => ref.refresh(invoicesProvider.future),
+              onRefresh: () {
+                ref.invalidate(paymentsProvider);
+                return ref.refresh(invoicesProvider.future);
+              },
               color: c.mintTx,
               child: async.when(
                 loading: () => _centered(_loader(c)),
@@ -70,6 +99,82 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _codSection(NqColors c, List<PaymentModel> items) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: c.warnBg,
+          borderRadius: BorderRadius.circular(NqRadius.card),
+          border: Border.all(color: c.warn.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text('نقد عند التسليم بانتظار التأكيد',
+                      style: NqType.labelStrong.copyWith(color: c.tx),
+                      textAlign: TextAlign.right),
+                ),
+                const SizedBox(width: 8),
+                NqIcon(NqIcons.handCoins, size: 18, color: c.warn),
+              ],
+            ),
+            const SizedBox(height: 10),
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0) Divider(color: c.bd, height: 18),
+              _codRow(c, items[i]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _codRow(NqColors c, PaymentModel p) {
+    final busy = _collectingId == p.id;
+    final amount = p.dueOnDelivery > 0 ? p.dueOnDelivery : p.totalAmount;
+    return Row(
+      children: [
+        SizedBox(
+          height: 36,
+          child: TextButton(
+            onPressed: busy ? null : () => _collect(p),
+            style: TextButton.styleFrom(
+              backgroundColor: c.mint,
+              foregroundColor: c.onMint,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(NqRadius.pill)),
+            ),
+            child: Text(busy ? '...' : 'تأكيد الاستلام',
+                style: NqType.labelStrong.copyWith(color: c.onMint)),
+          ),
+        ),
+        const Spacer(),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Ltr(amount.toStringAsFixed(2),
+                  style: NqType.price(size: 16).copyWith(color: c.tx)),
+              const SizedBox(width: 3),
+              Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+            ]),
+            if (p.orderNumber != null) ...[
+              const SizedBox(height: 2),
+              Text(p.orderNumber!,
+                  style: NqType.caption.copyWith(color: c.tx2)),
+            ],
+          ],
+        ),
+      ],
     );
   }
 
