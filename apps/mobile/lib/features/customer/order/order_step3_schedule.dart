@@ -1,47 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/orders/order_draft_controller.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/ltr.dart';
-import '../../../core/widgets/nq_icon.dart';
-import '../../../design_system/form_fields.dart';
-import '../../../design_system/toggle.dart';
 import 'order_wizard_scaffold.dart';
 
-/// Create-order step 3/6 — schedule (handoff 4b).
-class OrderStep3Schedule extends StatefulWidget {
+const _arWeekdays = {
+  1: 'الإثنين', 2: 'الثلاثاء', 3: 'الأربعاء', 4: 'الخميس',
+  5: 'الجمعة', 6: 'السبت', 7: 'الأحد',
+};
+
+/// Create-order step 3/6 — schedule (handoff 4b). Real upcoming days wired to
+/// `pickupDate`; pickup window wired to `pickupWindow`.
+class OrderStep3Schedule extends ConsumerStatefulWidget {
   const OrderStep3Schedule({super.key, this.onNext});
 
   final VoidCallback? onNext;
 
   @override
-  State<OrderStep3Schedule> createState() => _OrderStep3ScheduleState();
+  ConsumerState<OrderStep3Schedule> createState() => _OrderStep3ScheduleState();
 }
 
-class _OrderStep3ScheduleState extends State<OrderStep3Schedule> {
-  int _day = 2;
-  int _window = 0;
-  bool _flexible = true;
+class _OrderStep3ScheduleState extends ConsumerState<OrderStep3Schedule> {
+  late final List<DateTime> _days;
 
-  static const _days = [
-    ('27', 'الأحد'),
-    ('28', 'الإثنين'),
-    ('29', 'الأربعاء'),
-    ('30', 'الخميس'),
-    ('31', 'الجمعة'),
-    ('1', 'السبت'),
-    ('2', 'الأحد'),
-  ];
-  static const _windows = [
-    ('صباحًا', '06:00–12:00'),
-    ('ظهرًا', '12:00–16:00'),
-    ('مساءً', '16:00–20:00'),
-    ('مرن', 'أي وقت'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    final today = DateTime.now();
+    final base = DateTime(today.year, today.month, today.day);
+    _days = List.generate(10, (i) => base.add(Duration(days: i)));
+    // Default the pickup date to tomorrow if unset.
+    final d = ref.read(orderDraftProvider);
+    if (d.pickupDate == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(orderDraftProvider.notifier).patch(
+            (x) => x.copyWith(pickupDate: _days.length > 1 ? _days[1] : _days[0]));
+      });
+    }
+  }
+
+  bool _sameDay(DateTime? a, DateTime b) =>
+      a != null && a.year == b.year && a.month == b.month && a.day == b.day;
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
+    final n = ref.read(orderDraftProvider.notifier);
+    final d = ref.watch(orderDraftProvider);
     return OrderWizardScaffold(
       step: 3,
       stepName: 'الجدولة',
@@ -53,16 +61,16 @@ class _OrderStep3ScheduleState extends State<OrderStep3Schedule> {
         _label(c, 'اليوم'),
         const SizedBox(height: 10),
         SizedBox(
-          height: 68,
+          height: 72,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             reverse: true,
             itemCount: _days.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 8),
-            itemBuilder: (_, i) => _dayTile(c, i),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (_, i) => _dayTile(c, n, d, _days[i]),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 22),
         _label(c, 'نافذة الاستلام'),
         const SizedBox(height: 10),
         GridView.count(
@@ -71,15 +79,12 @@ class _OrderStep3ScheduleState extends State<OrderStep3Schedule> {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 2.6,
-          children: [for (var i = 0; i < _windows.length; i++) _windowTile(c, i)],
+          childAspectRatio: 2.8,
+          children: [
+            for (var i = 0; i < pickupWindowOptions.length; i++)
+              _windowTile(c, n, d, i),
+          ],
         ),
-        const SizedBox(height: 16),
-        _flexRow(c),
-        const SizedBox(height: 16),
-        const NqDropdownField(label: 'آخر موعد للتسليم', value: 'الخميس 31/10'),
-        const SizedBox(height: 14),
-        _containerWarn(c),
       ],
     );
   }
@@ -87,12 +92,12 @@ class _OrderStep3ScheduleState extends State<OrderStep3Schedule> {
   Widget _label(NqColors c, String t) =>
       Text(t, style: NqType.labelStrong.copyWith(color: c.tx));
 
-  Widget _dayTile(NqColors c, int i) {
-    final sel = _day == i;
+  Widget _dayTile(NqColors c, OrderDraftController n, OrderDraft d, DateTime day) {
+    final sel = _sameDay(d.pickupDate, day);
     return GestureDetector(
-      onTap: () => setState(() => _day = i),
+      onTap: () => n.patch((x) => x.copyWith(pickupDate: day)),
       child: Container(
-        width: 52,
+        width: 56,
         decoration: BoxDecoration(
           color: sel ? c.hero : c.sf,
           borderRadius: BorderRadius.circular(NqRadius.button),
@@ -101,11 +106,11 @@ class _OrderStep3ScheduleState extends State<OrderStep3Schedule> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Ltr(_days[i].$1,
+            Ltr('${day.day}',
                 style: NqType.numeric(20, FontWeight.w700)
                     .copyWith(color: sel ? NqFixed.heroText : c.tx)),
             const SizedBox(height: 2),
-            Text(_days[i].$2,
+            Text(_arWeekdays[day.weekday] ?? '',
                 style: NqType.caption.copyWith(
                     color: sel ? NqFixed.heroTextSecondary : c.tx2)),
           ],
@@ -114,10 +119,11 @@ class _OrderStep3ScheduleState extends State<OrderStep3Schedule> {
     );
   }
 
-  Widget _windowTile(NqColors c, int i) {
-    final sel = _window == i;
+  Widget _windowTile(NqColors c, OrderDraftController n, OrderDraft d, int i) {
+    final opt = pickupWindowOptions[i];
+    final sel = d.pickupWindow == opt.value;
     return GestureDetector(
-      onTap: () => setState(() => _window = i),
+      onTap: () => n.patch((x) => x.copyWith(pickupWindow: opt.value)),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         alignment: AlignmentDirectional.centerEnd,
@@ -126,53 +132,8 @@ class _OrderStep3ScheduleState extends State<OrderStep3Schedule> {
           borderRadius: BorderRadius.circular(NqRadius.button),
           border: Border.all(color: sel ? c.mintS : c.bd, width: sel ? 2 : 1),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(_windows[i].$1, style: NqType.bodyStrong.copyWith(color: c.tx)),
-            Ltr(_windows[i].$2, style: NqType.caption.copyWith(color: c.tx2)),
-          ],
-        ),
+        child: Text(opt.label, style: NqType.bodyStrong.copyWith(color: c.tx)),
       ),
     );
   }
-
-  Widget _flexRow(NqColors c) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: c.sf,
-          borderRadius: BorderRadius.circular(NqRadius.button),
-          border: Border.all(color: c.bd),
-        ),
-        child: Row(
-          children: [
-            NqToggle(
-                value: _flexible,
-                large: true,
-                onChanged: (v) => setState(() => _flexible = v)),
-            const Spacer(),
-            Text('موعد مرن ± يوم', style: NqType.body.copyWith(color: c.tx)),
-          ],
-        ),
-      );
-
-  Widget _containerWarn(NqColors c) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: c.warnBg,
-          borderRadius: BorderRadius.circular(NqRadius.button),
-        ),
-        child: Row(
-          children: [
-            NqIcon(NqIcons.warningCircle, size: 20, color: c.warn),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text('فترة سماح الحاوية 4 أيام من الاستلام قبل رسوم التأخير.',
-                  style: NqType.caption.copyWith(color: c.tx2),
-                  textAlign: TextAlign.right),
-            ),
-          ],
-        ),
-      );
 }

@@ -67,10 +67,20 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   login/register/orders can only be exercised on a device/emulator (or against a dev API
   with CORS open). The request/response plumbing is otherwise verified end-to-end
   (the order list GET fires to the correct endpoint; states render).
-- **Orders follow-ups (next slices):** wire the **create-order wizard** (1b/4a–4e) →
-  `POST /orders` + `/publish`; wire **offers (4f)** to the bids module; wire **Home (1a)**
-  to real orders; multi-stop/consolidated leg detail (`/orders/:id/legs`,`/stops`) and a
-  real maps SDK for tracking.
+- **Create-order wizard (1b/4a–4e)** is wired for the **single-order** path via an
+  `OrderDraft` (`order_draft_controller.dart`) accumulated across the 6 steps →
+  `POST /orders` + `POST /orders/:id/publish`, then routes to the new order's detail.
+  Added the inputs the design omits: cargo type/description/weight + truck type (step 1),
+  origin/destination **city pickers + address** (step 2), real upcoming-day selection +
+  pickup window (step 3), fixed/tender + visibility + payment + budget (step 4), consignee
+  name/phone + notes → delivery stop (step 5), real review summary + validation (step 6).
+  Per the chosen approach, **consolidated/multi-leg**, document upload, map-based route
+  editing, and a `DIRECT` carrier picker stay visual/next-slice. City→region via a lookup
+  (`regionForCity`).
+- **Orders follow-ups (next slices):** wire **offers (4f)** to the bids module; wire
+  **Home (1a)** to real orders; consolidated multi-leg create + leg detail
+  (`/orders/:id/legs`,`/stops`); a real maps SDK for tracking; order actions
+  (cancel/confirm).
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`
