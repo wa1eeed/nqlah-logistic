@@ -84,10 +84,18 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   with a confirm + loading) → invalidates + routes to the order detail. `NqOfferCard` now
   takes optional `rating`/`trips` (the API carries neither on the carrier) + a `loading`
   flag; empty/loading/error+retry states included.
-- **Orders follow-ups (next slices):** wire **Home (1a)** to real orders; a per-order
-  offers entry + a carrier rating/trips stats endpoint; consolidated multi-leg create + leg
-  detail (`/orders/:id/legs`,`/stops`); a real maps SDK for tracking; order actions
-  (cancel/confirm); in-app chat/calls (comms) backend.
+- **Home (1a)** is wired to the signed-in user + `GET /orders?mine=true`: the greeting +
+  avatar from the user, KPI strip (active / awaiting-offers / needs-action counts), the
+  featured active-shipment `NqWaybillCard` (most in-progress active order → its detail), and
+  the offers alert (shown only when offers exist → switches to the offers tab). Graceful
+  fallbacks: empty active card, hidden alert, "حسابي" name fallback. The shell wires
+  tab-switch callbacks (`onViewShipments`/`onOffers`) + `onOpenOrder`. **This completes the
+  customer surface's backend wiring.**
+- **Orders follow-ups (next slices):** the **provider** path (loads/assignments/fleet/
+  finance) via orders/fleet; **customer finance (4h)** + order actions (cancel/confirm) via
+  payments/invoices; a per-order offers entry + carrier rating/trips stats endpoint;
+  consolidated multi-leg create + leg detail (`/orders/:id/legs`,`/stops`); a real maps SDK;
+  in-app chat/calls (comms) backend.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`
