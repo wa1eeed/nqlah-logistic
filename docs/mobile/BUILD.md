@@ -226,9 +226,22 @@ assets/
 | 0 | Design system (tokens, theme, components, icons, gallery) | ✅ merged (#101) |
 | 1 | Shell + auth: login (2c), OTP (5d), register (1l/1m/5e/5f), per-role nav (2a) | ✅ merged (#102, #103) |
 | 2 | Customer: home (1a), create-order wizard (1b/4a–4e), shipments (4g), offers (4f), order detail (1c), tracking (1d), trucks (6a/6b), finance (4h), notifications (5b), account (5c) | ✅ complete — all customer screens built & verified; full shell nav works |
-| 3 | Provider: home (2d), loads (1f/1g), order view (3a), assignment (1h), assignments (3c), trip monitor (3d), fleet (3e/3f), maintenance (3g), finance (3h), owner-driver (1i/2e), availability (7a/7b/7c) | 🚧 home (2d) + loads (1f) + order view (3a, now with **confirm/deliver** actions #143) + assignment (1h) + assignments (3c) + fleet (3e/3f) + maintenance (3g) + finance (3h, now with **COD cash-collection** #144) + owner-driver (1i/2e) + trip monitor (3d) + availability publishing (7a) + direct-request respond (#141) done; load-detail bid sheet (7b/7c), owner-driver self-assign next |
+| 3 | Provider: home (2d), loads (1f/1g + detail 7b), order view (3a + confirm/deliver), assignment (1h), assignments (3c), trip monitor (3d), fleet (3e/3f + availability 7a), maintenance (3g), finance (3h + COD collect), owner-driver (1i/2e), availability (7a/7b/7c) | ✅ wired for everything the backend supports — home (2d), loads (1f) + **load-detail 7b** (#147), order view (3a) + **confirm/deliver** (#143), assignment (1h), assignments (3c), fleet (3e/3f) + **availability publish 7a** (#138), finance (3h) + **COD cash-collection** (#144), trip monitor (3d, map is a placeholder), direct-request respond (#141). Remaining need new backend: maintenance 3g (no module), owner-driver self-assign (needs `user.id` in `GET /fleet/drivers`) |
 | 4 | Employed driver: my trips (5a), trip execution (1j), ePOD (1k) | ✅ complete — driver flow built & verified (trips → acknowledge → execution → arrive → ePOD) |
 | 5 | Communication: chat (1n), voice/video call (1o), incoming call (5g) | ✅ core UI done & verified; provider internal-note chat variant (3b) remaining. **UI only — needs a new realtime backend (WebRTC/signaling/TURN).** |
+
+### Status: feature-complete against the current backend
+Everything the existing NestJS API supports is wired across all three roles (auth · customer ·
+provider · driver), including the truck-availability marketplace (both sides), the direct-request
+loop (request → respond/decline), the full order lifecycle (bid → accept → confirm → deliver →
+complete → cancel), fleet + availability publishing, and finance (invoices, payments, COD
+collection, escrow visibility). **Remaining work all needs NEW backend or assets, and is deliberately
+not faked:** realtime chat + voice/video calls (WebRTC/signaling/TURN); maintenance module (3g); a
+real maps SDK for the live-tracking map; consolidated multi-leg order creation; document upload (5e);
+a login-by-OTP token endpoint; owner-driver self-assign (needs `user.id` exposed on `GET /fleet/drivers`
+or a `/driver/me` for carrier actors); and bundling the Tajawal/Inter fonts (web first-load shows tofu
+until `google_fonts` fetches). Note: escrow `release` is **admin-only** — intentionally not exposed in
+the app; the customer releases escrow by confirming receipt (order `complete`).
 
 ## Design updates applied
 - **Addendum 01** ([`design/HANDOFF-ADDENDUM-01.md`](design/HANDOFF-ADDENDUM-01.md)) —
