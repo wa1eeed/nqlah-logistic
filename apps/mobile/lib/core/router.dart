@@ -21,6 +21,8 @@ import '../features/provider/driver_assignment_screen.dart';
 import '../features/provider/provider_maintenance_screen.dart';
 import '../features/provider/provider_order_screen.dart';
 import '../features/provider/trip_monitor_screen.dart';
+import '../features/driver/driver_trip_execution_screen.dart';
+import '../features/driver/driver_epod_screen.dart';
 import '../features/shell/app_shell.dart';
 
 /// App routes (Phase 1). The post-login shell is resolved from the account's
@@ -143,6 +145,15 @@ final router = GoRouter(
     GoRoute(
       path: '/maintenance',
       builder: (context, state) => const ProviderMaintenanceScreen(),
+    ),
+    GoRoute(
+      path: '/trip-execution',
+      builder: (context, state) =>
+          DriverTripExecutionScreen(onArrive: () => context.push('/epod')),
+    ),
+    GoRoute(
+      path: '/epod',
+      builder: (context, state) => const DriverEpodScreen(),
     ),
   ],
 );

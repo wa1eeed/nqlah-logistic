@@ -17,6 +17,7 @@ import '../provider/provider_fleet_screen.dart';
 import '../provider/provider_home_screen.dart';
 import '../provider/provider_loads_screen.dart';
 import '../provider/owner_driver_home_screen.dart';
+import '../driver/driver_my_trips_screen.dart';
 
 /// The policy-driven app shell (handoff §2a): one app that mounts the matching
 /// bottom-tab set for the account's identity. Tab bodies are placeholders in
@@ -128,6 +129,12 @@ class _AppShellState extends State<AppShell> {
         case 4:
           return const ProviderFinanceScreen();
       }
+    }
+    if (_identity == NqIdentity.employedDriver && index == 0) {
+      return DriverMyTripsScreen(
+        onOpenTrip: () => context.push('/trip-execution'),
+        onAcknowledge: () => context.push('/trip-execution'),
+      );
     }
     return _placeholderBody(c, tab);
   }

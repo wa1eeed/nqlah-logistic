@@ -121,4 +121,5 @@ class NqIcons {
   static const drop = 'drop';
   static const gauge = 'gauge';
   static const navigationArrow = 'navigation-arrow';
+  static const cameraPlus = 'camera-plus';
 }
