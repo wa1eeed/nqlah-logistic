@@ -126,8 +126,8 @@ class _AppShellState extends ConsumerState<AppShell> {
           return const ProviderLoadsScreen();
         case 2:
           return ProviderAssignmentsScreen(
-            onAssign: () => context.push('/driver-assignment'),
-            onOpen: () => context.push('/provider-order'),
+            onAssign: (_) => context.push('/driver-assignment'),
+            onOpen: (id) => context.push('/order-detail/$id'),
           );
         case 3:
           return ProviderFleetScreen(
