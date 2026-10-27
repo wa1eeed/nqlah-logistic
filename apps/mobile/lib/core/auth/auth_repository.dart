@@ -40,6 +40,50 @@ class AuthRepository {
     }
   }
 
+  /// `POST /auth/register` — creates the account and auto-sends a phone OTP.
+  /// Returns the server payload (`{userId, verificationRequired, ...}`).
+  Future<Map<String, dynamic>> register(Map<String, dynamic> body) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/auth/register',
+        data: body,
+        options: Options(extra: {'noAuth': true}),
+      );
+      _ensureOk(res);
+      return res.data ?? const {};
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// `POST /auth/send-otp` — (re)sends the SMS OTP to [phone].
+  Future<void> sendOtp(String phone) async {
+    try {
+      final res = await _dio.post(
+        '/auth/send-otp',
+        data: {'phone': phone.trim()},
+        options: Options(extra: {'noAuth': true}),
+      );
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// `POST /auth/verify-phone` — confirms the OTP [code] for [phone].
+  Future<void> verifyPhone(String phone, String code) async {
+    try {
+      final res = await _dio.post(
+        '/auth/verify-phone',
+        data: {'phone': phone.trim(), 'code': code},
+        options: Options(extra: {'noAuth': true}),
+      );
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `GET /users/me` — the current profile; used to restore a session on
   /// launch from a stored token.
   Future<AuthUser> me() async {
