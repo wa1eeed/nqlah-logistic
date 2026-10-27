@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -64,7 +65,7 @@ class _CustomerShipmentsScreenState extends State<CustomerShipmentsScreen> {
                   progressColor: c.info,
                   statusLine: _line(c, NqIcons.broadcast, c.mintTx,
                       'التوقف 2/3 · الوصول 14:20'),
-                  onTap: () {},
+                  onTap: () => context.push('/order-detail'),
                 ),
                 const SizedBox(height: 10),
                 NqShipmentCard(
@@ -79,7 +80,7 @@ class _CustomerShipmentsScreenState extends State<CustomerShipmentsScreen> {
                         text: ' · تنتهي خلال 5h',
                         style: NqType.label.copyWith(color: c.tx2)),
                   ]),
-                  onTap: () {},
+                  onTap: () => context.push('/order-detail'),
                 ),
                 const SizedBox(height: 10),
                 NqShipmentCard(
@@ -88,7 +89,7 @@ class _CustomerShipmentsScreenState extends State<CustomerShipmentsScreen> {
                   route: 'الدمام ← الرياض',
                   statusLine: _line(c, NqIcons.steeringWheel, c.tx2,
                       'تم إسناد سائق · الأربعاء 07:00'),
-                  onTap: () {},
+                  onTap: () => context.push('/order-detail'),
                 ),
                 const SizedBox(height: 10),
                 NqShipmentCard(
@@ -97,7 +98,7 @@ class _CustomerShipmentsScreenState extends State<CustomerShipmentsScreen> {
                   route: 'الجبيل ← الرياض',
                   statusLine: _line(c, NqIcons.package, c.tx2,
                       'تم تسليم البضاعة · الحاوية لم تُرجع بعد'),
-                  onTap: () {},
+                  onTap: () => context.push('/order-detail'),
                 ),
               ],
             ),
