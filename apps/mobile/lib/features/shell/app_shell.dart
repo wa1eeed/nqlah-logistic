@@ -90,6 +90,9 @@ class _AppShellState extends ConsumerState<AppShell> {
             onNewOrder: () => context.push('/order'),
             onWallet: () => context.push('/finance'),
             onBell: () => context.push('/notifications'),
+            onViewShipments: () => setState(() => _index = 2),
+            onOffers: () => setState(() => _index = 3),
+            onOpenOrder: (id) => context.push('/order-detail/$id'),
           );
         case 1:
           return const CustomerTrucksScreen();

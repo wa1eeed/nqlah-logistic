@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/auth_controller.dart';
+import '../../core/orders/order_models.dart';
+import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -9,29 +13,59 @@ import '../../design_system/status_chip.dart';
 import '../../design_system/waybill_card.dart';
 
 /// Customer home (handoff 1a + Addendum 01 §0: wallet button in the header).
-class CustomerHomeScreen extends StatelessWidget {
-  const CustomerHomeScreen(
-      {super.key, this.onNewOrder, this.onWallet, this.onBell});
+/// Wired to the signed-in user + `GET /orders?mine=true` (KPIs, the active
+/// shipment card, and the offers alert).
+class CustomerHomeScreen extends ConsumerWidget {
+  const CustomerHomeScreen({
+    super.key,
+    this.onNewOrder,
+    this.onWallet,
+    this.onBell,
+    this.onViewShipments,
+    this.onOffers,
+    this.onOpenOrder,
+  });
 
   final VoidCallback? onNewOrder;
   final VoidCallback? onWallet;
   final VoidCallback? onBell;
+  final VoidCallback? onViewShipments;
+  final VoidCallback? onOffers;
+  final void Function(String orderId)? onOpenOrder;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.nq;
+    final user = ref.watch(authControllerProvider).user;
+    final orders = ref.watch(myShipmentsProvider).valueOrNull ?? const [];
+
+    final active = orders.where((o) => o.bucket == ShipmentBucket.active).toList();
+    final awaitingOffers = orders
+        .where((o) =>
+            (o.status.toUpperCase() == 'PUBLISHED' ||
+                o.status.toUpperCase() == 'BIDDING'))
+        .length;
+    final withOffers = orders.where((o) => o.bidsCount > 0).toList();
+    final name = (user?.fullName.isNotEmpty ?? false)
+        ? user!.fullName
+        : 'حسابي';
+
+    // The most relevant active order for the hero card.
+    final featured = _featured(active);
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
         Stack(
           clipBehavior: Clip.none,
           children: [
-            _hero(context, c),
+            _hero(context, c, name),
             Positioned(
               left: 16,
               right: 16,
               bottom: -38,
-              child: _kpiStrip(c),
+              child: _kpiStrip(
+                  c, active.length, awaitingOffers, withOffers.length),
             ),
           ],
         ),
@@ -41,35 +75,27 @@ class CustomerHomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _sectionHeader(c, 'شحنات نشطة', 'عرض الكل'),
+              _sectionHeader(c, 'شحنات نشطة', 'عرض الكل', onViewShipments),
               const SizedBox(height: 10),
-              NqWaybillCard(
-                code: 'NQ-24-08812',
-                subtitle: 'مجمّع · رحلتان',
-                status: NqStatus.inTransit,
-                origin: const RoutePoint('الدمام', 'ميناء الملك عبدالعزيز'),
-                destination: const RoutePoint('الرياض', 'الصناعية الثانية'),
-                liveText: 'مباشر · آخر تحديث قبل 2 د',
-                stopCounter: 'التوقف 2/3',
-                truckType: 'تريلا سطحة',
-                plate: '7342 KHD',
-                containerNo: 'TGHU 771392-0',
-                // TODO(home): wire Home (1a) to real orders, then
-                // push('/order-detail/<id>'). Demo card is non-navigating for now.
-                onTap: () {},
-              ),
-              const SizedBox(height: 14),
-              _offersAlert(c),
-              const SizedBox(height: 20),
-              Text('أعد الطلب', style: NqType.h2.copyWith(color: c.tx)),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(child: _reorderChip(c, 'الرياض ← الجبيل')),
-                  const SizedBox(width: 10),
-                  Expanded(child: _reorderChip(c, 'بريدة ← جدة')),
-                ],
-              ),
+              if (featured != null)
+                NqWaybillCard(
+                  code: featured.orderNumber,
+                  subtitle: featured.isConsolidated
+                      ? 'مجمّع · ${featured.truckCount ?? ''} رحلات'
+                      : cargoLabel(featured.cargoType),
+                  status: featured.nqStatus,
+                  origin: RoutePoint(featured.originCity, ''),
+                  destination: RoutePoint(featured.destinationCity, ''),
+                  liveText: _liveText(featured),
+                  truckType: truckLabel(featured.requiredTruckType),
+                  onTap: () => (onOpenOrder ?? (_) {})(featured.id),
+                )
+              else
+                _emptyActive(c),
+              if (withOffers.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _offersAlert(c, withOffers),
+              ],
               const SizedBox(height: 24),
             ],
           ),
@@ -78,7 +104,27 @@ class CustomerHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _hero(BuildContext context, NqColors c) {
+  OrderSummary? _featured(List<OrderSummary> active) {
+    if (active.isEmpty) return null;
+    for (final s in ['IN_TRANSIT', 'ASSIGNED', 'CONFIRMED', 'DELIVERED']) {
+      final m = active.where((o) => o.status.toUpperCase() == s);
+      if (m.isNotEmpty) return m.first;
+    }
+    return active.first;
+  }
+
+  String _liveText(OrderSummary o) => switch (o.nqStatus) {
+        NqStatus.inTransit => 'الشحنة في الطريق',
+        NqStatus.assigned || NqStatus.confirmed => 'تم إسناد المزوّد',
+        NqStatus.delivered => 'تم التسليم · بانتظار الإغلاق',
+        NqStatus.tender ||
+        NqStatus.published =>
+          '${o.bidsCount} عروض · بانتظار قرارك',
+        _ => truckLabel(o.requiredTruckType),
+      };
+
+  Widget _hero(BuildContext context, NqColors c, String name) {
+    final initial = name.isNotEmpty ? name.substring(0, 1) : 'ع';
     return Container(
       color: c.hero,
       padding: EdgeInsets.fromLTRB(
@@ -88,23 +134,26 @@ class CustomerHomeScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              _avatar(c, 'ر'),
+              _avatar(c, initial),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('مساء الخير',
+                    Text('مرحبًا',
                         style: NqType.caption
                             .copyWith(color: NqFixed.heroTextSecondary)),
-                    Text('مصنع الرّواد للبلاستيك',
-                        style: NqType.h3.copyWith(color: NqFixed.heroText)),
+                    Text(name,
+                        style: NqType.h3.copyWith(color: NqFixed.heroText),
+                        overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
-              _headerBtn(c, NqIcons.wallet, dotColor: const Color(0xFFFBBF24), onTap: onWallet),
+              _headerBtn(c, NqIcons.wallet,
+                  dotColor: const Color(0xFFFBBF24), onTap: onWallet),
               const SizedBox(width: 8),
-              _headerBtn(c, NqIcons.bell, dotColor: NqFixed.heroAccent, onTap: onBell),
+              _headerBtn(c, NqIcons.bell,
+                  dotColor: NqFixed.heroAccent, onTap: onBell),
             ],
           ),
           const SizedBox(height: 24),
@@ -133,7 +182,8 @@ class CustomerHomeScreen extends StatelessWidget {
         child: Text(initial, style: NqType.h3.copyWith(color: NqFixed.heroText)),
       );
 
-  Widget _headerBtn(NqColors c, String icon, {Color? dotColor, VoidCallback? onTap}) {
+  Widget _headerBtn(NqColors c, String icon,
+      {Color? dotColor, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -171,11 +221,13 @@ class CustomerHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _kpiStrip(NqColors c) {
-    Widget col(String value, String label, Color valueColor) => Expanded(
+  Widget _kpiStrip(NqColors c, int active, int awaiting, int needsAction) {
+    Widget col(int value, String label, Color valueColor) => Expanded(
           child: Column(
             children: [
-              Ltr(value, style: NqType.numeric(22, FontWeight.w700).copyWith(color: valueColor)),
+              Ltr('$value',
+                  style: NqType.numeric(22, FontWeight.w700)
+                      .copyWith(color: valueColor)),
               const SizedBox(height: 2),
               Text(label,
                   style: NqType.caption.copyWith(color: c.tx2),
@@ -202,93 +254,97 @@ class CustomerHomeScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          col('4', 'شحنات نشطة', c.tx),
+          col(active, 'شحنات نشطة', c.tx),
           divider(),
-          col('2', 'بانتظار العروض', c.info),
+          col(awaiting, 'بانتظار العروض', c.info),
           divider(),
-          col('1', 'تحتاج إجراءك', c.warn),
+          col(needsAction, 'تحتاج إجراءك', c.warn),
         ],
       ),
     );
   }
 
-  Widget _sectionHeader(NqColors c, String title, String action) {
+  Widget _sectionHeader(
+      NqColors c, String title, String action, VoidCallback? onAction) {
     return Row(
       children: [
-        Text(action, style: NqType.labelStrong.copyWith(color: c.mintTx)),
+        GestureDetector(
+          onTap: onAction,
+          child: Text(action,
+              style: NqType.labelStrong.copyWith(color: c.mintTx)),
+        ),
         const Spacer(),
         Text(title, style: NqType.h2.copyWith(color: c.tx)),
       ],
     );
   }
 
-  Widget _offersAlert(NqColors c) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: c.warnBg,
-        borderRadius: BorderRadius.circular(NqRadius.card),
-      ),
-      child: Row(
-        children: [
-          NqIcon(NqIcons.caretLeft, size: 18, color: c.tx3),
-          const Spacer(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('3 عروض بانتظار قرارك',
-                  style: NqType.bodyStrong.copyWith(color: c.tx)),
-              const SizedBox(height: 2),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('تنتهي خلال 5h',
-                      style: NqType.caption.copyWith(color: c.tx2)),
-                  Text(' · جدة ← مكة · ',
-                      style: NqType.caption.copyWith(color: c.tx2)),
-                  Ltr('NQ-24-08840',
-                      style: NqType.code(size: 12).copyWith(color: c.tx2)),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: c.sf,
-              borderRadius: BorderRadius.circular(NqRadius.input),
-            ),
-            child: NqIcon(NqIcons.handCoins, size: 22, color: c.warn),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _emptyActive(NqColors c) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: c.sf,
+          borderRadius: BorderRadius.circular(NqRadius.card),
+          border: Border.all(color: c.bd),
+        ),
+        child: Column(
+          children: [
+            NqIcon(NqIcons.truck, size: 34, color: c.tx3),
+            const SizedBox(height: 10),
+            Text('لا توجد شحنات نشطة',
+                style: NqType.bodyStrong.copyWith(color: c.tx2)),
+            const SizedBox(height: 4),
+            Text('ابدأ بطلب نقل جديد من الأعلى',
+                style: NqType.caption.copyWith(color: c.tx3)),
+          ],
+        ),
+      );
 
-  Widget _reorderChip(NqColors c, String route) {
-    return Container(
-      height: 44,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: c.sf,
-        borderRadius: BorderRadius.circular(NqRadius.pill),
-        border: Border.all(color: c.bd),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NqIcon(NqIcons.arrowCounterClockwise, size: 16, color: c.mintTx),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(route,
-                style: NqType.label.copyWith(color: c.tx),
-                overflow: TextOverflow.ellipsis),
-          ),
-        ],
+  Widget _offersAlert(NqColors c, List<OrderSummary> withOffers) {
+    final total = withOffers.fold<int>(0, (s, o) => s + o.bidsCount);
+    final first = withOffers.first;
+    return GestureDetector(
+      onTap: onOffers,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: c.warnBg,
+          borderRadius: BorderRadius.circular(NqRadius.card),
+        ),
+        child: Row(
+          children: [
+            NqIcon(NqIcons.caretLeft, size: 18, color: c.tx3),
+            const Spacer(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('$total عروض بانتظار قرارك',
+                    style: NqType.bodyStrong.copyWith(color: c.tx)),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('${first.route} · ',
+                        style: NqType.caption.copyWith(color: c.tx2)),
+                    Ltr(first.orderNumber,
+                        style: NqType.code(size: 12).copyWith(color: c.tx2)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: c.sf,
+                borderRadius: BorderRadius.circular(NqRadius.input),
+              ),
+              child: NqIcon(NqIcons.handCoins, size: 22, color: c.warn),
+            ),
+          ],
+        ),
       ),
     );
   }
