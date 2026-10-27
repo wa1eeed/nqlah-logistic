@@ -202,13 +202,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       builder: (context, state) => const ProviderMaintenanceScreen(),
     ),
     GoRoute(
-      path: '/trip-execution',
-      builder: (context, state) =>
-          DriverTripExecutionScreen(onArrive: () => context.push('/epod')),
+      path: '/trip-execution/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return DriverTripExecutionScreen(
+          orderId: id,
+          onArrive: (oid) => context.push('/epod/$oid'),
+        );
+      },
     ),
     GoRoute(
-      path: '/epod',
-      builder: (context, state) => const DriverEpodScreen(),
+      path: '/epod/:id',
+      builder: (context, state) => DriverEpodScreen(
+        orderId: state.pathParameters['id']!,
+        onDone: () {},
+      ),
     ),
     GoRoute(
       path: '/chat',

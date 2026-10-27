@@ -144,8 +144,8 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
     if (_identity == NqIdentity.employedDriver && index == 0) {
       return DriverMyTripsScreen(
-        onOpenTrip: (_) => context.push('/trip-execution'),
-        onAcknowledge: (_) => context.push('/trip-execution'),
+        onOpenTrip: (id) => context.push('/trip-execution/$id'),
+        onAcknowledge: (id) => context.push('/trip-execution/$id'),
       );
     }
     return _placeholderBody(c, tab);
