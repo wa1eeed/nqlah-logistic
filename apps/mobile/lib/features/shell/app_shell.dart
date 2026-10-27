@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/auth_controller.dart';
 import '../../core/session/identity.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -23,21 +25,23 @@ import '../driver/driver_my_trips_screen.dart';
 /// bottom-tab set for the account's identity. Tab bodies are placeholders in
 /// Phase 1; the real per-role screens land in Phases 2–4.
 ///
-/// A dev identity switcher (top-left) lets us preview every shell without a
-/// backend; it is removed once auth is wired to the API.
-class AppShell extends StatefulWidget {
-  const AppShell(
-      {super.key, this.identity = NqIdentity.customer, this.ownerDriver = false});
+/// The identity is resolved from the signed-in user's role; a dev identity
+/// switcher (top-left) still lets us preview every shell from one account.
+class AppShell extends ConsumerStatefulWidget {
+  const AppShell({super.key, this.identity, this.ownerDriver = false});
 
-  final NqIdentity identity;
+  /// Optional override; when null the identity comes from the auth session.
+  final NqIdentity? identity;
   final bool ownerDriver;
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
-  late NqIdentity _identity = widget.identity;
+class _AppShellState extends ConsumerState<AppShell> {
+  late NqIdentity _identity = widget.identity ??
+      ref.read(authControllerProvider).user?.identity ??
+      NqIdentity.customer;
   late bool _ownerDriver = widget.ownerDriver;
   OwnerDriverContext _odContext = OwnerDriverContext.provider;
   int _index = 0;

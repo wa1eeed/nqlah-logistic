@@ -7,7 +7,35 @@ built** — structure, decisions, and per-phase status.
 ## Stack
 - **Flutter** 3.47.8 / Dart 3.13.7 · **Riverpod** (state) · **GoRouter** (routing)
 - **google_fonts** (Tajawal + Inter) · **flutter_svg** (Phosphor icons as SVG)
+- **dio** (REST client) · **flutter_secure_storage** (token storage)
 - Arabic-first, **RTL / `ar-SA`** by default · light + dark from design tokens.
+
+## Backend integration (`core/api/`, `core/auth/`)
+The app talks to the NestJS API (`/api` prefix). Base URL defaults to staging
+(`https://nqlah.nx.sa/api`) and is overridable per run:
+```
+flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
+```
+- **`core/api/api_config.dart`** — base URL + timeouts (`--dart-define=NQ_API_BASE`).
+- **`core/api/token_store.dart`** — access/refresh tokens in secure storage.
+- **`core/api/api_client.dart`** — the single Dio instance: Bearer interceptor +
+  transparent `401` → `/auth/refresh` → replay. Notifies the auth layer on
+  refresh failure via `SessionExpirySink`.
+- **`core/api/api_exception.dart`** — flattens NestJS errors (`{code,message,details}`
+  or `{statusCode,message}`) into one Arabic-ready message.
+- **`core/auth/auth_models.dart`** — `AuthUser` (+ role→`NqIdentity` map:
+  `CLIENT_*`→customer, `CARRIER_*`→provider, `DRIVER`→employed driver), `AuthSession`.
+- **`core/auth/auth_repository.dart`** — `POST /auth/login`, `GET /users/me`,
+  `POST /auth/logout`.
+- **`core/auth/auth_controller.dart`** — `NotifierProvider<AuthController,AuthState>`:
+  bootstraps from a stored token on launch, `login()`, `logout()`.
+- **`core/router.dart`** — now `routerProvider`; redirect gate: no session → auth
+  pages, session → shell. Shell identity comes from the signed-in user's role.
+- **Login** (`features/auth/login_screen.dart`) is wired to the live API (loading +
+  Arabic error states). Customer **account → sign-out** calls `logout()`.
+- **Note:** on **web** the staging API blocks the browser origin via CORS, so live
+  login can only be exercised on a device/emulator (or against a dev API with CORS
+  open). The request/response plumbing is otherwise verified end-to-end.
 
 ## Project layout (`apps/mobile/`)
 ```
