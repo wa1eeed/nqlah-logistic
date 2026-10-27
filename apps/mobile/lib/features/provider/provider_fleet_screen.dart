@@ -25,9 +25,10 @@ class ProviderFleetScreen extends ConsumerStatefulWidget {
 }
 
 class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
-  int _seg = 1; // 0 = trucks, 1 = drivers
+  int _seg = 1; // 0 = trucks, 1 = drivers, 2 = availability
   final _search = TextEditingController();
   String _query = '';
+  String? _busyAvailTruckId;
 
   @override
   void dispose() {
@@ -40,9 +41,10 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
     final c = context.nq;
     final trucks = ref.watch(fleetTrucksProvider);
     final drivers = ref.watch(fleetDriversProvider);
+    final availabilities =
+        ref.watch(myAvailabilityProvider).valueOrNull ?? const <MyAvailability>[];
     final published = <String, MyAvailability>{
-      for (final a in ref.watch(myAvailabilityProvider).valueOrNull ?? const [])
-        a.truckId: a,
+      for (final a in availabilities) a.truckId: a,
     };
     final truckCount = trucks.valueOrNull?.length;
     final driverCount = drivers.valueOrNull?.length;
@@ -79,19 +81,24 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
               options: [
                 'الشاحنات${truckCount != null ? ' $truckCount' : ''}',
                 'السائقون${driverCount != null ? ' $driverCount' : ''}',
+                'التوفّر${availabilities.isNotEmpty ? ' ${availabilities.length}' : ''}',
               ],
               index: _seg,
               onChanged: (i) => setState(() => _seg = i),
             ),
           ),
           const SizedBox(height: 14),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _searchField(c),
-          ),
-          const SizedBox(height: 14),
+          if (_seg != 2) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _searchField(c),
+            ),
+            const SizedBox(height: 14),
+          ],
           Expanded(
-            child: _seg == 0
+            child: _seg == 2
+                ? _availabilityView(c, availabilities, trucks.valueOrNull ?? const [])
+                : _seg == 0
                 ? _trucksView(c, trucks, published)
                 : _driversView(c, drivers),
           ),
@@ -159,6 +166,124 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
         },
       ),
     );
+  }
+
+  Widget _availabilityView(
+      NqColors c, List<MyAvailability> items, List<TruckModel> trucks) {
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(myAvailabilityProvider),
+      color: c.mintTx,
+      child: items.isEmpty
+          ? _centered(Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                NqIcon(NqIcons.broadcast, size: 40, color: c.tx3),
+                const SizedBox(height: 12),
+                Text('لا توفّر منشور',
+                    style: NqType.h3.copyWith(color: c.tx2)),
+                const SizedBox(height: 6),
+                Text('انشر شاحنة من قائمة الشاحنات لتظهر في سوق العملاء',
+                    style: NqType.body.copyWith(color: c.tx3),
+                    textAlign: TextAlign.center),
+              ],
+            ))
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              itemCount: items.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (_, i) => _availabilityRow(c, items[i], trucks),
+            ),
+    );
+  }
+
+  Widget _availabilityRow(
+      NqColors c, MyAvailability a, List<TruckModel> trucks) {
+    final busy = _busyAvailTruckId == a.truckId;
+    final dest = (a.destCity ?? '').isNotEmpty ? a.destCity! : 'أي وجهة';
+    TruckModel? truck;
+    for (final t in trucks) {
+      if (t.id == a.truckId) {
+        truck = t;
+        break;
+      }
+    }
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.sf,
+        borderRadius: BorderRadius.circular(NqRadius.card),
+        border: Border.all(color: c.bd),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _statusPill(c, 'نشط', c.ok),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('${a.originCity} ← $dest',
+                      style: NqType.bodyStrong.copyWith(color: c.tx)),
+                  const SizedBox(height: 2),
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    if (a.pricePerTrip != null) ...[
+                      Ltr(a.pricePerTrip!.toStringAsFixed(0),
+                          style: NqType.code(size: 12).copyWith(color: c.tx2)),
+                      Text(' ر.س · ',
+                          style: NqType.caption.copyWith(color: c.tx2)),
+                    ],
+                    if (a.plateNumber != null)
+                      Ltr(a.plateNumber!,
+                          style: NqType.code(size: 12).copyWith(color: c.tx2)),
+                  ]),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Divider(color: c.bd, height: 1),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              if (truck != null)
+                TextButton(
+                  onPressed: busy
+                      ? null
+                      : () => showTruckAvailabilitySheet(
+                          context, ref, truck!, a),
+                  child: Text('تعديل',
+                      style: NqType.labelStrong.copyWith(color: c.mintTx)),
+                ),
+              TextButton(
+                onPressed: busy ? null : () => _withdraw(a),
+                child: Text('سحب',
+                    style: NqType.labelStrong.copyWith(color: c.err)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _withdraw(MyAvailability a) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _busyAvailTruckId = a.truckId);
+    try {
+      await ref.read(marketplaceRepositoryProvider).unpublish(a.truckId);
+      ref.invalidate(myAvailabilityProvider);
+      messenger
+          .showSnackBar(const SnackBar(content: Text('تم سحب التوفّر.')));
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(
+          const SnackBar(content: Text('تعذّر سحب التوفّر. حاول مجددًا.')));
+    } finally {
+      if (mounted) setState(() => _busyAvailTruckId = null);
+    }
   }
 
   Widget _driverRow(NqColors c, DriverModel d) {

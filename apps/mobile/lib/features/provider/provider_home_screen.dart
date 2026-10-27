@@ -21,6 +21,7 @@ class ProviderHomeScreen extends ConsumerWidget {
     this.onAssign,
     this.onLoads,
     this.onFinance,
+    this.onAnnounceAvailability,
     this.onOpenOrder,
   });
 
@@ -28,6 +29,7 @@ class ProviderHomeScreen extends ConsumerWidget {
   final void Function(String orderId)? onAssign;
   final VoidCallback? onLoads;
   final VoidCallback? onFinance;
+  final VoidCallback? onAnnounceAvailability;
   final void Function(String orderId)? onOpenOrder;
 
   @override
@@ -73,6 +75,8 @@ class ProviderHomeScreen extends ConsumerWidget {
                   Expanded(child: _financeTile(c)),
                 ],
               ),
+              const SizedBox(height: 12),
+              _announceTile(c),
               const SizedBox(height: 24),
             ],
           ),
@@ -297,6 +301,45 @@ class ProviderHomeScreen extends ConsumerWidget {
               Text('أحمال متاحة تناسب أسطولك',
                   style: NqType.caption.copyWith(color: c.tx2),
                   textAlign: TextAlign.right),
+            ],
+          ),
+        ),
+      );
+
+  Widget _announceTile(NqColors c) => GestureDetector(
+        onTap: onAnnounceAvailability,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: c.mintBg,
+            borderRadius: BorderRadius.circular(NqRadius.card),
+            border: Border.all(color: c.mint.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              NqIcon(NqIcons.caretLeft, size: 18, color: c.mintTx),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('أعلن عن توفّر شاحنة',
+                      style: NqType.bodyStrong.copyWith(color: c.tx)),
+                  const SizedBox(height: 2),
+                  Text('انشر شاحنة متاحة لتصل للعملاء في السوق',
+                      style: NqType.caption.copyWith(color: c.tx2),
+                      textAlign: TextAlign.right),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration:
+                    BoxDecoration(color: c.mint, shape: BoxShape.circle),
+                child: NqIcon(NqIcons.megaphone, size: 20, color: c.onMint),
+              ),
             ],
           ),
         ),
