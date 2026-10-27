@@ -44,10 +44,86 @@ class DriverModel {
   }
 }
 
+const _truckTypeLabels = <String, String>{
+  'SMALL_FLATBED': 'سطحة صغيرة',
+  'MEDIUM_FLATBED': 'سطحة متوسطة',
+  'LARGE_FLATBED': 'تريلا سطحة',
+  'REFRIGERATED': 'مبرّدة',
+  'CONTAINER_20': 'حاوية 20',
+  'CONTAINER_40': 'حاوية 40',
+  'TANKER': 'صهريج',
+  'CURTAINSIDER': 'ستائرية',
+  'BOX_TRUCK': 'صندوقية',
+  'LOWBED': 'لوبد',
+};
+
+String truckTypeLabel(String? v) =>
+    _truckTypeLabels[(v ?? '').toUpperCase()] ?? 'شاحنة';
+
+/// A truck in the carrier's fleet (`GET /fleet/trucks`).
+class TruckModel {
+  TruckModel({
+    required this.id,
+    required this.plateNumber,
+    required this.type,
+    required this.status,
+    this.make,
+    this.model,
+    this.year,
+  });
+
+  final String id;
+  final String plateNumber;
+  final String type;
+  final String status; // AVAILABLE / ON_TRIP / MAINTENANCE / OUT_OF_SERVICE
+  final String? make;
+  final String? model;
+  final int? year;
+
+  String get typeLabel => truckTypeLabel(type);
+  String get makeModel => [make, model, year?.toString()]
+      .where((p) => p != null && p.isNotEmpty)
+      .join(' ');
+
+  factory TruckModel.fromJson(Map<String, dynamic> j) => TruckModel(
+        id: j['id'].toString(),
+        plateNumber: (j['plateNumber'] ?? '—').toString(),
+        type: (j['type'] ?? '').toString(),
+        status: (j['status'] ?? 'AVAILABLE').toString(),
+        make: j['make']?.toString(),
+        model: j['model']?.toString(),
+        year: _num(j['year'])?.toInt(),
+      );
+}
+
 class FleetRepository {
   FleetRepository(this._client);
   final ApiClient _client;
   Dio get _dio => _client.dio;
+
+  Future<List<T>> _listOf<T>(
+      String path, T Function(Map<String, dynamic>) parse) async {
+    try {
+      final res = await _dio.get<dynamic>(path,
+          queryParameters: {'page': 1, 'limit': 100});
+      _ensureOk(res);
+      final data = res.data;
+      final list = data is Map ? (data['data'] ?? data['items']) : data;
+      return (list as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => parse(Map<String, dynamic>.from(e)))
+          .toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// `GET /fleet/trucks` — the carrier's trucks.
+  Future<List<TruckModel>> trucks() => _listOf('/fleet/trucks', TruckModel.fromJson);
+
+  /// `GET /fleet/drivers` — the carrier's drivers (all).
+  Future<List<DriverModel>> drivers() =>
+      _listOf('/fleet/drivers', DriverModel.fromJson);
 
   /// `GET /fleet/drivers/available` — eligible + available drivers.
   Future<List<DriverModel>> availableDrivers() async {
@@ -84,4 +160,14 @@ final fleetRepositoryProvider = Provider<FleetRepository>((ref) {
 /// The carrier's currently-available drivers (for assignment).
 final availableDriversProvider = FutureProvider<List<DriverModel>>((ref) {
   return ref.watch(fleetRepositoryProvider).availableDrivers();
+});
+
+/// The carrier's full driver roster.
+final fleetDriversProvider = FutureProvider<List<DriverModel>>((ref) {
+  return ref.watch(fleetRepositoryProvider).drivers();
+});
+
+/// The carrier's trucks.
+final fleetTrucksProvider = FutureProvider<List<TruckModel>>((ref) {
+  return ref.watch(fleetRepositoryProvider).trucks();
 });
