@@ -1,13 +1,18 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/chat/chat_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
+import '../../core/uploads/uploads_repository.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 
@@ -62,7 +67,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     setState(() => _sending = true);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(chatRepositoryProvider).send(widget.orderId, text);
+      await ref
+          .read(chatRepositoryProvider)
+          .send(widget.orderId, kind: 'TEXT', body: text);
       _input.clear();
       ref.invalidate(chatMessagesProvider(widget.orderId));
     } on ApiException catch (e) {
@@ -72,6 +79,171 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           const SnackBar(content: Text('تعذّر إرسال الرسالة. حاول مجددًا.')));
     } finally {
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  void _openAttachSheet() {
+    final c = context.nq;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: c.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: c.bd, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 8),
+            _attachTile(c, NqIcons.cameraPlus, 'صورة', () {
+              Navigator.of(context).pop();
+              _pickImage(ImageSource.gallery);
+            }),
+            _attachTile(c, NqIcons.videoCamera, 'فيديو', () {
+              Navigator.of(context).pop();
+              _pickVideo();
+            }),
+            _attachTile(c, NqIcons.fileText, 'ملف', () {
+              Navigator.of(context).pop();
+              _pickFile();
+            }),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _attachTile(NqColors c, String icon, String label, VoidCallback onTap) =>
+      ListTile(
+        onTap: onTap,
+        trailing: Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: c.mintBg, shape: BoxShape.circle),
+          child: NqIcon(icon, size: 20, color: c.mintTx),
+        ),
+        title: Text(label,
+            style: NqType.bodyStrong.copyWith(color: c.tx),
+            textAlign: TextAlign.right),
+      );
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final x = await ImagePicker().pickImage(source: source, imageQuality: 85);
+      if (x == null) return;
+      final bytes = await x.readAsBytes();
+      await _uploadAndSend(
+          kind: 'IMAGE',
+          bytes: bytes,
+          filename: x.name,
+          mime: x.mimeType ?? 'image/jpeg');
+    } catch (_) {
+      _snack('تعذّر اختيار الصورة.');
+    }
+  }
+
+  Future<void> _pickVideo() async {
+    try {
+      final x = await ImagePicker().pickVideo(source: ImageSource.gallery);
+      if (x == null) return;
+      final bytes = await x.readAsBytes();
+      await _uploadAndSend(
+          kind: 'VIDEO',
+          bytes: bytes,
+          filename: x.name,
+          mime: x.mimeType ?? 'video/mp4');
+    } catch (_) {
+      _snack('تعذّر اختيار الفيديو.');
+    }
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final res = await FilePicker.pickFiles(withData: true);
+      if (res == null || res.files.isEmpty) return;
+      final f = res.files.first;
+      final bytes = f.bytes;
+      if (bytes == null) {
+        _snack('تعذّر قراءة الملف.');
+        return;
+      }
+      await _uploadAndSend(
+        kind: 'FILE',
+        bytes: bytes,
+        filename: f.name,
+        mime: _mimeForExt(f.extension),
+      );
+    } catch (_) {
+      _snack('تعذّر اختيار الملف.');
+    }
+  }
+
+  Future<void> _uploadAndSend({
+    required String kind,
+    required Uint8List bytes,
+    required String filename,
+    required String mime,
+  }) async {
+    if (_sending) return;
+    setState(() => _sending = true);
+    try {
+      final media = await ref.read(uploadsRepositoryProvider).upload(
+            bytes: bytes,
+            filename: filename,
+            contentType: mime,
+          );
+      await ref.read(chatRepositoryProvider).send(
+            widget.orderId,
+            kind: kind,
+            mediaKey: media.key,
+            mediaName: media.name,
+            mediaMime: media.mime,
+            mediaSize: media.size,
+          );
+      ref.invalidate(chatMessagesProvider(widget.orderId));
+    } on ApiException catch (e) {
+      _snack(e.message);
+    } catch (_) {
+      _snack('تعذّر إرسال المرفق. حاول مجددًا.');
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  void _snack(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
+
+  static String _mimeForExt(String? ext) {
+    switch ((ext ?? '').toLowerCase()) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'txt':
+        return 'text/plain';
+      case 'png':
+        return 'image/png';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      default:
+        return 'application/octet-stream';
     }
   }
 
@@ -215,10 +387,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(m.body,
-                  style: NqType.body.copyWith(
-                      color: mine ? NqFixed.heroText : c.tx, height: 1.5),
-                  textAlign: TextAlign.right),
+              _bubbleContent(c, m, mine),
+              if (m.body.isNotEmpty && !m.isText) ...[
+                const SizedBox(height: 6),
+                Text(m.body,
+                    style: NqType.body.copyWith(
+                        color: mine ? NqFixed.heroText : c.tx, height: 1.5),
+                    textAlign: TextAlign.right),
+              ],
               if (time.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Ltr(time,
@@ -230,6 +406,101 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
       ),
     );
+  }
+
+  Widget _bubbleContent(NqColors c, ChatMessage m, bool mine) {
+    final fg = mine ? NqFixed.heroText : c.tx;
+    if (m.isText) {
+      return Text(m.body,
+          style: NqType.body.copyWith(color: fg, height: 1.5),
+          textAlign: TextAlign.right);
+    }
+    if (m.isImage && m.mediaUrl != null) {
+      return GestureDetector(
+        onTap: () => _openMedia(m.mediaUrl!),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 220, maxWidth: 240),
+            child: Image.network(
+              m.mediaUrl!,
+              fit: BoxFit.cover,
+              loadingBuilder: (ctx, child, p) => p == null
+                  ? child
+                  : Container(
+                      width: 200,
+                      height: 150,
+                      alignment: Alignment.center,
+                      color: c.sf2,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.5, color: c.mintTx)),
+              errorBuilder: (ctx, _, _) => _mediaCard(
+                  c, m, mine, NqIcons.cameraPlus, m.mediaName ?? 'صورة'),
+            ),
+          ),
+        ),
+      );
+    }
+    final (icon, label) = switch (m.kind) {
+      'VIDEO' => (NqIcons.play, m.mediaName ?? 'فيديو'),
+      'AUDIO' => (NqIcons.microphone, 'رسالة صوتية'),
+      _ => (NqIcons.fileText, m.mediaName ?? 'ملف'),
+    };
+    return _mediaCard(c, m, mine, icon, label);
+  }
+
+  Widget _mediaCard(
+      NqColors c, ChatMessage m, bool mine, String icon, String label) {
+    final fg = mine ? NqFixed.heroText : c.tx;
+    final fg2 = mine ? NqFixed.heroTextSecondary : c.tx2;
+    final sub = m.mediaSize != null ? _fmtSize(m.mediaSize!) : '';
+    return GestureDetector(
+      onTap: m.mediaUrl != null ? () => _openMedia(m.mediaUrl!) : null,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: mine ? NqFixed.heroFill2 : c.sf2,
+              borderRadius: BorderRadius.circular(NqRadius.input),
+            ),
+            child: NqIcon(icon,
+                fill: true, size: 20, color: mine ? NqFixed.heroAccent : c.mintTx),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label,
+                    style: NqType.bodyStrong.copyWith(color: fg),
+                    overflow: TextOverflow.ellipsis),
+                if (sub.isNotEmpty)
+                  Ltr(sub, style: NqType.caption.copyWith(color: fg2)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openMedia(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      _snack('تعذّر فتح المرفق.');
+    }
+  }
+
+  static String _fmtSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
   }
 
   Widget _composer(NqColors c) => Container(
@@ -285,6 +556,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           hintStyle: NqType.body.copyWith(color: c.tx3),
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _sending ? null : _openAttachSheet,
+                      child: NqIcon(NqIcons.plusCircle, size: 24, color: c.tx3),
                     ),
                   ],
                 ),
