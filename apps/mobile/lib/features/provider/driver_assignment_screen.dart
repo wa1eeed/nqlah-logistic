@@ -1,44 +1,77 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/fleet/fleet_repository.dart';
+import '../../core/orders/order_models.dart';
+import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
+import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 
-/// Driver assignment (handoff 1h). Single-select an eligible & available driver
-/// for an order; the driver's data is never shown to the customer.
-class DriverAssignmentScreen extends StatefulWidget {
-  const DriverAssignmentScreen({super.key, this.onConfirm});
+/// Driver assignment (handoff 1h). Single-select an available driver for an
+/// order; wired to `GET /fleet/drivers/available` + `POST /orders/:id/assign-driver`.
+class DriverAssignmentScreen extends ConsumerStatefulWidget {
+  const DriverAssignmentScreen({super.key, required this.orderId, this.onConfirm});
 
+  final String orderId;
   final VoidCallback? onConfirm;
 
   @override
-  State<DriverAssignmentScreen> createState() => _DriverAssignmentScreenState();
+  ConsumerState<DriverAssignmentScreen> createState() =>
+      _DriverAssignmentScreenState();
 }
 
-class _Driver {
-  const _Driver(this.initial, this.name, this.sub, {this.available = true});
-  final String initial;
-  final String name;
-  final String sub;
-  final bool available;
-}
+class _DriverAssignmentScreenState
+    extends ConsumerState<DriverAssignmentScreen> {
+  String? _selectedId;
+  final _search = TextEditingController();
+  String _query = '';
+  bool _busy = false;
 
-class _DriverAssignmentScreenState extends State<DriverAssignmentScreen> {
-  int _selected = 0;
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
-  static const _available = [
-    _Driver('ف', 'فهد العتيبي', 'تريلا سطحة · 7342 KHD · في الدمام'),
-    _Driver('م', 'محمد الشهري', 'تريلا سطحة · 2918 RSA · الجبيل'),
-    _Driver('س', 'سالم القحطاني', 'ستارة · 5530 BNA · الدمام'),
-  ];
-  static const _unavailable = [
-    _Driver('ع', 'عبدالله الدوسري', 'في رحلة حتى 31/10', available: false),
-  ];
+  Future<void> _confirm(DriverModel driver) async {
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(ordersRepositoryProvider)
+          .assignDriver(widget.orderId, driver.id);
+      ref.invalidate(providerWorkProvider);
+      ref.invalidate(availableDriversProvider);
+      ref.invalidate(orderDetailModelProvider(widget.orderId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تم إسناد ${driver.name} للطلب.')));
+        (widget.onConfirm ?? () {})();
+        Navigator.of(context).maybePop();
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تعذّر الإسناد. حاول مجددًا.')));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
+    final order = ref.watch(orderDetailModelProvider(widget.orderId)).valueOrNull;
+    final driversAsync = ref.watch(availableDriversProvider);
     return Scaffold(
       backgroundColor: c.bg,
       body: SafeArea(
@@ -50,28 +83,68 @@ class _DriverAssignmentScreenState extends State<DriverAssignmentScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 children: [
-                  _contextBar(c),
+                  _contextBar(c, order),
                   const SizedBox(height: 14),
                   _searchField(c),
                   const SizedBox(height: 18),
-                  _sectionLabel(c, 'مؤهّلون ومتاحون · 3'),
-                  const SizedBox(height: 10),
-                  for (var i = 0; i < _available.length; i++) ...[
-                    _driverRow(c, _available[i], selected: _selected == i,
-                        onTap: () => setState(() => _selected = i)),
-                    const SizedBox(height: 10),
-                  ],
-                  const SizedBox(height: 8),
-                  _sectionLabel(c, 'غير متاحين · 2'),
-                  const SizedBox(height: 10),
-                  for (final d in _unavailable) _driverRow(c, d),
+                  driversAsync.when(
+                    loading: () => _pad(_loader(c)),
+                    error: (e, _) => _pad(_errorState(
+                      c,
+                      e is ApiException ? e.message : 'تعذّر تحميل السائقين.',
+                      () => ref.invalidate(availableDriversProvider),
+                    )),
+                    data: (drivers) => _driversList(c, drivers),
+                  ),
                 ],
               ),
             ),
-            _footer(c),
+            driversAsync.maybeWhen(
+              data: (drivers) => _footer(c, drivers),
+              orElse: () => const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  List<DriverModel> _filtered(List<DriverModel> drivers) {
+    if (_query.isEmpty) return drivers;
+    return drivers.where((d) => d.name.contains(_query)).toList();
+  }
+
+  Widget _driversList(NqColors c, List<DriverModel> drivers) {
+    final items = _filtered(drivers);
+    if (items.isEmpty) {
+      return _pad(Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NqIcon(NqIcons.steeringWheel, size: 40, color: c.tx3),
+          const SizedBox(height: 12),
+          Text(_query.isNotEmpty ? 'لا سائق مطابق' : 'لا يوجد سائقون متاحون',
+              style: NqType.h3.copyWith(color: c.tx2)),
+          const SizedBox(height: 6),
+          Text('أضِف سائقًا أو حرّر سائقًا من رحلة حالية',
+              style: NqType.body.copyWith(color: c.tx3),
+              textAlign: TextAlign.center),
+        ],
+      ));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('مؤهّلون ومتاحون · ${items.length}',
+            style: NqType.labelStrong.copyWith(color: c.tx2),
+            textAlign: TextAlign.right),
+        const SizedBox(height: 10),
+        for (final d in items) ...[
+          _driverRow(c, d,
+              selected: _selectedId == d.id,
+              onTap: () => setState(() => _selectedId = d.id)),
+          const SizedBox(height: 10),
+        ],
+      ],
     );
   }
 
@@ -90,7 +163,7 @@ class _DriverAssignmentScreenState extends State<DriverAssignmentScreen> {
         ),
       );
 
-  Widget _contextBar(NqColors c) => Container(
+  Widget _contextBar(NqColors c, OrderDetail? order) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: c.hero,
@@ -103,14 +176,19 @@ class _DriverAssignmentScreenState extends State<DriverAssignmentScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('NQ-24-08856 · L1',
-                    style: NqType.code(size: 14).copyWith(color: NqFixed.heroAccent)),
+                Ltr(order?.orderNumber ?? '—',
+                    style:
+                        NqType.code(size: 14).copyWith(color: NqFixed.heroAccent)),
                 const SizedBox(height: 2),
-                Text('الدمام ← الرياض · تريلا سطحة',
+                Text(
+                    order != null
+                        ? '${order.route} · ${truckLabel(order.requiredTruckType)}'
+                        : 'تفاصيل الطلب',
                     style: NqType.bodyStrong.copyWith(color: NqFixed.heroText)),
                 const SizedBox(height: 2),
-                Text('الأربعاء 07:00',
-                    style: NqType.caption.copyWith(color: NqFixed.heroTextSecondary)),
+                Text(order != null ? fmtDate(order.pickupDate) : '',
+                    style: NqType.caption
+                        .copyWith(color: NqFixed.heroTextSecondary)),
               ],
             ),
           ],
@@ -128,59 +206,66 @@ class _DriverAssignmentScreenState extends State<DriverAssignmentScreen> {
         child: Row(
           children: [
             NqIcon(NqIcons.magnifyingGlass, size: 19, color: c.tx3),
-            const Spacer(),
-            Text('ابحث باسم السائق أو اللوحة',
-                style: NqType.body.copyWith(color: c.tx3)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: _search,
+                onChanged: (v) => setState(() => _query = v.trim()),
+                textAlign: TextAlign.right,
+                style: NqType.body.copyWith(color: c.tx),
+                cursorColor: c.mintS,
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  hintText: 'ابحث باسم السائق',
+                  hintStyle: NqType.body.copyWith(color: c.tx3),
+                ),
+              ),
+            ),
           ],
         ),
       );
 
-  Widget _sectionLabel(NqColors c, String t) =>
-      Text(t, style: NqType.labelStrong.copyWith(color: c.tx2), textAlign: TextAlign.right);
-
-  Widget _driverRow(NqColors c, _Driver d, {bool selected = false, VoidCallback? onTap}) {
-    final content = Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: c.sf,
-        borderRadius: BorderRadius.circular(NqRadius.card),
-        border: Border.all(
-            color: selected ? c.mintS : c.bd, width: selected ? 2 : 1),
-      ),
-      child: Row(
-        children: [
-          d.available ? _radio(c, selected) : _prohibit(c),
-          const Spacer(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(d.name, style: NqType.bodyStrong.copyWith(color: c.tx)),
-              const SizedBox(height: 2),
-              if (d.available)
-                Text(d.sub, style: NqType.caption.copyWith(color: c.tx2))
-              else
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(d.sub, style: NqType.caption.copyWith(color: c.tx2)),
-                  const SizedBox(width: 6),
-                  NqIcon(NqIcons.truck, size: 14, color: c.tx3),
-                ]),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: c.sf2, shape: BoxShape.circle),
-            child: Text(d.initial, style: NqType.h3.copyWith(color: c.tx2)),
-          ),
-        ],
+  Widget _driverRow(NqColors c, DriverModel d,
+      {bool selected = false, VoidCallback? onTap}) {
+    final sub = d.totalTrips > 0
+        ? '★ ${d.rating.toStringAsFixed(1)} · ${d.totalTrips} رحلة'
+        : (d.licenseType != null ? 'رخصة ${d.licenseType}' : 'سائق جديد');
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: c.sf,
+          borderRadius: BorderRadius.circular(NqRadius.card),
+          border: Border.all(
+              color: selected ? c.mintS : c.bd, width: selected ? 2 : 1),
+        ),
+        child: Row(
+          children: [
+            _radio(c, selected),
+            const Spacer(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(d.name, style: NqType.bodyStrong.copyWith(color: c.tx)),
+                const SizedBox(height: 2),
+                Text(sub, style: NqType.caption.copyWith(color: c.tx2)),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: c.sf2, shape: BoxShape.circle),
+              child: Text(d.name.isNotEmpty ? d.name.substring(0, 1) : 'س',
+                  style: NqType.h3.copyWith(color: c.tx2)),
+            ),
+          ],
+        ),
       ),
     );
-    final wrapped = d.available
-        ? GestureDetector(onTap: onTap, child: content)
-        : Opacity(opacity: 0.6, child: content);
-    return wrapped;
   }
 
   Widget _radio(NqColors c, bool selected) => Container(
@@ -193,31 +278,76 @@ class _DriverAssignmentScreenState extends State<DriverAssignmentScreen> {
           border: selected ? null : Border.all(color: c.bd, width: 2),
         ),
         child: selected
-            ? NqIcon(NqIcons.check, size: 15, color: c.isDark ? c.onMint : Colors.white)
+            ? NqIcon(NqIcons.check,
+                size: 15, color: c.isDark ? c.onMint : Colors.white)
             : null,
       );
 
-  Widget _prohibit(NqColors c) =>
-      NqIcon(NqIcons.prohibit, size: 26, color: c.tx3);
+  Widget _footer(NqColors c, List<DriverModel> drivers) {
+    DriverModel? selected;
+    for (final d in drivers) {
+      if (d.id == _selectedId) {
+        selected = d;
+        break;
+      }
+    }
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+        color: c.sf,
+        border: Border(top: BorderSide(color: c.bd)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('يصل للسائق إشعار فورًا · لا تظهر بياناته للعميل',
+              style: NqType.caption.copyWith(color: c.tx2),
+              textAlign: TextAlign.center),
+          const SizedBox(height: 10),
+          NqButton(
+            label: selected != null
+                ? 'تأكيد إسناد ${selected.name}'
+                : 'اختر سائقًا',
+            loading: _busy,
+            locked: selected == null,
+            onPressed: (selected == null || _busy)
+                ? null
+                : () => _confirm(selected!),
+          ),
+        ],
+      ),
+    );
+  }
 
-  Widget _footer(NqColors c) => Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        decoration: BoxDecoration(
-          color: c.sf,
-          border: Border(top: BorderSide(color: c.bd)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('يصل للسائق إشعار فورًا · لا تظهر بياناته للعميل',
-                style: NqType.caption.copyWith(color: c.tx2),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 10),
-            NqButton(
-              label: 'تأكيد إسناد ${_available[_selected].name}',
-              onPressed: widget.onConfirm ?? () {},
+  Widget _pad(Widget child) =>
+      Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Center(child: child));
+
+  Widget _loader(NqColors c) => SizedBox(
+        width: 30,
+        height: 30,
+        child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
+      );
+
+  Widget _errorState(NqColors c, String msg, VoidCallback onRetry) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NqIcon(NqIcons.warningCircle, size: 40, color: c.err),
+          const SizedBox(height: 12),
+          Text(msg,
+              style: NqType.body.copyWith(color: c.tx2),
+              textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: onRetry,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                  color: c.mintBg,
+                  borderRadius: BorderRadius.circular(NqRadius.pill)),
+              child: Text('إعادة المحاولة',
+                  style: NqType.labelStrong.copyWith(color: c.mintTx)),
             ),
-          ],
-        ),
+          ),
+        ],
       );
 }

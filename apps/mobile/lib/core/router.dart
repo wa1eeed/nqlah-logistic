@@ -177,14 +177,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       builder: (context, state) => const CustomerNotificationsScreen(),
     ),
     GoRoute(
-      path: '/driver-assignment',
+      path: '/driver-assignment/:id',
       builder: (context, state) =>
-          DriverAssignmentScreen(onConfirm: () => context.pop()),
+          DriverAssignmentScreen(orderId: state.pathParameters['id']!),
     ),
     GoRoute(
       path: '/provider-order',
       builder: (context, state) => ProviderOrderScreen(
-        onChangeDriver: () => context.push('/driver-assignment'),
+        // provider-order (3a) is not yet wired to a real order id; driver
+        // re-assignment is reached from assignments/home for now.
+        onChangeDriver: () {},
         onTrack: () => context.push('/trip-monitor'),
       ),
     ),

@@ -112,7 +112,9 @@ class _AppShellState extends ConsumerState<AppShell> {
               i == 1 ? OwnerDriverContext.driving : OwnerDriverContext.provider;
           _index = 0;
         }),
-        onSelfAssign: () => context.push('/driver-assignment'),
+        // Owner-driver self-assignment is wired in a later slice (needs the
+        // target order id); no-op for now.
+        onSelfAssign: () {},
       );
     }
     if (_identity == NqIdentity.provider && !_ownerDriver) {
@@ -120,7 +122,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         case 0:
           return ProviderHomeScreen(
             onBell: () => context.push('/notifications'),
-            onAssign: (_) => context.push('/driver-assignment'),
+            onAssign: (id) => context.push('/driver-assignment/$id'),
             onLoads: () => setState(() => _index = 1),
             onFinance: () => setState(() => _index = 4),
             onOpenOrder: (id) => context.push('/order-detail/$id'),
@@ -129,7 +131,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           return const ProviderLoadsScreen();
         case 2:
           return ProviderAssignmentsScreen(
-            onAssign: (_) => context.push('/driver-assignment'),
+            onAssign: (id) => context.push('/driver-assignment/$id'),
             onOpen: (id) => context.push('/order-detail/$id'),
           );
         case 3:
