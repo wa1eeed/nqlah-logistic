@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/chat/chat_repository.dart';
+import '../../core/realtime/realtime_service.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/uploads/uploads_repository.dart';
@@ -46,6 +47,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   Timer? _poll;
+  StreamSubscription? _chatSub;
   bool _sending = false;
 
   final _recorder = AudioRecorder();
@@ -58,8 +60,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void initState() {
     super.initState();
     _input.addListener(() => setState(() {}));
-    // Light polling keeps the thread fresh while open.
-    _poll = Timer.periodic(const Duration(seconds: 4), (_) {
+    // Real-time: subscribe to the order room and refresh on each live message.
+    final rt = ref.read(realtimeServiceProvider);
+    rt.subscribeOrder(widget.orderId);
+    _chatSub = rt.onChat.listen((e) {
+      if (mounted && e.orderId == widget.orderId) {
+        ref.invalidate(chatMessagesProvider(widget.orderId));
+      }
+    });
+    // A slow safety refresh in case the socket drops.
+    _poll = Timer.periodic(const Duration(seconds: 25), (_) {
       if (mounted && !_recording) {
         ref.invalidate(chatMessagesProvider(widget.orderId));
       }
@@ -69,6 +79,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void dispose() {
     _poll?.cancel();
+    _chatSub?.cancel();
+    ref.read(realtimeServiceProvider).unsubscribeOrder(widget.orderId);
     _recordTicker?.cancel();
     _recorder.dispose();
     _input.dispose();
