@@ -45,12 +45,40 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
 
 ## Planned connectors (same pattern)
 
-| Domain | Port | Adapters (planned) |
+| Domain | Port | Adapters |
 |---|---|---|
-| Storage | `StorageConnector` ✅ | MinIO ✅ · Cloudflare R2 |
-| Email | `EmailConnector` | Resend (resend.com) · … |
-| SMS / OTP | `OtpConnector` / `SmsConnector` | console (dev) · a provider |
-| Payments | `PaymentConnector` | a gateway (escrow/COD settlement) |
+| Storage | `StorageConnector` ✅ | MinIO ✅ · Cloudflare R2 (drop-in) |
+| Push notifications | `NotificationConnector` ✅ | console ✅ (dev) · FCM/APNs (drop-in) |
+| Email | `EmailConnector` (planned) | Resend (resend.com) · … |
+| SMS / OTP | `OtpConnector` (planned) | console (dev) · a provider |
+| Payments | `PaymentConnector` (planned) | a gateway (escrow/COD settlement) |
+
+## Push notifications (implemented)
+
+- **Port:** `integrations/notifications/notification.connector.ts` →
+  `NotificationConnector.send(targets, {title, body, data})` behind
+  `NOTIFICATION_CONNECTOR`.
+- **Adapter:** `ConsoleNotificationConnector` (dev — logs the push so the whole
+  pipeline is testable without FCM/APNs creds). Select with `PUSH_PROVIDER`
+  (`console` default; `fcm` drops in with Firebase Admin for Android + an APNs
+  key for iOS).
+- **Devices:** `POST /notifications/devices {token, platform}` registers a push
+  token (`PushToken` model); `DELETE /notifications/devices/:token` removes it.
+- **Delivery:** `NotificationsService.create` fans out to the user's device
+  tokens (pruning invalid ones). New chat messages create a notification for the
+  counterpart's users → in-app + push.
+
+> The FCM/APNs adapter needs the user's Firebase project (Android) / APNs key
+> (iOS) and, on mobile, `firebase_messaging` to obtain the device token — that's
+> the only user-provided step; the backend pipeline is complete.
+
+## Real-time (Socket.io)
+
+Chat and tracking are real-time over the existing Socket.io gateway (JWT on the
+handshake; `order:<id>` rooms). The mobile client (`socket_io_client`) subscribes
+to the order and receives `chat:message` / `tracking:location_update` live — no
+Firebase, our own infra. Scale across instances with the Socket.io **Redis
+adapter** (Redis is already in the stack).
 
 Each new integration adds `integrations/<domain>/<domain>.connector.ts` (port) +
 one adapter + a `@Global` module selected by an env `*_PROVIDER` var, and feature

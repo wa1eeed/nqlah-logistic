@@ -1,11 +1,48 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import { Prisma, type NotificationType } from '../../generated/prisma';
+import {
+  NOTIFICATION_CONNECTOR,
+  type NotificationConnector,
+} from '../../integrations/notifications/notification.connector';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(NOTIFICATION_CONNECTOR) private push: NotificationConnector,
+  ) {}
+
+  /// Register (upsert) a device push token for the user.
+  async registerDevice(userId: string, token: string, platform: string) {
+    await this.prisma.pushToken.upsert({
+      where: { token },
+      create: { userId, token, platform },
+      update: { userId, platform },
+    });
+    return { ok: true };
+  }
+
+  async unregisterDevice(userId: string, token: string) {
+    await this.prisma.pushToken.deleteMany({ where: { userId, token } });
+    return { ok: true };
+  }
+
+  /// Fan a notification out to the user's registered devices, pruning any the
+  /// provider reports as invalid.
+  private async pushToUser(userId: string, title: string, body: string, data?: Record<string, unknown>) {
+    const tokens = await this.prisma.pushToken.findMany({ where: { userId } });
+    if (tokens.length === 0) return;
+    const flatData: Record<string, string> = {};
+    if (data) for (const [k, v] of Object.entries(data)) flatData[k] = String(v);
+    const { invalidTokens } = await this.push
+      .send(tokens.map((t) => ({ token: t.token, platform: t.platform })), { title, body, data: flatData })
+      .catch(() => ({ invalidTokens: [] as string[] }));
+    if (invalidTokens.length) {
+      await this.prisma.pushToken.deleteMany({ where: { token: { in: invalidTokens } } });
+    }
+  }
 
   async list(userId: string, query: PaginationDto) {
     const { page = 1, limit = 20 } = query;
@@ -44,11 +81,14 @@ export class NotificationsService {
     data?: Record<string, unknown>;
   }) {
     const { data, ...rest } = payload;
-    return this.prisma.notification.create({
+    const notification = await this.prisma.notification.create({
       data: {
         ...rest,
         data: data ? (data as Prisma.InputJsonValue) : Prisma.JsonNull,
       },
     });
+    // Also deliver as a device push (best-effort; never blocks creation).
+    void this.pushToUser(payload.userId, payload.titleAr, payload.bodyAr, data);
+    return notification;
   }
 }
