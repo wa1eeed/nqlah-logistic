@@ -1,5 +1,5 @@
 import {
-  IsEmail, IsEnum, IsOptional, IsString, IsBoolean, IsDateString, Matches, MinLength,
+  IsEmail, IsEnum, IsObject, IsOptional, IsString, IsBoolean, IsDateString, Matches, MinLength,
 } from 'class-validator';
 import { IsStrongPassword } from '../../../common/validators/strong-password.validator';
 
@@ -39,6 +39,9 @@ export class RegisterDto {
 
   // The subscription plan chosen at signup (optional → the default plan is used).
   @IsOptional() @IsString() planId?: string;
+
+  // Verification documents: { <docType>: <object-store key> } (CR, VAT, …).
+  @IsOptional() @IsObject() documents?: Record<string, string>;
 
   // National ID — relevant for an individual operator.
   @IsOptional() @IsString() nationalId?: string;

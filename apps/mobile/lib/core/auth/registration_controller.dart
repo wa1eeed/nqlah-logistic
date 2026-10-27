@@ -24,6 +24,7 @@ class RegistrationData {
     this.region = 'الرياض',
     this.city = 'الرياض',
     this.planId,
+    this.documents = const {},
   });
 
   final String firstName;
@@ -42,6 +43,7 @@ class RegistrationData {
   final String region;
   final String city;
   final String? planId;
+  final Map<String, String> documents;
 
   String get companyType => isCarrier ? 'CARRIER' : 'CLIENT';
   String get accountType => isIndividual ? 'INDIVIDUAL' : 'COMPANY';
@@ -65,6 +67,7 @@ class RegistrationData {
     String? region,
     String? city,
     String? planId,
+    Map<String, String>? documents,
   }) {
     return RegistrationData(
       firstName: firstName ?? this.firstName,
@@ -82,6 +85,7 @@ class RegistrationData {
       region: region ?? this.region,
       city: city ?? this.city,
       planId: planId ?? this.planId,
+      documents: documents ?? this.documents,
     );
   }
 
@@ -110,6 +114,7 @@ class RegistrationData {
       body['vatNumber'] = vatNumber.trim();
     }
     if (planId != null) body['planId'] = planId;
+    if (documents.isNotEmpty) body['documents'] = documents;
     return body;
   }
 }
