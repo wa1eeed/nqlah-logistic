@@ -22,8 +22,12 @@ class ApiException implements Exception {
     final res = e.response;
     final data = res?.data;
     if (data is Map) {
-      final body = Map<String, dynamic>.from(data);
-      final rawMsg = body['message'];
+      var body = Map<String, dynamic>.from(data);
+      // The API wraps errors in `{success:false, error:{code,message,details}}`.
+      if (body['error'] is Map) {
+        body = Map<String, dynamic>.from(body['error'] as Map);
+      }
+      final rawMsg = body['message'] ?? body['messageAr'];
       final message = rawMsg is List
           ? rawMsg.join('\n')
           : (rawMsg?.toString() ?? _fallbackFor(e.type));

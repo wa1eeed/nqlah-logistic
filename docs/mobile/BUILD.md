@@ -21,6 +21,12 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
 - **`core/api/api_client.dart`** — the single Dio instance: Bearer interceptor +
   transparent `401` → `/auth/refresh` → replay. Notifies the auth layer on
   refresh failure via `SessionExpirySink`.
+- **Response envelope (critical):** the API wraps every success as
+  `{success:true, data:<payload>}` and every error as `{success:false, error:{code,message}}`.
+  The Dio client unwraps the success envelope in its response interceptor (so repositories
+  see the bare payload), `_tryRefresh` unwraps it too, and `ApiException` reads
+  `error.{code,message}`. Found by running the app against a **local** API (staging was
+  CORS-blocked on web, so no real response body was ever parsed before).
 - **`core/api/api_exception.dart`** — flattens NestJS errors (`{code,message,details}`
   or `{statusCode,message}`) into one Arabic-ready message.
 - **`core/auth/auth_models.dart`** — `AuthUser` (+ role→`NqIdentity` map:
