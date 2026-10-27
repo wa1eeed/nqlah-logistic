@@ -118,4 +118,6 @@ class NqIcons {
   static const signOut = 'sign-out';
   static const gearSix = 'gear-six';
   static const prohibit = 'prohibit';
+  static const drop = 'drop';
+  static const gauge = 'gauge';
 }

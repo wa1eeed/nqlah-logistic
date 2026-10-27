@@ -18,6 +18,7 @@ import '../features/customer/truck_detail_screen.dart';
 import '../features/customer/customer_finance_screen.dart';
 import '../features/customer/customer_notifications_screen.dart';
 import '../features/provider/driver_assignment_screen.dart';
+import '../features/provider/provider_maintenance_screen.dart';
 import '../features/provider/provider_order_screen.dart';
 import '../features/shell/app_shell.dart';
 
@@ -133,6 +134,10 @@ final router = GoRouter(
         onChangeDriver: () => context.push('/driver-assignment'),
         onTrack: () => context.push('/tracking'),
       ),
+    ),
+    GoRoute(
+      path: '/maintenance',
+      builder: (context, state) => const ProviderMaintenanceScreen(),
     ),
   ],
 );
