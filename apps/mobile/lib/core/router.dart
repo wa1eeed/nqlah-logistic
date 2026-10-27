@@ -15,6 +15,8 @@ import '../features/customer/order/order_step6_review.dart';
 import '../features/customer/order_detail_screen.dart';
 import '../features/customer/tracking_screen.dart';
 import '../features/customer/truck_detail_screen.dart';
+import '../features/customer/customer_finance_screen.dart';
+import '../features/customer/customer_notifications_screen.dart';
 import '../features/shell/app_shell.dart';
 
 /// App routes (Phase 1). The post-login shell is resolved from the account's
@@ -109,6 +111,14 @@ final router = GoRouter(
       path: '/truck-detail',
       builder: (context, state) =>
           TruckDetailScreen(onRequest: () => context.push('/order')),
+    ),
+    GoRoute(
+      path: '/finance',
+      builder: (context, state) => const CustomerFinanceScreen(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const CustomerNotificationsScreen(),
     ),
   ],
 );

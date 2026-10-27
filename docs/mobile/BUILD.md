@@ -53,7 +53,7 @@ assets/
 |---|---|---|
 | 0 | Design system (tokens, theme, components, icons, gallery) | ✅ merged (#101) |
 | 1 | Shell + auth: login (2c), OTP (5d), register (1l/1m/5e/5f), per-role nav (2a) | ✅ merged (#102, #103) |
-| 2 | Customer: home (1a), create-order wizard (1b/4a–4e), shipments (4g), offers (4f), order detail (1c), tracking (1d), trucks (6a/6b), finance | 🚧 home/shipments/offers + wizard + order detail + tracking + Trucks tab (6a/6b) done; finance (4h), account (5c), notifications (5b) next |
+| 2 | Customer: home (1a), create-order wizard (1b/4a–4e), shipments (4g), offers (4f), order detail (1c), tracking (1d), trucks (6a/6b), finance (4h), notifications (5b), account (5c) | ✅ complete — all customer screens built & verified; full shell nav works |
 | 3 | Provider: home, loads, assignments, fleet, finance, owner-driver, availability (7a/7b/7c) | ⏳ |
 | 4 | Driver: my trips, execution, ePOD | ⏳ |
 | 5 | Communication: chat, voice notes, calls | ⏳ |

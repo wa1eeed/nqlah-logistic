@@ -6,6 +6,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/tab_bar.dart';
+import '../customer/customer_account_screen.dart';
 import '../customer/customer_home_screen.dart';
 import '../customer/customer_offers_screen.dart';
 import '../customer/customer_shipments_screen.dart';
@@ -72,13 +73,19 @@ class _AppShellState extends State<AppShell> {
     if (_identity == NqIdentity.customer) {
       switch (index) {
         case 0:
-          return CustomerHomeScreen(onNewOrder: () => context.push('/order'));
+          return CustomerHomeScreen(
+            onNewOrder: () => context.push('/order'),
+            onWallet: () => context.push('/finance'),
+            onBell: () => context.push('/notifications'),
+          );
         case 1:
           return const CustomerTrucksScreen();
         case 2:
           return const CustomerShipmentsScreen();
         case 3:
           return const CustomerOffersScreen();
+        case 4:
+          return const CustomerAccountScreen();
       }
     }
     return _placeholderBody(c, tab);
