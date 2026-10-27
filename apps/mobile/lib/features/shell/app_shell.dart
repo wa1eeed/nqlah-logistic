@@ -12,6 +12,8 @@ import '../customer/customer_offers_screen.dart';
 import '../customer/customer_shipments_screen.dart';
 import '../customer/customer_trucks_screen.dart';
 import '../provider/provider_assignments_screen.dart';
+import '../provider/provider_finance_screen.dart';
+import '../provider/provider_fleet_screen.dart';
 import '../provider/provider_home_screen.dart';
 import '../provider/provider_loads_screen.dart';
 
@@ -105,6 +107,12 @@ class _AppShellState extends State<AppShell> {
             onAssign: () => context.push('/driver-assignment'),
             onOpen: () => context.push('/provider-order'),
           );
+        case 3:
+          return ProviderFleetScreen(
+            onManagePlan: () => context.push('/register/plan'),
+          );
+        case 4:
+          return const ProviderFinanceScreen();
       }
     }
     return _placeholderBody(c, tab);
