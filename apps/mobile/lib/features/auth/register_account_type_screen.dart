@@ -32,6 +32,7 @@ class _RegisterAccountTypeScreenState extends State<RegisterAccountTypeScreen> {
       step: 1,
       totalSteps: 4,
       nextLabel: 'التالي: اختيار الباقة',
+      nextIcon: NqIcons.arrowLeft,
       title: 'إنشاء حساب',
       subtitle: 'اختر كيف ستستخدم نقلة',
       onNext: widget.onNext ?? () {},

@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/otp_screen.dart';
 import '../features/auth/register_account_type_screen.dart';
+import '../features/auth/plan_picker_screen.dart';
+import '../features/auth/register_documents_screen.dart';
+import '../features/auth/register_pending_screen.dart';
 import '../features/shell/app_shell.dart';
 
 /// App routes (Phase 1). The post-login shell is resolved from the account's
@@ -28,7 +31,25 @@ final router = GoRouter(
     GoRoute(
       path: '/register',
       builder: (context, state) => RegisterAccountTypeScreen(
-        onNext: () => context.go('/app'),
+        onNext: () => context.push('/register/plan'),
+      ),
+    ),
+    GoRoute(
+      path: '/register/plan',
+      builder: (context, state) => PlanPickerScreen(
+        onNext: () => context.push('/register/documents'),
+      ),
+    ),
+    GoRoute(
+      path: '/register/documents',
+      builder: (context, state) => RegisterDocumentsScreen(
+        onNext: () => context.push('/register/pending'),
+      ),
+    ),
+    GoRoute(
+      path: '/register/pending',
+      builder: (context, state) => RegisterPendingScreen(
+        onBrowse: () => context.go('/app'),
       ),
     ),
     GoRoute(

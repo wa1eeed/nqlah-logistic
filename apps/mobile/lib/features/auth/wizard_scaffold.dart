@@ -19,6 +19,8 @@ class WizardScaffold extends StatelessWidget {
     this.subtitle,
     this.onNext,
     this.nextEnabled = true,
+    this.footerLeading,
+    this.nextIcon,
   });
 
   final int step;
@@ -29,6 +31,8 @@ class WizardScaffold extends StatelessWidget {
   final String nextLabel;
   final VoidCallback? onNext;
   final bool nextEnabled;
+  final Widget? footerLeading;
+  final String? nextIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -80,10 +84,20 @@ class WizardScaffold extends StatelessWidget {
                 color: c.sf,
                 border: Border(top: BorderSide(color: c.bd)),
               ),
-              child: NqButton(
-                label: nextLabel,
-                icon: NqIcons.arrowLeft,
-                onPressed: nextEnabled ? (onNext ?? () {}) : null,
+              child: Row(
+                children: [
+                  if (footerLeading != null) ...[
+                    footerLeading!,
+                    const SizedBox(width: 16),
+                  ],
+                  Expanded(
+                    child: NqButton(
+                      label: nextLabel,
+                      icon: nextIcon,
+                      onPressed: nextEnabled ? (onNext ?? () {}) : null,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

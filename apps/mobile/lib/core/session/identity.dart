@@ -23,11 +23,13 @@ List<NqTab> tabsFor(
 }) {
   switch (identity) {
     case NqIdentity.customer:
+      // Addendum 01 §0: Finance leaves the bar (moves to a wallet button in the
+      // Home header); the Trucks tab takes slot 2.
       return const [
         NqTab('الرئيسية', NqIcons.houseSimple),
+        NqTab('الشاحنات', NqIcons.truck),
         NqTab('شحناتي', NqIcons.package),
         NqTab('العروض', NqIcons.handCoins),
-        NqTab('المالية', NqIcons.receipt),
         NqTab('حسابي', NqIcons.userCircle),
       ];
     case NqIdentity.provider:

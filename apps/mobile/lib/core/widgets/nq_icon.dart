@@ -83,4 +83,16 @@ class NqIcons {
   static const briefcase = 'briefcase';
   static const chatCenteredDots = 'chat-centered-dots';
   static const circleNotch = 'circle-notch';
+  static const minus = 'minus';
+  static const gasPump = 'gas-pump';
+  static const chartLineUp = 'chart-line-up';
+  static const headset = 'headset';
+  static const uploadSimple = 'upload-simple';
+  static const fileText = 'file-text';
+  static const trash = 'trash';
+  static const shieldCheck = 'shield-check';
+  static const hourglassMedium = 'hourglass-medium';
+  static const info = 'info';
+  static const paperPlaneTilt = 'paper-plane-tilt';
+  static const sealCheckFill = 'seal-check';
 }
