@@ -5,6 +5,9 @@ import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/tab_bar.dart';
+import '../customer/customer_home_screen.dart';
+import '../customer/customer_offers_screen.dart';
+import '../customer/customer_shipments_screen.dart';
 
 /// The policy-driven app shell (handoff §2a): one app that mounts the matching
 /// bottom-tab set for the account's identity. Tab bodies are placeholders in
@@ -50,7 +53,7 @@ class _AppShellState extends State<AppShell> {
         child: Column(
           children: [
             _devBar(c),
-            Expanded(child: _placeholderBody(c, tabs[index])),
+            Expanded(child: _body(c, tabs[index], index)),
           ],
         ),
       ),
@@ -60,6 +63,21 @@ class _AppShellState extends State<AppShell> {
         onChanged: (i) => setState(() => _index = i),
       ),
     );
+  }
+
+  Widget _body(NqColors c, NqTab tab, int index) {
+    // Real screens as they're built; placeholders otherwise.
+    if (_identity == NqIdentity.customer) {
+      switch (index) {
+        case 0:
+          return const CustomerHomeScreen();
+        case 2:
+          return const CustomerShipmentsScreen();
+        case 3:
+          return const CustomerOffersScreen();
+      }
+    }
+    return _placeholderBody(c, tab);
   }
 
   Widget _placeholderBody(NqColors c, NqTab tab) {
