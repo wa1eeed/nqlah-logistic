@@ -64,10 +64,76 @@ class InvoiceModel {
   }
 }
 
+/// A payment (`GET /payments`). `status`: PENDING/HELD/RELEASED/REFUNDED/FAILED.
+/// `collectionMethod`: ESCROW / COD / PREPAID_*.
+class PaymentModel {
+  PaymentModel({
+    required this.id,
+    required this.status,
+    required this.collectionMethod,
+    required this.totalAmount,
+    this.carrierAmount,
+    this.dueOnDelivery = 0,
+    this.orderNumber,
+    this.clientName,
+    this.carrierName,
+    this.collectedAt,
+    this.releasedAt,
+  });
+
+  final String id;
+  final String status;
+  final String collectionMethod;
+  final num totalAmount;
+  final num? carrierAmount;
+  final num dueOnDelivery;
+  final String? orderNumber;
+  final String? clientName;
+  final String? carrierName;
+  final DateTime? collectedAt;
+  final DateTime? releasedAt;
+
+  bool get isCod => collectionMethod.toUpperCase() == 'COD';
+  bool get isReleased => status.toUpperCase() == 'RELEASED';
+  bool get isHeld => status.toUpperCase() == 'HELD';
+
+  /// A COD payment whose cash is still to be recorded as collected.
+  bool get needsCodCollection => isCod && collectedAt == null && dueOnDelivery > 0;
+
+  factory PaymentModel.fromJson(Map<String, dynamic> j) {
+    final order = j['order'];
+    final client = order is Map ? order['client'] : null;
+    final carrier = order is Map ? order['carrier'] : null;
+    return PaymentModel(
+      id: j['id'].toString(),
+      status: (j['status'] ?? 'PENDING').toString(),
+      collectionMethod: (j['collectionMethod'] ?? 'ESCROW').toString(),
+      totalAmount: _num(j['totalAmount']) ?? 0,
+      carrierAmount: _num(j['carrierAmount']),
+      dueOnDelivery: _num(j['dueOnDelivery']) ?? 0,
+      orderNumber: order is Map ? order['orderNumber']?.toString() : null,
+      clientName: client is Map ? client['nameAr']?.toString() : null,
+      carrierName: carrier is Map ? carrier['nameAr']?.toString() : null,
+      collectedAt: _date(j['collectedAt']),
+      releasedAt: _date(j['releasedAt']),
+    );
+  }
+}
+
 class FinanceRepository {
   FinanceRepository(this._client);
   final ApiClient _client;
   Dio get _dio => _client.dio;
+
+  void _ensureOk(Response res) {
+    final code = res.statusCode ?? 0;
+    if (code < 200 || code >= 300) {
+      throw DioException(
+          requestOptions: res.requestOptions,
+          response: res,
+          type: DioExceptionType.badResponse);
+    }
+  }
 
   /// `GET /invoices` — the company's invoices (issued or received).
   Future<List<InvoiceModel>> invoices() async {
@@ -91,6 +157,34 @@ class FinanceRepository {
       throw ApiException.fromDio(e);
     }
   }
+
+  /// `GET /payments` — the company's payments (as client or carrier).
+  Future<List<PaymentModel>> payments() async {
+    try {
+      final res = await _dio.get<dynamic>('/payments',
+          queryParameters: {'page': 1, 'limit': 100});
+      _ensureOk(res);
+      final data = res.data;
+      final list = data is Map ? (data['data'] ?? data['items']) : data;
+      return (list as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => PaymentModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// `POST /payments/:id/collect` — the carrier records a COD payment's cash as
+  /// collected on delivery.
+  Future<void> collect(String paymentId) async {
+    try {
+      final res = await _dio.post('/payments/$paymentId/collect');
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
 }
 
 final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
@@ -100,4 +194,9 @@ final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
 /// The company's invoices (provider receivables / customer payables).
 final invoicesProvider = FutureProvider<List<InvoiceModel>>((ref) {
   return ref.watch(financeRepositoryProvider).invoices();
+});
+
+/// The company's payments (escrow / COD settlement state).
+final paymentsProvider = FutureProvider<List<PaymentModel>>((ref) {
+  return ref.watch(financeRepositoryProvider).payments();
 });
