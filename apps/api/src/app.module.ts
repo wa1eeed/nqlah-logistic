@@ -17,6 +17,7 @@ import { CompaniesModule } from './modules/companies/companies.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { BidsModule } from './modules/bids/bids.module';
 import { FleetModule } from './modules/fleet/fleet.module';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { FreelancerInvoicesModule } from './modules/freelancer-invoices/freelancer-invoices.module';
 import { PoliciesModule } from './modules/policies/policies.module';
 import { OwnedClientsModule } from './modules/owned-clients/owned-clients.module';
@@ -71,6 +72,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     OrdersModule,
     BidsModule,
     FleetModule,
+    MarketplaceModule,
     FreelancerInvoicesModule,
     PoliciesModule,
     OwnedClientsModule,
