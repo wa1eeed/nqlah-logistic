@@ -21,6 +21,7 @@ import '../features/customer/order/order_step6_review.dart';
 import '../features/customer/order_detail_screen.dart';
 import '../features/customer/tracking_screen.dart';
 import '../features/customer/truck_detail_screen.dart';
+import 'marketplace/marketplace_repository.dart';
 import '../features/customer/customer_finance_screen.dart';
 import '../features/customer/customer_notifications_screen.dart';
 import '../features/provider/driver_assignment_screen.dart';
@@ -167,7 +168,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/truck-detail',
       builder: (context, state) =>
-          TruckDetailScreen(onRequest: () => context.push('/order')),
+          TruckDetailScreen(listing: state.extra as TruckListing),
     ),
     GoRoute(
       path: '/finance',

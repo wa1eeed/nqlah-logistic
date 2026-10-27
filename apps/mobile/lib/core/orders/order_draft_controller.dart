@@ -86,6 +86,8 @@ class OrderDraft {
     this.consigneeName = '',
     this.consigneePhone = '',
     this.notes = '',
+    this.targetCarrierId,
+    this.targetCarrierName,
   });
 
   final bool single; // false = consolidated (visual only, not submitted yet)
@@ -106,6 +108,14 @@ class OrderDraft {
   final String consigneeName;
   final String consigneePhone;
   final String notes;
+
+  /// When set, the order is addressed to one specific carrier company
+  /// (`mode=DIRECT`) — used by the "اطلب من هذا المزوّد" flow from a truck
+  /// listing. [targetCarrierName] is for display only.
+  final String? targetCarrierId;
+  final String? targetCarrierName;
+
+  bool get isDirectTargeted => (targetCarrierId ?? '').isNotEmpty;
 
   String get originRegion => regionForCity(originCity);
   String get destinationRegion => regionForCity(destinationCity);
@@ -138,6 +148,8 @@ class OrderDraft {
     String? consigneeName,
     String? consigneePhone,
     String? notes,
+    String? targetCarrierId,
+    String? targetCarrierName,
   }) {
     return OrderDraft(
       single: single ?? this.single,
@@ -158,6 +170,8 @@ class OrderDraft {
       consigneeName: consigneeName ?? this.consigneeName,
       consigneePhone: consigneePhone ?? this.consigneePhone,
       notes: notes ?? this.notes,
+      targetCarrierId: targetCarrierId ?? this.targetCarrierId,
+      targetCarrierName: targetCarrierName ?? this.targetCarrierName,
     );
   }
 
@@ -167,7 +181,7 @@ class OrderDraft {
       'cargoDescription': cargoDescription.trim(),
       'weight': weight,
       'requiredTruckType': requiredTruckType,
-      'mode': openMarket ? 'OPEN' : 'DIRECT',
+      'mode': (openMarket && !isDirectTargeted) ? 'OPEN' : 'DIRECT',
       'originCity': originCity,
       'originRegion': originRegion,
       'originAddress': originAddress.trim(),
@@ -180,6 +194,7 @@ class OrderDraft {
       'orderType': 'SINGLE',
     };
     if (fixedPrice && clientBudget != null) body['clientBudget'] = clientBudget;
+    if (isDirectTargeted) body['targetCarrierId'] = targetCarrierId;
     if (notes.trim().isNotEmpty) body['notes'] = notes.trim();
     final cn = consigneeName.trim();
     final cp = consigneePhone.trim();
@@ -212,6 +227,26 @@ class OrderDraftController extends Notifier<OrderDraft> {
   void patch(OrderDraft Function(OrderDraft d) update) => state = update(state);
 
   void reset() => state = const OrderDraft();
+
+  /// Starts a fresh draft addressed to one specific carrier (the "اطلب من هذا
+  /// المزوّد" flow from a truck listing). Prefills the route and truck type and
+  /// pins the order to [targetCarrierId] as a DIRECT order.
+  void startDirect({
+    required String targetCarrierId,
+    String? targetCarrierName,
+    String? originCity,
+    String? destinationCity,
+    String? requiredTruckType,
+  }) {
+    state = OrderDraft(
+      openMarket: false,
+      targetCarrierId: targetCarrierId,
+      targetCarrierName: targetCarrierName,
+      originCity: originCity ?? const OrderDraft().originCity,
+      destinationCity: destinationCity ?? const OrderDraft().destinationCity,
+      requiredTruckType: requiredTruckType ?? const OrderDraft().requiredTruckType,
+    );
+  }
 
   /// `POST /orders` (DRAFT) then `POST /orders/:id/publish`. Returns the
   /// published order's id. Throws [ApiException] on failure.
