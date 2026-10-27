@@ -187,7 +187,8 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
                       o.isFixedPrice ? c.mintTx : c.info),
                   if (directToMe) ...[
                     const SizedBox(width: 8),
-                    _badge(c, 'طلب مباشر لك', c.mintBg, c.mintTx),
+                    _badge(c, 'طلب مباشر', c.mintBg, c.mintTx,
+                        icon: NqIcons.paperPlaneTilt),
                   ],
                   const Spacer(),
                   Text(o.orderNumber,
@@ -235,7 +236,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
                     Navigator.of(context).pop();
                     _declineDirect(o);
                   },
-                  child: Text('رفض الطلب',
+                  child: Text('اعتذار',
                       style: NqType.labelStrong.copyWith(color: c.err)),
                 ),
               ],
@@ -246,13 +247,23 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
     );
   }
 
-  Widget _badge(NqColors c, String label, Color bg, Color fg) => Container(
+  Widget _badge(NqColors c, String label, Color bg, Color fg, {String? icon}) =>
+      Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
             color: bg, borderRadius: BorderRadius.circular(NqRadius.pill)),
-        child: Text(label,
-            style:
-                NqType.caption.copyWith(color: fg, fontWeight: FontWeight.w700)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              NqIcon(icon, size: 13, color: fg),
+              const SizedBox(width: 5),
+            ],
+            Text(label,
+                style: NqType.caption
+                    .copyWith(color: fg, fontWeight: FontWeight.w700)),
+          ],
+        ),
       );
 
   Widget _detailRoute(NqColors c, OrderSummary o) {
@@ -358,7 +369,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
               children: [
                 Text(
                     async.valueOrNull != null
-                        ? '${_loads(async.valueOrNull!).length} حمولة'
+                        ? '${_loads(async.valueOrNull!, companyId).length} حمولة'
                         : '',
                     style: NqType.label.copyWith(color: c.tx2)),
                 const Spacer(),
@@ -383,7 +394,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
                   e is ApiException ? e.message : 'تعذّر تحميل الأحمال.',
                   () => ref.invalidate(marketplaceLoadsProvider),
                 )),
-                data: (orders) => _list(c, _loads(orders), companyId),
+                data: (orders) => _list(c, _loads(orders, companyId), companyId),
               ),
             ),
           ),
@@ -392,7 +403,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
     );
   }
 
-  List<OrderSummary> _loads(List<OrderSummary> orders) {
+  List<OrderSummary> _loads(List<OrderSummary> orders, String? companyId) {
     var items = orders.where((o) {
       final s = o.status.toUpperCase();
       return s == 'PUBLISHED' || s == 'BIDDING';
@@ -405,6 +416,12 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
               o.destinationCity.contains(_query))
           .toList();
     }
+    // Direct requests addressed to this carrier are pinned to the top (§5).
+    items.sort((a, b) {
+      final ad = a.isDirectTo(companyId) ? 0 : 1;
+      final bd = b.isDirectTo(companyId) ? 0 : 1;
+      return ad.compareTo(bd);
+    });
     return items;
   }
 
@@ -450,14 +467,11 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
             padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
             child: Row(
               children: [
-                Expanded(
-                  child: Text('طلب مباشر لك — سعّر الحمولة أو ارفضها',
-                      style: NqType.caption.copyWith(
-                          color: c.mintTx, fontWeight: FontWeight.w700),
-                      textAlign: TextAlign.right),
-                ),
-                const SizedBox(width: 8),
-                NqIcon(NqIcons.paperPlaneTilt, size: 15, color: c.mintTx),
+                _badge(c, 'طلب مباشر', c.mintBg, c.mintTx,
+                    icon: NqIcons.paperPlaneTilt),
+                const Spacer(),
+                Text('موجّه إليك من العميل',
+                    style: NqType.caption.copyWith(color: c.tx2)),
               ],
             ),
           ),
@@ -467,7 +481,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: busy ? null : () => _declineDirect(o),
-              child: Text('رفض الطلب',
+              child: Text('اعتذار',
                   style: NqType.labelStrong.copyWith(color: c.err)),
             ),
           ),

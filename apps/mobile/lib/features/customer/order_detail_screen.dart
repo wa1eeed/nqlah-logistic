@@ -64,7 +64,7 @@ class OrderDetailScreen extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  NqStatusChip(o.nqStatus),
+                  NqStatusChip(o.displayStatus),
                   const Spacer(),
                   Text('${cargoLabel(o.cargoType)} · ${truckLabel(o.requiredTruckType)}',
                       style: NqType.label.copyWith(color: c.tx2)),
