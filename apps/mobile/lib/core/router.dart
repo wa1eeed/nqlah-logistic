@@ -23,6 +23,8 @@ import '../features/provider/provider_order_screen.dart';
 import '../features/provider/trip_monitor_screen.dart';
 import '../features/driver/driver_trip_execution_screen.dart';
 import '../features/driver/driver_epod_screen.dart';
+import '../features/comms/chat_screen.dart';
+import '../features/comms/call_screens.dart';
 import '../features/shell/app_shell.dart';
 
 /// App routes (Phase 1). The post-login shell is resolved from the account's
@@ -154,6 +156,24 @@ final router = GoRouter(
     GoRoute(
       path: '/epod',
       builder: (context, state) => const DriverEpodScreen(),
+    ),
+    GoRoute(
+      path: '/chat',
+      builder: (context, state) => ChatScreen(
+        onCall: () => context.push('/video-call'),
+        onVideo: () => context.push('/video-call'),
+      ),
+    ),
+    GoRoute(
+      path: '/video-call',
+      builder: (context, state) => const VideoCallScreen(),
+    ),
+    GoRoute(
+      path: '/incoming-call',
+      builder: (context, state) => IncomingCallScreen(
+        onAnswer: () => context.pushReplacement('/video-call'),
+        onDecline: () => context.pop(),
+      ),
     ),
   ],
 );

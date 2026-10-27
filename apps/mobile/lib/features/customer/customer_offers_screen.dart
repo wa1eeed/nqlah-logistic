@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -44,7 +45,7 @@ class _CustomerOffersScreenState extends State<CustomerOffersScreen> {
                   date: 'الأربعاء 07:00',
                   best: true,
                   onAccept: () {},
-                  onChat: () {},
+                  onChat: () => context.push("/chat"),
                 ),
                 const SizedBox(height: 16),
                 NqOfferCard(
@@ -55,7 +56,7 @@ class _CustomerOffersScreenState extends State<CustomerOffersScreen> {
                   price: '2,050',
                   date: 'الأربعاء 09:00',
                   onAccept: () {},
-                  onChat: () {},
+                  onChat: () => context.push("/chat"),
                 ),
                 const SizedBox(height: 16),
                 NqOfferCard(
@@ -67,7 +68,7 @@ class _CustomerOffersScreenState extends State<CustomerOffersScreen> {
                   price: '2,100',
                   date: 'الأربعاء 06:30',
                   onAccept: () {},
-                  onChat: () {},
+                  onChat: () => context.push("/chat"),
                 ),
               ],
             ),
