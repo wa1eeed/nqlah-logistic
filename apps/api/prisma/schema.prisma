@@ -572,7 +572,17 @@ model Message {
   order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   senderId        String
   senderCompanyId String?
-  body            String
+  /// TEXT | IMAGE | VIDEO | AUDIO | FILE
+  kind            String   @default("TEXT")
+  body            String   @default("")
+  /// Object-store key; the API hands clients a short-lived pre-signed GET URL on
+  /// read (files live in the store, never on our server).
+  mediaKey        String?
+  mediaName       String?
+  mediaMime       String?
+  mediaSize       Int?
+  /// Duration in ms for AUDIO / VIDEO.
+  durationMs      Int?
   readAt          DateTime?
   createdAt       DateTime @default(now())
 
