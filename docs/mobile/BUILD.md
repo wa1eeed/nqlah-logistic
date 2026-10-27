@@ -49,8 +49,8 @@ assets/
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Design system (tokens, theme, components, icons, gallery) | ✅ merged (#101) |
-| 1 | Shell + auth: login (2c), OTP (5d), register (1l/1m/5e/5f), per-role nav (2a) | 🚧 in progress — login/OTP/1l/shell done (#102); 1m/5e/5f next |
-| 2 | Customer: home (1a), create-order wizard, shipments, offers, order detail, tracking, finance, trucks (6a/6b) | ⏳ |
+| 1 | Shell + auth: login (2c), OTP (5d), register (1l/1m/5e/5f), per-role nav (2a) | ✅ merged (#102, #103) |
+| 2 | Customer: home (1a), create-order wizard, shipments (4g), offers (4f), order detail, tracking, finance, trucks (6a/6b) | 🚧 home/shipments/offers + waybill/shipment/offer cards done; wizard, order detail, tracking, finance, account, 6a/6b next |
 | 3 | Provider: home, loads, assignments, fleet, finance, owner-driver, availability (7a/7b/7c) | ⏳ |
 | 4 | Driver: my trips, execution, ePOD | ⏳ |
 | 5 | Communication: chat, voice notes, calls | ⏳ |

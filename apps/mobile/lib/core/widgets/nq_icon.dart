@@ -95,4 +95,6 @@ class NqIcons {
   static const info = 'info';
   static const paperPlaneTilt = 'paper-plane-tilt';
   static const sealCheckFill = 'seal-check';
+  static const arrowCounterClockwise = 'arrow-counter-clockwise';
+  static const calendarBlank = 'calendar-blank';
 }
