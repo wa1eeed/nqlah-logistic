@@ -48,13 +48,15 @@ class ProviderOrderScreen extends ConsumerWidget {
           error: (e, _) => _error(context, c,
               e is ApiException ? e.message : 'تعذّر تحميل الطلب.',
               () => ref.invalidate(orderDetailModelProvider(orderId))),
-          data: (o) => _content(context, c, o),
+          data: (o) => _content(context, ref, c, o),
         ),
       ),
     );
   }
 
-  Widget _content(BuildContext context, NqColors c, OrderDetail o) => Column(
+  Widget _content(
+          BuildContext context, WidgetRef ref, NqColors c, OrderDetail o) =>
+      Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _appBar(context, c, o),
@@ -86,7 +88,7 @@ class ProviderOrderScreen extends ConsumerWidget {
               ],
             ),
           ),
-          _footer(c, o),
+          _footer(context, ref, c, o),
         ],
       );
 
@@ -338,31 +340,124 @@ class ProviderOrderScreen extends ConsumerWidget {
     );
   }
 
-  Widget _footer(NqColors c, OrderDetail o) => Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        decoration: BoxDecoration(
-          color: c.sf,
-          border: Border(top: BorderSide(color: c.bd)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: NqButton(
-                  label: 'متابعة الرحلة',
-                  icon: NqIcons.mapTrifold,
-                  onPressed: onTrack ?? () {}),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: NqButton(
-                  label: 'محادثة العميل',
-                  icon: NqIcons.chats,
-                  variant: NqButtonVariant.secondary,
-                  onPressed: onChat ?? () {}),
-            ),
-          ],
+  Widget _footer(
+      BuildContext context, WidgetRef ref, NqColors c, OrderDetail o) {
+    // Status-aware carrier transition: confirm an assignment, or mark delivered.
+    final status = o.nqStatus;
+    Widget? action;
+    if (status == NqStatus.assigned) {
+      action = NqButton(
+        label: 'تأكيد الإسناد',
+        icon: NqIcons.checkCircle,
+        onPressed: () => _runTransition(
+          context, ref, o,
+          confirm: true,
+          title: 'تأكيد الإسناد',
+          body: 'بتأكيد الإسناد يصبح الطلب قيد التنفيذ ويمكنك بدء الرحلة.',
+          cta: 'تأكيد',
         ),
       );
+    } else if (status == NqStatus.confirmed || status == NqStatus.inTransit) {
+      action = NqButton(
+        label: 'تأكيد التسليم',
+        icon: NqIcons.package,
+        onPressed: () => _runTransition(
+          context, ref, o,
+          confirm: false,
+          title: 'تأكيد التسليم',
+          body: 'سيُعلَّم الطلب كمُسلَّم وينتظر تأكيد العميل لتحرير المستحقات.',
+          cta: 'تم التسليم',
+        ),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+        color: c.sf,
+        border: Border(top: BorderSide(color: c.bd)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (action != null) ...[
+            action,
+            const SizedBox(height: 12),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: NqButton(
+                    label: 'متابعة الرحلة',
+                    icon: NqIcons.mapTrifold,
+                    variant: action != null
+                        ? NqButtonVariant.secondary
+                        : NqButtonVariant.primary,
+                    onPressed: onTrack ?? () {}),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: NqButton(
+                    label: 'محادثة العميل',
+                    icon: NqIcons.chats,
+                    variant: NqButtonVariant.secondary,
+                    onPressed: onChat ?? () {}),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _runTransition(
+    BuildContext context,
+    WidgetRef ref,
+    OrderDetail o, {
+    required bool confirm,
+    required String title,
+    required String body,
+    required String cta,
+  }) async {
+    final c = context.nq;
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.sf,
+        title: Text(title, style: NqType.h2.copyWith(color: c.tx)),
+        content: Text(body,
+            style: NqType.body.copyWith(color: c.tx2, height: 1.5)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text('إلغاء',
+                  style: NqType.labelStrong.copyWith(color: c.tx2))),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(cta,
+                  style: NqType.labelStrong.copyWith(color: c.mintTx))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      final repo = ref.read(ordersRepositoryProvider);
+      if (confirm) {
+        await repo.confirmOrder(o.id);
+      } else {
+        await repo.deliverOrder(o.id);
+      }
+      ref.invalidate(orderDetailModelProvider(o.id));
+      ref.invalidate(providerWorkProvider);
+      messenger.showSnackBar(SnackBar(
+          content: Text(confirm ? 'تم تأكيد الإسناد.' : 'تم تأكيد التسليم.')));
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(
+          const SnackBar(content: Text('تعذّر تنفيذ الإجراء. حاول مجددًا.')));
+    }
+  }
 
   Widget _error(
           BuildContext context, NqColors c, String msg, VoidCallback onRetry) =>
