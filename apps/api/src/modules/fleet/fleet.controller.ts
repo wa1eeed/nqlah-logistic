@@ -5,7 +5,7 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { FleetService } from './fleet.service';
 import {
   AssignDriverDto, CreateDriverDto, CreateTruckDto, DriverStatusDto, InviteDriverDto,
-  LocationDto, TruckStatusDto, UpdateTruckDto,
+  LocationDto, LogMaintenanceDto, TruckStatusDto, UpdateMaintenanceScheduleDto, UpdateTruckDto,
 } from './dto/fleet.dto';
 
 @ApiTags('fleet')
@@ -41,6 +41,22 @@ export class FleetController {
   @Patch('trucks/:id/status')
   setTruckStatus(@Param('id') id: string, @Body() dto: TruckStatusDto, @CurrentUser() actor: AuthUser) {
     return this.fleet.setTruckStatus(id, dto.status, actor);
+  }
+
+  // Fleet maintenance («إدارة صيانة الأسطول», handoff 3g)
+  @Get('trucks/:id/maintenance')
+  getMaintenance(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
+    return this.fleet.getTruckMaintenance(id, actor);
+  }
+  @Post('trucks/:id/maintenance')
+  logMaintenance(@Param('id') id: string, @Body() dto: LogMaintenanceDto, @CurrentUser() actor: AuthUser) {
+    return this.fleet.logMaintenance(id, dto, actor);
+  }
+  @Patch('trucks/:id/maintenance/schedule')
+  updateMaintenanceSchedule(
+    @Param('id') id: string, @Body() dto: UpdateMaintenanceScheduleDto, @CurrentUser() actor: AuthUser,
+  ) {
+    return this.fleet.updateMaintenanceSchedule(id, dto, actor);
   }
 
   @Get('drivers')

@@ -73,3 +73,31 @@ export class TruckStatusDto {
 export class DriverStatusDto {
   @IsEnum(DRIVER_STATUSES) status!: (typeof DRIVER_STATUSES)[number];
 }
+
+// Must stay in sync with Prisma enum `MaintenanceType`.
+const MAINTENANCE_TYPES = [
+  'OIL_CHANGE', 'BRAKES', 'TIRES', 'INSPECTION', 'INSURANCE', 'REPAIR', 'OTHER',
+] as const;
+
+/** Log a maintenance event («تسجيل صيانة»). */
+export class LogMaintenanceDto {
+  @IsEnum(MAINTENANCE_TYPES) type!: (typeof MAINTENANCE_TYPES)[number];
+  @IsString() @MinLength(2) title!: string;
+  @IsOptional() @IsNumber() cost?: number;
+  @IsOptional() @IsInt() odometerKm?: number;
+  @IsOptional() @IsString() workshop?: string;
+  @IsOptional() @IsString() notes?: string;
+  @IsOptional() @IsDateString() performedAt?: string;
+  /// For INSPECTION/INSURANCE — the renewed expiry this event sets.
+  @IsOptional() @IsDateString() nextDueDate?: string;
+}
+
+/** Patch a truck's maintenance schedule (odometer, intervals, expiries). */
+export class UpdateMaintenanceScheduleDto {
+  @IsOptional() @IsInt() odometerKm?: number;
+  @IsOptional() @IsInt() oilIntervalKm?: number;
+  @IsOptional() @IsInt() lastServiceKm?: number;
+  @IsOptional() @IsDateString() inspectionExpiry?: string;
+  @IsOptional() @IsDateString() insuranceExpiry?: string;
+  @IsOptional() @IsDateString() tiresChangedAt?: string;
+}
