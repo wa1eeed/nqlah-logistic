@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/auth/auth_controller.dart';
@@ -533,6 +534,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return _VoiceBubble(
           url: m.mediaUrl!, durationMs: m.durationMs, mine: mine);
     }
+    if (m.isVideo && m.mediaUrl != null) {
+      return _mediaCard(c, m, mine, NqIcons.play, m.mediaName ?? 'فيديو',
+          onTap: () => _playVideo(m.mediaUrl!));
+    }
     final (icon, label) = switch (m.kind) {
       'VIDEO' => (NqIcons.play, m.mediaName ?? 'فيديو'),
       'AUDIO' => (NqIcons.microphone, 'رسالة صوتية'),
@@ -541,13 +546,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return _mediaCard(c, m, mine, icon, label);
   }
 
+  void _playVideo(String url) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => _VideoPlayerDialog(url: url),
+    );
+  }
+
   Widget _mediaCard(
-      NqColors c, ChatMessage m, bool mine, String icon, String label) {
+      NqColors c, ChatMessage m, bool mine, String icon, String label,
+      {VoidCallback? onTap}) {
     final fg = mine ? NqFixed.heroText : c.tx;
     final fg2 = mine ? NqFixed.heroTextSecondary : c.tx2;
     final sub = m.mediaSize != null ? _fmtSize(m.mediaSize!) : '';
     return GestureDetector(
-      onTap: m.mediaUrl != null ? () => _openMedia(m.mediaUrl!) : null,
+      onTap: onTap ?? (m.mediaUrl != null ? () => _openMedia(m.mediaUrl!) : null),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -742,6 +756,87 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ),
       );
+}
+
+/// A modal video player for a chat VIDEO message.
+class _VideoPlayerDialog extends StatefulWidget {
+  const _VideoPlayerDialog({required this.url});
+  final String url;
+
+  @override
+  State<_VideoPlayerDialog> createState() => _VideoPlayerDialogState();
+}
+
+class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
+  late final VideoPlayerController _controller;
+  bool _ready = false;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
+      ..initialize().then((_) {
+        if (mounted) {
+          setState(() => _ready = true);
+          _controller.play();
+        }
+      }).catchError((_) {
+        if (mounted) setState(() => _failed = true);
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_failed)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('تعذّر تشغيل الفيديو.',
+                  style: TextStyle(color: Colors.white)),
+            )
+          else if (_ready)
+            GestureDetector(
+              onTap: () => setState(() =>
+                  _controller.value.isPlaying ? _controller.pause() : _controller.play()),
+              child: AspectRatio(
+                aspectRatio: _controller.value.aspectRatio == 0
+                    ? 16 / 9
+                    : _controller.value.aspectRatio,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    VideoPlayer(_controller),
+                    VideoProgressIndicator(_controller, allowScrubbing: true),
+                  ],
+                ),
+              ),
+            )
+          else
+            const Padding(
+              padding: EdgeInsets.all(40),
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('إغلاق', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Caps bubble width to ~78% of the screen.
