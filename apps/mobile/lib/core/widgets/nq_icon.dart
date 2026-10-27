@@ -40,6 +40,7 @@ class NqIcons {
   static const lockSimple = 'lock-simple';
   static const lockOpen = 'lock-open';
   static const bell = 'bell';
+  static const eye = 'eye';
   static const truck = 'truck';
   static const package = 'package';
   static const gavel = 'gavel';
@@ -71,6 +72,8 @@ class NqIcons {
   static const videoCamera = 'video-camera';
   static const caretLeft = 'caret-left';
   static const caretRight = 'caret-right';
+  static const caretDown = 'caret-down';
+  static const caretUp = 'caret-up';
   static const arrowLeft = 'arrow-left';
   static const arrowRight = 'arrow-right';
   static const clock = 'clock';
