@@ -1,48 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/fleet/fleet_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
+import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/segmented.dart';
 
-/// Provider fleet — drivers view (handoff 3e). (Trucks + التوفّر segments and
-/// the add-driver form land with the rest of fleet/availability.)
-class ProviderFleetScreen extends StatefulWidget {
+/// Provider fleet (handoff 3e/3f) — trucks + drivers segments, wired to
+/// `GET /fleet/trucks` and `GET /fleet/drivers`.
+class ProviderFleetScreen extends ConsumerStatefulWidget {
   const ProviderFleetScreen({super.key, this.onAddDriver, this.onManagePlan});
 
   final VoidCallback? onAddDriver;
   final VoidCallback? onManagePlan;
 
   @override
-  State<ProviderFleetScreen> createState() => _ProviderFleetScreenState();
+  ConsumerState<ProviderFleetScreen> createState() =>
+      _ProviderFleetScreenState();
 }
 
-enum _St { available, onTrip, docAlert, invited }
-
-class _DriverRow {
-  const _DriverRow(this.initial, this.name, this.sub, this.state, {this.docText});
-  final String initial;
-  final String name;
-  final String sub;
-  final _St state;
-  final String? docText;
-}
-
-class _ProviderFleetScreenState extends State<ProviderFleetScreen> {
+class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
   int _seg = 1; // 0 = trucks, 1 = drivers
+  final _search = TextEditingController();
+  String _query = '';
 
-  static const _drivers = [
-    _DriverRow('ف', 'فهد العتيبي', 'تريلا سطحة · 7342 KHD', _St.available),
-    _DriverRow('س', 'سالم القحطاني', 'ستارة · NQ-24-08799', _St.onTrip),
-    _DriverRow('م', 'محمد الشهري', 'تريلا سطحة · 2918 RSA', _St.docAlert,
-        docText: 'الرخصة · 12 يومًا'),
-    _DriverRow('ع', 'عبدالله الدوسري', 'في رحلة حتى 31/10', _St.onTrip),
-    _DriverRow('ن', 'نواف المطيري', '+966 50 331 8842', _St.invited),
-  ];
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
+    final trucks = ref.watch(fleetTrucksProvider);
+    final drivers = ref.watch(fleetDriversProvider);
+    final truckCount = trucks.valueOrNull?.length;
+    final driverCount = drivers.valueOrNull?.length;
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -73,74 +70,194 @@ class _ProviderFleetScreenState extends State<ProviderFleetScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: NqSegmented(
-              options: const ['الشاحنات 14', 'السائقون 11'],
+              options: [
+                'الشاحنات${truckCount != null ? ' $truckCount' : ''}',
+                'السائقون${driverCount != null ? ' $driverCount' : ''}',
+              ],
               index: _seg,
               onChanged: (i) => setState(() => _seg = i),
             ),
           ),
           const SizedBox(height: 14),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _searchField(c),
+          ),
+          const SizedBox(height: 14),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              children: [
-                _summaryCard(c),
-                const SizedBox(height: 14),
-                _searchField(c),
-                const SizedBox(height: 14),
-                _driverList(c),
-              ],
-            ),
+            child: _seg == 0 ? _trucksView(c, trucks) : _driversView(c, drivers),
           ),
         ],
       ),
     );
   }
 
-  Widget _summaryCard(NqColors c) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: c.sf,
-          borderRadius: BorderRadius.circular(NqRadius.card),
-          border: Border.all(color: c.bd),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: widget.onManagePlan,
-                  child: Text('إدارة الباقة',
-                      style: NqType.labelStrong.copyWith(color: c.mintTx)),
-                ),
-                const Spacer(),
-                Text('باقة احترافي · 14 شاحنة مفعّلة',
-                    style: NqType.bodyStrong.copyWith(color: c.tx)),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _counter(c, '5', 'متاح', c.ok),
-                _counter(c, '6', 'في رحلة', c.info),
-                _counter(c, '1', 'تنبيه وثائق', c.warn),
-                _counter(c, '1', 'دعوة معلّقة', c.tx2),
-              ],
-            ),
-          ],
-        ),
+  Widget _driversView(NqColors c, AsyncValue<List<DriverModel>> async) {
+    return RefreshIndicator(
+      onRefresh: () => ref.refresh(fleetDriversProvider.future),
+      color: c.mintTx,
+      child: async.when(
+        loading: () => _centered(_loader(c)),
+        error: (e, _) => _centered(_errorState(
+            c,
+            e is ApiException ? e.message : 'تعذّر تحميل السائقين.',
+            () => ref.invalidate(fleetDriversProvider))),
+        data: (drivers) {
+          final items = _query.isEmpty
+              ? drivers
+              : drivers.where((d) => d.name.contains(_query)).toList();
+          if (items.isEmpty) return _centered(_empty(c, 'لا سائقون'));
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            itemCount: items.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (_, i) => _driverRow(c, items[i]),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _trucksView(NqColors c, AsyncValue<List<TruckModel>> async) {
+    return RefreshIndicator(
+      onRefresh: () => ref.refresh(fleetTrucksProvider.future),
+      color: c.mintTx,
+      child: async.when(
+        loading: () => _centered(_loader(c)),
+        error: (e, _) => _centered(_errorState(
+            c,
+            e is ApiException ? e.message : 'تعذّر تحميل الشاحنات.',
+            () => ref.invalidate(fleetTrucksProvider))),
+        data: (trucks) {
+          final items = _query.isEmpty
+              ? trucks
+              : trucks
+                  .where((t) =>
+                      t.plateNumber.contains(_query) ||
+                      t.typeLabel.contains(_query))
+                  .toList();
+          if (items.isEmpty) return _centered(_empty(c, 'لا شاحنات'));
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            itemCount: items.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (_, i) => _truckRow(c, items[i]),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _driverRow(NqColors c, DriverModel d) {
+    final sub = d.totalTrips > 0
+        ? '★ ${d.rating.toStringAsFixed(1)} · ${d.totalTrips} رحلة'
+        : (d.phone ?? (d.licenseType != null ? 'رخصة ${d.licenseType}' : 'سائق'));
+    return _rowCard(
+      c,
+      name: d.name,
+      sub: sub,
+      initial: d.name.isNotEmpty ? d.name.substring(0, 1) : 'س',
+      status: _driverStatus(d.status),
+    );
+  }
+
+  Widget _truckRow(NqColors c, TruckModel t) => _rowCard(
+        c,
+        name: t.typeLabel,
+        sub: t.makeModel.isNotEmpty ? t.makeModel : 'شاحنة',
+        plate: t.plateNumber,
+        initial: 'ش',
+        status: _truckStatus(t.status),
       );
 
-  Widget _counter(NqColors c, String value, String label, Color color) => Expanded(
-        child: Column(
-          children: [
-            Text(value, style: NqType.numeric(20, FontWeight.w700).copyWith(color: color)),
-            const SizedBox(height: 2),
-            Text(label,
-                style: NqType.caption.copyWith(color: c.tx2),
-                textAlign: TextAlign.center),
-          ],
-        ),
+  Widget _rowCard(NqColors c,
+      {required String name,
+      required String sub,
+      String? plate,
+      required String initial,
+      required (String, Color) status}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: c.sf,
+        borderRadius: BorderRadius.circular(NqRadius.card),
+        border: Border.all(color: c.bd),
+      ),
+      child: Row(
+        children: [
+          _statusPill(c, status.$1, status.$2),
+          const Spacer(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(name,
+                  style: NqType.bodyStrong.copyWith(color: c.tx, fontSize: 16)),
+              const SizedBox(height: 2),
+              if (plate != null)
+                Ltr(plate, style: NqType.code(size: 12).copyWith(color: c.tx2))
+              else
+                Text(sub, style: NqType.caption.copyWith(color: c.tx2)),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: c.sf2, shape: BoxShape.circle),
+            child: Text(initial, style: NqType.h3.copyWith(color: c.tx2)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  (String, Color) _driverStatus(String s) {
+    final c = context.nq;
+    switch (s.toUpperCase()) {
+      case 'AVAILABLE':
+        return ('متاح', c.ok);
+      case 'ON_TRIP':
+        return ('في رحلة', c.info);
+      case 'OFF_DUTY':
+        return ('خارج الدوام', c.tx2);
+      default:
+        return (s, c.tx2);
+    }
+  }
+
+  (String, Color) _truckStatus(String s) {
+    final c = context.nq;
+    switch (s.toUpperCase()) {
+      case 'AVAILABLE':
+        return ('متاحة', c.ok);
+      case 'ON_TRIP':
+        return ('في رحلة', c.info);
+      case 'MAINTENANCE':
+        return ('صيانة', c.warn);
+      case 'OUT_OF_SERVICE':
+        return ('متوقفة', c.err);
+      default:
+        return (s, c.tx2);
+    }
+  }
+
+  Widget _statusPill(NqColors c, String label, Color color) => Container(
+        height: 26,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(NqRadius.pill)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 6),
+          Text(label,
+              style: NqType.caption
+                  .copyWith(color: color, fontWeight: FontWeight.w700)),
+        ]),
       );
 
   Widget _searchField(NqColors c) => Container(
@@ -154,91 +271,70 @@ class _ProviderFleetScreenState extends State<ProviderFleetScreen> {
         child: Row(
           children: [
             NqIcon(NqIcons.magnifyingGlass, size: 19, color: c.tx3),
-            const Spacer(),
-            Text('ابحث باسم السائق أو اللوحة',
-                style: NqType.body.copyWith(color: c.tx3)),
-          ],
-        ),
-      );
-
-  Widget _driverList(NqColors c) => Container(
-        decoration: BoxDecoration(
-          color: c.sf,
-          borderRadius: BorderRadius.circular(NqRadius.card),
-          border: Border.all(color: c.bd),
-        ),
-        child: Column(
-          children: [
-            for (var i = 0; i < _drivers.length; i++) ...[
-              _row(c, _drivers[i]),
-              if (i < _drivers.length - 1)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Divider(color: c.bd, height: 1),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: _search,
+                onChanged: (v) => setState(() => _query = v.trim()),
+                textAlign: TextAlign.right,
+                style: NqType.body.copyWith(color: c.tx),
+                cursorColor: c.mintS,
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  hintText: 'ابحث باسم السائق أو اللوحة',
+                  hintStyle: NqType.body.copyWith(color: c.tx3),
                 ),
-            ],
+              ),
+            ),
           ],
         ),
       );
 
-  Widget _row(NqColors c, _DriverRow d) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        child: Row(
+  Widget _centered(Widget child) => ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [SizedBox(height: 420, child: Center(child: child))],
+      );
+
+  Widget _loader(NqColors c) => SizedBox(
+        width: 30,
+        height: 30,
+        child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
+      );
+
+  Widget _empty(NqColors c, String msg) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NqIcon(NqIcons.truck, size: 40, color: c.tx3),
+          const SizedBox(height: 12),
+          Text(msg, style: NqType.h3.copyWith(color: c.tx2)),
+        ],
+      );
+
+  Widget _errorState(NqColors c, String msg, VoidCallback onRetry) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _status(c, d),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(d.name, style: NqType.bodyStrong.copyWith(color: c.tx, fontSize: 16)),
-                const SizedBox(height: 2),
-                Text(d.sub, style: NqType.caption.copyWith(color: c.tx2)),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Container(
-              width: 44,
-              height: 44,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: c.sf2, shape: BoxShape.circle),
-              child: Text(d.initial, style: NqType.h3.copyWith(color: c.tx2)),
+            NqIcon(NqIcons.warningCircle, size: 40, color: c.err),
+            const SizedBox(height: 12),
+            Text(msg,
+                style: NqType.body.copyWith(color: c.tx2),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                    color: c.mintBg,
+                    borderRadius: BorderRadius.circular(NqRadius.pill)),
+                child: Text('إعادة المحاولة',
+                    style: NqType.labelStrong.copyWith(color: c.mintTx)),
+              ),
             ),
           ],
         ),
       );
-
-  Widget _status(NqColors c, _DriverRow d) {
-    if (d.state == _St.docAlert) {
-      return Container(
-        height: 26,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: c.warnBg,
-          borderRadius: BorderRadius.circular(NqRadius.pill),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          NqIcon(NqIcons.warningCircle, size: 14, color: c.warn),
-          const SizedBox(width: 6),
-          Text(d.docText ?? '',
-              style: NqType.caption.copyWith(color: c.warn, fontWeight: FontWeight.w700)),
-        ]),
-      );
-    }
-    final (label, color, bg) = switch (d.state) {
-      _St.available => ('متاح', c.ok, c.okBg),
-      _St.onTrip => ('في رحلة', c.info, c.infoBg),
-      _St.invited => ('دعوة معلّقة', c.tx2, c.sf2),
-      _St.docAlert => ('', c.warn, c.warnBg),
-    };
-    return Container(
-      height: 26,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(NqRadius.pill)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 6),
-        Text(label, style: NqType.caption.copyWith(color: color, fontWeight: FontWeight.w700)),
-      ]),
-    );
-  }
 }

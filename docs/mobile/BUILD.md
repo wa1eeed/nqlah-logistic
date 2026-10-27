@@ -127,8 +127,13 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   from `orderDrivers`, or an "إسناد سائق" CTA when none), the route timeline, a cargo card, and
   footer actions (track → `/tracking/:id`, chat → `/chat`). `OrderDetail` gained `client`,
   `driverName`, `driverPhone`. Provider home/assignments "open" now routes here.
-- **Orders follow-ups (next slices):** fleet trucks/drivers (3e/3f) + maintenance (3g) via
-  the fleet module; provider finance (3h); owner-driver (1i/2e) incl. self-assignment;
+- **Provider fleet (3e/3f)** is wired to `GET /fleet/trucks` + `GET /fleet/drivers`
+  (`TruckModel` + `fleetTrucksProvider`/`fleetDriversProvider`): trucks/drivers segments with
+  live counts, status pills (driver AVAILABLE/ON_TRIP/OFF_DUTY; truck AVAILABLE/ON_TRIP/
+  MAINTENANCE/OUT_OF_SERVICE), search, pull-to-refresh, loading/empty/error. Add-driver stays
+  a visual CTA (the invite form 3f is a follow-up).
+- **Orders follow-ups (next slices):** maintenance (3g); provider finance (3h); owner-driver
+  (1i/2e) incl. self-assignment; add-driver form (3f) → `POST /fleet/drivers/invite`;
   **customer finance (4h)** + order actions (cancel/confirm); consolidated multi-leg; a real
   maps SDK; comms backend.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
