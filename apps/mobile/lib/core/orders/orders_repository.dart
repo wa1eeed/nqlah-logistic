@@ -94,6 +94,23 @@ class OrdersRepository {
     }
   }
 
+  /// `POST /orders/:orderId/bids` — submit (or re-submit) a bid as a carrier.
+  /// For a fixed-price order the server locks the amount to the order's price.
+  Future<void> createBid(String orderId,
+      {required num amount, String? notes, String? proposedPickupDate}) async {
+    try {
+      final body = <String, dynamic>{'amount': amount};
+      if (notes != null && notes.trim().isNotEmpty) body['notes'] = notes.trim();
+      if (proposedPickupDate != null) {
+        body['proposedPickupDate'] = proposedPickupDate;
+      }
+      final res = await _dio.post('/orders/$orderId/bids', data: body);
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `POST /orders/:orderId/bids/:bidId/accept` — accept an offer (assigns the
   /// carrier to the order).
   Future<void> acceptBid(String orderId, String bidId) async {
@@ -135,6 +152,17 @@ final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
 
 /// The customer's own shipments (`mine=true`). Auto-refreshes on `ref.refresh`.
 final myShipmentsProvider = FutureProvider<List<OrderSummary>>((ref) {
+  return ref.watch(ordersRepositoryProvider).list(mine: true);
+});
+
+/// The carrier's marketplace loads (`mine=false`): OPEN PUBLISHED/BIDDING orders
+/// + DIRECT targeted + already-assigned.
+final marketplaceLoadsProvider = FutureProvider<List<OrderSummary>>((ref) {
+  return ref.watch(ordersRepositoryProvider).list(mine: false);
+});
+
+/// The carrier's own work (`mine=true` as a carrier): assigned orders.
+final providerWorkProvider = FutureProvider<List<OrderSummary>>((ref) {
   return ref.watch(ordersRepositoryProvider).list(mine: true);
 });
 

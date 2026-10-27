@@ -1,18 +1,113 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/auth/auth_controller.dart';
+import '../../core/orders/order_models.dart';
+import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/availability_card.dart' show MetaItem;
+import '../../design_system/button.dart';
 import '../../design_system/load_card.dart';
 
-/// Provider available loads / marketplace (handoff 1f).
-class ProviderLoadsScreen extends StatelessWidget {
+const _collectionLabels = {
+  'COD': 'الدفع عند التسليم',
+  'ESCROW': 'ضمان (إسكرو)',
+  'PREPAID_WALLET': 'محفظة مسبقة',
+  'PREPAID_GATEWAY': 'دفع إلكتروني',
+};
+
+/// Provider available loads / marketplace (handoff 1f) — wired to
+/// `GET /orders` (carrier marketplace) with bid submission.
+class ProviderLoadsScreen extends ConsumerStatefulWidget {
   const ProviderLoadsScreen({super.key});
+
+  @override
+  ConsumerState<ProviderLoadsScreen> createState() =>
+      _ProviderLoadsScreenState();
+}
+
+class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
+  final _search = TextEditingController();
+  String _query = '';
+  String? _busyOrderId;
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _acceptFixed(OrderSummary o) async {
+    final c = context.nq;
+    final price = o.agreedPrice ?? o.clientBudget;
+    if (price == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.sf,
+        title: Text('قبول الحمولة', style: NqType.h2.copyWith(color: c.tx)),
+        content: Text(
+            'قبول النقل بالسعر الثابت ${price.toStringAsFixed(0)} ر.س؟ سيُقدَّم عرضك بهذا السعر.',
+            style: NqType.body.copyWith(color: c.tx2, height: 1.5)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text('إلغاء',
+                  style: NqType.labelStrong.copyWith(color: c.tx2))),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text('قبول',
+                  style: NqType.labelStrong.copyWith(color: c.mintTx))),
+        ],
+      ),
+    );
+    if (ok == true) await _submitBid(o, price);
+  }
+
+  Future<void> _bidTender(OrderSummary o) async {
+    final result = await showModalBottomSheet<({num amount, String notes})>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _BidSheet(order: o),
+    );
+    if (result != null) await _submitBid(o, result.amount, notes: result.notes);
+  }
+
+  Future<void> _submitBid(OrderSummary o, num amount, {String? notes}) async {
+    setState(() => _busyOrderId = o.id);
+    try {
+      await ref
+          .read(ordersRepositoryProvider)
+          .createBid(o.id, amount: amount, notes: notes);
+      ref.invalidate(marketplaceLoadsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم تقديم عرضك بنجاح.')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تعذّر تقديم العرض. حاول مجددًا.')));
+      }
+    } finally {
+      if (mounted) setState(() => _busyOrderId = null);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
+    final async = ref.watch(marketplaceLoadsProvider);
+    final companyId = ref.watch(authControllerProvider).user?.companyId;
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -21,7 +116,11 @@ class ProviderLoadsScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(
               children: [
-                Text('24 حمولة', style: NqType.label.copyWith(color: c.tx2)),
+                Text(
+                    async.valueOrNull != null
+                        ? '${_loads(async.valueOrNull!).length} حمولة'
+                        : '',
+                    style: NqType.label.copyWith(color: c.tx2)),
                 const Spacer(),
                 Text('الأحمال المتاحة', style: NqType.h1.copyWith(color: c.tx)),
               ],
@@ -30,68 +129,22 @@ class ProviderLoadsScreen extends StatelessWidget {
           const SizedBox(height: 14),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                _filterButton(c),
-                const SizedBox(width: 12),
-                Expanded(child: _searchField(c)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 36,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              reverse: true,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _activeChip(c, 'تريلا سطحة'),
-                const SizedBox(width: 8),
-                _activeChip(c, 'من الدمام'),
-                const SizedBox(width: 8),
-                _activeChip(c, 'هذا الأسبوع'),
-                const SizedBox(width: 8),
-                _clearAll(c),
-              ],
-            ),
+            child: _searchField(c),
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              children: [
-                NqLoadCard(
-                  isTender: false,
-                  postedAgo: 'نُشر قبل 12 د',
-                  originCity: 'الدمام',
-                  originArea: 'الميناء',
-                  destCity: 'الرياض',
-                  destDistance: '398 km',
-                  midStop: '+1 توقف',
-                  meta: const [
-                    MetaItem(NqIcons.package, 'حديد تسليح · 24 t'),
-                    MetaItem(NqIcons.calendarBlank, 'الأربعاء 07:00 · 29/10'),
-                    MetaItem(NqIcons.truck, 'تريلا سطحة'),
-                    MetaItem(NqIcons.handCoins, 'الدفع عند التسليم'),
-                  ],
-                  price: '3,200',
-                  onAccept: () {},
-                  onTap: () {},
-                ),
-                const SizedBox(height: 16),
-                NqLoadCard(
-                  isTender: true,
-                  countdown: '05:42:10',
-                  originCity: 'الجبيل',
-                  originArea: 'الصناعية',
-                  destCity: 'جدة',
-                  destDistance: '1,312 km',
-                  offersText: '7 عروض مقدّمة',
-                  onBid: () {},
-                  onTap: () {},
-                ),
-              ],
+            child: RefreshIndicator(
+              onRefresh: () => ref.refresh(marketplaceLoadsProvider.future),
+              color: c.mintTx,
+              child: async.when(
+                loading: () => _centered(_loader(c)),
+                error: (e, _) => _centered(_errorState(
+                  c,
+                  e is ApiException ? e.message : 'تعذّر تحميل الأحمال.',
+                  () => ref.invalidate(marketplaceLoadsProvider),
+                )),
+                data: (orders) => _list(c, _loads(orders), companyId),
+              ),
             ),
           ),
         ],
@@ -99,43 +152,91 @@ class ProviderLoadsScreen extends StatelessWidget {
     );
   }
 
-  Widget _filterButton(NqColors c) => SizedBox(
-        width: 48,
-        height: 48,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: c.hero,
-                borderRadius: BorderRadius.circular(NqRadius.input),
-              ),
-              child: NqIcon(NqIcons.slidersHorizontal,
-                  size: 20, color: NqFixed.heroText),
-            ),
-            PositionedDirectional(
-              top: -4,
-              start: -4,
-              child: Container(
-                width: 20,
-                height: 20,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: c.mint,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: c.bg, width: 2),
-                ),
-                child: Text('3',
-                    style: NqType.caption.copyWith(
-                        color: c.onMint, fontWeight: FontWeight.w700, fontSize: 11)),
-              ),
-            ),
-          ],
-        ),
+  List<OrderSummary> _loads(List<OrderSummary> orders) {
+    var items = orders.where((o) {
+      final s = o.status.toUpperCase();
+      return s == 'PUBLISHED' || s == 'BIDDING';
+    }).toList();
+    if (_query.isNotEmpty) {
+      items = items
+          .where((o) =>
+              o.orderNumber.toLowerCase().contains(_query.toLowerCase()) ||
+              o.originCity.contains(_query) ||
+              o.destinationCity.contains(_query))
+          .toList();
+    }
+    return items;
+  }
+
+  Widget _list(NqColors c, List<OrderSummary> loads, String? companyId) {
+    if (loads.isEmpty) {
+      return _centered(Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NqIcon(NqIcons.magnifyingGlass, size: 40, color: c.tx3),
+          const SizedBox(height: 12),
+          Text(_query.isNotEmpty ? 'لا نتائج مطابقة' : 'لا توجد أحمال متاحة',
+              style: NqType.h3.copyWith(color: c.tx2)),
+          const SizedBox(height: 6),
+          Text('اسحب للأسفل للتحديث',
+              style: NqType.body.copyWith(color: c.tx3)),
+        ],
+      ));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      itemCount: loads.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 16),
+      itemBuilder: (_, i) => _loadCard(c, loads[i], companyId),
+    );
+  }
+
+  Widget _loadCard(NqColors c, OrderSummary o, String? companyId) {
+    final mine = o.myBid(companyId);
+    final busy = _busyOrderId == o.id;
+    final price = o.agreedPrice ?? o.clientBudget;
+    if (o.isFixedPrice) {
+      return NqLoadCard(
+        isTender: false,
+        postedAgo: o.createdAt != null ? relativeArabic(o.createdAt) : null,
+        originCity: o.originCity,
+        originArea: '',
+        destCity: o.destinationCity,
+        destDistance: '',
+        meta: [
+          MetaItem(NqIcons.package,
+              '${cargoLabel(o.cargoType)}${o.weight != null ? ' · ${o.weight} t' : ''}'),
+          MetaItem(NqIcons.calendarBlank, fmtDate(o.pickupDate)),
+          MetaItem(NqIcons.truck, truckLabel(o.requiredTruckType)),
+          MetaItem(NqIcons.handCoins,
+              _collectionLabels[o.collectionMethod.toUpperCase()] ?? 'الدفع'),
+        ],
+        price: price?.toStringAsFixed(0),
+        onAccept: busy
+            ? null
+            : (mine != null ? () => _alreadyBid(mine) : () => _acceptFixed(o)),
+        onTap: () {},
       );
+    }
+    return NqLoadCard(
+      isTender: true,
+      originCity: o.originCity,
+      originArea: '',
+      destCity: o.destinationCity,
+      destDistance: '',
+      offersText: mine != null
+          ? 'عرضك: ${mine.amount?.toStringAsFixed(0) ?? '—'} ر.س · ${o.bidsCount} عروض'
+          : '${o.bidsCount} عروض مقدّمة',
+      onBid: busy ? null : () => _bidTender(o),
+      onTap: () {},
+    );
+  }
+
+  void _alreadyBid(BidRef mine) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+            'سبق أن قدّمت عرضًا بمبلغ ${mine.amount?.toStringAsFixed(0) ?? '—'} ر.س.')));
+  }
 
   Widget _searchField(NqColors c) => Container(
         height: 48,
@@ -150,33 +251,184 @@ class ProviderLoadsScreen extends StatelessWidget {
             NqIcon(NqIcons.magnifyingGlass, size: 19, color: c.tx3),
             const SizedBox(width: 10),
             Expanded(
-              child: Text('مدينة، رقم الطلب، حاوية',
-                  style: NqType.body.copyWith(color: c.tx3),
-                  textAlign: TextAlign.right),
+              child: TextField(
+                controller: _search,
+                onChanged: (v) => setState(() => _query = v.trim()),
+                style: NqType.body.copyWith(color: c.tx),
+                cursorColor: c.mintS,
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  hintText: 'مدينة، رقم الطلب',
+                  hintStyle: NqType.body.copyWith(color: c.tx3),
+                ),
+              ),
             ),
           ],
         ),
       );
 
-  Widget _activeChip(NqColors c, String label) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: c.mintBg,
-          borderRadius: BorderRadius.circular(NqRadius.pill),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(label,
-              style: NqType.label
-                  .copyWith(color: c.mintTx, fontWeight: FontWeight.w700)),
-          const SizedBox(width: 6),
-          NqIcon(NqIcons.x, size: 13, color: c.mintTx),
-        ]),
+  Widget _centered(Widget child) => ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [SizedBox(height: 440, child: Center(child: child))],
       );
 
-  Widget _clearAll(NqColors c) => Container(
-        alignment: Alignment.center,
-        child: Text('مسح الكل',
-            style: NqType.labelStrong.copyWith(color: c.mintTx)),
+  Widget _loader(NqColors c) => SizedBox(
+        width: 30,
+        height: 30,
+        child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
       );
+
+  Widget _errorState(NqColors c, String msg, VoidCallback onRetry) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            NqIcon(NqIcons.warningCircle, size: 40, color: c.err),
+            const SizedBox(height: 12),
+            Text(msg,
+                style: NqType.body.copyWith(color: c.tx2),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                    color: c.mintBg,
+                    borderRadius: BorderRadius.circular(NqRadius.pill)),
+                child: Text('إعادة المحاولة',
+                    style: NqType.labelStrong.copyWith(color: c.mintTx)),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+/// Bottom sheet to enter a bid amount for a tender load.
+class _BidSheet extends StatefulWidget {
+  const _BidSheet({required this.order});
+  final OrderSummary order;
+
+  @override
+  State<_BidSheet> createState() => _BidSheetState();
+}
+
+class _BidSheetState extends State<_BidSheet> {
+  final _amount = TextEditingController();
+  final _notes = TextEditingController();
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.nq;
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final amount = num.tryParse(_amount.text.trim());
+    final valid = amount != null && amount >= 1;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: BoxDecoration(
+          color: c.sf,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: c.bd, borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 16),
+            Text('قدّم عرضك',
+                style: NqType.h2.copyWith(color: c.tx),
+                textAlign: TextAlign.right),
+            const SizedBox(height: 4),
+            Text('${widget.order.route} · ${widget.order.orderNumber}',
+                style: NqType.caption.copyWith(color: c.tx2),
+                textAlign: TextAlign.right),
+            const SizedBox(height: 16),
+            Container(
+              height: NqLayout.input,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: c.bg,
+                borderRadius: BorderRadius.circular(NqRadius.input),
+                border: Border.all(color: c.mintS, width: 2),
+              ),
+              child: Row(
+                children: [
+                  Text('ر.س', style: NqType.label.copyWith(color: c.tx2)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _amount,
+                      autofocus: true,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      textAlign: TextAlign.right,
+                      onChanged: (_) => setState(() {}),
+                      style: NqType.price(size: 20).copyWith(color: c.tx),
+                      cursorColor: c.mintS,
+                      decoration: InputDecoration(
+                        isCollapsed: true,
+                        border: InputBorder.none,
+                        hintText: 'سعرك المقترح',
+                        hintStyle: NqType.body.copyWith(color: c.tx3),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: NqLayout.input,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              alignment: Alignment.centerRight,
+              decoration: BoxDecoration(
+                color: c.bg,
+                borderRadius: BorderRadius.circular(NqRadius.input),
+                border: Border.all(color: c.bd),
+              ),
+              child: TextField(
+                controller: _notes,
+                textAlign: TextAlign.right,
+                style: NqType.body.copyWith(color: c.tx),
+                cursorColor: c.mintS,
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  hintText: 'ملاحظة للعميل (اختياري)',
+                  hintStyle: NqType.body.copyWith(color: c.tx3),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            NqButton(
+              label: 'تقديم العرض',
+              onPressed: valid
+                  ? () => Navigator.of(context).pop(
+                      (amount: amount, notes: _notes.text.trim()))
+                  : null,
+              locked: !valid,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
