@@ -11,10 +11,12 @@ import '../../design_system/waybill_card.dart';
 
 /// Customer home (handoff 1a + Addendum 01 §0: wallet button in the header).
 class CustomerHomeScreen extends StatelessWidget {
-  const CustomerHomeScreen({super.key, this.onNewOrder, this.onWallet});
+  const CustomerHomeScreen(
+      {super.key, this.onNewOrder, this.onWallet, this.onBell});
 
   final VoidCallback? onNewOrder;
   final VoidCallback? onWallet;
+  final VoidCallback? onBell;
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +103,7 @@ class CustomerHomeScreen extends StatelessWidget {
               ),
               _headerBtn(c, NqIcons.wallet, dotColor: const Color(0xFFFBBF24), onTap: onWallet),
               const SizedBox(width: 8),
-              _headerBtn(c, NqIcons.bell, dotColor: NqFixed.heroAccent),
+              _headerBtn(c, NqIcons.bell, dotColor: NqFixed.heroAccent, onTap: onBell),
             ],
           ),
           const SizedBox(height: 24),

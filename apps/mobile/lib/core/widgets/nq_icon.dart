@@ -110,4 +110,11 @@ class NqIcons {
   static const scales = 'scales';
   static const ruler = 'ruler';
   static const shareNetwork = 'share-network';
+  static const bank = 'bank';
+  static const users = 'users';
+  static const globe = 'globe';
+  static const moon = 'moon';
+  static const question = 'question';
+  static const signOut = 'sign-out';
+  static const gearSix = 'gear-six';
 }
