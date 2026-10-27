@@ -41,6 +41,7 @@ class TruckDetailScreen extends ConsumerWidget {
                         .where((p) => p != null && p.isNotEmpty)
                         .join(' · '),
                     showCall: false,
+                    onChat: () => context.push('/chat'),
                     revealed: false,
                     phone: '+966 •• ••• ••••',
                     revealLabel: 'التواصل داخل التطبيق حتى قبول الطلب',
@@ -341,7 +342,7 @@ class TruckDetailScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('ننشئ طلبًا مُعبّأ مسبقًا ويُرسل لهذا المزوّد مباشرة',
+            Text('ننشئ طلبًا مُعبّأ مسبقًا ويُرسل لهذا المزوّد مباشرة · يرد خلال 2 س',
                 style: NqType.caption.copyWith(color: c.tx2),
                 textAlign: TextAlign.center),
             const SizedBox(height: 10),
