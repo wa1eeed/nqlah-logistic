@@ -64,29 +64,35 @@ class _OrderStep4PricingState extends ConsumerState<OrderStep4Pricing> {
           onTap: () => n.patch((x) => x.copyWith(fixedPrice: true)),
           expanded: d.fixedPrice ? _priceField(c, n) : null,
         ),
-        const SizedBox(height: 14),
-        _radioCard(
-          c,
-          title: 'مناقصة',
-          sub: 'يقدّم المزوّدون عروضهم خلال مدة تحدّدها وتختار الأنسب',
-          icon: NqIcons.gavel,
-          selected: !d.fixedPrice,
-          onTap: () => n.patch((x) => x.copyWith(fixedPrice: false)),
-        ),
+        if (!d.isDirectTargeted) ...[
+          const SizedBox(height: 14),
+          _radioCard(
+            c,
+            title: 'مناقصة',
+            sub: 'يقدّم المزوّدون عروضهم خلال مدة تحدّدها وتختار الأنسب',
+            icon: NqIcons.gavel,
+            selected: !d.fixedPrice,
+            onTap: () => n.patch((x) => x.copyWith(fixedPrice: false)),
+          ),
+        ],
         const SizedBox(height: 22),
         Text('من يرى الطلب؟', style: NqType.h2.copyWith(color: c.tx)),
         const SizedBox(height: 10),
-        NqSegmented(
-          options: const ['السوق المفتوح', 'مزوّدون محدّدون'],
-          index: d.openMarket ? 0 : 1,
-          onChanged: (i) => n.patch((x) => x.copyWith(openMarket: i == 0)),
-          height: 52,
-        ),
-        if (!d.openMarket) ...[
-          const SizedBox(height: 10),
-          Text('سيُنشر الطلب في السوق المفتوح حاليًا (اختيار مزوّد محدّد قريبًا).',
-              style: NqType.caption.copyWith(color: c.tx3),
-              textAlign: TextAlign.right),
+        if (d.isDirectTargeted)
+          _targetedProviderChip(c, d.targetCarrierName ?? 'المزوّد المحدّد')
+        else ...[
+          NqSegmented(
+            options: const ['السوق المفتوح', 'مزوّدون محدّدون'],
+            index: d.openMarket ? 0 : 1,
+            onChanged: (i) => n.patch((x) => x.copyWith(openMarket: i == 0)),
+            height: 52,
+          ),
+          if (!d.openMarket) ...[
+            const SizedBox(height: 10),
+            Text('للطلب المباشر لمزوّد محدّد، اختر شاحنة من سوق «الشاحنات المتاحة».',
+                style: NqType.caption.copyWith(color: c.tx3),
+                textAlign: TextAlign.right),
+          ],
         ],
         const SizedBox(height: 22),
         Text('شروط الدفع', style: NqType.h2.copyWith(color: c.tx)),
@@ -107,6 +113,29 @@ class _OrderStep4PricingState extends ConsumerState<OrderStep4Pricing> {
       ],
     );
   }
+
+  Widget _targetedProviderChip(NqColors c, String name) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: c.mintBg,
+          borderRadius: BorderRadius.circular(NqRadius.input),
+          border: Border.all(color: c.mint.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            NqIcon(NqIcons.lockSimple, size: 16, color: c.mintTx),
+            const Spacer(),
+            Flexible(
+              child: Text('مزوّد محدّد: $name',
+                  style: NqType.bodyStrong.copyWith(color: c.tx),
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis),
+            ),
+            const SizedBox(width: 10),
+            NqIcon(NqIcons.paperPlaneTilt, size: 18, color: c.mintTx),
+          ],
+        ),
+      );
 
   Widget _radioCard(
     NqColors c, {
