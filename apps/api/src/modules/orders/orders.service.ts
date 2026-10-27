@@ -141,6 +141,12 @@ export class OrdersService {
 
   async list(query: PaginationDto & { status?: OrderStatus; mine?: boolean }, actor: AuthUser) {
     const { page = 1, limit = 20, sort = 'createdAt', order = 'desc', search, status, mine } = query;
+    // `mine` arrives as a query string; with `enableImplicitConversion` a literal
+    // "false" coerces to the truthy boolean `true`, so coerce it explicitly here.
+    // Without this a carrier's marketplace (`mine=false`) silently returns their
+    // own assigned work instead of OPEN/DIRECT-targeted orders.
+    const wantMine =
+      mine === true || (mine as unknown) === 'true' || (mine as unknown) === 1 || (mine as unknown) === '1';
     const where: Prisma.OrderWhereInput = {
       ...(status ? { status } : {}),
       ...(search ? {
@@ -157,7 +163,7 @@ export class OrdersService {
       where.clientId = actor.companyId ?? '__none__';
     } else if (actor.role === 'CARRIER_ADMIN' || actor.role === 'CARRIER_USER') {
       const myId = actor.companyId ?? '__none__';
-      if (mine) {
+      if (wantMine) {
         // "My work": orders assigned to me as the order carrier, or any order
         // where I serve one of the legs (phase 2 per-leg carriers).
         where.OR = [{ carrierId: myId }, { orderLegs: { some: { carrierId: myId } } }];
