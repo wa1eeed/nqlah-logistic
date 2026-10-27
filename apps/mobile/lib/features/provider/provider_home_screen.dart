@@ -1,32 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/auth_controller.dart';
+import '../../core/orders/order_models.dart';
+import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 
-/// Provider home (handoff 2d).
-class ProviderHomeScreen extends StatelessWidget {
-  const ProviderHomeScreen({super.key, this.onBell, this.onAssign});
+/// Provider home (handoff 2d) — wired to the signed-in user + the carrier's
+/// work (`mine=true`) and marketplace (`mine=false`). Fleet counts, receivables
+/// and client messages need their own modules (follow-ups), so they are shown
+/// as navigations / omitted rather than faked.
+class ProviderHomeScreen extends ConsumerWidget {
+  const ProviderHomeScreen({
+    super.key,
+    this.onBell,
+    this.onAssign,
+    this.onLoads,
+    this.onFinance,
+    this.onOpenOrder,
+  });
 
   final VoidCallback? onBell;
-  final VoidCallback? onAssign;
+  final void Function(String orderId)? onAssign;
+  final VoidCallback? onLoads;
+  final VoidCallback? onFinance;
+  final void Function(String orderId)? onOpenOrder;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.nq;
+    final user = ref.watch(authControllerProvider).user;
+    final work = ref.watch(providerWorkProvider).valueOrNull ?? const [];
+    final loads = ref.watch(marketplaceLoadsProvider).valueOrNull ?? const [];
+
+    final awaiting =
+        work.where((o) => o.status.toUpperCase() == 'ASSIGNED').toList();
+    final inTransit =
+        work.where((o) => o.status.toUpperCase() == 'IN_TRANSIT').length;
+    final newLoads = loads.where((o) {
+      final s = o.status.toUpperCase();
+      return s == 'PUBLISHED' || s == 'BIDDING';
+    }).length;
+    final name = (user?.fullName.isNotEmpty ?? false) ? user!.fullName : 'مزوّد';
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        _hero(context, c),
-        Transform.translate(
-          offset: const Offset(0, -24),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            child: _assignCard(c),
-          ),
-        ),
+        _hero(context, c, name, awaiting.length, inTransit, newLoads),
+        if (awaiting.isNotEmpty)
+          Transform.translate(
+            offset: const Offset(0, -24),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              child: _assignCard(c, awaiting),
+            ),
+          )
+        else
+          const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
@@ -34,15 +68,11 @@ class ProviderHomeScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(child: _newLoadsTile(c)),
+                  Expanded(child: _newLoadsTile(c, newLoads)),
                   const SizedBox(width: 12),
-                  Expanded(child: _receivablesTile(c)),
+                  Expanded(child: _financeTile(c)),
                 ],
               ),
-              const SizedBox(height: 14),
-              _errorAlert(c),
-              const SizedBox(height: 12),
-              _messagesRow(c),
               const SizedBox(height: 24),
             ],
           ),
@@ -51,7 +81,9 @@ class ProviderHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _hero(BuildContext context, NqColors c) => Container(
+  Widget _hero(BuildContext context, NqColors c, String name, int awaiting,
+          int inTransit, int newLoads) =>
+      Container(
         color: c.hero,
         padding: EdgeInsets.fromLTRB(
             16, MediaQuery.of(context).padding.top + 12, 16, 30),
@@ -70,7 +102,8 @@ class ProviderHomeScreen extends StatelessWidget {
                       color: NqFixed.heroFill2,
                       borderRadius: BorderRadius.circular(NqRadius.input),
                     ),
-                    child: NqIcon(NqIcons.bell, size: 22, color: NqFixed.heroText),
+                    child:
+                        NqIcon(NqIcons.bell, size: 22, color: NqFixed.heroText),
                   ),
                 ),
                 const Spacer(),
@@ -86,14 +119,16 @@ class ProviderHomeScreen extends StatelessWidget {
                               fill: true, size: 16, color: NqFixed.heroAccent),
                           const SizedBox(width: 6),
                           Flexible(
-                            child: Text('شركة الأفق للنقل',
-                                style: NqType.h2.copyWith(color: NqFixed.heroText),
-                                textAlign: TextAlign.right),
+                            child: Text(name,
+                                style: NqType.h2
+                                    .copyWith(color: NqFixed.heroText),
+                                textAlign: TextAlign.right,
+                                overflow: TextOverflow.ellipsis),
                           ),
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Text('مزوّد · 14 شاحنة · 11 سائقًا',
+                      Text('مزوّد نقل',
                           style: NqType.caption
                               .copyWith(color: NqFixed.heroTextSecondary)),
                     ],
@@ -108,18 +143,19 @@ class ProviderHomeScreen extends StatelessWidget {
                     color: NqFixed.heroFill2,
                     borderRadius: BorderRadius.circular(NqRadius.input),
                   ),
-                  child: Text('أ', style: NqType.h3.copyWith(color: NqFixed.heroText)),
+                  child: Text(name.isNotEmpty ? name.substring(0, 1) : 'م',
+                      style: NqType.h3.copyWith(color: NqFixed.heroText)),
                 ),
               ],
             ),
             const SizedBox(height: 18),
             Row(
               children: [
-                _heroKpi(c, '5', 'سائق متاح'),
+                _heroKpi(c, '$awaiting', 'بانتظار إسناد'),
                 const SizedBox(width: 10),
-                _heroKpi(c, '3', 'مجدولة اليوم'),
+                _heroKpi(c, '$inTransit', 'في الطريق'),
                 const SizedBox(width: 10),
-                _heroKpi(c, '6', 'في الطريق'),
+                _heroKpi(c, '$newLoads', 'أحمال جديدة'),
               ],
             ),
           ],
@@ -141,226 +177,153 @@ class ProviderHomeScreen extends StatelessWidget {
                       .copyWith(color: NqFixed.heroText)),
               const SizedBox(height: 2),
               Text(label,
-                  style: NqType.caption.copyWith(color: NqFixed.heroTextSecondary)),
+                  style: NqType.caption
+                      .copyWith(color: NqFixed.heroTextSecondary)),
             ],
           ),
         ),
       );
 
-  Widget _assignCard(NqColors c) => Container(
-        decoration: BoxDecoration(
-          color: c.sf,
-          borderRadius: BorderRadius.circular(NqRadius.cardOverlap),
-          boxShadow: c.isDark
-              ? null
-              : [
-                  BoxShadow(
-                      color: const Color(0x240A1A19),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                      spreadRadius: -12),
-                ],
-          border: c.isDark ? Border.all(color: c.bd) : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: c.warnBg,
-                      borderRadius: BorderRadius.circular(NqRadius.input),
-                    ),
-                    child: NqIcon(NqIcons.userPlus, size: 20, color: c.warn),
-                  ),
-                  const Spacer(),
-                  Text('بانتظار إسناد سائق',
-                      style: NqType.h3.copyWith(color: c.tx)),
-                  const SizedBox(width: 10),
-                  Container(
-                    width: 24,
-                    height: 24,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                        color: c.warnBg, shape: BoxShape.circle),
-                    child: Text('2',
-                        style: NqType.caption.copyWith(
-                            color: c.warn, fontWeight: FontWeight.w700)),
-                  ),
-                ],
-              ),
-            ),
-            _assignRow(c, 'الدمام ← الرياض', 'NQ-24-08856 · تريلا سطحة · الأربعاء 07:00'),
-            Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Divider(color: c.bd, height: 1)),
-            _assignRow(c, 'الجبيل ← جدة', 'NQ-24-08861 · ستارة · الخميس 05:30'),
-            const SizedBox(height: 8),
-          ],
-        ),
-      );
-
-  Widget _assignRow(NqColors c, String route, String meta) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            NqButton(
-                label: 'إسناد',
-                expand: false,
-                onPressed: onAssign ?? () {}),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(route, style: NqType.h3.copyWith(color: c.tx)),
-                const SizedBox(height: 2),
-                Text(meta, style: NqType.caption.copyWith(color: c.tx2)),
+  Widget _assignCard(NqColors c, List<OrderSummary> awaiting) {
+    final rows = awaiting.take(3).toList();
+    return Container(
+      decoration: BoxDecoration(
+        color: c.sf,
+        borderRadius: BorderRadius.circular(NqRadius.cardOverlap),
+        boxShadow: c.isDark
+            ? null
+            : [
+                BoxShadow(
+                    color: const Color(0x240A1A19),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                    spreadRadius: -12),
               ],
-            ),
-          ],
-        ),
-      );
-
-  Widget _newLoadsTile(NqColors c) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: c.sf,
-          borderRadius: BorderRadius.circular(NqRadius.card),
-          border: Border.all(color: c.bd),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Row(
+        border: c.isDark ? Border.all(color: c.bd) : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: c.infoBg,
-                    borderRadius: BorderRadius.circular(NqRadius.pill),
-                  ),
-                  child: Text('+1 مباشر',
-                      style: NqType.caption.copyWith(
-                          color: c.info, fontWeight: FontWeight.w700)),
-                ),
-                const Spacer(),
-                NqIcon(NqIcons.magnifyingGlass, size: 20, color: c.tx2),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Ltr('8', style: NqType.numeric(26, FontWeight.w700).copyWith(color: c.tx)),
-            const SizedBox(height: 2),
-            Text('فرص جديدة تناسب أسطولك',
-                style: NqType.caption.copyWith(color: c.tx2),
-                textAlign: TextAlign.right),
-          ],
-        ),
-      );
-
-  Widget _receivablesTile(NqColors c) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: c.sf,
-          borderRadius: BorderRadius.circular(NqRadius.card),
-          border: Border.all(color: c.bd),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            NqIcon(NqIcons.wallet, size: 20, color: c.tx2),
-            const SizedBox(height: 12),
-            Ltr('18,400',
-                style: NqType.numeric(26, FontWeight.w700).copyWith(color: c.tx)),
-            const SizedBox(height: 2),
-            Text('مستحقات · 3 دفعات مُبلّغة',
-                style: NqType.caption.copyWith(color: c.tx2),
-                textAlign: TextAlign.right),
-          ],
-        ),
-      );
-
-  Widget _errorAlert(NqColors c) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: c.errBg,
-          borderRadius: BorderRadius.circular(NqRadius.card),
-        ),
-        child: Row(
-          children: [
-            NqIcon(NqIcons.caretLeft, size: 18, color: c.tx3),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('تأخّر عن موعد الوصول',
-                    style: NqType.bodyStrong.copyWith(color: c.err)),
-                const SizedBox(height: 2),
-                Text('NQ-24-08799 · سالم القحطاني · آخر موقع قبل 22 د',
-                    style: NqType.caption.copyWith(color: c.tx2)),
-              ],
-            ),
-            const SizedBox(width: 12),
-            NqIcon(NqIcons.warningOctagon, size: 24, color: c.err),
-          ],
-        ),
-      );
-
-  Widget _messagesRow(NqColors c) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: c.sf,
-          borderRadius: BorderRadius.circular(NqRadius.card),
-          border: Border.all(color: c.bd),
-        ),
-        child: Row(
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
+                  width: 36,
+                  height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: c.mintBg,
+                    color: c.warnBg,
                     borderRadius: BorderRadius.circular(NqRadius.input),
                   ),
-                  child: NqIcon(NqIcons.chats, size: 22, color: c.mintTx),
+                  child: NqIcon(NqIcons.userPlus, size: 20, color: c.warn),
                 ),
-                PositionedDirectional(
-                  top: -4,
-                  start: -4,
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                        color: c.mint, shape: BoxShape.circle),
-                    child: Text('3',
-                        style: NqType.caption.copyWith(
-                            color: c.onMint, fontWeight: FontWeight.w700, fontSize: 11)),
-                  ),
+                const Spacer(),
+                Text('بانتظار إسناد سائق',
+                    style: NqType.h3.copyWith(color: c.tx)),
+                const SizedBox(width: 10),
+                Container(
+                  width: 24,
+                  height: 24,
+                  alignment: Alignment.center,
+                  decoration:
+                      BoxDecoration(color: c.warnBg, shape: BoxShape.circle),
+                  child: Text('${awaiting.length}',
+                      style: NqType.caption.copyWith(
+                          color: c.warn, fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('رسائل العملاء', style: NqType.h3.copyWith(color: c.tx)),
-                const SizedBox(height: 2),
-                Text('مصنع الرّواد: «متى يوصل السائق البوابة؟»',
-                    style: NqType.caption.copyWith(color: c.tx2)),
-              ],
-            ),
+          ),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0)
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Divider(color: c.bd, height: 1)),
+            _assignRow(c, rows[i]),
           ],
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _assignRow(NqColors c, OrderSummary o) => GestureDetector(
+        onTap: () => (onOpenOrder ?? (_) {})(o.id),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              NqButton(
+                  label: 'إسناد',
+                  expand: false,
+                  onPressed: () => (onAssign ?? (_) {})(o.id)),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(o.route, style: NqType.h3.copyWith(color: c.tx)),
+                  const SizedBox(height: 2),
+                  Text(
+                      '${truckLabel(o.requiredTruckType)} · ${fmtDate(o.pickupDate)}',
+                      style: NqType.caption.copyWith(color: c.tx2)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+
+  Widget _newLoadsTile(NqColors c, int count) => GestureDetector(
+        onTap: onLoads,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: c.sf,
+            borderRadius: BorderRadius.circular(NqRadius.card),
+            border: Border.all(color: c.bd),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              NqIcon(NqIcons.magnifyingGlass, size: 20, color: c.tx2),
+              const SizedBox(height: 12),
+              Ltr('$count',
+                  style:
+                      NqType.numeric(26, FontWeight.w700).copyWith(color: c.tx)),
+              const SizedBox(height: 2),
+              Text('أحمال متاحة تناسب أسطولك',
+                  style: NqType.caption.copyWith(color: c.tx2),
+                  textAlign: TextAlign.right),
+            ],
+          ),
+        ),
+      );
+
+  Widget _financeTile(NqColors c) => GestureDetector(
+        onTap: onFinance,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: c.sf,
+            borderRadius: BorderRadius.circular(NqRadius.card),
+            border: Border.all(color: c.bd),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              NqIcon(NqIcons.wallet, size: 20, color: c.tx2),
+              const SizedBox(height: 12),
+              Text('المالية', style: NqType.h3.copyWith(color: c.tx)),
+              const SizedBox(height: 2),
+              Text('المستحقات والدفعات',
+                  style: NqType.caption.copyWith(color: c.tx2),
+                  textAlign: TextAlign.right),
+            ],
+          ),
         ),
       );
 }

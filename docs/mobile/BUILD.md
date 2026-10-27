@@ -108,11 +108,17 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   (ASSIGNED → "إسناد سائق" → driver-assignment; else "فتح الطلب" → order detail), with
   search-free list, pull-to-refresh, loading/empty/error. The shell passes
   `onAssign(id)`/`onOpen(id)`.
+- **Provider home (2d)** is wired to the signed-in user + `providerWorkProvider` +
+  `marketplaceLoadsProvider`: hero name/avatar, 3 KPIs (awaiting-assignment / in-transit /
+  new-loads counts), the "بانتظار إسناد سائق" card (ASSIGNED orders → "إسناد" / open), and
+  two tiles (new loads → loads tab, finance → finance tab). Fleet counts, receivables
+  numbers, the late-order alert and client-messages row were dropped (they need the fleet /
+  payments / tracking / comms modules) rather than faked. The shell passes
+  `onLoads`/`onFinance` (tab switch) + `onAssign(id)`/`onOpenOrder(id)`.
 - **Orders follow-ups (next slices):** provider order view (3a, carrier-specific) +
-  assignment (1h) wired to driver assignment + `GET /orders/:id/legs`; provider home (2d);
-  fleet (3e/3f), maintenance (3g), finance (3h), owner-driver (1i/2e); **customer finance
-  (4h)** + order actions (cancel/confirm); consolidated multi-leg; a real maps SDK; comms
-  backend.
+  assignment (1h) wired to driver assignment + `GET /orders/:id/legs`; fleet (3e/3f),
+  maintenance (3g), finance (3h), owner-driver (1i/2e); **customer finance (4h)** + order
+  actions (cancel/confirm); consolidated multi-leg; a real maps SDK; comms backend.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`
