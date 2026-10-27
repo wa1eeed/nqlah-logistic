@@ -102,6 +102,11 @@ class OrderSummary {
     this.carrierName,
     this.orderType = 'SINGLE',
     this.truckCount,
+    this.priceMode = 'BIDDING',
+    this.collectionMethod = 'ESCROW',
+    this.clientName,
+    this.createdAt,
+    this.bids = const [],
   });
 
   final String id;
@@ -119,15 +124,32 @@ class OrderSummary {
   final String? carrierName;
   final String orderType;
   final int? truckCount;
+  final String priceMode; // FIXED or BIDDING
+  final String collectionMethod;
+  final String? clientName;
+  final DateTime? createdAt;
+  final List<BidRef> bids; // lean bid refs (carrierId/status/amount)
 
   NqStatus get nqStatus => nqStatusFromApi(status);
   ShipmentBucket get bucket => bucketFor(status);
   String get route => '$originCity ← $destinationCity';
   bool get isConsolidated => orderType.toUpperCase() == 'CONSOLIDATED';
+  bool get isFixedPrice => priceMode.toUpperCase() == 'FIXED';
+
+  /// The current carrier's own bid on this order, if any.
+  BidRef? myBid(String? companyId) {
+    if (companyId == null) return null;
+    for (final b in bids) {
+      if (b.carrierId == companyId) return b;
+    }
+    return null;
+  }
 
   factory OrderSummary.fromJson(Map<String, dynamic> j) {
     final carrier = j['carrier'];
+    final client = j['client'];
     final count = j['_count'];
+    final rawBids = j['bids'];
     return OrderSummary(
       id: j['id'].toString(),
       orderNumber: (j['orderNumber'] ?? j['id']).toString(),
@@ -144,8 +166,35 @@ class OrderSummary {
       carrierName: carrier is Map ? carrier['nameAr']?.toString() : null,
       orderType: (j['orderType'] ?? 'SINGLE').toString(),
       truckCount: _num(j['truckCount'])?.toInt(),
+      priceMode: (j['priceMode'] ?? 'BIDDING').toString(),
+      collectionMethod: (j['collectionMethod'] ?? 'ESCROW').toString(),
+      clientName: client is Map ? client['nameAr']?.toString() : null,
+      createdAt: _date(j['createdAt']),
+      bids: rawBids is List
+          ? rawBids
+              .whereType<Map>()
+              .map((e) => BidRef.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+          : const [],
     );
   }
+}
+
+/// A lean bid reference from the orders list (`bids` subset).
+class BidRef {
+  BidRef({required this.id, required this.carrierId, required this.status, this.amount});
+  final String id;
+  final String carrierId;
+  final String status;
+  final num? amount;
+  bool get isPending => status.toUpperCase() == 'PENDING';
+
+  factory BidRef.fromJson(Map<String, dynamic> j) => BidRef(
+        id: (j['id'] ?? '').toString(),
+        carrierId: (j['carrierId'] ?? '').toString(),
+        status: (j['status'] ?? 'PENDING').toString(),
+        amount: _num(j['amount']),
+      );
 }
 
 /// The contracted carrier on an order (for the party card + contact reveal).

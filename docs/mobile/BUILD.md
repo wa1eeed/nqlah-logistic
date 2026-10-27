@@ -91,11 +91,22 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   fallbacks: empty active card, hidden alert, "حسابي" name fallback. The shell wires
   tab-switch callbacks (`onViewShipments`/`onOffers`) + `onOpenOrder`. **This completes the
   customer surface's backend wiring.**
-- **Orders follow-ups (next slices):** the **provider** path (loads/assignments/fleet/
-  finance) via orders/fleet; **customer finance (4h)** + order actions (cancel/confirm) via
-  payments/invoices; a per-order offers entry + carrier rating/trips stats endpoint;
-  consolidated multi-leg create + leg detail (`/orders/:id/legs`,`/stops`); a real maps SDK;
-  in-app chat/calls (comms) backend.
+### Provider path
+- **Provider loads / marketplace (1f)** is wired to `GET /orders` (carrier marketplace:
+  `mine=false` → OPEN PUBLISHED/BIDDING + DIRECT-to-me + my assigned), via
+  `marketplaceLoadsProvider`. Shows biddable loads as `NqLoadCard`s with search, refresh,
+  loading/empty/error states. **Bidding:** fixed-price loads (`priceMode==FIXED`) → "قبول"
+  (confirm → `POST …/bids` with the locked price); tender loads → a bid-amount bottom sheet
+  (+ optional note) → `POST …/bids`. "Already bid" is reflected per card (my bid amount) via
+  the list's lean `bids` subset matched against the user's `companyId`. `OrderSummary` gained
+  `priceMode`/`collectionMethod`/`clientName`/`createdAt`/`bids` (+`BidRef`, `myBid()`,
+  `isFixedPrice`). Providers `marketplaceLoadsProvider` + `providerWorkProvider` (mine=true).
+
+- **Orders follow-ups (next slices):** provider order view (3a) + assignment (1h);
+  assignments (3c) via `providerWorkProvider`; provider home (2d), fleet (3e/3f),
+  maintenance (3g), finance (3h), owner-driver (1i/2e); **customer finance (4h)** + order
+  actions (cancel/confirm) via payments/invoices; consolidated multi-leg; a real maps SDK;
+  comms backend.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`
