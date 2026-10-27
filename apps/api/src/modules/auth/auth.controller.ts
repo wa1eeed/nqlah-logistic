@@ -65,4 +65,13 @@ export class AuthController {
   verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.auth.verifyOtp(dto.phone, dto.code);
   }
+
+  // Passwordless login: request an OTP (reuse send-otp), then verify here to
+  // receive tokens.
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60 * 60 * 1000 } })
+  @Post('login-otp')
+  loginWithOtp(@Body() dto: VerifyOtpDto, @Req() req: any) {
+    return this.auth.loginWithOtp(dto.phone, dto.code, reqMeta(req));
+  }
 }

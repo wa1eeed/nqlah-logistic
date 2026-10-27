@@ -61,6 +61,18 @@ class AuthController extends Notifier<AuthState> {
     return session.user;
   }
 
+  /// Request a one-time login code for [phone] (reuses send-otp).
+  Future<void> requestLoginOtp(String phone) =>
+      ref.read(authRepositoryProvider).sendOtp(phone);
+
+  /// Passwordless login with the OTP [code] sent to [phone].
+  Future<AuthUser> loginWithOtp(String phone, String code) async {
+    final session =
+        await ref.read(authRepositoryProvider).loginWithOtp(phone, code);
+    state = AuthState(AuthStatus.authenticated, user: session.user);
+    return session.user;
+  }
+
   Future<void> logout() async {
     await ref.read(authRepositoryProvider).logout();
     state = AuthState.unauthenticated;

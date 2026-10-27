@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/auth/auth_controller.dart';
@@ -64,6 +65,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         setState(() => _error = 'حدث خطأ غير متوقع. حاول مجددًا.');
       }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _otpLogin() async {
+    final id = _identifier.text.trim();
+    if (id.isEmpty) {
+      setState(() => _error = 'أدخل رقم الجوال لإرسال رمز الدخول.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(authControllerProvider.notifier).requestLoginOtp(id);
+      if (mounted) context.push('/login-otp', extra: id);
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _error = 'تعذّر إرسال الرمز. حاول مجددًا.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -141,7 +164,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       label: 'الدخول برمز تحقق',
                       variant: NqButtonVariant.secondary,
                       icon: 'chat-centered-dots',
-                      onPressed: widget.onOtp ?? () {},
+                      onPressed: _busy ? null : _otpLogin,
                     ),
                   ],
                 ),

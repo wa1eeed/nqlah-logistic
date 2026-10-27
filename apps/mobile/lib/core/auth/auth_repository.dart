@@ -84,6 +84,27 @@ class AuthRepository {
     }
   }
 
+  /// `POST /auth/login-otp` — passwordless login: verifies [code] for [phone]
+  /// and issues tokens (like `login`).
+  Future<AuthSession> loginWithOtp(String phone, String code) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/auth/login-otp',
+        data: {'phone': phone.trim(), 'code': code},
+        options: Options(extra: {'noAuth': true}),
+      );
+      _ensureOk(res);
+      final session = AuthSession.fromJson(res.data!);
+      await _tokens.save(
+        access: session.accessToken,
+        refresh: session.refreshToken,
+      );
+      return session;
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `GET /users/me` — the current profile; used to restore a session on
   /// launch from a stored token.
   Future<AuthUser> me() async {
