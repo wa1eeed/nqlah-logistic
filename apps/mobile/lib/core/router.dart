@@ -191,7 +191,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           orderId: id,
           onChangeDriver: () => context.push('/driver-assignment/$id'),
           onTrack: () => context.push('/tracking/$id'),
-          onChat: () => context.push('/chat'),
+          onChat: () => context.push('/chat/$id'),
         );
       },
     ),
@@ -225,10 +225,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ),
     GoRoute(
-      path: '/chat',
+      path: '/chat/:orderId',
       builder: (context, state) => ChatScreen(
-        onCall: () => context.push('/video-call'),
-        onVideo: () => context.push('/video-call'),
+        orderId: state.pathParameters['orderId']!,
+        partyName: state.extra is String ? state.extra as String : null,
       ),
     ),
     GoRoute(

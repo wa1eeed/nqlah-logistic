@@ -41,7 +41,11 @@ class TruckDetailScreen extends ConsumerWidget {
                         .where((p) => p != null && p.isNotEmpty)
                         .join(' · '),
                     showCall: false,
-                    onChat: () => context.push('/chat'),
+                    onChat: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text(
+                              'تُفتح المحادثة مع المزوّد بعد إرسال الطلب المباشر.')),
+                    ),
                     revealed: false,
                     phone: '+966 •• ••• ••••',
                     revealLabel: 'التواصل داخل التطبيق حتى قبول الطلب',
