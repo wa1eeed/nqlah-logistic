@@ -20,6 +20,7 @@ import '../features/customer/customer_notifications_screen.dart';
 import '../features/provider/driver_assignment_screen.dart';
 import '../features/provider/provider_maintenance_screen.dart';
 import '../features/provider/provider_order_screen.dart';
+import '../features/provider/trip_monitor_screen.dart';
 import '../features/shell/app_shell.dart';
 
 /// App routes (Phase 1). The post-login shell is resolved from the account's
@@ -132,8 +133,12 @@ final router = GoRouter(
       path: '/provider-order',
       builder: (context, state) => ProviderOrderScreen(
         onChangeDriver: () => context.push('/driver-assignment'),
-        onTrack: () => context.push('/tracking'),
+        onTrack: () => context.push('/trip-monitor'),
       ),
+    ),
+    GoRoute(
+      path: '/trip-monitor',
+      builder: (context, state) => const TripMonitorScreen(),
     ),
     GoRoute(
       path: '/maintenance',
