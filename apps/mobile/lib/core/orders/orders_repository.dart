@@ -78,6 +78,34 @@ class OrdersRepository {
     }
   }
 
+  /// `GET /orders/:id/bids` — offers on an order, cheapest first.
+  Future<List<BidModel>> bids(String orderId) async {
+    try {
+      final res = await _dio.get<dynamic>('/orders/$orderId/bids');
+      _ensureOk(res);
+      final data = res.data;
+      final list = data is Map ? (data['data'] ?? data['bids']) : data;
+      return (list as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => BidModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// `POST /orders/:orderId/bids/:bidId/accept` — accept an offer (assigns the
+  /// carrier to the order).
+  Future<void> acceptBid(String orderId, String bidId) async {
+    try {
+      final res =
+          await _dio.post('/orders/$orderId/bids/$bidId/accept');
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `POST /orders/:id/publish` — moves a draft to the marketplace.
   Future<Map<String, dynamic>> publish(String id) async {
     try {
@@ -121,4 +149,21 @@ final orderDetailModelProvider =
     FutureProvider.family<OrderDetail, String>((ref, id) async {
   final json = await ref.watch(ordersRepositoryProvider).getById(id);
   return OrderDetail.fromJson(json);
+});
+
+/// Offers on one order.
+final orderBidsProvider =
+    FutureProvider.family<List<BidModel>, String>((ref, id) {
+  return ref.watch(ordersRepositoryProvider).bids(id);
+});
+
+/// The customer's order (if any) currently collecting offers — the most recent
+/// PUBLISHED/BIDDING order that has at least one bid. Drives the offers tab.
+final offersFocusOrderProvider = FutureProvider<OrderSummary?>((ref) async {
+  final orders = await ref.watch(myShipmentsProvider.future);
+  final candidates = orders.where((o) {
+    final s = o.status.toUpperCase();
+    return (s == 'PUBLISHED' || s == 'BIDDING') && o.bidsCount > 0;
+  }).toList();
+  return candidates.isEmpty ? null : candidates.first;
 });
