@@ -50,16 +50,27 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   `NqStatus` map, cargo/truck Arabic labels, `ShipmentBucket`), `orders_repository.dart`
   (`GET /orders`, `GET /orders/:id`, `GET /orders/:id/tracking`, `POST /orders`,
   `POST /orders/:id/publish`) + providers (`myShipmentsProvider`,
-  `orderDetailProvider` family). **Customer shipments (4g)** is wired to
-  `GET /orders?mine=true`: segments (active/drafts/completed from `OrderStatus`) with
+  `orderDetailProvider`/`orderDetailModelProvider`). **Customer shipments (4g)** is wired
+  to `GET /orders?mine=true`: segments (active/drafts/completed from `OrderStatus`) with
   live counts, search, pull-to-refresh, and loading/empty/error+retry states.
+- **Order detail (1c)** + **tracking (1d)** are wired to `GET /orders/:id`
+  (`OrderDetail`/`CarrierParty`/`TrackingEventModel` via `orderDetailModelProvider`).
+  Routes are now `/order-detail/:id` and `/tracking/:id`. Detail shows the status chip,
+  the carrier party card (contact revealed when assigned, or a "بانتظار العروض / N عروض"
+  state before assignment), a real origin→destination timeline (states from status +
+  actual pickup/delivery timestamps), a cargo card, and a price breakdown (real
+  `carrierAmount`/`serviceVatAmount`/`clientTotalDue`, else the estimated budget).
+  Tracking keeps the **map as a styled placeholder** (no maps SDK yet) but drives the
+  freshness pill, ETA, status line, progress and carrier row from the order + its
+  tracking events. Home's demo waybill card is non-navigating until Home (1a) is wired.
 - **Note:** on **web** the staging API blocks the browser origin via CORS, so live
   login/register/orders can only be exercised on a device/emulator (or against a dev API
   with CORS open). The request/response plumbing is otherwise verified end-to-end
   (the order list GET fires to the correct endpoint; states render).
-- **Orders follow-ups (next slices):** wire **order detail (1c)** + **tracking (1d)** to
-  `GET /orders/:id` (+`/tracking`); wire the **create-order wizard** (1b/4a–4e) →
-  `POST /orders` + `/publish`; wire **offers (4f)** to the bids module.
+- **Orders follow-ups (next slices):** wire the **create-order wizard** (1b/4a–4e) →
+  `POST /orders` + `/publish`; wire **offers (4f)** to the bids module; wire **Home (1a)**
+  to real orders; multi-stop/consolidated leg detail (`/orders/:id/legs`,`/stops`) and a
+  real maps SDK for tracking.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`

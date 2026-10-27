@@ -110,8 +110,15 @@ final myShipmentsProvider = FutureProvider<List<OrderSummary>>((ref) {
   return ref.watch(ordersRepositoryProvider).list(mine: true);
 });
 
-/// One order's full detail by id.
+/// One order's full detail by id (raw map).
 final orderDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, id) {
   return ref.watch(ordersRepositoryProvider).getById(id);
+});
+
+/// One order's full detail by id, parsed into [OrderDetail].
+final orderDetailModelProvider =
+    FutureProvider.family<OrderDetail, String>((ref, id) async {
+  final json = await ref.watch(ordersRepositoryProvider).getById(id);
+  return OrderDetail.fromJson(json);
 });
