@@ -127,7 +127,7 @@ class _CustomerShipmentsScreenState
         final o = items[i];
         return NqShipmentCard(
           code: o.orderNumber,
-          status: o.nqStatus,
+          status: o.displayStatus,
           route: o.route,
           statusLine: _statusLine(c, o),
           onTap: () => context.push('/order-detail/${o.id}'),

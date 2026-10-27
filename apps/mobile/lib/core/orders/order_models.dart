@@ -107,6 +107,8 @@ class OrderSummary {
     this.clientName,
     this.createdAt,
     this.bids = const [],
+    this.mode = 'OPEN',
+    this.targetCarrierId,
   });
 
   final String id;
@@ -129,12 +131,33 @@ class OrderSummary {
   final String? clientName;
   final DateTime? createdAt;
   final List<BidRef> bids; // lean bid refs (carrierId/status/amount)
+  final String mode; // OPEN or DIRECT
+  final String? targetCarrierId; // DIRECT: the pinned carrier company
 
   NqStatus get nqStatus => nqStatusFromApi(status);
+
+  /// The status to show the customer: a DIRECT order still waiting on its
+  /// pinned provider reads «بانتظار رد المزوّد» instead of the generic «منشور».
+  NqStatus get displayStatus =>
+      isAwaitingProvider ? NqStatus.awaitingProvider : nqStatus;
+
   ShipmentBucket get bucket => bucketFor(status);
   String get route => '$originCity ← $destinationCity';
   bool get isConsolidated => orderType.toUpperCase() == 'CONSOLIDATED';
   bool get isFixedPrice => priceMode.toUpperCase() == 'FIXED';
+  bool get isDirect => mode.toUpperCase() == 'DIRECT';
+
+  /// A DIRECT order still awaiting the pinned provider's response (not yet
+  /// assigned) — drives the «بانتظار رد المزوّد» status on the customer side.
+  bool get isAwaitingProvider =>
+      isDirect &&
+      (targetCarrierId ?? '').isNotEmpty &&
+      (status.toUpperCase() == 'PUBLISHED' || status.toUpperCase() == 'BIDDING');
+
+  /// True when this DIRECT order is pinned to [companyId] (the carrier viewing
+  /// its marketplace) and still awaiting a response.
+  bool isDirectTo(String? companyId) =>
+      isDirect && companyId != null && targetCarrierId == companyId;
 
   /// The current carrier's own bid on this order, if any.
   BidRef? myBid(String? companyId) {
@@ -170,6 +193,8 @@ class OrderSummary {
       collectionMethod: (j['collectionMethod'] ?? 'ESCROW').toString(),
       clientName: client is Map ? client['nameAr']?.toString() : null,
       createdAt: _date(j['createdAt']),
+      mode: (j['mode'] ?? 'OPEN').toString(),
+      targetCarrierId: j['targetCarrierId']?.toString(),
       bids: rawBids is List
           ? rawBids
               .whereType<Map>()
