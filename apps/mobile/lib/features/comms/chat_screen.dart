@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/api_exception.dart';
@@ -44,21 +48,91 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Timer? _poll;
   bool _sending = false;
 
+  final _recorder = AudioRecorder();
+  bool _recording = false;
+  DateTime? _recordStart;
+  Timer? _recordTicker;
+  Duration _recordElapsed = Duration.zero;
+
   @override
   void initState() {
     super.initState();
+    _input.addListener(() => setState(() {}));
     // Light polling keeps the thread fresh while open.
     _poll = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (mounted) ref.invalidate(chatMessagesProvider(widget.orderId));
+      if (mounted && !_recording) {
+        ref.invalidate(chatMessagesProvider(widget.orderId));
+      }
     });
   }
 
   @override
   void dispose() {
     _poll?.cancel();
+    _recordTicker?.cancel();
+    _recorder.dispose();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  Future<void> _startRecording() async {
+    try {
+      if (!await _recorder.hasPermission()) {
+        _snack('يلزم إذن الميكروفون لتسجيل رسالة صوتية.');
+        return;
+      }
+      String path = '';
+      if (!kIsWeb) {
+        final dir = await getTemporaryDirectory();
+        path = '${dir.path}/vn_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      }
+      await _recorder.start(
+        const RecordConfig(encoder: AudioEncoder.aacLc),
+        path: path,
+      );
+      _recordStart = DateTime.now();
+      _recordElapsed = Duration.zero;
+      _recordTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted && _recordStart != null) {
+          setState(() => _recordElapsed = DateTime.now().difference(_recordStart!));
+        }
+      });
+      setState(() => _recording = true);
+    } catch (_) {
+      _snack('تعذّر بدء التسجيل.');
+    }
+  }
+
+  Future<void> _cancelRecording() async {
+    _recordTicker?.cancel();
+    try {
+      await _recorder.stop();
+    } catch (_) {}
+    if (mounted) setState(() => _recording = false);
+  }
+
+  Future<void> _stopRecordingAndSend() async {
+    _recordTicker?.cancel();
+    final startedAt = _recordStart;
+    setState(() => _recording = false);
+    try {
+      final resultPath = await _recorder.stop();
+      if (resultPath == null || resultPath.isEmpty) return;
+      final bytes = await XFile(resultPath).readAsBytes();
+      final ms = startedAt == null
+          ? null
+          : DateTime.now().difference(startedAt).inMilliseconds;
+      await _uploadAndSend(
+        kind: 'AUDIO',
+        bytes: bytes,
+        filename: 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a',
+        mime: 'audio/mp4',
+        durationMs: ms,
+      );
+    } catch (_) {
+      _snack('تعذّر إرسال الرسالة الصوتية.');
+    }
   }
 
   Future<void> _send() async {
@@ -192,6 +266,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     required Uint8List bytes,
     required String filename,
     required String mime,
+    int? durationMs,
   }) async {
     if (_sending) return;
     setState(() => _sending = true);
@@ -208,6 +283,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             mediaName: media.name,
             mediaMime: media.mime,
             mediaSize: media.size,
+            durationMs: durationMs,
           );
       ref.invalidate(chatMessagesProvider(widget.orderId));
     } on ApiException catch (e) {
@@ -441,6 +517,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
       );
     }
+    if (m.isAudio && m.mediaUrl != null) {
+      return _VoiceBubble(
+          url: m.mediaUrl!, durationMs: m.durationMs, mine: mine);
+    }
     final (icon, label) = switch (m.kind) {
       'VIDEO' => (NqIcons.play, m.mediaName ?? 'فيديو'),
       'AUDIO' => (NqIcons.microphone, 'رسالة صوتية'),
@@ -503,31 +583,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
   }
 
-  Widget _composer(NqColors c) => Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        decoration:
-            BoxDecoration(color: c.sf, border: Border(top: BorderSide(color: c.bd))),
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: _sending ? null : _send,
-              child: Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: c.mint, shape: BoxShape.circle),
-                child: _sending
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2.5, color: c.onMint),
-                      )
-                    : NqIcon(NqIcons.paperPlaneTilt,
-                        fill: true, size: 20, color: c.onMint),
-              ),
+  Widget _composer(NqColors c) {
+    if (_recording) return _recordingBar(c);
+    final hasText = _input.text.trim().isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+      decoration:
+          BoxDecoration(color: c.sf, border: Border(top: BorderSide(color: c.bd))),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: _sending
+                ? null
+                : (hasText ? _send : _startRecording),
+            child: Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: c.mint, shape: BoxShape.circle),
+              child: _sending
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.5, color: c.onMint),
+                    )
+                  : NqIcon(hasText ? NqIcons.paperPlaneTilt : NqIcons.microphone,
+                      fill: true, size: 20, color: c.onMint),
             ),
-            const SizedBox(width: 12),
+          ),
+          const SizedBox(width: 12),
             Expanded(
               child: Container(
                 constraints: const BoxConstraints(minHeight: 48),
@@ -569,6 +654,60 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ],
         ),
       );
+  }
+
+  Widget _recordingBar(NqColors c) {
+    final s = _recordElapsed.inSeconds;
+    final time = '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+      decoration:
+          BoxDecoration(color: c.sf, border: Border(top: BorderSide(color: c.bd))),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: _stopRecordingAndSend,
+            child: Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: c.mint, shape: BoxShape.circle),
+              child: NqIcon(NqIcons.paperPlaneTilt,
+                  fill: true, size: 20, color: c.onMint),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: c.errBg,
+                borderRadius: BorderRadius.circular(NqRadius.input),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(color: c.err, shape: BoxShape.circle)),
+                  const SizedBox(width: 10),
+                  Ltr(time, style: NqType.numeric(14, FontWeight.w600).copyWith(color: c.tx)),
+                  const Spacer(),
+                  Text('جارٍ التسجيل…', style: NqType.caption.copyWith(color: c.tx2)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: _cancelRecording,
+            child: NqIcon(NqIcons.trash, size: 22, color: c.err),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _errorState(NqColors c, String msg) => Center(
         child: Padding(
@@ -602,5 +741,129 @@ class _ConstraintsBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width * 0.78;
     return ConstrainedBox(constraints: BoxConstraints(maxWidth: w), child: child);
+  }
+}
+
+/// A voice-note bubble: play/pause + progress + duration, backed by its own
+/// [AudioPlayer].
+class _VoiceBubble extends StatefulWidget {
+  const _VoiceBubble({required this.url, required this.mine, this.durationMs});
+  final String url;
+  final bool mine;
+  final int? durationMs;
+
+  @override
+  State<_VoiceBubble> createState() => _VoiceBubbleState();
+}
+
+class _VoiceBubbleState extends State<_VoiceBubble> {
+  final _player = AudioPlayer();
+  bool _playing = false;
+  Duration _pos = Duration.zero;
+  Duration _total = Duration.zero;
+  late final List<StreamSubscription> _subs;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.durationMs != null) {
+      _total = Duration(milliseconds: widget.durationMs!);
+    }
+    _subs = [
+      _player.onPlayerStateChanged.listen((s) {
+        if (mounted) setState(() => _playing = s == PlayerState.playing);
+      }),
+      _player.onDurationChanged.listen((d) {
+        if (mounted && d > Duration.zero) setState(() => _total = d);
+      }),
+      _player.onPositionChanged.listen((p) {
+        if (mounted) setState(() => _pos = p);
+      }),
+      _player.onPlayerComplete.listen((_) {
+        if (mounted) {
+          setState(() {
+            _playing = false;
+            _pos = Duration.zero;
+          });
+        }
+      }),
+    ];
+  }
+
+  @override
+  void dispose() {
+    for (final s in _subs) {
+      s.cancel();
+    }
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _toggle() async {
+    if (_playing) {
+      await _player.pause();
+    } else {
+      await _player.play(UrlSource(widget.url));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.nq;
+    final fg2 = widget.mine ? NqFixed.heroTextSecondary : c.tx2;
+    final ctrlColor = widget.mine ? NqFixed.heroAccent : c.onMint;
+    final progress = _total.inMilliseconds == 0
+        ? 0.0
+        : (_pos.inMilliseconds / _total.inMilliseconds).clamp(0.0, 1.0);
+    final shown = _playing || _pos > Duration.zero ? _pos : _total;
+    final s = shown.inSeconds;
+    final time = '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: _toggle,
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                color: widget.mine ? NqFixed.heroFill2 : c.mint,
+                shape: BoxShape.circle),
+            child: _playing
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(width: 3, height: 14, color: ctrlColor),
+                      const SizedBox(width: 3),
+                      Container(width: 3, height: 14, color: ctrlColor),
+                    ],
+                  )
+                : NqIcon(NqIcons.play, fill: true, size: 18, color: ctrlColor),
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 120,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 4,
+                  backgroundColor: widget.mine ? NqFixed.heroFill1 : c.sf2,
+                  color: widget.mine ? NqFixed.heroAccent : c.mintS,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Ltr(time, style: NqType.caption.copyWith(color: fg2)),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
