@@ -50,6 +50,16 @@ class ApiClient {
     handler.next(options);
   }
 
+  /// The API wraps every success in `{success: true, data: <payload>}`. Unwrap
+  /// it so repositories see the bare payload. Errors (`{success:false, error}`)
+  /// pass through untouched for ApiException to parse.
+  static void _unwrapEnvelope(Response response) {
+    final data = response.data;
+    if (data is Map && data['success'] == true && data.containsKey('data')) {
+      response.data = data['data'];
+    }
+  }
+
   Future<void> _onResponse(
       Response response, ResponseInterceptorHandler handler) async {
     final req = response.requestOptions;
@@ -57,6 +67,7 @@ class ApiClient {
         req.extra['noAuth'] != true &&
         req.extra['retried'] != true;
     if (!renewable) {
+      _unwrapEnvelope(response);
       handler.next(response);
       return;
     }
@@ -82,6 +93,7 @@ class ApiClient {
         queryParameters: req.queryParameters,
         options: opts,
       );
+      _unwrapEnvelope(retry);
       handler.resolve(retry);
     } on DioException catch (e) {
       handler.reject(e);
@@ -96,8 +108,16 @@ class ApiClient {
         '/auth/refresh',
         data: {'refreshToken': refresh},
       );
-      final data = res.data;
-      if (res.statusCode == 200 && data != null && data['accessToken'] != null) {
+      final raw = res.data;
+      // The bare refresh client skips the interceptor, so unwrap the envelope.
+      Map<String, dynamic> data = const {};
+      if (raw != null) {
+        data = (raw['success'] == true && raw['data'] is Map)
+            ? Map<String, dynamic>.from(raw['data'] as Map)
+            : Map<String, dynamic>.from(raw);
+      }
+      final code = res.statusCode ?? 0;
+      if (code >= 200 && code < 300 && data['accessToken'] != null) {
         await _tokens.save(
           access: data['accessToken'] as String,
           refresh: (data['refreshToken'] ?? refresh) as String,
