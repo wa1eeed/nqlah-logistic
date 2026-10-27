@@ -182,6 +182,28 @@ class OrdersRepository {
     }
   }
 
+  /// `POST /orders/:id/confirm` — the carrier confirms an ASSIGNED order,
+  /// moving it to CONFIRMED.
+  Future<void> confirmOrder(String orderId) async {
+    try {
+      final res = await _dio.post('/orders/$orderId/confirm');
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// `POST /orders/:id/deliver` — the carrier marks a CONFIRMED/IN_TRANSIT order
+  /// as DELIVERED (starts the client's confirmation / escrow-release window).
+  Future<void> deliverOrder(String orderId) async {
+    try {
+      final res = await _dio.post('/orders/$orderId/deliver');
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `POST /orders/:id/decline-direct` — the targeted carrier declines a direct
   /// request; the order reverts to the open marketplace.
   Future<void> declineDirect(String orderId) async {
