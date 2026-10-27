@@ -136,10 +136,13 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   → `InvoiceModel` + `invoicesProvider`): hero total receivables + due-count + paid-this-month,
   due/paid segments, invoice cards with status pills (PAID/OVERDUE/ISSUED/DRAFT/CANCELLED),
   pull-to-refresh, loading/empty/error. Reusable for customer finance (4h).
+- **Customer finance (4h)** is wired to `GET /invoices` (reuses `invoicesProvider`): hero
+  «المستحق عليك» total + due/paid segments + payable cards (provider, amount, due date,
+  invoice no.), direct-pay info note, pull-to-refresh, loading/empty/error.
 - **Orders follow-ups (next slices):** maintenance (3g); owner-driver (1i/2e) incl. self-
-  assignment; add-driver form (3f) → `POST /fleet/drivers/invite`; **customer finance (4h)**
-  via `invoicesProvider`; order actions (cancel/confirm); consolidated multi-leg; a real maps
-  SDK; comms backend.
+  assignment; add-driver form (3f) → `POST /fleet/drivers/invite`; report-payment action
+  (payments module); order actions (cancel/confirm); consolidated multi-leg; a real maps SDK;
+  comms backend.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`
