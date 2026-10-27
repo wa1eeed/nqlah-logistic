@@ -1,17 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/auth_controller.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 
 /// Customer account (handoff 5c — customer variant: no plan card).
-class CustomerAccountScreen extends StatelessWidget {
+class CustomerAccountScreen extends ConsumerWidget {
   const CustomerAccountScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     final c = context.nq;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.sf,
+        title: Text('تسجيل الخروج', style: NqType.h2.copyWith(color: c.tx)),
+        content: Text('هل تريد تسجيل الخروج من حسابك؟',
+            style: NqType.body.copyWith(color: c.tx2)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('إلغاء', style: NqType.labelStrong.copyWith(color: c.tx2)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('خروج', style: NqType.labelStrong.copyWith(color: c.err)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(authControllerProvider.notifier).logout();
+      // Router redirect returns to /login once unauthenticated.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.nq;
+    final user = ref.watch(authControllerProvider).user;
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -23,7 +53,7 @@ class CustomerAccountScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _profileCard(c),
+          _profileCard(c, user?.fullName),
           const SizedBox(height: 16),
           _group(c, [
             _row(c, NqIcons.users, 'المستخدمون والصلاحيات', value: '3'),
@@ -36,14 +66,17 @@ class CustomerAccountScreen extends StatelessWidget {
           _group(c, [
             _row(c, NqIcons.question, 'المساعدة والدعم'),
             _row(c, NqIcons.signOut, 'تسجيل الخروج',
-                danger: true, chevron: false, last: true),
+                danger: true,
+                chevron: false,
+                last: true,
+                onTap: () => _signOut(context, ref)),
           ]),
         ],
       ),
     );
   }
 
-  Widget _profileCard(NqColors c) => Container(
+  Widget _profileCard(NqColors c, String? name) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: c.sf,
@@ -80,7 +113,8 @@ class CustomerAccountScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text('عبدالرحمن السبيعي · مدير الحساب',
+                  Text(
+                      '${name != null && name.isNotEmpty ? name : 'عبدالرحمن السبيعي'} · مدير الحساب',
                       style: NqType.caption.copyWith(color: c.tx2)),
                 ],
               ),
@@ -110,11 +144,18 @@ class CustomerAccountScreen extends StatelessWidget {
       );
 
   Widget _row(NqColors c, String icon, String label,
-      {String? value, bool danger = false, bool chevron = true, bool last = false}) {
+      {String? value,
+      bool danger = false,
+      bool chevron = true,
+      bool last = false,
+      VoidCallback? onTap}) {
     final color = danger ? c.err : c.tx;
     return Column(
       children: [
-        Container(
+        GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
           height: 54,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Row(
@@ -131,6 +172,7 @@ class CustomerAccountScreen extends StatelessWidget {
               NqIcon(icon, size: 21, color: danger ? c.err : c.tx2),
             ],
           ),
+        ),
         ),
         if (!last)
           Padding(

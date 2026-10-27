@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/auth/auth_controller.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../design_system/button.dart';
@@ -9,19 +12,62 @@ import '../../design_system/text_field.dart';
 
 /// Unified login (handoff 2c). One account for customers, providers and
 /// drivers. Hero + phone/password form + OTP alternative + register link.
-class LoginScreen extends StatelessWidget {
+///
+/// Wired to `POST /api/auth/login`: on success the auth controller flips to
+/// authenticated and the router redirects into the shell.
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({
     super.key,
-    this.onLogin,
     this.onOtp,
     this.onRegister,
     this.onForgot,
   });
 
-  final VoidCallback? onLogin;
   final VoidCallback? onOtp;
   final VoidCallback? onRegister;
   final VoidCallback? onForgot;
+
+  @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _identifier = TextEditingController();
+  final _password = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _identifier.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final id = _identifier.text.trim();
+    final pw = _password.text;
+    if (id.isEmpty || pw.isEmpty) {
+      setState(() => _error = 'أدخل رقم الجوال وكلمة المرور.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(authControllerProvider.notifier).login(id, pw);
+      // Success: the router redirect carries us into the shell.
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'حدث خطأ غير متوقع. حاول مجددًا.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,27 +109,39 @@ class LoginScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const NqTextField(label: 'رقم الجوال', phone: true),
+                    NqTextField(
+                      label: 'رقم الجوال',
+                      phone: true,
+                      controller: _identifier,
+                    ),
                     const SizedBox(height: 18),
-                    const NqTextField(
-                        label: 'كلمة المرور', obscure: true),
+                    NqTextField(
+                      label: 'كلمة المرور',
+                      obscure: true,
+                      controller: _password,
+                      error: _error,
+                    ),
                     const SizedBox(height: 10),
                     Align(
                       alignment: AlignmentDirectional.centerStart,
                       child: GestureDetector(
-                        onTap: onForgot,
+                        onTap: widget.onForgot,
                         child: Text('نسيت كلمة المرور؟',
                             style: NqType.labelStrong.copyWith(color: c.mintTx)),
                       ),
                     ),
                     const SizedBox(height: 20),
-                    NqButton(label: 'دخول', onPressed: onLogin ?? () {}),
+                    NqButton(
+                      label: 'دخول',
+                      loading: _busy,
+                      onPressed: _busy ? null : _submit,
+                    ),
                     const SizedBox(height: 12),
                     NqButton(
                       label: 'الدخول برمز تحقق',
                       variant: NqButtonVariant.secondary,
                       icon: 'chat-centered-dots',
-                      onPressed: onOtp ?? () {},
+                      onPressed: widget.onOtp ?? () {},
                     ),
                   ],
                 ),
@@ -91,7 +149,7 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 24),
               Center(
                 child: GestureDetector(
-                  onTap: onRegister,
+                  onTap: widget.onRegister,
                   child: Text.rich(
                     TextSpan(
                       text: 'ليس لديك حساب؟ ',

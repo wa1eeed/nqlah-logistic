@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'auth/auth_controller.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/otp_screen.dart';
 import '../features/auth/register_account_type_screen.dart';
@@ -27,16 +30,36 @@ import '../features/comms/chat_screen.dart';
 import '../features/comms/call_screens.dart';
 import '../features/shell/app_shell.dart';
 
-/// App routes (Phase 1). The post-login shell is resolved from the account's
-/// identity; for now it defaults to the customer shell (with a dev identity
-/// switcher inside) until auth is wired to the API.
-final router = GoRouter(
-  initialLocation: '/login',
-  routes: [
+/// App router. Authentication-aware: a stored/valid session routes into the
+/// shell, otherwise the auth pages (login / OTP / register) are shown. The
+/// post-login shell resolves its identity from the signed-in user's role.
+final routerProvider = Provider<GoRouter>((ref) {
+  // Bridge Riverpod auth-state changes to GoRouter's refresh.
+  final refresh = ValueNotifier<int>(0);
+  ref.listen(authControllerProvider, (_, _) => refresh.value++);
+  ref.onDispose(refresh.dispose);
+
+  return GoRouter(
+    initialLocation: '/login',
+    refreshListenable: refresh,
+    redirect: (context, state) {
+      final auth = ref.read(authControllerProvider);
+      // Hold position while the session is still being restored on launch.
+      if (!auth.isResolved) return null;
+      final loc = state.matchedLocation;
+      final onAuthPage =
+          loc == '/login' || loc == '/otp' || loc.startsWith('/register');
+      if (!auth.isAuthenticated) {
+        return onAuthPage ? null : '/login';
+      }
+      // Signed in: keep them out of the login / OTP entry pages.
+      if (loc == '/login' || loc == '/otp') return '/app';
+      return null;
+    },
+    routes: [
     GoRoute(
       path: '/login',
       builder: (context, state) => LoginScreen(
-        onLogin: () => context.go('/app'),
         onOtp: () => context.push('/otp'),
         onRegister: () => context.push('/register'),
       ),
@@ -175,5 +198,6 @@ final router = GoRouter(
         onDecline: () => context.pop(),
       ),
     ),
-  ],
-);
+    ],
+  );
+});
