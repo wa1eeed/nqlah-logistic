@@ -339,6 +339,51 @@ export class AuthService {
     return { verified: true };
   }
 
+  /// Passwordless login: verify a phone OTP and issue tokens. Mirrors `login`'s
+  /// account checks (active, non-admin) but authenticates by OTP instead of a
+  /// password.
+  async loginWithOtp(
+    phone: string,
+    code: string,
+    meta: { ip?: string; userAgent?: string } = {},
+  ) {
+    const normalized = normalizeSaudiPhone(phone);
+    const ok = await this.otp.verify(normalized, code);
+    if (!ok) {
+      throw new BadRequestException({
+        code: 'INVALID_OTP',
+        message: 'رمز التحقق غير صحيح أو منتهي الصلاحية',
+      });
+    }
+    const user = await this.prisma.user.findFirst({ where: { phone: normalized } });
+    if (!user) {
+      throw new UnauthorizedException({ code: 'USER_NOT_FOUND', message: 'لا يوجد حساب بهذا الرقم' });
+    }
+    if (!user.isActive) {
+      throw new UnauthorizedException({ code: 'ACCOUNT_INACTIVE', message: 'الحساب موقوف' });
+    }
+    if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+      throw new ForbiddenException({
+        code: 'USE_ADMIN_LOGIN',
+        message: 'حساب الأدمن يستخدم نقطة الدخول الإدارية',
+      });
+    }
+    await this.prisma.user.updateMany({
+      where: { phone: normalized },
+      data: { isPhoneVerified: true },
+    });
+    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+    await this.audit.record({
+      userId: user.id,
+      action: 'auth.login_otp',
+      resourceType: 'User',
+      resourceId: user.id,
+      ipAddress: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    return this.issueTokens(user);
+  }
+
   // ─── Token issuance ─────────────────────────────────────────────
 
   private async issueTokens(

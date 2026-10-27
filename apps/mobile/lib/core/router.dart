@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'api/api_exception.dart';
 import 'package:go_router/go_router.dart';
 
 import 'auth/auth_controller.dart';
@@ -65,17 +67,38 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/login',
       builder: (context, state) => LoginScreen(
-        onOtp: () => context.push('/otp'),
+        // OTP login is handled inside the login screen (sends the code, then
+        // pushes /login-otp).
         onRegister: () => context.push('/register'),
       ),
     ),
     GoRoute(
-      // Login-by-OTP: UI only — the backend has no token-issuing OTP login yet,
-      // so verification here is a stub (see follow-up).
-      path: '/otp',
-      builder: (context, state) => OtpScreen(
-        onSuccess: () => context.go('/app'),
-      ),
+      // Passwordless login: the phone comes in via `extra`; verifying the code
+      // calls `POST /auth/login-otp` and issues a session.
+      path: '/login-otp',
+      builder: (context, state) {
+        final phone = state.extra is String ? state.extra as String : '';
+        return Consumer(
+          builder: (context, ref, _) => OtpScreen(
+            phone: phone,
+            onResend: () =>
+                ref.read(authControllerProvider.notifier).requestLoginOtp(phone),
+            onVerify: (code) async {
+              try {
+                await ref
+                    .read(authControllerProvider.notifier)
+                    .loginWithOtp(phone, code);
+                return null;
+              } on ApiException catch (e) {
+                return e.message;
+              } catch (_) {
+                return 'تعذّر الدخول. حاول مجددًا.';
+              }
+            },
+            onSuccess: () => context.go('/app'),
+          ),
+        );
+      },
     ),
     GoRoute(
       path: '/register',
