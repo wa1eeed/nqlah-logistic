@@ -34,7 +34,6 @@ import '../features/provider/trip_monitor_screen.dart';
 import '../features/driver/driver_trip_execution_screen.dart';
 import '../features/driver/driver_epod_screen.dart';
 import '../features/comms/chat_screen.dart';
-import '../features/comms/call_screens.dart';
 import '../features/shell/app_shell.dart';
 
 /// App router. Authentication-aware: a stored/valid session routes into the
@@ -252,17 +251,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       builder: (context, state) => ChatScreen(
         orderId: state.pathParameters['orderId']!,
         partyName: state.extra is String ? state.extra as String : null,
-      ),
-    ),
-    GoRoute(
-      path: '/video-call',
-      builder: (context, state) => const VideoCallScreen(),
-    ),
-    GoRoute(
-      path: '/incoming-call',
-      builder: (context, state) => IncomingCallScreen(
-        onAnswer: () => context.pushReplacement('/video-call'),
-        onDecline: () => context.pop(),
       ),
     ),
     ],

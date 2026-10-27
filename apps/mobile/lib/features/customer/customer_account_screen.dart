@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/platform/external_links.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -64,7 +65,8 @@ class CustomerAccountScreen extends ConsumerWidget {
           ]),
           const SizedBox(height: 16),
           _group(c, [
-            _row(c, NqIcons.question, 'المساعدة والدعم'),
+            _row(c, NqIcons.question, 'المساعدة والدعم',
+                onTap: () => ExternalLinks.contactSupportWhatsApp()),
             _row(c, NqIcons.signOut, 'تسجيل الخروج',
                 danger: true,
                 chevron: false,
