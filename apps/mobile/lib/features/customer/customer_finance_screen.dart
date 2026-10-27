@@ -31,6 +31,9 @@ class _CustomerFinanceScreenState extends ConsumerState<CustomerFinanceScreen> {
     final due = all.where((i) => i.isDue).toList();
     final paid = all.where((i) => i.isPaid).toList();
     final totalDue = due.fold<num>(0, (s, i) => s + i.totalAmount);
+    final heldInEscrow = (ref.watch(paymentsProvider).valueOrNull ?? const [])
+        .where((p) => p.isHeld)
+        .fold<num>(0, (s, p) => s + p.totalAmount);
     return Scaffold(
       backgroundColor: c.bg,
       body: SafeArea(
@@ -39,6 +42,10 @@ class _CustomerFinanceScreenState extends ConsumerState<CustomerFinanceScreen> {
           children: [
             _appBar(c),
             _heroCard(c, totalDue, due.length),
+            if (heldInEscrow > 0) ...[
+              const SizedBox(height: 12),
+              _escrowCard(c, heldInEscrow),
+            ],
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -51,7 +58,10 @@ class _CustomerFinanceScreenState extends ConsumerState<CustomerFinanceScreen> {
             const SizedBox(height: 14),
             Expanded(
               child: RefreshIndicator(
-                onRefresh: () => ref.refresh(invoicesProvider.future),
+                onRefresh: () {
+                  ref.invalidate(paymentsProvider);
+                  return ref.refresh(invoicesProvider.future);
+                },
                 color: c.mintTx,
                 child: async.when(
                   loading: () => _centered(_loader(c)),
@@ -206,6 +216,48 @@ class _CustomerFinanceScreenState extends ConsumerState<CustomerFinanceScreen> {
                       : 'لا فواتير مستحقة حاليًا',
                   style:
                       NqType.caption.copyWith(color: NqFixed.heroTextSecondary)),
+            ],
+          ),
+        ),
+      );
+
+  Widget _escrowCard(NqColors c, num held) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: c.mintBg,
+            borderRadius: BorderRadius.circular(NqRadius.card),
+            border: Border.all(color: c.mint.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration:
+                    BoxDecoration(color: c.mint, shape: BoxShape.circle),
+                child: NqIcon(NqIcons.shieldCheck, size: 22, color: c.onMint),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      Ltr(held.toStringAsFixed(2),
+                          style: NqType.price(size: 18).copyWith(color: c.tx)),
+                      const SizedBox(width: 3),
+                      Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+                    ]),
+                    const SizedBox(height: 2),
+                    Text('محفوظ في الضمان — يُحرَّر للمزوّد بعد تأكيدك الاستلام',
+                        style: NqType.caption.copyWith(color: c.tx2, height: 1.5),
+                        textAlign: TextAlign.right),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
