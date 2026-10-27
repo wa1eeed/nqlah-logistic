@@ -246,5 +246,11 @@ assets/
       and **truck detail** (6b) wired to live data (#137); «اطلب من هذا المزوّد»
       pre-fills a **DIRECT** order pinned to the provider (`targetCarrierId`);
       provider publishes from the **Fleet** screen via a bottom sheet (7a, #138).
-  - ⏳ Pending: load-detail + bid sheet (7b/7c); home wallet button; loads
-    «طلب مباشر» chip; new status chip «بانتظار رد المزوّد».
+  - ✅ Direct-request loop (#140–#141): provider sees DIRECT-to-me loads with a
+    «طلب مباشر لك» banner + «رفض الطلب» (`POST /orders/:id/decline-direct`);
+    customer sees «بانتظار رد المزوّد» while the pinned provider hasn't responded.
+    **Backend fix (#140):** `GET /orders?mine=false` had silently returned the
+    carrier's own work (the `enableImplicitConversion` ValidationPipe coerced the
+    string "false" to truthy `true`), so the provider marketplace never worked;
+    the controller now reads `mine` as a raw string.
+  - ⏳ Pending: load-detail + bid sheet (7b/7c); home wallet button.
