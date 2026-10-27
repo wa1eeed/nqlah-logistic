@@ -25,13 +25,15 @@ class OrdersRepository {
       final qp = <String, dynamic>{'mine': mine, 'page': page, 'limit': limit};
       if (status != null) qp['status'] = status;
       if (search != null && search.isNotEmpty) qp['search'] = search;
-      final res = await _dio.get<Map<String, dynamic>>(
-        '/orders',
-        queryParameters: qp,
-      );
+      final res = await _dio.get<dynamic>('/orders', queryParameters: qp);
       _ensureOk(res);
-      final data = (res.data?['data'] as List?) ?? const [];
-      return data
+      // The API flattens pagination into `{success, data:[...], meta}`; after the
+      // envelope unwrap `res.data` is the array (or a `{data:[...]}` fallback).
+      final raw = res.data;
+      final list = raw is List
+          ? raw
+          : (raw is Map ? (raw['data'] as List? ?? const []) : const []);
+      return list
           .whereType<Map>()
           .map((e) => OrderSummary.fromJson(Map<String, dynamic>.from(e)))
           .toList();
