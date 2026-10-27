@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/session/identity.dart';
 import '../../core/theme/tokens.dart';
@@ -70,7 +71,7 @@ class _AppShellState extends State<AppShell> {
     if (_identity == NqIdentity.customer) {
       switch (index) {
         case 0:
-          return const CustomerHomeScreen();
+          return CustomerHomeScreen(onNewOrder: () => context.push('/order'));
         case 2:
           return const CustomerShipmentsScreen();
         case 3:

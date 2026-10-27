@@ -6,6 +6,12 @@ import '../features/auth/register_account_type_screen.dart';
 import '../features/auth/plan_picker_screen.dart';
 import '../features/auth/register_documents_screen.dart';
 import '../features/auth/register_pending_screen.dart';
+import '../features/customer/order/order_step1_cargo.dart';
+import '../features/customer/order/order_step2_route.dart';
+import '../features/customer/order/order_step3_schedule.dart';
+import '../features/customer/order/order_step4_pricing.dart';
+import '../features/customer/order/order_step5_consignee.dart';
+import '../features/customer/order/order_step6_review.dart';
 import '../features/shell/app_shell.dart';
 
 /// App routes (Phase 1). The post-login shell is resolved from the account's
@@ -55,6 +61,37 @@ final router = GoRouter(
     GoRoute(
       path: '/app',
       builder: (context, state) => const AppShell(),
+    ),
+    GoRoute(
+      path: '/order',
+      builder: (context, state) => OrderStep1Cargo(
+        onNext: () => context.push('/order/route'),
+      ),
+    ),
+    GoRoute(
+      path: '/order/route',
+      builder: (context, state) =>
+          OrderStep2Route(onNext: () => context.push('/order/schedule')),
+    ),
+    GoRoute(
+      path: '/order/schedule',
+      builder: (context, state) =>
+          OrderStep3Schedule(onNext: () => context.push('/order/pricing')),
+    ),
+    GoRoute(
+      path: '/order/pricing',
+      builder: (context, state) =>
+          OrderStep4Pricing(onNext: () => context.push('/order/consignee')),
+    ),
+    GoRoute(
+      path: '/order/consignee',
+      builder: (context, state) =>
+          OrderStep5Consignee(onNext: () => context.push('/order/review')),
+    ),
+    GoRoute(
+      path: '/order/review',
+      builder: (context, state) =>
+          OrderStep6Review(onPublish: () => context.go('/app')),
     ),
   ],
 );

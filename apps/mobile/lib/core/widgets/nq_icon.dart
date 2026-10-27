@@ -97,4 +97,11 @@ class NqIcons {
   static const sealCheckFill = 'seal-check';
   static const arrowCounterClockwise = 'arrow-counter-clockwise';
   static const calendarBlank = 'calendar-blank';
+  static const x = 'x';
+  static const stack = 'stack';
+  static const plusCircle = 'plus-circle';
+  static const dotsThreeVertical = 'dots-three-vertical';
+  static const truckTrailer = 'truck-trailer';
+  static const flagCheckered = 'flag-checkered';
+  static const mapPinLine = 'map-pin-line';
 }
