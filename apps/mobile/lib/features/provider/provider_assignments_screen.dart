@@ -1,31 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/orders/order_models.dart';
+import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 import '../../design_system/chip.dart';
+import '../../design_system/status_chip.dart';
 
-/// Provider assignments (handoff 3c): filter chips + grouped order cards
-/// (awaiting assignment / in transit, incl. a late card).
-class ProviderAssignmentsScreen extends StatefulWidget {
+/// Provider assignments (handoff 3c): filter chips + the carrier's assigned
+/// orders grouped by status, wired to `GET /orders?mine=true` (carrier work).
+class ProviderAssignmentsScreen extends ConsumerStatefulWidget {
   const ProviderAssignmentsScreen({super.key, this.onAssign, this.onOpen});
 
-  final VoidCallback? onAssign;
-  final VoidCallback? onOpen;
+  final void Function(String orderId)? onAssign;
+  final void Function(String orderId)? onOpen;
 
   @override
-  State<ProviderAssignmentsScreen> createState() =>
+  ConsumerState<ProviderAssignmentsScreen> createState() =>
       _ProviderAssignmentsScreenState();
 }
 
-class _ProviderAssignmentsScreenState extends State<ProviderAssignmentsScreen> {
+// (filterIndex): 0 all · 1 ASSIGNED · 2 CONFIRMED · 3 IN_TRANSIT
+class _ProviderAssignmentsScreenState
+    extends ConsumerState<ProviderAssignmentsScreen> {
   int _filter = 0;
+
+  static const _active = ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT', 'DELIVERED'];
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
+    final async = ref.watch(providerWorkProvider);
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -34,45 +44,32 @@ class _ProviderAssignmentsScreenState extends State<ProviderAssignmentsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(
               children: [
-                Text('15 طلبًا', style: NqType.label.copyWith(color: c.tx2)),
+                Text(
+                    async.valueOrNull != null
+                        ? '${_activeOf(async.valueOrNull!).length} طلبًا'
+                        : '',
+                    style: NqType.label.copyWith(color: c.tx2)),
                 const Spacer(),
                 Text('التكليفات', style: NqType.h1.copyWith(color: c.tx)),
               ],
             ),
           ),
           const SizedBox(height: 14),
-          _filterChips(c),
+          _filterChips(c, async.valueOrNull ?? const []),
           const SizedBox(height: 12),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              children: [
-                _sectionLabel(c, 'بانتظار إسناد · 2'),
-                const SizedBox(height: 10),
-                _pendingCard(c, 'الدمام ← الرياض',
-                    'NQ-24-08856 · تريلا سطحة · الأربعاء 07:00'),
-                const SizedBox(height: 12),
-                _pendingCard(c, 'الجبيل ← جدة',
-                    'NQ-24-08861 · ستارة · الخميس 05:30'),
-                const SizedBox(height: 18),
-                _sectionLabel(c, 'في الطريق · 6'),
-                const SizedBox(height: 10),
-                _transitCard(c,
-                    route: 'الدمام ← الرياض',
-                    code: 'NQ-24-08812',
-                    driver: 'فهد العتيبي',
-                    status: 'التوقف 2/3 · الوصول 14:20',
-                    progress: 0.75,
-                    late: false),
-                const SizedBox(height: 12),
-                _transitCard(c,
-                    route: 'الخبر ← الأحساء',
-                    code: 'NQ-24-08799',
-                    driver: 'سالم القحطاني',
-                    status: 'آخر موقع قبل 22 د',
-                    progress: 0.9,
-                    late: true),
-              ],
+            child: RefreshIndicator(
+              onRefresh: () => ref.refresh(providerWorkProvider.future),
+              color: c.mintTx,
+              child: async.when(
+                loading: () => _centered(_loader(c)),
+                error: (e, _) => _centered(_errorState(
+                  c,
+                  e is ApiException ? e.message : 'تعذّر تحميل التكليفات.',
+                  () => ref.invalidate(providerWorkProvider),
+                )),
+                data: (orders) => _list(c, orders),
+              ),
             ),
           ),
         ],
@@ -80,9 +77,22 @@ class _ProviderAssignmentsScreenState extends State<ProviderAssignmentsScreen> {
     );
   }
 
-  Widget _filterChips(NqColors c) {
-    const labels = ['الكل', 'بانتظار إسناد', 'مُسند', 'في الطريق'];
-    const counts = [15, 2, 4, 6];
+  List<OrderSummary> _activeOf(List<OrderSummary> orders) => orders
+      .where((o) => _active.contains(o.status.toUpperCase()))
+      .toList();
+
+  int _countFor(List<OrderSummary> orders, String status) =>
+      orders.where((o) => o.status.toUpperCase() == status).length;
+
+  Widget _filterChips(NqColors c, List<OrderSummary> orders) {
+    final active = _activeOf(orders);
+    final labels = ['الكل', 'بانتظار إسناد', 'مُسند', 'في الطريق'];
+    final counts = [
+      active.length,
+      _countFor(orders, 'ASSIGNED'),
+      _countFor(orders, 'CONFIRMED'),
+      _countFor(orders, 'IN_TRANSIT'),
+    ];
     return SizedBox(
       height: 36,
       child: ListView(
@@ -104,55 +114,78 @@ class _ProviderAssignmentsScreenState extends State<ProviderAssignmentsScreen> {
     );
   }
 
-  Widget _sectionLabel(NqColors c, String t) =>
-      Text(t, style: NqType.labelStrong.copyWith(color: c.tx2), textAlign: TextAlign.right);
+  Widget _list(NqColors c, List<OrderSummary> orders) {
+    var items = _activeOf(orders);
+    if (_filter == 1) {
+      items = items.where((o) => o.status.toUpperCase() == 'ASSIGNED').toList();
+    } else if (_filter == 2) {
+      items = items.where((o) => o.status.toUpperCase() == 'CONFIRMED').toList();
+    } else if (_filter == 3) {
+      items =
+          items.where((o) => o.status.toUpperCase() == 'IN_TRANSIT').toList();
+    }
+    if (items.isEmpty) {
+      return _centered(Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NqIcon(NqIcons.clipboardText, size: 40, color: c.tx3),
+          const SizedBox(height: 12),
+          Text('لا توجد تكليفات', style: NqType.h3.copyWith(color: c.tx2)),
+          const SizedBox(height: 6),
+          Text('اقبل حمولة من السوق لتظهر هنا',
+              style: NqType.body.copyWith(color: c.tx3)),
+        ],
+      ));
+    }
+    // Sort: awaiting-assignment first, then by status order.
+    items.sort((a, b) =>
+        _active.indexOf(a.status.toUpperCase()) -
+        _active.indexOf(b.status.toUpperCase()));
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      itemCount: items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (_, i) => _assignmentCard(c, items[i]),
+    );
+  }
 
-  Widget _card(NqColors c, Widget child) => GestureDetector(
-        onTap: widget.onOpen,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: c.sf,
-            borderRadius: BorderRadius.circular(NqRadius.card),
-            border: Border.all(color: c.bd),
-          ),
-          child: child,
+  Widget _assignmentCard(NqColors c, OrderSummary o) {
+    final needsDriver = o.status.toUpperCase() == 'ASSIGNED';
+    return GestureDetector(
+      onTap: () => (widget.onOpen ?? (_) {})(o.id),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: c.sf,
+          borderRadius: BorderRadius.circular(NqRadius.card),
+          border: Border.all(color: c.bd),
         ),
-      );
-
-  Widget _pendingCard(NqColors c, String route, String meta) => _card(
-        c,
-        Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: c.warnBg,
-                    borderRadius: BorderRadius.circular(NqRadius.pill),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    NqIcon(NqIcons.userPlus, size: 14, color: c.warn),
-                    const SizedBox(width: 6),
-                    Text('بانتظار إسناد',
-                        style: NqType.caption
-                            .copyWith(color: c.warn, fontWeight: FontWeight.w700)),
-                  ]),
-                ),
+                NqStatusChip(o.nqStatus),
                 const Spacer(),
                 Expanded(
                   flex: 3,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(route, style: NqType.h3.copyWith(color: c.tx)),
+                      Text(o.route, style: NqType.h3.copyWith(color: c.tx)),
                       const SizedBox(height: 2),
-                      Text(meta,
-                          style: NqType.caption.copyWith(color: c.tx2),
-                          textAlign: TextAlign.right),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                              '${truckLabel(o.requiredTruckType)} · ${fmtDate(o.pickupDate)} · ',
+                              style: NqType.caption.copyWith(color: c.tx2)),
+                          Ltr(o.orderNumber,
+                              style:
+                                  NqType.code(size: 12).copyWith(color: c.tx2)),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -163,83 +196,76 @@ class _ProviderAssignmentsScreenState extends State<ProviderAssignmentsScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                NqButton(label: 'إسناد', expand: false, onPressed: widget.onAssign ?? () {}),
+                if (needsDriver)
+                  NqButton(
+                    label: 'إسناد سائق',
+                    expand: false,
+                    icon: NqIcons.steeringWheel,
+                    onPressed: () => (widget.onAssign ?? (_) {})(o.id),
+                  )
+                else
+                  NqButton(
+                    label: 'فتح الطلب',
+                    expand: false,
+                    variant: NqButtonVariant.secondary,
+                    onPressed: () => (widget.onOpen ?? (_) {})(o.id),
+                  ),
                 const Spacer(),
-                Text('لم يُسند بعد', style: NqType.label.copyWith(color: c.tx2)),
+                Text(_hint(o), style: NqType.label.copyWith(color: c.tx2)),
                 const SizedBox(width: 6),
-                NqIcon(NqIcons.userCircle, size: 18, color: c.tx3),
+                NqIcon(needsDriver ? NqIcons.userPlus : NqIcons.truck,
+                    size: 18, color: c.tx3),
               ],
             ),
           ],
         ),
-      );
-
-  Widget _transitCard(NqColors c,
-      {required String route,
-      required String code,
-      required String driver,
-      required String status,
-      required double progress,
-      required bool late}) {
-    final accent = late ? c.err : c.info;
-    return _card(
-      c,
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: late ? c.errBg : c.infoBg,
-                  borderRadius: BorderRadius.circular(NqRadius.pill),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  NqIcon(late ? NqIcons.warningOctagon : NqIcons.truck,
-                      fill: !late, size: 14, color: accent),
-                  const SizedBox(width: 6),
-                  Text(late ? 'متأخر 35 د' : 'في الطريق',
-                      style: NqType.caption
-                          .copyWith(color: accent, fontWeight: FontWeight.w700)),
-                ]),
-              ),
-              const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(route, style: NqType.h3.copyWith(color: c.tx)),
-                  const SizedBox(height: 2),
-                  Ltr(code, style: NqType.code(size: 13).copyWith(color: c.tx2)),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: c.sf2,
-              color: accent,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Text(status,
-                  style: NqType.label.copyWith(
-                      color: late ? c.err : c.tx2,
-                      fontWeight: late ? FontWeight.w700 : FontWeight.w500)),
-              const Spacer(),
-              Text(driver, style: NqType.label.copyWith(color: c.tx)),
-              const SizedBox(width: 6),
-              NqIcon(NqIcons.steeringWheel, size: 18, color: c.tx3),
-            ],
-          ),
-        ],
       ),
     );
   }
+
+  String _hint(OrderSummary o) => switch (o.nqStatus) {
+        NqStatus.assigned => 'يحتاج إسناد سائق',
+        NqStatus.confirmed => 'جاهز للانطلاق',
+        NqStatus.inTransit => 'قيد التنفيذ',
+        NqStatus.delivered => 'تم التسليم',
+        _ => '',
+      };
+
+  Widget _centered(Widget child) => ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [SizedBox(height: 440, child: Center(child: child))],
+      );
+
+  Widget _loader(NqColors c) => SizedBox(
+        width: 30,
+        height: 30,
+        child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
+      );
+
+  Widget _errorState(NqColors c, String msg, VoidCallback onRetry) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            NqIcon(NqIcons.warningCircle, size: 40, color: c.err),
+            const SizedBox(height: 12),
+            Text(msg,
+                style: NqType.body.copyWith(color: c.tx2),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                    color: c.mintBg,
+                    borderRadius: BorderRadius.circular(NqRadius.pill)),
+                child: Text('إعادة المحاولة',
+                    style: NqType.labelStrong.copyWith(color: c.mintTx)),
+              ),
+            ),
+          ],
+        ),
+      );
 }

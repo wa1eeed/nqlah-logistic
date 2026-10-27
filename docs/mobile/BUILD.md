@@ -102,11 +102,17 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   `priceMode`/`collectionMethod`/`clientName`/`createdAt`/`bids` (+`BidRef`, `myBid()`,
   `isFixedPrice`). Providers `marketplaceLoadsProvider` + `providerWorkProvider` (mine=true).
 
-- **Orders follow-ups (next slices):** provider order view (3a) + assignment (1h);
-  assignments (3c) via `providerWorkProvider`; provider home (2d), fleet (3e/3f),
-  maintenance (3g), finance (3h), owner-driver (1i/2e); **customer finance (4h)** + order
-  actions (cancel/confirm) via payments/invoices; consolidated multi-leg; a real maps SDK;
-  comms backend.
+- **Provider assignments (3c)** is wired to `providerWorkProvider` (carrier `mine=true`):
+  the carrier's active orders (ASSIGNED/CONFIRMED/IN_TRANSIT/DELIVERED), filter chips with
+  live counts (all / awaiting-assignment / assigned / in-transit), status-driven cards
+  (ASSIGNED → "إسناد سائق" → driver-assignment; else "فتح الطلب" → order detail), with
+  search-free list, pull-to-refresh, loading/empty/error. The shell passes
+  `onAssign(id)`/`onOpen(id)`.
+- **Orders follow-ups (next slices):** provider order view (3a, carrier-specific) +
+  assignment (1h) wired to driver assignment + `GET /orders/:id/legs`; provider home (2d);
+  fleet (3e/3f), maintenance (3g), finance (3h), owner-driver (1i/2e); **customer finance
+  (4h)** + order actions (cancel/confirm); consolidated multi-leg; a real maps SDK; comms
+  backend.
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`
