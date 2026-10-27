@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/driver/driver_repository.dart';
+import '../../core/orders/order_models.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -7,52 +11,61 @@ import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 import '../../design_system/segmented.dart';
 
-/// Employed-driver home — my trips (handoff 5a). Execution-only: no prices, no
-/// customer identity. New assignments are acknowledged with «استلام التكليف».
-class DriverMyTripsScreen extends StatefulWidget {
+/// Employed-driver home — my trips (handoff 5a), wired to `GET /driver/jobs` +
+/// `GET /driver/me`. Execution-only: no prices, no customer identity.
+class DriverMyTripsScreen extends ConsumerStatefulWidget {
   const DriverMyTripsScreen({super.key, this.onAcknowledge, this.onOpenTrip});
 
-  final VoidCallback? onAcknowledge;
-  final VoidCallback? onOpenTrip;
+  final void Function(String orderId)? onAcknowledge;
+  final void Function(String orderId)? onOpenTrip;
 
   @override
-  State<DriverMyTripsScreen> createState() => _DriverMyTripsScreenState();
+  ConsumerState<DriverMyTripsScreen> createState() =>
+      _DriverMyTripsScreenState();
 }
 
-class _DriverMyTripsScreenState extends State<DriverMyTripsScreen> {
-  int _seg = 0;
+class _DriverMyTripsScreenState extends ConsumerState<DriverMyTripsScreen> {
+  int _seg = 0; // 0 new, 1 upcoming, 2 done
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
+    final me = ref.watch(driverMeProvider).valueOrNull;
+    final jobsAsync = ref.watch(driverJobsProvider);
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: _header(c),
+            child: _header(c, me),
           ),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: NqSegmented(
-              options: const ['جديدة 1', 'قادمة 2', 'مكتملة'],
+              options: _segLabels(jobsAsync.valueOrNull),
               index: _seg,
               onChanged: (i) => setState(() => _seg = i),
             ),
           ),
           const SizedBox(height: 14),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              children: [
-                _newAssignment(c),
-                const SizedBox(height: 18),
-                Text('القادمة', style: NqType.labelStrong.copyWith(color: c.tx2), textAlign: TextAlign.right),
-                const SizedBox(height: 10),
-                _upcoming(c),
-              ],
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(driverJobsProvider);
+                ref.invalidate(driverMeProvider);
+                await ref.read(driverJobsProvider.future);
+              },
+              color: c.mintTx,
+              child: jobsAsync.when(
+                loading: () => _centered(_loader(c)),
+                error: (e, _) => _centered(_errorState(
+                    c,
+                    e is ApiException ? e.message : 'تعذّر تحميل الرحلات.',
+                    () => ref.invalidate(driverJobsProvider))),
+                data: (jobs) => _list(c, jobs),
+              ),
             ),
           ),
         ],
@@ -60,40 +73,99 @@ class _DriverMyTripsScreenState extends State<DriverMyTripsScreen> {
     );
   }
 
-  Widget _header(NqColors c) => Row(
-        children: [
-          Container(
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: c.okBg, borderRadius: BorderRadius.circular(NqRadius.pill)),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 7, height: 7, decoration: BoxDecoration(color: c.ok, shape: BoxShape.circle)),
-              const SizedBox(width: 6),
-              Text('متاح', style: NqType.caption.copyWith(color: c.ok, fontWeight: FontWeight.w700)),
-            ]),
-          ),
-          const Spacer(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('فهد العتيبي', style: NqType.h2.copyWith(color: c.tx)),
-              const SizedBox(height: 2),
-              Text('سائق · شركة الأفق للنقل', style: NqType.caption.copyWith(color: c.tx2)),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 52,
-            height: 52,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: c.hero, shape: BoxShape.circle),
-            child: Text('ف', style: NqType.h1.copyWith(color: NqFixed.heroText)),
-          ),
-        ],
-      );
+  List<DriverJob> _bucket(List<DriverJob> jobs, int seg) {
+    switch (seg) {
+      case 0: // جديدة — assigned, awaiting acknowledge
+        return jobs.where((j) => j.status.toUpperCase() == 'ASSIGNED').toList();
+      case 1: // قادمة — confirmed / in transit
+        return jobs
+            .where((j) => const ['CONFIRMED', 'IN_TRANSIT']
+                .contains(j.status.toUpperCase()))
+            .toList();
+      default: // مكتملة
+        return jobs
+            .where((j) => const ['DELIVERED', 'COMPLETED']
+                .contains(j.status.toUpperCase()))
+            .toList();
+    }
+  }
 
-  Widget _newAssignment(NqColors c) => Container(
+  List<String> _segLabels(List<DriverJob>? jobs) {
+    final labels = ['جديدة', 'قادمة', 'مكتملة'];
+    if (jobs == null) return labels;
+    for (var i = 0; i < 3; i++) {
+      final n = _bucket(jobs, i).length;
+      if (n > 0) labels[i] = '${labels[i]} $n';
+    }
+    return labels;
+  }
+
+  Widget _list(NqColors c, List<DriverJob> jobs) {
+    final items = _bucket(jobs, _seg);
+    if (items.isEmpty) {
+      return _centered(Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NqIcon(NqIcons.path, size: 40, color: c.tx3),
+          const SizedBox(height: 12),
+          Text(
+              _seg == 0
+                  ? 'لا تكاليف جديدة'
+                  : (_seg == 1 ? 'لا رحلات قادمة' : 'لا رحلات مكتملة'),
+              style: NqType.h3.copyWith(color: c.tx2)),
+        ],
+      ));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      itemCount: items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (_, i) =>
+          _seg == 0 ? _newCard(c, items[i]) : _tripCard(c, items[i]),
+    );
+  }
+
+  Widget _header(NqColors c, DriverMe? me) {
+    final name = me?.name ?? 'السائق';
+    final available = (me?.status.toUpperCase() ?? '') == 'AVAILABLE';
+    return Row(
+      children: [
+        Container(
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+              color: available ? c.okBg : c.sf2,
+              borderRadius: BorderRadius.circular(NqRadius.pill)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                    color: available ? c.ok : c.tx3, shape: BoxShape.circle)),
+            const SizedBox(width: 6),
+            Text(available ? 'متاح' : 'غير متاح',
+                style: NqType.caption.copyWith(
+                    color: available ? c.ok : c.tx2,
+                    fontWeight: FontWeight.w700)),
+          ]),
+        ),
+        const Spacer(),
+        Text(name, style: NqType.h2.copyWith(color: c.tx)),
+        const SizedBox(width: 12),
+        Container(
+          width: 52,
+          height: 52,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: c.hero, shape: BoxShape.circle),
+          child: Text(name.isNotEmpty ? name.substring(0, 1) : 'س',
+              style: NqType.h1.copyWith(color: NqFixed.heroText)),
+        ),
+      ],
+    );
+  }
+
+  Widget _newCard(NqColors c, DriverJob j) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: c.sf,
@@ -105,102 +177,146 @@ class _DriverMyTripsScreenState extends State<DriverMyTripsScreen> {
           children: [
             Row(children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: c.mintBg, borderRadius: BorderRadius.circular(NqRadius.pill)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                    color: c.mintBg,
+                    borderRadius: BorderRadius.circular(NqRadius.pill)),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   NqIcon(NqIcons.bell, size: 14, color: c.mintTx),
                   const SizedBox(width: 6),
-                  Text('تكليف جديد', style: NqType.caption.copyWith(color: c.mintTx, fontWeight: FontWeight.w700)),
+                  Text('تكليف جديد',
+                      style: NqType.caption.copyWith(
+                          color: c.mintTx, fontWeight: FontWeight.w700)),
                 ]),
               ),
               const Spacer(),
-              Ltr('NQ-24-08856 · L1', style: NqType.code(size: 14).copyWith(color: c.tx2)),
+              Ltr(j.orderNumber,
+                  style: NqType.code(size: 14).copyWith(color: c.tx2)),
             ]),
             const SizedBox(height: 12),
-            Text('الدمام ← الرياض', style: NqType.driverTitle.copyWith(color: c.tx), textAlign: TextAlign.right),
+            Text(j.route,
+                style: NqType.driverTitle.copyWith(color: c.tx),
+                textAlign: TextAlign.right),
             const SizedBox(height: 10),
-            _detail(c, NqIcons.calendarBlank, 'الأربعاء 29/10 · 07:00'),
-            _detail(c, NqIcons.truck, 'تريلا سطحة · 7342 KHD'),
-            _detail(c, NqIcons.mapPin, 'استلام + تفريغ + إرجاع حاوية'),
-            const SizedBox(height: 12),
-            _officeNote(c),
+            _detail(c, NqIcons.calendarBlank, fmtDate(j.pickupDate)),
+            if (j.cargoDescription != null && j.cargoDescription!.isNotEmpty)
+              _detail(c, NqIcons.package, j.cargoDescription!),
+            _detail(c, NqIcons.mapPin,
+                j.stopsCount > 0 ? '${j.stopsCount} توقفات' : 'استلام + تفريغ'),
             const SizedBox(height: 14),
             NqButton(
               label: 'استلام التكليف',
               icon: NqIcons.checkCircle,
               size: NqButtonSize.driver,
-              onPressed: widget.onAcknowledge ?? () {},
+              onPressed: () => (widget.onAcknowledge ?? (_) {})(j.id),
             ),
             const SizedBox(height: 10),
-            Text('أسندها لك مكتب شركة الأفق · للاستفسار اتصل بالمكتب',
-                style: NqType.caption.copyWith(color: c.tx2), textAlign: TextAlign.center),
+            Text('أسندها لك مكتب الشركة · للاستفسار اتصل بالمكتب',
+                style: NqType.caption.copyWith(color: c.tx2),
+                textAlign: TextAlign.center),
           ],
         ),
       );
+
+  Widget _tripCard(NqColors c, DriverJob j) {
+    final inTransit = j.status.toUpperCase() == 'IN_TRANSIT';
+    return GestureDetector(
+      onTap: () => (widget.onOpenTrip ?? (_) {})(j.id),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: c.sf,
+          borderRadius: BorderRadius.circular(NqRadius.card),
+          border: Border.all(color: c.bd),
+        ),
+        child: Row(children: [
+          Container(
+            height: 28,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                color: inTransit ? c.infoBg : c.mintBg,
+                borderRadius: BorderRadius.circular(NqRadius.pill)),
+            child: Text(inTransit ? 'جارية' : 'مؤكّد',
+                style: NqType.caption.copyWith(
+                    color: inTransit ? c.info : c.mintTx,
+                    fontWeight: FontWeight.w700)),
+          ),
+          const Spacer(),
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text(j.route, style: NqType.h3.copyWith(color: c.tx)),
+            const SizedBox(height: 2),
+            Text(
+                j.stopsCount > 0 ? '${j.stopsCount} توقفات' : 'استلام + تفريغ',
+                style: NqType.caption.copyWith(color: c.tx2)),
+          ]),
+          const SizedBox(width: 12),
+          Container(
+            width: 64,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+                color: c.sf2, borderRadius: BorderRadius.circular(NqRadius.button)),
+            child: Column(children: [
+              Ltr(fmtDate(j.pickupDate),
+                  style: NqType.caption.copyWith(color: c.tx2)),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
 
   Widget _detail(NqColors c, String icon, String text) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(children: [
           const Spacer(),
-          Text(text, style: NqType.body.copyWith(color: c.tx)),
+          Flexible(
+            child: Text(text,
+                style: NqType.body.copyWith(color: c.tx),
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis),
+          ),
           const SizedBox(width: 8),
           NqIcon(icon, size: 18, color: c.tx2),
         ]),
       );
 
-  Widget _officeNote(NqColors c) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: c.warnBg,
-          borderRadius: BorderRadius.circular(NqRadius.button),
-          border: Border.all(color: c.warn, width: 1.5),
-        ),
-        child: Text.rich(
-          TextSpan(children: [
-            TextSpan(text: 'ملاحظة من المكتب: ', style: NqType.labelStrong.copyWith(color: c.warn)),
-            TextSpan(text: 'الدخول من البوابة 3 والتحميل بالرافعة.', style: NqType.body.copyWith(color: c.tx)),
-          ]),
-          textAlign: TextAlign.right,
-        ),
+  Widget _centered(Widget child) => ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [SizedBox(height: 420, child: Center(child: child))],
       );
 
-  Widget _upcoming(NqColors c) => GestureDetector(
-        onTap: widget.onOpenTrip,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: c.sf,
-            borderRadius: BorderRadius.circular(NqRadius.card),
-            border: Border.all(color: c.bd),
-          ),
-          child: Row(children: [
-            Container(
-              height: 28,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(color: c.mintBg, borderRadius: BorderRadius.circular(NqRadius.pill)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                NqIcon(NqIcons.checkCircle, size: 14, color: c.mintTx),
-                const SizedBox(width: 6),
-                Text('مؤكّد', style: NqType.caption.copyWith(color: c.mintTx, fontWeight: FontWeight.w700)),
-              ]),
+  Widget _loader(NqColors c) => SizedBox(
+        width: 30,
+        height: 30,
+        child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
+      );
+
+  Widget _errorState(NqColors c, String msg, VoidCallback onRetry) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            NqIcon(NqIcons.warningCircle, size: 40, color: c.err),
+            const SizedBox(height: 12),
+            Text(msg,
+                style: NqType.body.copyWith(color: c.tx2),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                    color: c.mintBg,
+                    borderRadius: BorderRadius.circular(NqRadius.pill)),
+                child: Text('إعادة المحاولة',
+                    style: NqType.labelStrong.copyWith(color: c.mintTx)),
+              ),
             ),
-            const Spacer(),
-            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Text('الجبيل ← جدة', style: NqType.h3.copyWith(color: c.tx)),
-              const SizedBox(height: 2),
-              Text('ستارة · توقفان', style: NqType.caption.copyWith(color: c.tx2)),
-            ]),
-            const SizedBox(width: 12),
-            Container(
-              width: 60,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(color: c.sf2, borderRadius: BorderRadius.circular(NqRadius.button)),
-              child: Column(children: [
-                Text('الخميس', style: NqType.caption.copyWith(color: c.tx2)),
-                Ltr('05:30', style: NqType.numeric(16, FontWeight.w700).copyWith(color: c.tx)),
-              ]),
-            ),
-          ]),
+          ],
         ),
       );
 }
