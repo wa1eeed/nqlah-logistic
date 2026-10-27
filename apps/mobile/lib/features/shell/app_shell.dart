@@ -16,6 +16,7 @@ import '../provider/provider_finance_screen.dart';
 import '../provider/provider_fleet_screen.dart';
 import '../provider/provider_home_screen.dart';
 import '../provider/provider_loads_screen.dart';
+import '../provider/owner_driver_home_screen.dart';
 
 /// The policy-driven app shell (handoff §2a): one app that mounts the matching
 /// bottom-tab set for the account's identity. Tab bodies are placeholders in
@@ -24,9 +25,11 @@ import '../provider/provider_loads_screen.dart';
 /// A dev identity switcher (top-left) lets us preview every shell without a
 /// backend; it is removed once auth is wired to the API.
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, this.identity = NqIdentity.customer});
+  const AppShell(
+      {super.key, this.identity = NqIdentity.customer, this.ownerDriver = false});
 
   final NqIdentity identity;
+  final bool ownerDriver;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -34,7 +37,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   late NqIdentity _identity = widget.identity;
-  bool _ownerDriver = false;
+  late bool _ownerDriver = widget.ownerDriver;
   OwnerDriverContext _odContext = OwnerDriverContext.provider;
   int _index = 0;
 
@@ -92,6 +95,17 @@ class _AppShellState extends State<AppShell> {
         case 4:
           return const CustomerAccountScreen();
       }
+    }
+    if (_identity == NqIdentity.provider && _ownerDriver && index == 0) {
+      return OwnerDriverHomeScreen(
+        driving: _odContext == OwnerDriverContext.driving,
+        onSwitch: (i) => setState(() {
+          _odContext =
+              i == 1 ? OwnerDriverContext.driving : OwnerDriverContext.provider;
+          _index = 0;
+        }),
+        onSelfAssign: () => context.push('/driver-assignment'),
+      );
     }
     if (_identity == NqIdentity.provider && !_ownerDriver) {
       switch (index) {
