@@ -106,4 +106,8 @@ class NqIcons {
   static const mapPinLine = 'map-pin-line';
   static const dotsThree = 'dots-three';
   static const listBullets = 'list-bullets';
+  static const arrowUDownLeft = 'arrow-u-down-left';
+  static const scales = 'scales';
+  static const ruler = 'ruler';
+  static const shareNetwork = 'share-network';
 }

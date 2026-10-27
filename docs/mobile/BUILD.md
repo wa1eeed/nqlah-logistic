@@ -44,13 +44,16 @@ assets/
 - **Numbers/codes/prices/plates** always `Ltr(...)` + Inter.
 - Verified in the browser via `flutter run -d web-server --web-port=8090`; iOS
   simulator pending full Xcode on the dev machine.
+- **Follow-up:** `google_fonts` fetches Tajawal/Inter at runtime (first load can
+  show tofu until fetched). Bundle the font files in `assets/` + pubspec for
+  reliable offline rendering before release.
 
 ## Phase status
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Design system (tokens, theme, components, icons, gallery) | ✅ merged (#101) |
 | 1 | Shell + auth: login (2c), OTP (5d), register (1l/1m/5e/5f), per-role nav (2a) | ✅ merged (#102, #103) |
-| 2 | Customer: home (1a), create-order wizard (1b/4a–4e), shipments (4g), offers (4f), order detail (1c), tracking (1d), finance, trucks (6a/6b) | 🚧 home/shipments/offers + create-order wizard + order detail (1c) + tracking (1d) done; finance (4h), account (5c), notifications (5b), 6a/6b next |
+| 2 | Customer: home (1a), create-order wizard (1b/4a–4e), shipments (4g), offers (4f), order detail (1c), tracking (1d), trucks (6a/6b), finance | 🚧 home/shipments/offers + wizard + order detail + tracking + Trucks tab (6a/6b) done; finance (4h), account (5c), notifications (5b) next |
 | 3 | Provider: home, loads, assignments, fleet, finance, owner-driver, availability (7a/7b/7c) | ⏳ |
 | 4 | Driver: my trips, execution, ePOD | ⏳ |
 | 5 | Communication: chat, voice notes, calls | ⏳ |

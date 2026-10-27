@@ -23,6 +23,7 @@ class NqPartyCard extends StatelessWidget {
     this.onCall,
     this.onChat,
     this.callFilled = false,
+    this.showCall = true,
   });
 
   final String initial;
@@ -36,6 +37,7 @@ class NqPartyCard extends StatelessWidget {
   final VoidCallback? onCall;
   final VoidCallback? onChat;
   final bool callFilled;
+  final bool showCall;
 
   @override
   Widget build(BuildContext context) {
@@ -52,9 +54,10 @@ class NqPartyCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              _actionBtn(c, NqIcons.phone,
-                  filled: callFilled, onTap: onCall),
-              const SizedBox(width: 8),
+              if (showCall) ...[
+                _actionBtn(c, NqIcons.phone, filled: callFilled, onTap: onCall),
+                const SizedBox(width: 8),
+              ],
               _actionBtn(c, NqIcons.chatCenteredDots, onTap: onChat),
               const Spacer(),
               Expanded(
@@ -150,13 +153,19 @@ class NqPartyCard extends StatelessWidget {
         children: [
           NqIcon(revealed ? NqIcons.lockOpen : NqIcons.lockSimple,
               size: 16, color: revealed ? c.ok : c.tx3),
-          const Spacer(),
-          if (phone != null)
+          if (phone != null) ...[
+            const SizedBox(width: 10),
             Ltr(phone!,
                 style: NqType.numeric(13, FontWeight.w600).copyWith(color: c.tx)),
-          if (phone != null && revealLabel != null) const SizedBox(width: 10),
+          ],
+          const SizedBox(width: 10),
           if (revealLabel != null)
-            Text(revealLabel!, style: NqType.caption.copyWith(color: c.tx2)),
+            Expanded(
+              child: Text(revealLabel!,
+                  style: NqType.caption.copyWith(color: c.tx2),
+                  textAlign: TextAlign.right,
+                  maxLines: 2),
+            ),
         ],
       ),
     );
