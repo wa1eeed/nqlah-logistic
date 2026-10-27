@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css"><style>body{margin:0;background:#E9ECEB;font-family:Inter,system-ui,sans-serif}a{color:#007A66}a:hover{color:#0A3D3A}</style></helmet>
+<div style="padding:40px 44px;display:flex;flex-direction:column;gap:28px;max-width:1320px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:10px;background:#0A3D3A;display:grid;place-items:center"><div style="width:12px;height:12px;background:#00C9A7;transform:rotate(45deg);border-radius:2px"></div></div><div style="font:800 24px Tajawal,sans-serif;color:#0A3D3A">نقلة · Design system v0.1 (style sheet)</div></div>
+<div style="font:400 14px/1.6 Inter,sans-serif;color:#3d4a48;max-width:760px">One-page token sheet for round 1. Full component specs, redlines, motion and nav map follow in the handoff doc once the direction is approved. Text-safe variants were added where brief colors fail AA as text on light (mint text <b>#007A66</b>, success <b>#15803D</b>, warning <b>#B45309</b>, info <b>#1D4ED8</b>); the brief values stay for fills and icons.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;font:500 12px Inter,sans-serif"><a href="NQLAH Customer.dc.html">Customer</a>·<a href="NQLAH Provider and Drivers.dc.html">Provider &amp; Drivers</a>·<a href="NQLAH Auth and Comms.dc.html">Auth &amp; Comms</a>·<a href="NQLAH Design System.dc.html">Design system</a></div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,600px),1fr));gap:20px">
+<sc-for list="{{ palettes }}" as="p" hint-placeholder-count="2">
+<div style="{{ p.wrap }}">
+<div style="font:600 12px ui-monospace,monospace;letter-spacing:.5px;opacity:.7">{{ p.name }}</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">
+<sc-for list="{{ p.sw }}" as="s" hint-placeholder-count="12">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="{{ s.chip }}"></div><div style="font:600 12px Inter,sans-serif">{{ s.k }}</div><div style="font:400 11px ui-monospace,monospace;opacity:.65">{{ s.v }}</div></div>
+</sc-for>
+</div></div>
+</sc-for>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px">
+<div dir="rtl" style="background:#fff;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;color:#0F1A19">
+<div dir="ltr" style="font:600 12px ui-monospace,monospace;opacity:.6">TYPE · Tajawal (Arabic) + Inter tabular (numerals, codes)</div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:800 30px/1.25 Tajawal">إلى أين تتجه شحنتك؟</span><span dir="ltr" style="font:500 11px ui-monospace,monospace;color:#7E8E8C">Display 30/38 · 800</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:800 23px/1.3 Tajawal">الأحمال المتاحة</span><span dir="ltr" style="font:500 11px ui-monospace,monospace;color:#7E8E8C">H1 23/30 · 800</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:700 18px/1.35 Tajawal">مسار الرحلة</span><span dir="ltr" style="font:500 11px ui-monospace,monospace;color:#7E8E8C">H2 18/24 · 700</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:700 16px/1.4 Tajawal">شركة الأفق للنقل</span><span dir="ltr" style="font:500 11px ui-monospace,monospace;color:#7E8E8C">H3 16/22 · 700</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:400 15px/1.55 Tajawal">الدخول من البوابة 3. التفريغ بالرافعة.</span><span dir="ltr" style="font:500 11px ui-monospace,monospace;color:#7E8E8C">Body 15/23 · 400</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:500 13px/1.45 Tajawal;color:#566664">ميناء الملك عبدالعزيز</span><span dir="ltr" style="font:500 11px ui-monospace,monospace;color:#7E8E8C">Label 13/19 · 500</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:400 12px/1.4 Tajawal;color:#566664">آخر تحديث قبل 2 د</span><span dir="ltr" style="font:500 11px ui-monospace,monospace;color:#7E8E8C">Caption 12/17 · 400</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-top:1px solid #E2E8E7;padding-top:12px"><bdi dir="ltr" style="font:700 26px Inter;font-feature-settings:'tnum'">2,898.00 <span style="font:500 14px Tajawal;color:#566664">ر.س</span></bdi><span dir="ltr" style="font:500 11px ui-monospace,monospace;color:#7E8E8C">Price 20–28 · Inter 700 tnum</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><bdi dir="ltr" style="font:600 15px Inter;letter-spacing:.5px">TGHU 771392-0 · 7342 KHD · NQ-24-08812</bdi><span dir="ltr" style="font:500 11px ui-monospace,monospace;color:#7E8E8C">Code 13–16 · Inter 600</span></div>
+</div>
+
+<div style="background:#fff;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:18px;color:#0F1A19">
+<div style="font:600 12px ui-monospace,monospace;opacity:.6">SPACING · RADII · ELEVATION</div>
+<div style="display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap"><sc-for list="{{ spaces }}" as="s" hint-placeholder-count="8"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="{{ s.box }}"></div><span style="font:500 11px ui-monospace,monospace;color:#566664">{{ s.v }}</span></div></sc-for></div>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:72px;height:48px;border-radius:12px;background:#EDF2F1;border:1px solid #E2E8E7"></div><span style="font:500 11px ui-monospace,monospace;color:#566664">12 input/btn</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:72px;height:48px;border-radius:16px;background:#EDF2F1;border:1px solid #E2E8E7"></div><span style="font:500 11px ui-monospace,monospace;color:#566664">16 card</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:72px;height:48px;border-radius:20px 20px 0 0;background:#EDF2F1;border:1px solid #E2E8E7"></div><span style="font:500 11px ui-monospace,monospace;color:#566664">20 sheet</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:72px;height:48px;border-radius:999px;background:#EDF2F1;border:1px solid #E2E8E7"></div><span style="font:500 11px ui-monospace,monospace;color:#566664">full chip</span></div>
+</div>
+<div style="display:flex;gap:16px;flex-wrap:wrap;background:#F6F8F8;padding:16px;border-radius:12px">
+<div style="width:120px;height:64px;border-radius:16px;background:#fff;border:1px solid #E2E8E7;box-shadow:0 1px 2px rgba(10,26,25,.05), 0 8px 24px -14px rgba(10,26,25,.22);display:grid;place-items:center;font:500 11px ui-monospace,monospace;color:#566664">e1 card</div>
+<div style="width:120px;height:64px;border-radius:16px;background:#fff;box-shadow:0 -10px 30px -12px rgba(0,0,0,.25);display:grid;place-items:center;font:500 11px ui-monospace,monospace;color:#566664">e2 sheet</div>
+<div style="width:120px;height:64px;border-radius:16px;background:#111E1C;border:1px solid #243533;display:grid;place-items:center;font:500 11px ui-monospace,monospace;color:#9FB4B1">dark: border</div>
+</div>
+<div style="font:400 12px/1.6 Inter;color:#566664">Gutter 16 · card padding 14–16 · field gap 12–16 · touch ≥44, driver primary 60 · icons Phosphor Regular/Fill 20–24 (nav 21, inline 16).</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px">
+<sc-for list="{{ palettes }}" as="p" hint-placeholder-count="2">
+<div dir="rtl" style="{{ p.wrap }}">
+<div dir="ltr" style="font:600 12px ui-monospace,monospace;opacity:.7">ORDER STATUS CHIPS · color + icon + label · {{ p.short }}</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;font-family:Tajawal">
+<sc-for list="{{ p.status }}" as="c" hint-placeholder-count="10"><span style="{{ c.s }}"><i class="{{ c.i }}" style="font-size:14px"></i>{{ c.l }}</span></sc-for>
+</div>
+<div dir="ltr" style="font:600 12px ui-monospace,monospace;opacity:.7;margin-top:8px">BUTTONS · default / pressed / disabled / loading</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;font:800 15px Tajawal">
+<span style="{{ p.btn }}">قبول السعر</span><span style="{{ p.btnP }}">قبول السعر</span><span style="{{ p.btnD }}">قبول السعر</span><span style="{{ p.btn }}"><i class="ph ph-circle-notch"></i>جارٍ الإرسال</span><span style="{{ p.btn2 }}">تقديم عرض</span><span style="{{ p.btnX }}"><i class="ph ph-trash"></i>إلغاء الطلب</span>
+</div>
+</div>
+</sc-for>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px">
+<div dir="rtl" style="background:#fff;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;color:#0F1A19;font-family:Tajawal">
+<div dir="ltr" style="font:600 12px ui-monospace,monospace;opacity:.6">CONTACT REVEAL · offer card, before vs after acceptance</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div style="border:1px solid #E2E8E7;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px"><span style="font:600 10px ui-monospace,monospace;color:#7E8E8C" dir="ltr">BEFORE · PUBLISHED</span><div style="display:flex;align-items:center;gap:8px"><div style="width:36px;height:36px;border-radius:10px;background:#0A3D3A;color:#fff;display:grid;place-items:center;font-weight:800">أ</div><div><div style="font-size:14px;font-weight:700;display:flex;gap:3px;align-items:center">شركة الأفق<i class="ph-fill ph-seal-check" style="color:#007A66"></i></div><div dir="ltr" style="font:500 11px Inter;color:#566664;text-align:right">★ 4.8 · 312 trips</div></div></div><div style="height:36px;border-radius:10px;background:#EDF2F1;display:flex;align-items:center;gap:6px;padding:0 10px;font-size:13px;color:#566664"><i class="ph ph-lock-simple"></i><bdi dir="ltr" style="font-family:Inter">+966 •• ••• ••••</bdi></div><div style="display:flex;gap:6px"><span style="flex:1;height:40px;border-radius:10px;background:#E2F7F2;color:#007A66;display:flex;align-items:center;justify-content:center;gap:4px;font-size:13px;font-weight:700"><i class="ph ph-chat-circle-dots"></i>محادثة</span><span style="width:40px;height:40px;border-radius:10px;background:#E2F7F2;color:#007A66;display:grid;place-items:center"><i class="ph ph-phone"></i></span></div><span style="font-size:11px;color:#566664">مكالمة داخل التطبيق فقط</span></div>
+<div style="border:1.5px solid #00A88A;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px"><span style="font:600 10px ui-monospace,monospace;color:#007A66" dir="ltr">AFTER · ASSIGNED+</span><div style="display:flex;align-items:center;gap:8px"><div style="width:36px;height:36px;border-radius:10px;background:#0A3D3A;color:#fff;display:grid;place-items:center;font-weight:800">أ</div><div><div style="font-size:14px;font-weight:700;display:flex;gap:3px;align-items:center">شركة الأفق<i class="ph-fill ph-seal-check" style="color:#007A66"></i></div><div style="font-size:11px;color:#566664">عبدالرحمن · مسؤول العمليات</div></div></div><div style="height:36px;border-radius:10px;background:#E6F5EB;display:flex;align-items:center;gap:6px;padding:0 10px;font-size:13px"><i class="ph ph-lock-open" style="color:#15803D"></i><bdi dir="ltr" style="font:600 13px Inter">+966 55 482 1930</bdi></div><div style="display:flex;gap:6px"><span style="flex:1;height:40px;border-radius:10px;background:#E2F7F2;color:#007A66;display:flex;align-items:center;justify-content:center;gap:4px;font-size:13px;font-weight:700"><i class="ph ph-chat-circle-dots"></i>محادثة</span><span style="width:40px;height:40px;border-radius:10px;background:#00C9A7;color:#06302D;display:grid;place-items:center"><i class="ph-fill ph-phone"></i></span></div><span style="font-size:11px;color:#566664">عميل ↔ مزوّد فقط · بيانات السائق التابع لا تُكشف</span></div>
+</div></div>
+
+<div dir="rtl" style="background:#fff;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;color:#0F1A19;font-family:Tajawal">
+<div dir="ltr" style="font:600 12px ui-monospace,monospace;opacity:.6">STATES · skeleton / empty / offline / snackbar / freshness</div>
+<div style="display:flex;flex-direction:column;gap:8px;border:1px solid #E2E8E7;border-radius:16px;padding:14px"><span style="width:40%;height:12px;border-radius:6px;background:#EDF2F1"></span><span style="width:85%;height:18px;border-radius:6px;background:#EDF2F1"></span><span style="width:60%;height:12px;border-radius:6px;background:#EDF2F1"></span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;background:#F6F8F8"><span style="width:48px;height:48px;border-radius:14px;background:#fff;display:grid;place-items:center;font-size:24px;color:#007A66"><i class="ph ph-package"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:700">لا توجد شحنات بعد</div><div style="font-size:12px;color:#566664">أنشئ أول طلب نقل وسيظهر هنا</div></div><span style="font-size:13px;font-weight:700;color:#007A66">طلب جديد</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:#FEF3E2;font-size:13px"><i class="ph ph-wifi-slash" style="font-size:18px;color:#B45309"></i><span style="flex:1">أنت غير متصل. نعرض آخر بيانات محفوظة.</span><span style="font-weight:700;color:#B45309">إعادة</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:#0F1A19;color:#E8F0EF;font-size:14px"><i class="ph-fill ph-check-circle" style="color:#1FE0C0;font-size:18px"></i><span style="flex:1">تم قبول العرض وإبلاغ الناقل</span><span style="font-weight:700;color:#1FE0C0">عرض</span></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;font-weight:700"><span style="height:28px;padding:0 10px;border-radius:999px;background:#E6F5EB;color:#15803D;display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:#15803D"></span>مباشر</span><span style="height:28px;padding:0 10px;border-radius:999px;background:#FEF3E2;color:#B45309;display:flex;align-items:center;gap:6px"><i class="ph ph-clock"></i>قبل 14 د</span><span style="height:28px;padding:0 10px;border-radius:999px;background:#EDF2F1;color:#566664;display:flex;align-items:center;gap:6px"><i class="ph ph-map-pin-simple-slash"></i>الموقع غير متاح</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const mk = (dark) => {
+      const T = dark ? {bg:'#0B1413',sf:'#111E1C',sf2:'#182725',bd:'#243533',tx:'#E8F0EF',tx2:'#9FB4B1',tx3:'#7A918E',mint:'#1FE0C0',mintS:'#00C9A7',mintTx:'#1FE0C0',mintBg:'rgba(31,224,192,.12)',onMint:'#062724',hero:'#0E2F2C',ok:'#22C55E',okBg:'rgba(34,197,94,.14)',warn:'#FBBF24',warnBg:'rgba(251,191,36,.13)',err:'#F87171',errBg:'rgba(248,113,113,.14)',info:'#60A5FA',infoBg:'rgba(96,165,250,.14)'}
+        : {bg:'#F6F8F8',sf:'#FFFFFF',sf2:'#EDF2F1',bd:'#E2E8E7',tx:'#0F1A19',tx2:'#566664',tx3:'#7E8E8C',mint:'#00C9A7',mintS:'#00A88A',mintTx:'#007A66',mintBg:'#E2F7F2',onMint:'#06302D',hero:'#0A3D3A',ok:'#15803D',okBg:'#E6F5EB',warn:'#B45309',warnBg:'#FEF3E2',err:'#DC2626',errBg:'#FDECEC',info:'#1D4ED8',infoBg:'#E8EFFD'};
+      const sw = Object.entries(T).map(([k, v]) => ({ k, v, chip: { height: '52px', borderRadius: '12px', background: v, border: '1px solid ' + (dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.08)') } }));
+      const chip = (bg, c) => ({ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '30px', padding: '0 12px', borderRadius: '999px', background: bg, color: c, fontSize: '13px', fontWeight: 700 });
+      const status = [
+        ['مسودة','ph ph-note-pencil',T.sf2,T.tx2],['منشور','ph ph-megaphone',T.infoBg,T.info],['مناقصة','ph ph-gavel',T.infoBg,T.info],['مُسند','ph ph-handshake',T.mintBg,T.mintTx],['مؤكّد','ph ph-check-circle',T.mintBg,T.mintTx],['في الطريق','ph-fill ph-truck',T.infoBg,T.info],['تم التسليم','ph ph-package',T.okBg,T.ok],['مكتمل','ph-fill ph-seal-check',dark?'#1E4A45':'#0A3D3A','#E8F0EF'],['ملغى','ph ph-x-circle',T.errBg,T.err],['دفع مُبلّغ','ph ph-hand-coins',T.warnBg,T.warn],['دفع مؤكّد','ph ph-check-square',T.okBg,T.ok],['متنازع عليه','ph ph-warning-octagon',T.errBg,T.err],['إرجاع حاوية معلّق','ph ph-shipping-container',T.warnBg,T.warn],['إثبات تسليم معلّق','ph ph-signature',T.warnBg,T.warn]
+      ].map(([l,i,bg,c]) => ({ l, i, s: chip(bg, c) }));
+      const b = { height: '48px', padding: '0 18px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' };
+      return { name: dark ? 'DARK TOKENS' : 'LIGHT TOKENS', short: dark ? 'dark' : 'light', sw, status,
+        wrap: { background: T.bg, color: T.tx, borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid ' + T.bd },
+        btn: { ...b, background: T.mint, color: T.onMint }, btnP: { ...b, background: T.mintS, color: T.onMint, transform: 'scale(.98)' },
+        btnD: { ...b, background: T.sf2, color: T.tx3 }, btn2: { ...b, border: '1.5px solid ' + T.mintS, color: T.mintTx },
+        btnX: { ...b, background: T.errBg, color: T.err } };
+    };
+    const spaces = [4,8,12,16,20,24,32,48].map(v => ({ v, box: { width: v + 'px', height: v + 'px', background: '#00C9A7', borderRadius: '2px' } }));
+    return { palettes: [mk(false), mk(true)], spaces };
+  }
+}
+</script>
+</body>
+</html>
