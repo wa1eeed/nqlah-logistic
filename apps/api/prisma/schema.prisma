@@ -265,6 +265,10 @@ model Company {
   /// VAT is charged on its transactions (the "غير مسجّل في الضريبة" toggle).
   vatRegistered Boolean @default(true)
   logo      String?
+  /// Verification documents as { <docType>: <object-store key> } (CR, VAT,
+  /// transport licence, national address, signatory ID). Files live in the
+  /// object store (via the storage connector); only the keys are stored here.
+  documents Json?
 
   city    String
   region  String
