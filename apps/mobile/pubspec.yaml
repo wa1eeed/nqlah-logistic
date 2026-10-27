@@ -1,0 +1,37 @@
+name: nqlah_mobile
+description: "NQLAH (نقلة) — unified Saudi B2B freight marketplace mobile app."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  # Routing
+  go_router: ^14.6.2
+  # Fonts (Tajawal + Inter from Google Fonts)
+  google_fonts: ^6.2.1
+  # Icon set used by the design (Phosphor, Regular + Fill) as SVG assets,
+  # rendered with flutter_svg (phosphor_flutter is incompatible with the
+  # IconData-final change in this Flutter version).
+  flutter_svg: ^2.0.10
+  # i18n / numbers / dates
+  intl: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/regular/
+    - assets/icons/fill/
