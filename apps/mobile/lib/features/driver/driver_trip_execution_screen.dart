@@ -1,67 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/orders/order_models.dart';
+import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../design_system/status_chip.dart';
 
-/// Employed-driver trip execution (handoff 1j). Big targets, stop-by-stop
-/// actions; no prices, no customer identity. Calls go to the office dispatcher
-/// (header) and the stop's consignee.
-class DriverTripExecutionScreen extends StatelessWidget {
-  const DriverTripExecutionScreen({super.key, this.onArrive});
+/// Employed-driver trip execution (handoff 1j), wired to `GET /orders/:id`.
+/// Big targets, no prices/customer identity. The primary action advances the
+/// trip: confirm pickup (→ IN_TRANSIT) then arrival (→ ePOD). Calls/maps are
+/// device integrations (follow-ups).
+class DriverTripExecutionScreen extends ConsumerWidget {
+  const DriverTripExecutionScreen({super.key, required this.orderId, this.onArrive});
 
-  final VoidCallback? onArrive;
+  final String orderId;
+  final void Function(String orderId)? onArrive;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.nq;
+    final async = ref.watch(orderDetailModelProvider(orderId));
     return Scaffold(
       backgroundColor: c.bg,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _hero(context, c),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              children: [
-                _stopCard(c),
-                const SizedBox(height: 18),
-                Text('بعد هذا التوقف', style: NqType.labelStrong.copyWith(color: c.tx2), textAlign: TextAlign.right),
-                const SizedBox(height: 10),
-                _nextStop(c),
-              ],
-            ),
+      body: async.when(
+        loading: () => Center(
+          child: SizedBox(
+            width: 30,
+            height: 30,
+            child:
+                CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
           ),
-          _footer(c),
-        ],
+        ),
+        error: (e, _) => SafeArea(
+          child: _error(context, c,
+              e is ApiException ? e.message : 'تعذّر تحميل الرحلة.',
+              () => ref.invalidate(orderDetailModelProvider(orderId))),
+        ),
+        data: (o) => _content(context, ref, c, o),
       ),
     );
   }
 
-  Widget _hero(BuildContext context, NqColors c) => Container(
+  Widget _content(
+      BuildContext context, WidgetRef ref, NqColors c, OrderDetail o) {
+    final picked = o.actualPickupAt != null ||
+        o.nqStatus == NqStatus.inTransit ||
+        o.nqStatus == NqStatus.delivered ||
+        o.nqStatus == NqStatus.completed;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _hero(context, c, o, picked),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            children: [
+              _stopCard(c, o, picked),
+            ],
+          ),
+        ),
+        _footer(context, ref, c, o, picked),
+      ],
+    );
+  }
+
+  Widget _hero(BuildContext context, NqColors c, OrderDetail o, bool picked) =>
+      Container(
         color: c.hero,
-        padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 12, 16, 12),
+        padding: EdgeInsets.fromLTRB(
+            16, MediaQuery.of(context).padding.top + 12, 16, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(color: NqFixed.heroFill2, borderRadius: BorderRadius.circular(NqRadius.input)),
-                  child: NqIcon(NqIcons.phone, size: 20, color: NqFixed.heroText),
-                ),
+                const SizedBox(width: 44),
                 const Spacer(),
                 Column(
                   children: [
-                    Text('الرحلة النشطة', style: NqType.caption.copyWith(color: NqFixed.heroTextSecondary)),
+                    Text('الرحلة النشطة',
+                        style: NqType.caption
+                            .copyWith(color: NqFixed.heroTextSecondary)),
                     const SizedBox(height: 2),
-                    Ltr('NQ-24-08812 · L1', style: NqType.code(size: 16).copyWith(color: NqFixed.heroText)),
+                    Ltr(o.orderNumber,
+                        style: NqType.code(size: 16)
+                            .copyWith(color: NqFixed.heroText)),
                   ],
                 ),
                 const Spacer(),
@@ -71,138 +99,189 @@ class DriverTripExecutionScreen extends StatelessWidget {
                     width: 44,
                     height: 44,
                     alignment: Alignment.center,
-                    decoration: BoxDecoration(color: NqFixed.heroFill2, borderRadius: BorderRadius.circular(NqRadius.input)),
-                    child: NqIcon(NqIcons.arrowRight, size: 20, color: NqFixed.heroText),
+                    decoration: BoxDecoration(
+                        color: NqFixed.heroFill2,
+                        borderRadius: BorderRadius.circular(NqRadius.input)),
+                    child: NqIcon(NqIcons.arrowRight,
+                        size: 20, color: NqFixed.heroText),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            _steps(c),
+            Row(children: [
+              _step(c, 'التفريغ', picked),
+              const SizedBox(width: 6),
+              _step(c, 'الاستلام', true),
+            ]),
           ],
         ),
       );
 
-  Widget _steps(NqColors c) {
-    // Right→left: استلام (done) · تفريغ (current) · إرجاع حاوية (pending)
-    Widget bar(double fill) => Expanded(
-          child: Container(
-            height: 4,
-            decoration: BoxDecoration(color: NqFixed.heroFill2, borderRadius: BorderRadius.circular(2)),
-            child: FractionallySizedBox(
-              alignment: AlignmentDirectional.centerStart,
-              widthFactor: fill,
-              child: Container(decoration: BoxDecoration(color: NqFixed.heroAccent, borderRadius: BorderRadius.circular(2))),
-            ),
-          ),
-        );
-    Widget label(String t, {bool done = false, bool current = false}) => Expanded(
-          child: Text(done ? '$t ✓' : t,
-              style: NqType.caption.copyWith(
-                  color: current ? NqFixed.heroText : NqFixed.heroTextSecondary,
-                  fontWeight: current ? FontWeight.w700 : FontWeight.w400),
-              textAlign: TextAlign.center),
-        );
-    return Column(
-      children: [
-        Row(children: [bar(1), const SizedBox(width: 6), bar(0.5), const SizedBox(width: 6), bar(0)]),
-        const SizedBox(height: 6),
-        Row(children: [label('إرجاع حاوية'), label('تفريغ', current: true), label('استلام', done: true)]),
-      ],
-    );
-  }
-
-  Widget _stopCard(NqColors c) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: c.sf,
-          borderRadius: BorderRadius.circular(NqRadius.card),
-          border: Border.all(color: c.bd),
-        ),
+  Widget _step(NqColors c, String label, bool done) => Expanded(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(children: [
-              Text('متبقٍ 4.2 km', style: NqType.caption.copyWith(color: c.tx2)),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: c.infoBg, borderRadius: BorderRadius.circular(NqRadius.pill)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text('التوقف 2 من 3', style: NqType.caption.copyWith(color: c.info, fontWeight: FontWeight.w700)),
-                  const SizedBox(width: 6),
-                  NqIcon(NqIcons.mapPin, fill: true, size: 14, color: c.info),
-                ]),
-              ),
-            ]),
-            const SizedBox(height: 12),
-            Text('تفريغ · مستودع الرّواد', style: NqType.driverTitle.copyWith(color: c.tx), textAlign: TextAlign.right),
+            Container(
+              height: 4,
+              decoration: BoxDecoration(
+                  color: done ? NqFixed.heroAccent : NqFixed.heroFill2,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 6),
+            Text(done ? '$label ✓' : label,
+                style: NqType.caption.copyWith(
+                    color: done
+                        ? NqFixed.heroText
+                        : NqFixed.heroTextSecondary)),
+          ],
+        ),
+      );
+
+  Widget _stopCard(NqColors c, OrderDetail o, bool picked) {
+    final title = picked ? 'التفريغ · ${o.destinationCity}' : 'الاستلام · ${o.originCity}';
+    final addr = picked
+        ? (o.destinationAddress.isNotEmpty
+            ? o.destinationAddress
+            : o.destinationRegion)
+        : (o.originAddress.isNotEmpty ? o.originAddress : o.originRegion);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.sf,
+        borderRadius: BorderRadius.circular(NqRadius.card),
+        border: Border.all(color: c.bd),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                  color: c.infoBg, borderRadius: BorderRadius.circular(NqRadius.pill)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(picked ? 'الوجهة' : 'نقطة الاستلام',
+                    style: NqType.caption
+                        .copyWith(color: c.info, fontWeight: FontWeight.w700)),
+                const SizedBox(width: 6),
+                NqIcon(NqIcons.mapPin, fill: true, size: 14, color: c.info),
+              ]),
+            ),
+            const Spacer(),
+          ]),
+          const SizedBox(height: 12),
+          Text(title,
+              style: NqType.driverTitle.copyWith(color: c.tx),
+              textAlign: TextAlign.right),
+          if (addr.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text('الرياض، المدينة الصناعية الثانية، شارع 142',
-                style: NqType.body.copyWith(color: c.tx2), textAlign: TextAlign.right),
-            const SizedBox(height: 14),
+            Text(addr,
+                style: NqType.body.copyWith(color: c.tx2),
+                textAlign: TextAlign.right),
+          ],
+          if (o.cargoDescription != null && o.cargoDescription!.isNotEmpty) ...[
+            const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: c.sf2, borderRadius: BorderRadius.circular(NqRadius.button)),
+              decoration: BoxDecoration(
+                  color: c.sf2,
+                  borderRadius: BorderRadius.circular(NqRadius.button)),
               child: Row(children: [
-                NqIcon(NqIcons.info, size: 18, color: c.info),
+                NqIcon(NqIcons.package, size: 18, color: c.tx2),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('الدخول من البوابة 3. اسأل عن أبو ناصر. التفريغ بالرافعة.',
-                      style: NqType.body.copyWith(color: c.tx, height: 1.5), textAlign: TextAlign.right),
+                  child: Text(o.cargoDescription!,
+                      style: NqType.body.copyWith(color: c.tx, height: 1.5),
+                      textAlign: TextAlign.right),
                 ),
               ]),
             ),
-            const SizedBox(height: 14),
-            Row(children: [
-              Ltr('TGHU 771392-0', style: NqType.code(size: 16).copyWith(color: c.tx)),
-              const Spacer(),
-              Text('حاوية', style: NqType.caption.copyWith(color: c.tx2)),
-              const SizedBox(width: 6),
-              NqIcon(NqIcons.shippingContainer, size: 18, color: c.tx2),
-            ]),
-            const SizedBox(height: 14),
-            Row(children: [
-              Expanded(child: NqButton(label: 'المستلم', icon: NqIcons.phone, variant: NqButtonVariant.secondary, onPressed: () {})),
-              const SizedBox(width: 12),
-              Expanded(child: NqButton(label: 'فتح الخرائط', icon: NqIcons.navigationArrow, variant: NqButtonVariant.secondary, onPressed: () {})),
-            ]),
           ],
-        ),
-      );
-
-  Widget _nextStop(NqColors c) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(NqRadius.button),
-          border: Border.all(color: c.warn, width: 1.5),
-        ),
-        child: Row(children: [
-          const Spacer(),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('إرجاع الحاوية الفارغة', style: NqType.bodyStrong.copyWith(color: c.tx)),
-            const SizedBox(height: 2),
-            Text('ميناء الملك عبدالعزيز · الدمام', style: NqType.caption.copyWith(color: c.tx2)),
+          const SizedBox(height: 14),
+          Row(children: [
+            Expanded(
+                child: NqButton(
+                    label: 'فتح الخرائط',
+                    icon: NqIcons.navigationArrow,
+                    variant: NqButtonVariant.secondary,
+                    onPressed: () {})),
           ]),
-          const SizedBox(width: 12),
-          NqIcon(NqIcons.shippingContainer, size: 22, color: c.warn),
-        ]),
-      );
+        ],
+      ),
+    );
+  }
 
-  Widget _footer(NqColors c) => Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        decoration: BoxDecoration(color: c.sf, border: Border(top: BorderSide(color: c.bd))),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          NqButton(label: 'تأكيد الوصول', icon: NqIcons.mapPin, size: NqButtonSize.driver, onPressed: onArrive ?? () {}),
-          const SizedBox(height: 10),
-          GestureDetector(
-            onTap: () {},
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              NqIcon(NqIcons.warningCircle, size: 16, color: c.err),
-              const SizedBox(width: 6),
-              Text('الإبلاغ عن مشكلة', style: NqType.labelStrong.copyWith(color: c.err)),
-            ]),
+  Widget _footer(BuildContext context, WidgetRef ref, NqColors c, OrderDetail o,
+      bool picked) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+          color: c.sf, border: Border(top: BorderSide(color: c.bd))),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (!picked)
+          NqButton(
+            label: 'تأكيد التحميل',
+            icon: NqIcons.checkCircle,
+            size: NqButtonSize.driver,
+            onPressed: () => _confirmPickup(context, ref, o),
+          )
+        else
+          NqButton(
+            label: 'تأكيد الوصول وإثبات التسليم',
+            icon: NqIcons.mapPin,
+            size: NqButtonSize.driver,
+            onPressed: () => (onArrive ?? (_) {})(o.id),
           ),
-        ]),
+      ]),
+    );
+  }
+
+  Future<void> _confirmPickup(
+      BuildContext context, WidgetRef ref, OrderDetail o) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(ordersRepositoryProvider)
+          .addTracking(o.id, status: 'PICKED_UP', description: 'تم تحميل الشحنة');
+      ref.invalidate(orderDetailModelProvider(o.id));
+      messenger.showSnackBar(
+          const SnackBar(content: Text('تم تأكيد التحميل. الرحلة جارية.')));
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(
+          const SnackBar(content: Text('تعذّر تأكيد التحميل.')));
+    }
+  }
+
+  Widget _error(
+          BuildContext context, NqColors c, String msg, VoidCallback onRetry) =>
+      Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              NqIcon(NqIcons.warningCircle, size: 40, color: c.err),
+              const SizedBox(height: 12),
+              Text(msg,
+                  style: NqType.body.copyWith(color: c.tx2),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: onRetry,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                      color: c.mintBg,
+                      borderRadius: BorderRadius.circular(NqRadius.pill)),
+                  child: Text('إعادة المحاولة',
+                      style: NqType.labelStrong.copyWith(color: c.mintTx)),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
 }

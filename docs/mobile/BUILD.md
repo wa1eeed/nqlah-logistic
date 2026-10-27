@@ -146,10 +146,23 @@ flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
   Execution-only (no price/customer identity surfaced).
 - **No backend (deferred):** maintenance (3g — no module), in-app chat/calls (comms — needs
   realtime), a real maps SDK for tracking.
-- **Orders follow-ups (next slices):** trip execution (1j) + ePOD (1k) via
-  `POST /orders/:id/tracking` / stop updates; owner-driver (1i/2e) incl. self-assignment;
-  add-driver form (3f) → `POST /fleet/drivers/invite`; report-payment; order actions
-  (cancel/confirm/deliver); consolidated multi-leg.
+- **Trip execution (1j) + ePOD (1k)** are wired to `POST /orders/:id/tracking` (routes
+  `/trip-execution/:id`, `/epod/:id`): execution shows the real order/next-stop and advances
+  it — «تأكيد التحميل» posts `PICKED_UP` (→ IN_TRANSIT), then «تأكيد الوصول» → ePOD; ePOD
+  «تأكيد التسليم» posts `DELIVERED` (→ DELIVERED) + note, invalidates driver jobs, pops. Photo
+  upload, signature capture and the recipient OTP are the design's capture steps (need the
+  uploads module + a POD-verify endpoint) and stay visual.
+- **Orders follow-ups (next slices):** owner-driver (1i/2e) incl. self-assignment; add-driver
+  form (3f) → `POST /fleet/drivers/invite`; report-payment (payments module); order actions
+  (cancel/confirm/deliver); trip monitor (3d); consolidated multi-leg.
+- **New feature needing a backend module — truck availability marketplace (6a/6b/7a-c):** there
+  is no `TruckAvailability` model or public trucks endpoint. Recommended model: a truck is
+  auto-excluded from the customer marketplace when busy (active order / `ON_TRIP` / `MAINTENANCE`),
+  and otherwise shown only when the provider has **published** an availability record (truck +
+  city + window + active flag) — so an idle truck is private until published, and the provider can
+  unpublish without changing the truck's status. Build as: Prisma `TruckAvailability` + a public
+  `GET /marketplace/trucks` (status-filtered) + provider publish/unpublish endpoints, then wire
+  customer Trucks (6a/6b) + provider availability (7a/7b/7c).
 - **Follow-ups:** login-by-OTP (`/otp`) is UI-only — no token-issuing OTP-login endpoint
   exists yet; document **upload** on 5e is a separate backend track (the step currently
   submits account data only); plan selection (1m) doesn't yet map to a real `planId`

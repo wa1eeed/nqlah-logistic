@@ -135,6 +135,29 @@ class OrdersRepository {
     }
   }
 
+  /// `POST /orders/:id/tracking` — a driver advances the trip. `status`
+  /// `PICKED_UP` moves the order to IN_TRANSIT; `DELIVERED` to DELIVERED.
+  Future<void> addTracking(String orderId,
+      {required String status,
+      String? description,
+      String? notes,
+      List<String>? photos,
+      String? signature}) async {
+    try {
+      final body = <String, dynamic>{
+        'status': status,
+        'description': description ?? status,
+      };
+      if (notes != null && notes.trim().isNotEmpty) body['notes'] = notes.trim();
+      if (photos != null && photos.isNotEmpty) body['photos'] = photos;
+      if (signature != null) body['signature'] = signature;
+      final res = await _dio.post('/orders/$orderId/tracking', data: body);
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `POST /orders/:id/publish` — moves a draft to the marketplace.
   Future<Map<String, dynamic>> publish(String id) async {
     try {
