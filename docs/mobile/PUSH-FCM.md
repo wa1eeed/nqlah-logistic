@@ -1,46 +1,57 @@
-# Push notifications (FCM / APNs) — mobile wiring
+# Push notifications (FCM / APNs)
 
-The **backend** push pipeline is complete and verified: `NotificationConnector`
-→ `FcmNotificationConnector` (FCM HTTP v1, relays to APNs for iOS), the
-`PushToken` model, `POST/DELETE /notifications/devices`, and fan-out with
-invalid-token pruning. Provider + credentials live in the Integration Hub
-(`/integrations` → الإشعارات الفورية → provider `fcm`).
+Status: **code-complete on both sides.** The only remaining inputs are the
+Firebase/Apple credentials, which can only be generated under the project
+owner's Google/Apple accounts.
 
-The **mobile** side is the only remaining step and it needs a real **Firebase
-project** (no code blocker otherwise). One project produces *both* artifacts:
+## Backend (done & verified)
 
-| Artifact | Where it goes | Used by |
+`NotificationConnector` → `FcmNotificationConnector` (FCM **HTTP v1**, relays to
+APNs for iOS; dependency-free, signs the service-account JWT with Node `crypto`).
+`PushToken` model + `POST/DELETE /notifications/devices` + fan-out with
+invalid-token pruning. Provider + credentials in the Integration Hub
+(`/integrations` → الإشعارات الفورية → provider `fcm`, secrets encrypted). The
+Test button mints an OAuth token to validate the service account.
+
+## Mobile (done)
+
+- **Deps:** `firebase_core` + `firebase_messaging` in `pubspec.yaml`.
+- **`core/notifications/push_service.dart`** — `PushService`: initialises
+  Firebase, requests permission, gets the FCM **registration token** and
+  registers it via `POST /notifications/devices`, re-registers on refresh,
+  routes foreground (in-app banner + badge refresh) and tapped messages
+  (role-based deep-link via GoRouter), with a top-level background handler.
+  **Degrades to a safe no-op** on web and before the native config files exist.
+- **Wiring:** `app.dart` binds the push lifecycle to auth state (register on
+  login / unregister on logout) and installs the navigation + foreground
+  callbacks; `main.dart` ensures the binding is initialised.
+- **Android:** `POST_NOTIFICATIONS` permission; the `google-services` Gradle
+  plugin is declared and applied **only when `google-services.json` is present**
+  (`android/app/build.gradle.kts`), so the build never breaks before
+  provisioning.
+- **iOS:** `remote-notification` background mode + `FirebaseAppDelegateProxyEnabled`
+  in `Info.plist`.
+
+Verified: `flutter analyze` clean; `flutter build web` succeeds (guards keep
+Firebase inert on web). Native builds need a real Firebase project (below).
+
+## What the owner must provide (one Firebase project → all of it)
+
+| Artifact | From | Goes to |
 |---|---|---|
-| Service account JSON (Project settings → Service accounts → Generate key) | Integration Hub → `FCM_SERVICE_ACCOUNT` (+ `FCM_PROJECT_ID`) | backend send |
-| `google-services.json` (Android app) | `apps/mobile/android/app/` | Android client |
-| `GoogleService-Info.plist` (iOS app) | `apps/mobile/ios/Runner/` | iOS client |
-| APNs auth key `.p8` (Apple Developer) uploaded to Firebase → Cloud Messaging | Firebase console only | iOS delivery |
+| Service account JSON | Firebase console → Project settings → Service accounts → Generate new private key | Integration Hub → `FCM_SERVICE_ACCOUNT` (+ `FCM_PROJECT_ID`) |
+| `google-services.json` | Firebase → Android app (package `sa.nx.nqlah.nqlah_mobile`) | `apps/mobile/android/app/google-services.json` |
+| `GoogleService-Info.plist` | Firebase → iOS app (same bundle id) | `apps/mobile/ios/Runner/GoogleService-Info.plist` (add to the Runner target in Xcode) |
+| APNs auth key `.p8` | Apple Developer → Keys → create APNs key | upload to Firebase → Cloud Messaging; also enable the **Push Notifications** capability on the Runner target |
 
-## Wiring to apply once the artifacts exist
+Once dropped in: Android picks up the Gradle plugin automatically; iOS reads the
+plist; `PushService.start()` obtains a token on next login and registers it —
+no code change. Paste the service account JSON into the hub (SUPER_ADMIN) and
+press Test to confirm, then send a notification (e.g. place/accept an order) to
+a signed-in device.
 
-1. **pubspec:** add `firebase_core` + `firebase_messaging`.
-2. **Android:** apply the `com.google.gms.google-services` Gradle plugin; place
-   `google-services.json`. (The plugin *fails the build* if the file is absent —
-   that is why this is not scaffolded ahead of time.)
-3. **iOS:** add `GoogleService-Info.plist` to the Runner target; enable the Push
-   Notifications + Background Modes (remote notifications) capabilities.
-4. **Init + register:** `Firebase.initializeApp()` at startup; after login,
-   request permission, get the token
-   (`FirebaseMessaging.instance.getToken()`), and
-   `POST /notifications/devices { token, platform }` via `FinanceRepository`'s
-   sibling repo (add a tiny `DevicesRepository`). Re-register on
-   `onTokenRefresh`; `DELETE` on logout.
-5. **Handlers:** foreground (`onMessage` → in-app banner + refresh the
-   notifications badge), background/opened (`onMessageOpenedApp` → deep-link via
-   GoRouter using the payload `data`), and a top-level
-   `onBackgroundMessage` isolate handler.
+## Testing notes
 
-Payload shape the backend sends: `notification{title,body}` +
-`data{...}` (all string values) — route on `data.type` / `data.orderId`.
-
-## Testing without devices
-
-The Integration Hub **Test** button mints an OAuth token from the service
-account (no notification sent) and reports ok/down — enough to confirm the
-credentials before any device exists. End-to-end delivery needs a real device
-token registered via `/notifications/devices`.
+- The hub **Test** validates the service account without a device.
+- End-to-end delivery needs a **real device** (iOS Simulator has no APNs;
+  Android emulator with Google Play works). Web is intentionally push-inert.

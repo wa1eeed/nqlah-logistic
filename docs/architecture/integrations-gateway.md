@@ -77,12 +77,16 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
   tokens (pruning invalid ones). New chat messages create a notification for the
   counterpart's users → in-app + push.
 
-> **Remaining user-provided step (mobile):** one **Firebase project** yields both
-> halves — the **service-account JSON** (paste into the hub → backend sends) and
-> the mobile config files (`google-services.json` / `GoogleService-Info.plist`)
-> + `firebase_messaging` to obtain the device token and call
-> `POST /notifications/devices`. The backend adapter + device pipeline are
-> complete and verified; see `docs/mobile/PUSH-FCM.md` for the mobile wiring.
+- **Mobile:** `PushService` (`apps/mobile/lib/core/notifications/push_service.dart`)
+  initialises Firebase, registers the FCM token via `/notifications/devices`,
+  and routes foreground/tapped messages; wired to auth state in `app.dart`.
+  Degrades to a safe no-op on web and before the native config exists.
+
+> **Remaining input (credentials only):** one **Firebase project** yields all of
+> it — the **service-account JSON** (paste into the hub → backend sends) and the
+> mobile config files (`google-services.json` / `GoogleService-Info.plist`) +
+> APNs key. Both code paths are complete; dropping the files in activates push
+> with no code change. See `docs/mobile/PUSH-FCM.md`.
 
 ## SMS / OTP (implemented)
 
