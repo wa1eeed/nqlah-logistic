@@ -4,6 +4,7 @@ import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import type { Prisma } from '../../generated/prisma';
 import type { OrderFinancials } from '../../common/pricing/pricing';
+import { nextInvoiceNumber, zatcaQrBase64 } from './zatca';
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateInvoiceDto {
@@ -62,6 +63,7 @@ export class InvoicesService {
     const issuerId = actor.companyId!;
     return this.prisma.invoice.create({
       data: {
+        invoiceNumber: await nextInvoiceNumber(this.prisma),
         kind: 'SERVICE',
         orderId: dto.orderId,
         issuerId,
@@ -114,8 +116,10 @@ export class InvoicesService {
     const created: string[] = [];
 
     // ── SERVICE invoice: carrier → client ──────────────────────────────────
+    const svcSellerVat = order.carrier.vatRegistered ? order.carrier.vatNumber : null;
     const svc = await tx.invoice.create({
       data: {
+        invoiceNumber: await nextInvoiceNumber(tx),
         kind: 'SERVICE', status: 'ISSUED',
         orderId: order.id,
         issuerId: order.carrierId,
@@ -124,13 +128,20 @@ export class InvoicesService {
         vatAmount: fin.serviceVat,
         totalAmount: fin.serviceTotal,
         sellerName: order.carrier.nameAr,
-        sellerVatNumber: order.carrier.vatRegistered ? order.carrier.vatNumber : null,
+        sellerVatNumber: svcSellerVat,
         sellerCrNumber: order.carrier.crNumber,
-        vatNumber: order.carrier.vatRegistered ? order.carrier.vatNumber : null,
+        vatNumber: svcSellerVat,
         crNumber: order.carrier.crNumber,
         buyerName: order.client.nameAr,
         buyerVatNumber: order.client.vatNumber,
         buyerCrNumber: order.client.crNumber,
+        zatcaQr: zatcaQrBase64({
+          sellerName: order.carrier.nameAr ?? '—',
+          vatNumber: svcSellerVat ?? '',
+          timestamp: new Date(),
+          total: fin.serviceTotal,
+          vatTotal: fin.serviceVat,
+        }),
         notes: `فاتورة خدمة نقل للطلب ${order.orderNumber}`,
       },
       select: { id: true },
@@ -160,6 +171,7 @@ export class InvoicesService {
       const buyerCo = c.buyer === 'CARRIER' ? order.carrier : order.client;
       const com = await tx.invoice.create({
         data: {
+          invoiceNumber: await nextInvoiceNumber(tx),
           kind: 'COMMISSION', status: 'ISSUED',
           orderId: order.id,
           issuerId: null, // the platform has no Company row
@@ -175,6 +187,13 @@ export class InvoicesService {
           buyerName: buyerCo.nameAr,
           buyerVatNumber: buyerCo.vatNumber,
           buyerCrNumber: buyerCo.crNumber,
+          zatcaQr: zatcaQrBase64({
+            sellerName: platform.name ?? '—',
+            vatNumber: platform.vatNumber ?? '',
+            timestamp: new Date(),
+            total: c.total,
+            vatTotal: c.vat,
+          }),
           notes: `فاتورة عمولة المنصة للطلب ${order.orderNumber}`,
         },
         select: { id: true },
