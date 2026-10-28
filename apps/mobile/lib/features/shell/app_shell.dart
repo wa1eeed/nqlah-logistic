@@ -126,9 +126,6 @@ class _AppShellState extends ConsumerState<AppShell> {
               i == 1 ? OwnerDriverContext.driving : OwnerDriverContext.provider;
           _index = 0;
         }),
-        // Owner-driver self-assignment is wired in a later slice (needs the
-        // target order id); no-op for now.
-        onSelfAssign: () {},
       );
     }
     if (_identity == NqIdentity.provider && !_ownerDriver) {
