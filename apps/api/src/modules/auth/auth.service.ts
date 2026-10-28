@@ -1,5 +1,5 @@
 import {
-  BadRequestException, ConflictException, Injectable, UnauthorizedException,
+  BadRequestException, ConflictException, Inject, Injectable, UnauthorizedException,
   ForbiddenException, Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -15,6 +15,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { normalizeSaudiPhone } from '@naqla/shared-utils';
 import { companyCode, driverCode } from '../../common/codes';
+import { EMAIL_CONNECTOR, type EmailConnector } from '../../integrations/email/email.connector';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
     private otp: OtpService,
     private blacklist: TokenBlacklistService,
     private subscriptions: SubscriptionsService,
+    @Inject(EMAIL_CONNECTOR) private email: EmailConnector,
   ) {}
 
   /**
@@ -147,6 +149,12 @@ export class AuthService {
     // Send phone OTP automatically — this is the canonical verification path
     await this.otp.send(phone);
 
+    // Welcome email (optional) — goes through the email connector (console in
+    // dev, Resend in prod). Fire-and-forget: never block/fail registration on it.
+    if (email) {
+      void this.sendWelcomeEmail(email, dto.firstName);
+    }
+
     await this.audit.record({
       userId: user.id,
       action: 'auth.register',
@@ -167,6 +175,24 @@ export class AuthService {
       verificationChannel: 'sms',
       otpExpiresIn: 600,
     };
+  }
+
+  /** Transactional welcome email, sent via the email connector (gateway). */
+  private async sendWelcomeEmail(to: string, firstName: string) {
+    try {
+      await this.email.send({
+        to,
+        subject: 'مرحبًا بك في نقلة',
+        html:
+          `<div dir="rtl" style="font-family:system-ui,Arial,sans-serif">` +
+          `<h2>أهلًا ${firstName} 👋</h2>` +
+          `<p>تم إنشاء حسابك في <strong>نقلة</strong> بنجاح. أكمل تفعيل رقم جوالك عبر رمز التحقق للبدء.</p>` +
+          `</div>`,
+        text: `أهلًا ${firstName}، تم إنشاء حسابك في نقلة بنجاح.`,
+      });
+    } catch (err) {
+      this.logger.warn(`welcome email failed: ${(err as Error).message}`);
+    }
   }
 
   // ─── Login (regular users — phone OR email + password) ──────────

@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { RedisService } from '../redis/redis.service';
+import { SMS_CONNECTOR, type SmsConnector } from '../../integrations/sms/sms.connector';
 
 /**
  * SMS-only OTP service.
@@ -16,7 +17,10 @@ export class OtpService {
   private readonly TTL_SECONDS = 10 * 60;
   private readonly SEND_LIMIT_PER_HOUR = 3;
 
-  constructor(private redis: RedisService) {}
+  constructor(
+    private redis: RedisService,
+    @Inject(SMS_CONNECTOR) private sms: SmsConnector,
+  ) {}
 
   private codeKey(phone: string) { return `otp:phone:${phone}`; }
   private sendCounterKey(phone: string) { return `otp:send-count:${phone}`; }
@@ -34,13 +38,12 @@ export class OtpService {
     const code = String(randomInt(100000, 1000000));
     await this.redis.setWithTTL(this.codeKey(phone), code, this.TTL_SECONDS);
 
-    if ((process.env.SMS_PROVIDER ?? 'console') === 'console') {
-      // Development: log to console; in prod hand off to SMS provider.
-      this.logger.log(`📱 OTP for ${phone}: ${code}  (expires in ${this.TTL_SECONDS}s)`);
-    } else {
-      // TODO: integrate with Taqnyat/Unifonic/mSegat using SMS_PROVIDER + SMS_API_KEY env vars.
-      this.logger.log(`📱 OTP dispatched to ${phone} via ${process.env.SMS_PROVIDER}`);
-    }
+    // Delivery goes through the SMS connector (integrations gateway) — console
+    // in dev, a Saudi SMS gateway in prod — so no vendor logic lives here.
+    await this.sms.send({
+      to: phone,
+      body: `رمز التحقق الخاص بك في نقلة: ${code}\nصالح لمدة 10 دقائق.`,
+    });
     return { sent: true, expiresIn: this.TTL_SECONDS };
   }
 
