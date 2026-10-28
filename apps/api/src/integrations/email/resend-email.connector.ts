@@ -7,9 +7,15 @@ import type { EmailConnector, EmailMessage } from './email.connector';
 @Injectable()
 export class ResendEmailConnector implements EmailConnector {
   private readonly logger = new Logger('Email');
-  private readonly apiKey = process.env.RESEND_API_KEY ?? '';
-  private readonly defaultFrom =
-    process.env.EMAIL_FROM ?? 'NQLAH <no-reply@nqlah.sa>';
+  private readonly apiKey: string;
+  private readonly defaultFrom: string;
+
+  // Config comes from the Integration Hub (DB → env). Falls back to env when
+  // constructed by DI without args.
+  constructor(apiKey?: string, from?: string) {
+    this.apiKey = apiKey ?? process.env.RESEND_API_KEY ?? '';
+    this.defaultFrom = from ?? process.env.EMAIL_FROM ?? 'NQLAH <no-reply@nqlah.sa>';
+  }
 
   async send(message: EmailMessage) {
     if (!this.apiKey) {

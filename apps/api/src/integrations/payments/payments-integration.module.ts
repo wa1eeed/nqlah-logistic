@@ -1,27 +1,28 @@
 import { Global, Logger, Module } from '@nestjs/common';
 import { MockPaymentConnector } from './mock-payment.connector';
 import { PAYMENT_CONNECTOR } from './payment.connector';
+import { IntegrationsService } from '../../modules/integrations/integrations.service';
 
-/// Binds the active payment connector behind `PAYMENT_CONNECTOR`. Swap via
-/// `PAYMENT_PROVIDER` (default `mock`). A real adapter (Moyasar / Tap /
-/// HyperPay) drops in here once credentials are provided — the collection flow
-/// injects the token only and never changes.
+/// Binds the active payment connector behind `PAYMENT_CONNECTOR`, resolved by
+/// the Integration Hub (DB → env → default). A real adapter (Moyasar / Tap /
+/// HyperPay) drops in here; until then non-mock providers fall back to mock.
 @Global()
 @Module({
   providers: [
     MockPaymentConnector,
     {
       provide: PAYMENT_CONNECTOR,
-      useFactory: (mock: MockPaymentConnector) => {
-        const provider = (process.env.PAYMENT_PROVIDER ?? 'mock').toLowerCase();
+      useFactory: async (
+        integrations: IntegrationsService,
+        mock: MockPaymentConnector,
+      ) => {
+        const { provider } = await integrations.resolveActive('payments');
         if (provider !== 'mock') {
-          new Logger('Payments').warn(
-            `PAYMENT_PROVIDER="${provider}" not wired yet — using mock. Add the adapter + credentials.`,
-          );
+          new Logger('Payments').warn(`Payment provider "${provider}" not wired yet — using mock.`);
         }
         return mock;
       },
-      inject: [MockPaymentConnector],
+      inject: [IntegrationsService, MockPaymentConnector],
     },
   ],
   exports: [PAYMENT_CONNECTOR],

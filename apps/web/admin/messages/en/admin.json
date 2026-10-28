@@ -21,6 +21,7 @@
  "audit": "Audit Log",
  "legal": "Legal Pages",
  "seo": "SEO Settings",
+ "integrations": "Integrations",
  "settings": "Platform Settings"
  },
  "groups": {

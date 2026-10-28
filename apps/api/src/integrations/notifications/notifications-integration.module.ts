@@ -1,27 +1,28 @@
 import { Global, Logger, Module } from '@nestjs/common';
 import { ConsoleNotificationConnector } from './console-notification.connector';
 import { NOTIFICATION_CONNECTOR } from './notification.connector';
+import { IntegrationsService } from '../../modules/integrations/integrations.service';
 
-/// Binds the active push connector behind `NOTIFICATION_CONNECTOR`. Swap via
-/// `PUSH_PROVIDER` (default `console`). An `fcm` adapter (Firebase Admin for
-/// Android + APNs for iOS) drops in here once FCM server credentials / an APNs
-/// key are provided — feature code injects the token only and never changes.
+/// Binds the active push connector behind `NOTIFICATION_CONNECTOR`, resolved by
+/// the Integration Hub (DB → env → default). An FCM/APNs adapter drops in here;
+/// until then non-console providers fall back to console.
 @Global()
 @Module({
   providers: [
     ConsoleNotificationConnector,
     {
       provide: NOTIFICATION_CONNECTOR,
-      useFactory: (console: ConsoleNotificationConnector) => {
-        const provider = process.env.PUSH_PROVIDER ?? 'console';
+      useFactory: async (
+        integrations: IntegrationsService,
+        consoleConn: ConsoleNotificationConnector,
+      ) => {
+        const { provider } = await integrations.resolveActive('push');
         if (provider !== 'console') {
-          new Logger('Push').warn(
-            `PUSH_PROVIDER="${provider}" not wired yet — using console. Add the adapter + credentials.`,
-          );
+          new Logger('Push').warn(`Push provider "${provider}" not wired yet — using console.`);
         }
-        return console;
+        return consoleConn;
       },
-      inject: [ConsoleNotificationConnector],
+      inject: [IntegrationsService, ConsoleNotificationConnector],
     },
   ],
   exports: [NOTIFICATION_CONNECTOR],
