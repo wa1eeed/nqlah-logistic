@@ -54,7 +54,10 @@ export class NotificationsService {
       this.prisma.notification.count({ where }),
       this.prisma.notification.count({ where: { ...where, isRead: false } }),
     ]);
-    return { ...paginate(items, total, page, limit), unread };
+    // Nest `unread` inside meta so it survives the list-flattening interceptor
+    // (which keeps only `data` + `meta`).
+    const paged = paginate(items, total, page, limit);
+    return { ...paged, meta: { ...paged.meta, unread } };
   }
 
   async markRead(userId: string, id: string) {

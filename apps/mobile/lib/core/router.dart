@@ -25,7 +25,7 @@ import '../features/customer/tracking_screen.dart';
 import '../features/customer/truck_detail_screen.dart';
 import 'marketplace/marketplace_repository.dart';
 import '../features/customer/customer_finance_screen.dart';
-import '../features/customer/customer_notifications_screen.dart';
+import '../features/comms/notifications_screen.dart';
 import '../features/provider/driver_assignment_screen.dart';
 import '../features/provider/provider_add_driver_screen.dart';
 import '../features/provider/provider_maintenance_screen.dart';
@@ -199,7 +199,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     GoRoute(
       path: '/notifications',
-      builder: (context, state) => const CustomerNotificationsScreen(),
+      builder: (context, state) => const NotificationsScreen(),
     ),
     GoRoute(
       path: '/driver-assignment/:id',

@@ -106,11 +106,108 @@ export class ChatService {
 
   async list(orderId: string, actor: AuthUser) {
     await this.requireAccess(orderId, actor);
+    // Opening the thread marks the counterpart's messages as read.
+    if (actor.companyId) {
+      await this.prisma.message.updateMany({
+        where: {
+          orderId,
+          readAt: null,
+          senderCompanyId: { not: actor.companyId },
+        },
+        data: { readAt: new Date() },
+      });
+    }
     const rows = await this.prisma.message.findMany({
       where: { orderId },
       orderBy: { createdAt: 'asc' },
     });
     return Promise.all(rows.map((r) => this.present(r as MessageRow)));
+  }
+
+  /// The actor's conversations: every order they're a party to that has
+  /// messages, with the counterpart, the last message preview, and the unread
+  /// count — for the الرسائل inbox.
+  async conversations(actor: AuthUser) {
+    const cid = actor.companyId;
+    if (!cid && !this.isAdmin(actor)) return [];
+    const orders = await this.prisma.order.findMany({
+      where: {
+        messages: { some: {} },
+        ...(this.isAdmin(actor)
+          ? {}
+          : {
+              OR: [
+                { clientId: cid! },
+                { carrierId: cid! },
+                { targetCarrierId: cid! },
+              ],
+            }),
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        originCity: true,
+        destinationCity: true,
+        clientId: true,
+        client: { select: { nameAr: true } },
+        carrier: { select: { nameAr: true } },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { body: true, kind: true, createdAt: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+    });
+
+    const rows = await Promise.all(
+      orders.map(async (o) => {
+        const last = o.messages[0];
+        const unread = cid
+          ? await this.prisma.message.count({
+              where: {
+                orderId: o.id,
+                readAt: null,
+                senderCompanyId: { not: cid },
+              },
+            })
+          : 0;
+        const counterpart =
+          cid === o.clientId
+            ? o.carrier?.nameAr ?? 'المزوّد'
+            : o.client?.nameAr ?? 'العميل';
+        return {
+          orderId: o.id,
+          orderNumber: o.orderNumber,
+          route: `${o.originCity} ← ${o.destinationCity}`,
+          counterpart,
+          lastMessage: last
+            ? {
+                preview:
+                  last.kind === 'TEXT'
+                    ? last.body.slice(0, 120)
+                    : last.kind === 'IMAGE'
+                      ? '📷 صورة'
+                      : last.kind === 'VIDEO'
+                        ? '🎥 فيديو'
+                        : last.kind === 'AUDIO'
+                          ? '🎤 رسالة صوتية'
+                          : '📎 ملف',
+                createdAt: last.createdAt,
+              }
+            : null,
+          unread,
+        };
+      }),
+    );
+    // Most-recent message first.
+    rows.sort((a, b) => {
+      const ta = a.lastMessage?.createdAt?.getTime() ?? 0;
+      const tb = b.lastMessage?.createdAt?.getTime() ?? 0;
+      return tb - ta;
+    });
+    return rows;
   }
 
   async send(orderId: string, dto: SendMessageDto, actor: AuthUser) {

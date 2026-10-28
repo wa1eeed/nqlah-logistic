@@ -20,6 +20,9 @@ import '../provider/provider_home_screen.dart';
 import '../provider/provider_loads_screen.dart';
 import '../provider/owner_driver_home_screen.dart';
 import '../driver/driver_my_trips_screen.dart';
+import '../comms/notifications_screen.dart';
+import '../comms/conversations_screen.dart';
+import '../account/account_screen.dart';
 
 /// A request to switch the shell to a specific tab index from outside the
 /// shell (e.g. the create-order wizard linking to the Trucks tab). The shell
@@ -118,15 +121,47 @@ class _AppShellState extends ConsumerState<AppShell> {
           return const CustomerAccountScreen();
       }
     }
-    if (_identity == NqIdentity.provider && _ownerDriver && index == 0) {
-      return OwnerDriverHomeScreen(
-        driving: _odContext == OwnerDriverContext.driving,
-        onSwitch: (i) => setState(() {
-          _odContext =
-              i == 1 ? OwnerDriverContext.driving : OwnerDriverContext.provider;
-          _index = 0;
-        }),
-      );
+    if (_identity == NqIdentity.provider && _ownerDriver) {
+      // Index 0 is the owner-driver home in both contexts (it owns the
+      // «أعمل كمزوّد» ↔ «أقود الآن» switch); the remaining tabs differ by context.
+      if (index == 0) {
+        return OwnerDriverHomeScreen(
+          driving: _odContext == OwnerDriverContext.driving,
+          onSwitch: (i) => setState(() {
+            _odContext = i == 1
+                ? OwnerDriverContext.driving
+                : OwnerDriverContext.provider;
+            _index = 0;
+          }),
+        );
+      }
+      if (_odContext == OwnerDriverContext.driving) {
+        // [رحلاتي(0), الرسائل(1), حسابي(2)]
+        switch (index) {
+          case 1:
+            return const ConversationsScreen();
+          case 2:
+            return const AccountScreen();
+        }
+      } else {
+        // [الرئيسية(0), الأحمال(1), عملياتي(2), رحلاتي(3), حسابي(4)]
+        switch (index) {
+          case 1:
+            return const ProviderLoadsScreen();
+          case 2:
+            return ProviderAssignmentsScreen(
+              onAssign: (id) => context.push('/driver-assignment/$id'),
+              onOpen: (id) => context.push('/provider-order/$id'),
+            );
+          case 3:
+            return DriverMyTripsScreen(
+              onOpenTrip: (id) => context.push('/trip-execution/$id'),
+              onAcknowledge: (id) => context.push('/trip-execution/$id'),
+            );
+          case 4:
+            return const AccountScreen();
+        }
+      }
     }
     if (_identity == NqIdentity.provider && !_ownerDriver) {
       switch (index) {
@@ -155,11 +190,18 @@ class _AppShellState extends ConsumerState<AppShell> {
           return const ProviderFinanceScreen();
       }
     }
-    if (_identity == NqIdentity.employedDriver && index == 0) {
-      return DriverMyTripsScreen(
-        onOpenTrip: (id) => context.push('/trip-execution/$id'),
-        onAcknowledge: (id) => context.push('/trip-execution/$id'),
-      );
+    if (_identity == NqIdentity.employedDriver) {
+      switch (index) {
+        case 0:
+          return DriverMyTripsScreen(
+            onOpenTrip: (id) => context.push('/trip-execution/$id'),
+            onAcknowledge: (id) => context.push('/trip-execution/$id'),
+          );
+        case 1:
+          return const NotificationsScreen(showBack: false);
+        case 2:
+          return const AccountScreen();
+      }
     }
     return _placeholderBody(c, tab);
   }
