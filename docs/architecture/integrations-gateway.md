@@ -51,7 +51,7 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
 | Push notifications | `NotificationConnector` ✅ | console ✅ (dev) · FCM/APNs (drop-in) |
 | Email | `EmailConnector` (planned) | Resend (resend.com) · … |
 | SMS / OTP | `OtpConnector` (planned) | console (dev) · a provider |
-| Payments | `PaymentConnector` (planned) | a gateway (escrow/COD settlement) |
+| Payments | `PaymentConnector` ✅ | mock ✅ (dev) · Moyasar / Tap / HyperPay (drop-in) |
 
 ## Push notifications (implemented)
 
@@ -71,6 +71,24 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
 > The FCM/APNs adapter needs the user's Firebase project (Android) / APNs key
 > (iOS) and, on mobile, `firebase_messaging` to obtain the device token — that's
 > the only user-provided step; the backend pipeline is complete.
+
+## Payments (implemented)
+
+- **Port:** `integrations/payments/payment.connector.ts` → `PaymentConnector`
+  (`charge(req)` + `refund(reference, amount)`) behind `PAYMENT_CONNECTOR`.
+- **Adapter:** `MockPaymentConnector` (dev — no-network, returns a deterministic
+  reference so the PREPAID_GATEWAY / escrow flow runs end to end without live
+  keys) + `PaymentsIntegrationModule` (`@Global`), selected by `PAYMENT_PROVIDER`
+  (`mock` default; `moyasar` / `tap` warn + fall back to mock until the vendor
+  adapter is added; `PAYMENT_PROVIDER` cannot be `mock` in production).
+- **Consumer:** `CollectionService` injects `PAYMENT_CONNECTOR` and calls it for
+  the PREPAID_GATEWAY charge and for refunds on cancellation; the escrow / COD /
+  wallet settlement ledger is unchanged. The prior local `PaymentGateway`/
+  `StubGateway` is removed in favour of the shared gateway.
+
+> A real adapter (Moyasar / Tap / HyperPay) needs the provider keys and, for
+> card charges, a client-side payment token — that is the only user-provided
+> step; the collection flow is complete.
 
 ## Real-time (Socket.io)
 

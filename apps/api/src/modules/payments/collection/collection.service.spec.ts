@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CollectionService } from './collection.service';
-import { StubGateway } from './gateway';
+import { MockPaymentConnector } from '../../../integrations/payments/mock-payment.connector';
 
 /**
  * Unit tests for collection-method resolution against policy. The default policy
@@ -8,7 +8,7 @@ import { StubGateway } from './gateway';
  * disables prepaid or COD rejects those methods.
  */
 function makeService() {
-  return new CollectionService({} as never, new StubGateway());
+  return new CollectionService({} as never, new MockPaymentConnector());
 }
 const ALLOW_ALL = { allowPrepaid: true, allowCOD: true };
 

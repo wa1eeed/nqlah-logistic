@@ -1,9 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { money, round2, toNum } from '../../../common/money/money';
 import type { AuthUser } from '../../../common/decorators/current-user.decorator';
 import type { Prisma } from '../../../generated/prisma';
-import { PaymentGateway } from './gateway';
+import { PAYMENT_CONNECTOR, type PaymentConnector } from '../../../integrations/payments/payment.connector';
 
 export const COLLECTION_METHODS = ['ESCROW', 'PREPAID_WALLET', 'PREPAID_GATEWAY', 'COD'] as const;
 export type CollectionMethod = (typeof COLLECTION_METHODS)[number];
@@ -48,7 +48,10 @@ interface SettleableOrder {
  */
 @Injectable()
 export class CollectionService {
-  constructor(private prisma: PrismaService, private gateway: PaymentGateway) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(PAYMENT_CONNECTOR) private gateway: PaymentConnector,
+  ) {}
 
   /**
    * Resolve the collection method for a new order. The admin configures this
