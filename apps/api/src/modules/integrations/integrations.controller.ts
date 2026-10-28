@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { CurrentUser, type AuthUser } from '../../common/decorators/current-user.decorator';
 import { IntegrationsService } from './integrations.service';
 import { IntegrationsHealthService } from './integrations-health.service';
 
@@ -37,8 +38,12 @@ export class IntegrationsController {
   }
 
   @Patch(':domain')
-  update(@Param('domain') domain: string, @Body() body: UpdateIntegrationBody) {
-    return this.integrations.update(domain, body);
+  update(
+    @Param('domain') domain: string,
+    @Body() body: UpdateIntegrationBody,
+    @CurrentUser() actor: AuthUser,
+  ) {
+    return this.integrations.update(domain, body, actor);
   }
 
   @Post(':domain/test')
