@@ -48,7 +48,7 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
 | Domain | Port | Adapters |
 |---|---|---|
 | Storage | `StorageConnector` ✅ | MinIO ✅ · Cloudflare R2 (drop-in) |
-| Push notifications | `NotificationConnector` ✅ | console ✅ (dev) · FCM/APNs (drop-in) |
+| Push notifications | `NotificationConnector` ✅ | console ✅ (dev) · FCM/APNs ✅ (HTTP v1) |
 | Email | `EmailConnector` ✅ | console ✅ (dev) · Resend ✅ (resend.com) |
 | SMS / OTP | `SmsConnector` ✅ | console ✅ (dev) · a Saudi gateway (drop-in) |
 | Payments | `PaymentConnector` ✅ | mock ✅ (dev) · Moyasar / Tap / HyperPay (drop-in) |
@@ -58,19 +58,31 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
 - **Port:** `integrations/notifications/notification.connector.ts` →
   `NotificationConnector.send(targets, {title, body, data})` behind
   `NOTIFICATION_CONNECTOR`.
-- **Adapter:** `ConsoleNotificationConnector` (dev — logs the push so the whole
-  pipeline is testable without FCM/APNs creds). Select with `PUSH_PROVIDER`
-  (`console` default; `fcm` drops in with Firebase Admin for Android + an APNs
-  key for iOS).
+- **Adapters:**
+  - `ConsoleNotificationConnector` (dev — logs the push so the whole pipeline is
+    testable without FCM/APNs creds).
+  - `FcmNotificationConnector` (prod — **FCM HTTP v1**, which also relays to APNs
+    for iOS). Dependency-free: the service-account JWT is signed with Node
+    `crypto` (RS256) and exchanged for a short-lived OAuth token; messages POST
+    to `…/v1/projects/{projectId}/messages:send`. No Firebase SDK, so the project
+    stays portable. Invalid/unregistered tokens (404 / `UNREGISTERED`) are
+    reported back and pruned.
+- **Selection:** the Integration Hub `push` domain — provider `fcm` with
+  `FCM_PROJECT_ID` + `FCM_SERVICE_ACCOUNT` (JSON, stored **encrypted**). A
+  malformed/absent service account safely falls back to console. The hub's
+  **Test** button mints a token (no notification sent) to prove the credentials.
 - **Devices:** `POST /notifications/devices {token, platform}` registers a push
   token (`PushToken` model); `DELETE /notifications/devices/:token` removes it.
 - **Delivery:** `NotificationsService.create` fans out to the user's device
   tokens (pruning invalid ones). New chat messages create a notification for the
   counterpart's users → in-app + push.
 
-> The FCM/APNs adapter needs the user's Firebase project (Android) / APNs key
-> (iOS) and, on mobile, `firebase_messaging` to obtain the device token — that's
-> the only user-provided step; the backend pipeline is complete.
+> **Remaining user-provided step (mobile):** one **Firebase project** yields both
+> halves — the **service-account JSON** (paste into the hub → backend sends) and
+> the mobile config files (`google-services.json` / `GoogleService-Info.plist`)
+> + `firebase_messaging` to obtain the device token and call
+> `POST /notifications/devices`. The backend adapter + device pipeline are
+> complete and verified; see `docs/mobile/PUSH-FCM.md` for the mobile wiring.
 
 ## SMS / OTP (implemented)
 

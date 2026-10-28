@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { IntegrationsService } from './integrations.service';
 import { specFor } from './integrations.registry';
 import { STORAGE_CONNECTOR, type StorageConnector } from '../../integrations/storage/storage.connector';
+import { FcmNotificationConnector } from '../../integrations/notifications/fcm-notification.connector';
 
 export interface HealthResult {
   domain: string;
@@ -65,6 +66,19 @@ export class IntegrationsHealthService {
     if (missing.length) {
       return { domain, status: 'down', note: `إعدادات ناقصة: ${missing.join('، ')}` };
     }
+
+    // Live check for FCM: mint an access token from the service account to
+    // prove the credentials are valid (does not send a notification).
+    if (domain === 'push' && provider === 'fcm') {
+      try {
+        const sa = JSON.parse(config.FCM_SERVICE_ACCOUNT);
+        await new FcmNotificationConnector(config.FCM_PROJECT_ID, sa).verify();
+        return { domain, status: 'ok', note: 'تم التحقق من حساب خدمة FCM (توكن صالح)' };
+      } catch (e) {
+        return { domain, status: 'down', note: `فشل التحقق من FCM: ${(e as Error).message}` };
+      }
+    }
+
     return { domain, status: 'ok', note: `مُهيّأ عبر ${provider}` };
   }
 }
