@@ -15,7 +15,7 @@ function makeService(order: Record<string, unknown>) {
   };
   const policies = { effectiveForCompany: jest.fn(async () => ({ allowMarket: true, allowDirect: true })) };
   const collection = { initiate: jest.fn(async () => ({})) };
-  const svc = new OrdersService(prisma as never, {} as never, policies as never, collection as never, {} as never);
+  const svc = new OrdersService(prisma as never, {} as never, policies as never, collection as never, {} as never, {} as never);
   return { svc, prisma, collection, tx };
 }
 

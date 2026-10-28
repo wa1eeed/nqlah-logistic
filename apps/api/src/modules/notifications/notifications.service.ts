@@ -91,4 +91,27 @@ export class NotificationsService {
     void this.pushToUser(payload.userId, payload.titleAr, payload.bodyAr, data);
     return notification;
   }
+
+  /// Fan a notification out to every active user of a company (in-app + push).
+  /// Best-effort — failures never block the business action that triggered it.
+  async notifyCompany(
+    companyId: string | null | undefined,
+    payload: {
+      type: NotificationType;
+      titleAr: string;
+      bodyAr: string;
+      titleEn?: string;
+      bodyEn?: string;
+      data?: Record<string, unknown>;
+    },
+  ) {
+    if (!companyId) return;
+    const users = await this.prisma.user.findMany({
+      where: { companyId, isActive: true },
+      select: { id: true },
+    });
+    await Promise.all(
+      users.map((u) => this.create({ userId: u.id, ...payload })),
+    );
+  }
 }

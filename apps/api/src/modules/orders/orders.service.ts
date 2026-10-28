@@ -10,6 +10,7 @@ import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { PoliciesService } from '../policies/policies.service';
 import { CollectionService } from '../payments/collection/collection.service';
 import { InvoicesService } from '../invoices/invoices.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { money, round2 } from '../../common/money/money';
 import { computeOrderFinancials, type OrderFinancials } from '../../common/pricing/pricing';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
@@ -137,6 +138,7 @@ export class OrdersService {
     private policies: PoliciesService,
     private collection: CollectionService,
     private invoices: InvoicesService,
+    private notifications: NotificationsService,
   ) {}
 
   async list(query: PaginationDto & { status?: OrderStatus; mine?: boolean }, actor: AuthUser) {
@@ -477,10 +479,17 @@ export class OrdersService {
     if (!['CONFIRMED', 'IN_TRANSIT'].includes(order.status)) {
       throw new BadRequestException({ code: 'INVALID_TRANSITION', message: 'لا يمكن وضع تم التسليم من هذه الحالة' });
     }
-    return this.prisma.order.update({
+    const delivered = await this.prisma.order.update({
       where: { id },
       data: { status: 'DELIVERED', actualDeliveryAt: new Date() },
     });
+    void this.notifications.notifyCompany(order.clientId, {
+      type: 'SHIPMENT_DELIVERED',
+      titleAr: 'تم تسليم الشحنة',
+      bodyAr: `${order.orderNumber} — بانتظار تأكيد الاستلام`,
+      data: { orderId: id, kind: 'order' },
+    });
+    return delivered;
   }
 
   /**
@@ -520,6 +529,15 @@ export class OrdersService {
           data: { status: 'AVAILABLE' as DriverStatus },
         });
       }
+      return updatedOrder;
+    }).then((updatedOrder) => {
+      // Tell the carrier their payment has been released.
+      void this.notifications.notifyCompany(order.carrierId, {
+        type: 'PAYMENT_RELEASED',
+        titleAr: 'تم تحرير دفعتك',
+        bodyAr: `${order.orderNumber} — أُضيفت مستحقاتك إلى رصيدك`,
+        data: { orderId: id, kind: 'payment' },
+      });
       return updatedOrder;
     });
   }
@@ -611,12 +629,24 @@ export class OrdersService {
         data: { status: 'IN_TRANSIT', actualPickupAt: new Date() },
       });
       this.realtime.emitOrderStatus(id, { status: 'IN_TRANSIT' });
+      void this.notifications.notifyCompany(order.clientId, {
+        type: 'SHIPMENT_STARTED',
+        titleAr: 'الشحنة في الطريق',
+        bodyAr: `${order.orderNumber} — انطلقت شحنتك`,
+        data: { orderId: id, kind: 'order' },
+      });
     } else if (dto.status === 'DELIVERED') {
       await this.prisma.order.update({
         where: { id },
         data: { status: 'DELIVERED', actualDeliveryAt: new Date() },
       });
       this.realtime.emitOrderStatus(id, { status: 'DELIVERED' });
+      void this.notifications.notifyCompany(order.clientId, {
+        type: 'SHIPMENT_DELIVERED',
+        titleAr: 'تم تسليم الشحنة',
+        bodyAr: `${order.orderNumber} — بانتظار تأكيد الاستلام`,
+        data: { orderId: id, kind: 'order' },
+      });
     }
     return event;
   }
