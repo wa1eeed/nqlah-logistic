@@ -213,14 +213,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         return ProviderOrderScreen(
           orderId: id,
           onChangeDriver: () => context.push('/driver-assignment/$id'),
-          onTrack: () => context.push('/tracking/$id'),
+          onTrack: () => context.push('/trip-monitor/$id'),
           onChat: () => context.push('/chat/$id'),
         );
       },
     ),
     GoRoute(
-      path: '/trip-monitor',
-      builder: (context, state) => const TripMonitorScreen(),
+      path: '/trip-monitor/:id',
+      builder: (context, state) =>
+          TripMonitorScreen(orderId: state.pathParameters['id']!),
     ),
     GoRoute(
       path: '/maintenance',
