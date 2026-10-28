@@ -31,6 +31,7 @@ const REQUIRED_VARS = [
 const VALID_NODE_ENVS = ['development', 'staging', 'production', 'test'] as const;
 const VALID_PAYMENT_PROVIDERS = ['mock', 'moyasar', 'tap'] as const;
 const VALID_SMS_PROVIDERS = ['console', 'unifonic', 'msegat'] as const;
+const VALID_EMAIL_PROVIDERS = ['console', 'resend'] as const;
 
 export function validateEnv(config: Record<string, unknown>): Record<string, unknown> {
   const errors: string[] = [];
@@ -76,6 +77,13 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
   const smsProvider = String(config.SMS_PROVIDER ?? '').toLowerCase();
   if (smsProvider && !VALID_SMS_PROVIDERS.includes(smsProvider as (typeof VALID_SMS_PROVIDERS)[number])) {
     errors.push(`SMS_PROVIDER must be one of ${VALID_SMS_PROVIDERS.join(' | ')}, got "${smsProvider}"`);
+  }
+  const emailProvider = String(config.EMAIL_PROVIDER ?? '').toLowerCase();
+  if (emailProvider && !VALID_EMAIL_PROVIDERS.includes(emailProvider as (typeof VALID_EMAIL_PROVIDERS)[number])) {
+    errors.push(`EMAIL_PROVIDER must be one of ${VALID_EMAIL_PROVIDERS.join(' | ')}, got "${emailProvider}"`);
+  }
+  if (emailProvider === 'resend' && !config.RESEND_API_KEY) {
+    errors.push('EMAIL_PROVIDER="resend" requires RESEND_API_KEY');
   }
 
   // ─── 6. Production-only hardening ────────────────────────────────────────

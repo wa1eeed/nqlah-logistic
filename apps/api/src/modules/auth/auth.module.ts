@@ -8,6 +8,8 @@ import { LoginAttemptService } from '../../common/security/login-attempt.service
 import { OtpService } from '../../common/security/otp.service';
 import { TokenBlacklistService } from '../../common/security/token-blacklist.service';
 import { PoliciesModule } from '../policies/policies.module';
+import { SmsModule } from '../../integrations/sms/sms.module';
+import { EmailModule } from '../../integrations/email/email.module';
 
 @Module({
   imports: [
@@ -17,6 +19,10 @@ import { PoliciesModule } from '../policies/policies.module';
       signOptions: { expiresIn: process.env.JWT_EXPIRES_IN ?? process.env.JWT_ACCESS_TTL ?? '10h' },
     }),
     PoliciesModule,
+    // Integrations gateway — provide SMS (OTP) + Email (welcome/verification)
+    // connectors globally so OtpService / AuthService inject only the tokens.
+    SmsModule,
+    EmailModule,
   ],
   controllers: [AuthController, AdminAuthController],
   providers: [
