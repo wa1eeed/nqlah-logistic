@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { STORAGE_CONNECTOR, type StorageConnector } from '../../integrations/storage/storage.connector';
+import { renderInvoicePdf } from './invoice-pdf';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import type { Prisma } from '../../generated/prisma';
@@ -27,7 +29,48 @@ interface InvoiceableOrder {
 
 @Injectable()
 export class InvoicesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(STORAGE_CONNECTOR) private storage: StorageConnector,
+  ) {}
+
+  /** Render the invoice's ZATCA tax-invoice PDF, store it, and return a
+   *  short-lived download URL (the object key is cached on `pdfUrl`). */
+  async getPdfUrl(id: string, actor: AuthUser): Promise<{ url: string }> {
+    const inv = await this.prisma.invoice.findUnique({
+      where: { id },
+      include: { order: { select: { orderNumber: true, clientId: true, carrierId: true } } },
+    });
+    if (!inv) throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: 'الفاتورة غير موجودة' });
+    const isAdmin = actor.role === 'ADMIN' || actor.role === 'SUPER_ADMIN';
+    const cid = actor.companyId;
+    if (!isAdmin && inv.issuerId !== cid && inv.receiverId !== cid) {
+      throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: 'الفاتورة غير موجودة' });
+    }
+    const pdf = await renderInvoicePdf({
+      invoiceNumber: inv.invoiceNumber,
+      kind: inv.kind,
+      createdAt: inv.createdAt,
+      amount: Number(inv.amount),
+      vatAmount: Number(inv.vatAmount),
+      totalAmount: Number(inv.totalAmount),
+      sellerName: inv.sellerName,
+      sellerVatNumber: inv.sellerVatNumber,
+      sellerCrNumber: inv.sellerCrNumber,
+      buyerName: inv.buyerName,
+      buyerVatNumber: inv.buyerVatNumber,
+      buyerCrNumber: inv.buyerCrNumber,
+      zatcaQr: inv.zatcaQr,
+      orderNumber: inv.order?.orderNumber ?? null,
+    });
+    const key = `invoices/${inv.invoiceNumber}.pdf`;
+    await this.storage.put(key, pdf, pdf.length, 'application/pdf');
+    if (inv.pdfUrl !== key) {
+      await this.prisma.invoice.update({ where: { id }, data: { pdfUrl: key } });
+    }
+    const url = await this.storage.presignedGet(key, 60 * 60);
+    return { url };
+  }
 
   async list(query: PaginationDto, actor: AuthUser) {
     const { page = 1, limit = 20, sort = 'createdAt', order = 'desc' } = query;

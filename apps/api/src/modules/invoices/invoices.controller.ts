@@ -25,6 +25,12 @@ export class InvoicesController {
     return this.invoices.findById(id);
   }
 
+  /** ZATCA tax-invoice PDF — returns a short-lived download URL. */
+  @Get(':id/pdf')
+  pdf(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
+    return this.invoices.getPdfUrl(id, actor);
+  }
+
   @Post(':id/send')
   send(@Param('id') id: string) {
     return this.invoices.send(id);
