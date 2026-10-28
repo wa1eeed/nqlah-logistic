@@ -12,6 +12,7 @@ class DriverModel {
   DriverModel({
     required this.id,
     required this.name,
+    this.userId,
     this.phone,
     this.rating = 0,
     this.totalTrips = 0,
@@ -21,6 +22,7 @@ class DriverModel {
 
   final String id;
   final String name;
+  final String? userId; // the backing user (to spot the owner's own profile)
   final String? phone;
   final num rating;
   final int totalTrips;
@@ -35,6 +37,7 @@ class DriverModel {
     return DriverModel(
       id: j['id'].toString(),
       name: name.isNotEmpty ? name : 'سائق',
+      userId: (j['userId'] ?? (user is Map ? user['id'] : null))?.toString(),
       phone: user is Map ? user['phone']?.toString() : null,
       rating: _num(j['rating']) ?? 0,
       totalTrips: _num(j['totalTrips'])?.toInt() ?? 0,
