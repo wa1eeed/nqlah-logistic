@@ -1,9 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { STORAGE_CONNECTOR, type StorageConnector } from '../../integrations/storage/storage.connector';
+import { renderInvoicePdf } from './invoice-pdf';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import type { Prisma } from '../../generated/prisma';
 import type { OrderFinancials } from '../../common/pricing/pricing';
+import { nextInvoiceNumber, zatcaQrBase64 } from './zatca';
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateInvoiceDto {
@@ -26,7 +29,48 @@ interface InvoiceableOrder {
 
 @Injectable()
 export class InvoicesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(STORAGE_CONNECTOR) private storage: StorageConnector,
+  ) {}
+
+  /** Render the invoice's ZATCA tax-invoice PDF, store it, and return a
+   *  short-lived download URL (the object key is cached on `pdfUrl`). */
+  async getPdfUrl(id: string, actor: AuthUser): Promise<{ url: string }> {
+    const inv = await this.prisma.invoice.findUnique({
+      where: { id },
+      include: { order: { select: { orderNumber: true, clientId: true, carrierId: true } } },
+    });
+    if (!inv) throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: 'الفاتورة غير موجودة' });
+    const isAdmin = actor.role === 'ADMIN' || actor.role === 'SUPER_ADMIN';
+    const cid = actor.companyId;
+    if (!isAdmin && inv.issuerId !== cid && inv.receiverId !== cid) {
+      throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: 'الفاتورة غير موجودة' });
+    }
+    const pdf = await renderInvoicePdf({
+      invoiceNumber: inv.invoiceNumber,
+      kind: inv.kind,
+      createdAt: inv.createdAt,
+      amount: Number(inv.amount),
+      vatAmount: Number(inv.vatAmount),
+      totalAmount: Number(inv.totalAmount),
+      sellerName: inv.sellerName,
+      sellerVatNumber: inv.sellerVatNumber,
+      sellerCrNumber: inv.sellerCrNumber,
+      buyerName: inv.buyerName,
+      buyerVatNumber: inv.buyerVatNumber,
+      buyerCrNumber: inv.buyerCrNumber,
+      zatcaQr: inv.zatcaQr,
+      orderNumber: inv.order?.orderNumber ?? null,
+    });
+    const key = `invoices/${inv.invoiceNumber}.pdf`;
+    await this.storage.put(key, pdf, pdf.length, 'application/pdf');
+    if (inv.pdfUrl !== key) {
+      await this.prisma.invoice.update({ where: { id }, data: { pdfUrl: key } });
+    }
+    const url = await this.storage.presignedGet(key, 60 * 60);
+    return { url };
+  }
 
   async list(query: PaginationDto, actor: AuthUser) {
     const { page = 1, limit = 20, sort = 'createdAt', order = 'desc' } = query;
@@ -62,6 +106,7 @@ export class InvoicesService {
     const issuerId = actor.companyId!;
     return this.prisma.invoice.create({
       data: {
+        invoiceNumber: await nextInvoiceNumber(this.prisma),
         kind: 'SERVICE',
         orderId: dto.orderId,
         issuerId,
@@ -114,8 +159,10 @@ export class InvoicesService {
     const created: string[] = [];
 
     // ── SERVICE invoice: carrier → client ──────────────────────────────────
+    const svcSellerVat = order.carrier.vatRegistered ? order.carrier.vatNumber : null;
     const svc = await tx.invoice.create({
       data: {
+        invoiceNumber: await nextInvoiceNumber(tx),
         kind: 'SERVICE', status: 'ISSUED',
         orderId: order.id,
         issuerId: order.carrierId,
@@ -124,13 +171,20 @@ export class InvoicesService {
         vatAmount: fin.serviceVat,
         totalAmount: fin.serviceTotal,
         sellerName: order.carrier.nameAr,
-        sellerVatNumber: order.carrier.vatRegistered ? order.carrier.vatNumber : null,
+        sellerVatNumber: svcSellerVat,
         sellerCrNumber: order.carrier.crNumber,
-        vatNumber: order.carrier.vatRegistered ? order.carrier.vatNumber : null,
+        vatNumber: svcSellerVat,
         crNumber: order.carrier.crNumber,
         buyerName: order.client.nameAr,
         buyerVatNumber: order.client.vatNumber,
         buyerCrNumber: order.client.crNumber,
+        zatcaQr: zatcaQrBase64({
+          sellerName: order.carrier.nameAr ?? '—',
+          vatNumber: svcSellerVat ?? '',
+          timestamp: new Date(),
+          total: fin.serviceTotal,
+          vatTotal: fin.serviceVat,
+        }),
         notes: `فاتورة خدمة نقل للطلب ${order.orderNumber}`,
       },
       select: { id: true },
@@ -160,6 +214,7 @@ export class InvoicesService {
       const buyerCo = c.buyer === 'CARRIER' ? order.carrier : order.client;
       const com = await tx.invoice.create({
         data: {
+          invoiceNumber: await nextInvoiceNumber(tx),
           kind: 'COMMISSION', status: 'ISSUED',
           orderId: order.id,
           issuerId: null, // the platform has no Company row
@@ -175,6 +230,13 @@ export class InvoicesService {
           buyerName: buyerCo.nameAr,
           buyerVatNumber: buyerCo.vatNumber,
           buyerCrNumber: buyerCo.crNumber,
+          zatcaQr: zatcaQrBase64({
+            sellerName: platform.name ?? '—',
+            vatNumber: platform.vatNumber ?? '',
+            timestamp: new Date(),
+            total: c.total,
+            vatTotal: c.vat,
+          }),
           notes: `فاتورة عمولة المنصة للطلب ${order.orderNumber}`,
         },
         select: { id: true },

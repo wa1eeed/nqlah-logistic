@@ -963,6 +963,10 @@ model Invoice {
   notes  String?
   pdfUrl String?
 
+  // ZATCA Phase-1 QR: base64 of the TLV (seller name, VAT number, timestamp,
+  // invoice total, VAT total). The client renders it as a QR on the invoice.
+  zatcaQr String?
+
   dueDate DateTime?
   paidAt  DateTime?
 

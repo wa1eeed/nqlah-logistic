@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/finance/finance_repository.dart';
 import '../../core/orders/order_models.dart';
+import '../../core/platform/external_links.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -22,6 +23,28 @@ class ProviderFinanceScreen extends ConsumerStatefulWidget {
 class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
   int _seg = 0; // 0 = due, 1 = paid
   String? _collectingId;
+  String? _pdfLoadingId;
+
+  Future<void> _openInvoicePdf(InvoiceModel inv) async {
+    if (_pdfLoadingId != null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _pdfLoadingId = inv.id);
+    try {
+      final url = await ref.read(financeRepositoryProvider).invoicePdfUrl(inv.id);
+      final ok = await ExternalLinks.openUrl(url);
+      if (!ok) {
+        messenger.showSnackBar(
+            const SnackBar(content: Text('تعذّر فتح الفاتورة.')));
+      }
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(
+          const SnackBar(content: Text('تعذّر فتح الفاتورة. حاول مجددًا.')));
+    } finally {
+      if (mounted) setState(() => _pdfLoadingId = null);
+    }
+  }
 
   Future<void> _collect(PaymentModel p) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -215,7 +238,10 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
       else if (inv.dueDate != null)
         'تستحق ${fmtDate(inv.dueDate)}',
     ].join(' · ');
-    return Container(
+    return GestureDetector(
+      onTap: () => _openInvoicePdf(inv),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: c.sf,
@@ -224,6 +250,15 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
       ),
       child: Row(
         children: [
+          SizedBox(
+            width: 34,
+            child: _pdfLoadingId == inv.id
+                ? const SizedBox(
+                    width: 18, height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : NqIcon(NqIcons.fileText, size: 22, color: c.mintTx),
+          ),
+          const SizedBox(width: 6),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -266,6 +301,7 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -46,6 +46,9 @@ class ExternalLinks {
     return _launch('mailto:$supportEmail$q');
   }
 
+  /// Opens an arbitrary URL (e.g. a document / PDF) in an external viewer.
+  static Future<bool> openUrl(String url) => _launch(url);
+
   static Future<bool> _launch(String url) async {
     final uri = Uri.parse(url);
     if (!await canLaunchUrl(uri)) return false;

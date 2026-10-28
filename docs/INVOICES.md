@@ -109,10 +109,20 @@ total.
 
 ---
 
-## 7. Deferred (future)
+## 7. ZATCA numbering + QR (implemented)
 
-- Rendered **PDF** per invoice and a **Fatoora Phase-2** QR / TLV field for full
-  e-invoicing.
+- **Sequential numbers:** `invoiceNumber` is `INV-<year>-<6 digits>`, drawn from
+  the Postgres sequence `invoice_number_seq` (monotonic + unique, so the series
+  is sequential even under concurrent issuance). Replaces the old cuid default.
+- **Fatoora Phase-1 QR:** each invoice carries `zatcaQr` — base64 of the TLV
+  (Tag-Length-Value) of the five mandatory fields: seller name, seller VAT
+  number, timestamp, invoice total (incl. VAT), VAT total. Built in
+  `invoices/zatca.ts`; the client renders it as a QR on the tax invoice.
+
+## 8. Deferred (future)
+
+- Rendered **PDF** per invoice (the QR + ZATCA fields are ready to lay out) and
+  **Fatoora Phase-2** cryptographic stamping / clearance.
 - Buyer-facing invoice lists in the client / carrier apps.
 
 ---
