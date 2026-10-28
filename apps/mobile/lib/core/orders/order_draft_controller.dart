@@ -193,7 +193,12 @@ class OrderDraft {
       'collectionMethod': collectionMethod,
       'orderType': 'SINGLE',
     };
-    if (fixedPrice && clientBudget != null) body['clientBudget'] = clientBudget;
+    // Pricing: «سعر ثابت» sends `agreedPriceUpfront` (the backend treats this as
+    // a FIXED price — carriers accept it, or a DIRECT order auto-assigns);
+    // «مناقصة» sends `clientBudget` as a budget hint so carriers bid.
+    if (clientBudget != null) {
+      body[fixedPrice ? 'agreedPriceUpfront' : 'clientBudget'] = clientBudget;
+    }
     if (isDirectTargeted) body['targetCarrierId'] = targetCarrierId;
     if (notes.trim().isNotEmpty) body['notes'] = notes.trim();
     final cn = consigneeName.trim();
