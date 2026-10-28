@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import {
   AlertCircle, BarChart3, Bell, Building2, FileText, History, LayoutDashboard,
-  LifeBuoy, Megaphone, Scale, Search, Settings, ShieldCheck, SlidersHorizontal, Truck, Users, Wallet,
+  LifeBuoy, Megaphone, Plug, Scale, Search, Settings, ShieldCheck, SlidersHorizontal, Truck, Users, Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import { Logo } from '@/components/logo';
@@ -79,6 +79,7 @@ const NAV: NavGroupKey[] = [
   {
     titleKey: 'settings',
     items: [
+      { href: '/integrations', labelKey: 'integrations', icon: Plug },
       { href: '/settings', labelKey: 'settings', icon: Settings },
     ],
   },
