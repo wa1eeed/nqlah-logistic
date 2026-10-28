@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/orders/order_models.dart';
 import '../../core/orders/orders_repository.dart';
+import '../../core/platform/external_links.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -204,7 +205,10 @@ class DriverTripExecutionScreen extends ConsumerWidget {
                     label: 'فتح الخرائط',
                     icon: NqIcons.navigationArrow,
                     variant: NqButtonVariant.secondary,
-                    onPressed: () {})),
+                    onPressed: () => ExternalLinks.openMaps(
+                        [o.destinationAddress, o.destinationCity]
+                            .where((s) => s.trim().isNotEmpty)
+                            .join('، ')))),
           ]),
         ],
       ),

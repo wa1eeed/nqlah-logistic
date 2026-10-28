@@ -11,6 +11,8 @@ class AuthUser {
     this.firstName,
     this.lastName,
     this.companyId,
+    this.companyNameAr,
+    this.crNumber,
   });
 
   final String id;
@@ -20,6 +22,9 @@ class AuthUser {
   final String? firstName;
   final String? lastName;
   final String? companyId;
+  // Populated from the embedded `company` relation (present on `GET /users/me`).
+  final String? companyNameAr;
+  final String? crNumber;
 
   String get fullName =>
       [firstName, lastName].where((p) => p != null && p.isNotEmpty).join(' ').trim();
@@ -35,15 +40,20 @@ class AuthUser {
     return NqIdentity.customer;
   }
 
-  factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
-        id: json['id'] as String,
-        role: (json['role'] ?? 'CLIENT_USER').toString(),
-        phone: json['phone'] as String?,
-        email: json['email'] as String?,
-        firstName: json['firstName'] as String?,
-        lastName: json['lastName'] as String?,
-        companyId: json['companyId'] as String?,
-      );
+  factory AuthUser.fromJson(Map<String, dynamic> json) {
+    final company = json['company'];
+    return AuthUser(
+      id: json['id'] as String,
+      role: (json['role'] ?? 'CLIENT_USER').toString(),
+      phone: json['phone'] as String?,
+      email: json['email'] as String?,
+      firstName: json['firstName'] as String?,
+      lastName: json['lastName'] as String?,
+      companyId: json['companyId'] as String?,
+      companyNameAr: company is Map ? company['nameAr']?.toString() : null,
+      crNumber: company is Map ? company['crNumber']?.toString() : null,
+    );
+  }
 }
 
 /// Result of a successful authentication: tokens + the user.
