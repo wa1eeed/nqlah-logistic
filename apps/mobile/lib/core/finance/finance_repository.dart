@@ -158,6 +158,25 @@ class FinanceRepository {
     }
   }
 
+  /// `GET /invoices/:id/pdf` — a short-lived URL to the ZATCA tax-invoice PDF.
+  Future<String> invoicePdfUrl(String id) async {
+    try {
+      final res = await _dio.get<dynamic>('/invoices/$id/pdf');
+      _ensureOk(res);
+      final data = res.data;
+      final url = data is Map ? (data['data']?['url'] ?? data['url']) : null;
+      if (url == null) {
+        throw DioException(
+            requestOptions: res.requestOptions,
+            response: res,
+            type: DioExceptionType.badResponse);
+      }
+      return url.toString();
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `GET /payments` — the company's payments (as client or carrier).
   Future<List<PaymentModel>> payments() async {
     try {
