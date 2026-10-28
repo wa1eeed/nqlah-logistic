@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/fleet/fleet_repository.dart';
@@ -195,6 +196,18 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                     style: NqType.labelStrong.copyWith(color: c.err)),
               ),
             ],
+            const SizedBox(height: 4),
+            TextButton.icon(
+              onPressed: _busy
+                  ? null
+                  : () {
+                      Navigator.of(context).pop();
+                      context.push('/maintenance/${t.id}');
+                    },
+              icon: NqIcon(NqIcons.wrench, size: 18, color: c.tx2),
+              label: Text('إدارة الصيانة',
+                  style: NqType.labelStrong.copyWith(color: c.tx2)),
+            ),
           ],
         ),
       ),

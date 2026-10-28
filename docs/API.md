@@ -362,6 +362,17 @@ POST /api/bids
 | `GET` | `/fleet/drivers/:id` 🔒 | تفاصيل سائق |
 | `GET` | `/fleet/drivers/:id/history` 🔒 | سجل رحلات السائق |
 | `POST` | `/fleet/drivers/:id/location` 🔒 | تحديث موقع السائق |
+| `GET` | `/fleet/trucks/:id/maintenance` 🔒 | جدول صيانة الشاحنة + سجل الصيانات (add-on إدارة الصيانة) |
+| `POST` | `/fleet/trucks/:id/maintenance` 🔒 | تسجيل حدث صيانة (يُحدّث الجدول تلقائيًا) |
+| `PATCH` | `/fleet/trucks/:id/maintenance/schedule` 🔒 | تعديل العدّاد/الفترات/تواريخ الانتهاء |
+
+**صيانة الأسطول (3g).** `GET …/maintenance` يُرجع المخطّط مع حقول مُشتقّة
+(`nextServiceKm`، `kmToService`)، اسم السائق المُسنَد، وقائمة `records`.
+`POST …/maintenance` بـ `{ type, title, cost?, odometerKm?, workshop?, notes?,
+performedAt?, nextDueDate? }` حيث `type ∈ {OIL_CHANGE, BRAKES, TIRES, INSPECTION,
+INSURANCE, REPAIR, OTHER}`؛ تسجيل الحدث يُدحرج الجدول (رفع العدّاد، ضبط
+`lastServiceKm` عند تغيير الزيت، `tiresChangedAt`، وتجديد تاريخ انتهاء الفحص/
+التأمين من `nextDueDate`).
 
 ### 3.7 Payments — `/api/payments`
 

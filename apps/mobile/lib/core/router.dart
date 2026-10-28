@@ -222,8 +222,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       builder: (context, state) => const TripMonitorScreen(),
     ),
     GoRoute(
-      path: '/maintenance',
-      builder: (context, state) => const ProviderMaintenanceScreen(),
+      path: '/maintenance/:truckId',
+      builder: (context, state) => ProviderMaintenanceScreen(
+        truckId: state.pathParameters['truckId']!,
+      ),
     ),
     GoRoute(
       path: '/add-driver',

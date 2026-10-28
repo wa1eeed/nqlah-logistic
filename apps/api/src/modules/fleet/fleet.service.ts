@@ -2,7 +2,10 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import * as bcrypt from 'bcrypt';
 import { normalizeSaudiPhone } from '@naqla/shared-utils';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { CreateDriverDto, CreateTruckDto, InviteDriverDto, LocationDto, UpdateTruckDto } from './dto/fleet.dto';
+import {
+  CreateDriverDto, CreateTruckDto, InviteDriverDto, LocationDto,
+  LogMaintenanceDto, UpdateMaintenanceScheduleDto, UpdateTruckDto,
+} from './dto/fleet.dto';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import { driverCode } from '../../common/codes';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
@@ -269,6 +272,119 @@ export class FleetService {
       where: { id },
       data: { currentLat: dto.lat, currentLng: dto.lng, lastLocationAt: new Date() },
     });
+  }
+
+  // ─── Fleet maintenance («إدارة صيانة الأسطول», handoff 3g) ────────────────
+
+  /** A truck's maintenance schedule (with derived fields) + its event log. */
+  async getTruckMaintenance(truckId: string, actor: AuthUser) {
+    const truck = await this.getTruck(truckId, actor);
+    const [records, driver] = await Promise.all([
+      this.prisma.maintenanceRecord.findMany({
+        where: { truckId },
+        orderBy: { performedAt: 'desc' },
+        take: 50,
+      }),
+      truck.currentDriverId
+        ? this.prisma.driverProfile.findUnique({
+            where: { id: truck.currentDriverId },
+            include: { user: { select: { firstName: true, lastName: true } } },
+          })
+        : Promise.resolve(null),
+    ]);
+    const driverName = driver?.user
+      ? `${driver.user.firstName} ${driver.user.lastName}`.trim()
+      : null;
+    return { ...this.maintenanceSchedule(truck), driverName, records };
+  }
+
+  /** Log a maintenance event; rolls the schedule forward as a side effect. */
+  async logMaintenance(truckId: string, dto: LogMaintenanceDto, actor: AuthUser) {
+    const truck = await this.getTruck(truckId, actor);
+    return this.prisma.$transaction(async (tx) => {
+      const record = await tx.maintenanceRecord.create({
+        data: {
+          truckId,
+          type: dto.type,
+          title: dto.title,
+          cost: dto.cost,
+          odometerKm: dto.odometerKm,
+          workshop: dto.workshop,
+          notes: dto.notes,
+          nextDueDate: dto.nextDueDate ? new Date(dto.nextDueDate) : undefined,
+          performedAt: dto.performedAt ? new Date(dto.performedAt) : undefined,
+        },
+      });
+      // Advance the schedule from the event.
+      const data: Record<string, unknown> = {};
+      if (dto.odometerKm != null && dto.odometerKm >= (truck.odometerKm ?? 0)) {
+        data.odometerKm = dto.odometerKm;
+      }
+      if (dto.type === 'OIL_CHANGE' && dto.odometerKm != null) {
+        data.lastServiceKm = dto.odometerKm;
+      }
+      if (dto.type === 'TIRES') data.tiresChangedAt = record.performedAt;
+      if (dto.type === 'INSPECTION' && dto.nextDueDate) {
+        data.inspectionExpiry = new Date(dto.nextDueDate);
+      }
+      if (dto.type === 'INSURANCE' && dto.nextDueDate) {
+        data.insuranceExpiry = new Date(dto.nextDueDate);
+      }
+      if (Object.keys(data).length > 0) {
+        await tx.truck.update({ where: { id: truckId }, data });
+      }
+      return record;
+    });
+  }
+
+  /** Patch a truck's maintenance schedule directly (odometer, intervals, expiries). */
+  async updateMaintenanceSchedule(
+    truckId: string, dto: UpdateMaintenanceScheduleDto, actor: AuthUser,
+  ) {
+    await this.getTruck(truckId, actor);
+    const truck = await this.prisma.truck.update({
+      where: { id: truckId },
+      data: {
+        odometerKm: dto.odometerKm ?? undefined,
+        oilIntervalKm: dto.oilIntervalKm ?? undefined,
+        lastServiceKm: dto.lastServiceKm ?? undefined,
+        inspectionExpiry: dto.inspectionExpiry ? new Date(dto.inspectionExpiry) : undefined,
+        insuranceExpiry: dto.insuranceExpiry ? new Date(dto.insuranceExpiry) : undefined,
+        tiresChangedAt: dto.tiresChangedAt ? new Date(dto.tiresChangedAt) : undefined,
+      },
+    });
+    return this.maintenanceSchedule(truck);
+  }
+
+  /** Shape the truck's maintenance scalars into a schedule with derived fields. */
+  private maintenanceSchedule(truck: {
+    id: string; plateNumber: string; make: string | null; model: string | null;
+    year: number | null; type: string;
+    odometerKm: number | null; oilIntervalKm: number | null; lastServiceKm: number | null;
+    inspectionExpiry: Date | null; insuranceExpiry: Date | null; tiresChangedAt: Date | null;
+  }) {
+    const interval = truck.oilIntervalKm ?? 15000;
+    const odo = truck.odometerKm;
+    const nextServiceKm =
+      truck.lastServiceKm != null ? truck.lastServiceKm + interval : null;
+    const kmToService =
+      nextServiceKm != null && odo != null ? nextServiceKm - odo : null;
+    return {
+      truckId: truck.id,
+      plateNumber: truck.plateNumber,
+      make: truck.make,
+      model: truck.model,
+      year: truck.year,
+      type: truck.type,
+      odometerKm: odo,
+      oilIntervalKm: interval,
+      lastServiceKm: truck.lastServiceKm,
+      nextServiceKm,
+      kmToService,
+      inspectionExpiry: truck.inspectionExpiry,
+      insuranceExpiry: truck.insuranceExpiry,
+      tiresChangedAt: truck.tiresChangedAt,
+    };
   }
 
   private isAdmin(actor: AuthUser): boolean {
