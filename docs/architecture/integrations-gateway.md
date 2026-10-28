@@ -88,7 +88,7 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
 > APNs key. Both code paths are complete; dropping the files in activates push
 > with no code change. See `docs/mobile/PUSH-FCM.md`.
 
-## SMS / OTP (implemented)
+## SMS (implemented)
 
 - **Port:** `integrations/sms/sms.connector.ts` → `SmsConnector.send({to, body})`
   behind `SMS_CONNECTOR`.
@@ -97,8 +97,35 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
   `unifonic` / `msegat` warn + fall back to console until the vendor adapter is
   added). `SMS_PROVIDER` cannot be `console` in production (enforced in env
   validation).
-- **Consumer:** `OtpService.send` now injects `SMS_CONNECTOR` and delegates
-  delivery — no vendor logic lives in the OTP code.
+- **Consumer:** the OTP `local` provider delegates code delivery here — no
+  vendor logic lives in the OTP code.
+
+## OTP verification (implemented — Authentica)
+
+Hub domain `otp` (`OTP_PROVIDER`). `OtpService` resolves the active provider
+from the hub and branches; the 3/phone/hour send throttle is always applied.
+
+- **`local`** (dev default): a 6-digit code generated in `OtpService`, stored in
+  Redis (10 min) and delivered via the SMS connector; verified against Redis.
+- **`authentica`** (`integrations/otp/authentica-otp.connector.ts`) — **Authentica**
+  (authentica.sa) is a *managed* OTP provider: it generates, delivers and
+  verifies the code (`POST /send-otp` then `POST /verify-otp`, base
+  `https://api.authentica.sa/api/v2`, auth header `X-Authorization`, phone
+  E.164). Dependency-free (`fetch`). Two modes:
+  - **`live`** — real API calls. **Production always runs live** (the mode field
+    is ignored in prod); `GET /balance` backs the hub Test button.
+  - **`test`** — Authentica has **no sandbox**, so staging simulates at our
+    layer: a **fixed, admin-editable code** (`AUTHENTICA_TEST_OTP`, default
+    `123456`) is logged and accepted — no API call, no SMS, no credits spent.
+- **Prod safety:** `OTP_PROVIDER` cannot be `local` in production (env
+  validation); and `test` mode is never honoured in production.
+
+> Config (hub → رموز التحقق): `AUTHENTICA_API_KEY` (secret, live only),
+> `AUTHENTICA_MODE` (test|live), `AUTHENTICA_TEST_OTP`, `AUTHENTICA_CHANNEL`
+> (sms|whatsapp|email), `AUTHENTICA_TEMPLATE_ID`, `AUTHENTICA_FALLBACK_EMAIL`.
+> This staging build runs `authentica` in `test` mode. For production, set the
+> real API key and `AUTHENTICA_MODE=live` (Authentica has no separate test key —
+> ask their support if a non-prod key is needed).
 
 ## Email (implemented)
 

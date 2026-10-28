@@ -87,6 +87,33 @@ export const INTEGRATIONS: IntegrationSpec[] = [
     ],
   },
   {
+    domain: 'otp',
+    labelAr: 'رموز التحقق (OTP)',
+    labelEn: 'OTP Verification',
+    descAr: 'مزوّد توليد والتحقق من رموز التحقق (Authentica). للبيئة التجريبية رمز ثابت قابل للتعديل.',
+    icon: 'shield',
+    category: 'messaging',
+    providerEnvKey: 'OTP_PROVIDER',
+    defaultProvider: 'local',
+    prodForbiddenProviders: ['local'],
+    providers: [
+      // Dev/self-managed: random code in Redis, delivered via the SMS connector.
+      { id: 'local', labelAr: 'محلي (تطوير)', labelEn: 'Local (dev)', implemented: true },
+      // Authentica — managed OTP (generate + send + verify). No vendor sandbox:
+      // `mode=test` simulates at our layer with a fixed, editable test code;
+      // `mode=live` calls the real API. Production always runs live.
+      { id: 'authentica', labelAr: 'Authentica', labelEn: 'Authentica', implemented: true,
+        fields: [
+          { key: 'AUTHENTICA_API_KEY', labelAr: 'مفتاح API', labelEn: 'API Key', secret: true, envKey: 'AUTHENTICA_API_KEY', required: true },
+          { key: 'AUTHENTICA_MODE', labelAr: 'الوضع (test/live)', labelEn: 'Mode (test/live)', secret: false, envKey: 'AUTHENTICA_MODE', placeholder: 'test | live' },
+          { key: 'AUTHENTICA_TEST_OTP', labelAr: 'رمز الوضع التجريبي', labelEn: 'Test OTP code', secret: false, envKey: 'AUTHENTICA_TEST_OTP', placeholder: '123456' },
+          { key: 'AUTHENTICA_CHANNEL', labelAr: 'القناة', labelEn: 'Channel', secret: false, envKey: 'AUTHENTICA_CHANNEL', placeholder: 'sms | whatsapp | email' },
+          { key: 'AUTHENTICA_TEMPLATE_ID', labelAr: 'معرّف القالب', labelEn: 'Template ID', secret: false, envKey: 'AUTHENTICA_TEMPLATE_ID', placeholder: '1' },
+          { key: 'AUTHENTICA_FALLBACK_EMAIL', labelAr: 'بريد بديل (اختياري)', labelEn: 'Fallback email (optional)', secret: false, envKey: 'AUTHENTICA_FALLBACK_EMAIL' },
+        ] },
+    ],
+  },
+  {
     domain: 'email',
     labelAr: 'البريد الإلكتروني',
     labelEn: 'Email',
