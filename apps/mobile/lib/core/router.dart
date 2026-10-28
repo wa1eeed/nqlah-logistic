@@ -25,7 +25,7 @@ import '../features/customer/tracking_screen.dart';
 import '../features/customer/truck_detail_screen.dart';
 import 'marketplace/marketplace_repository.dart';
 import '../features/customer/customer_finance_screen.dart';
-import '../features/customer/customer_notifications_screen.dart';
+import '../features/comms/notifications_screen.dart';
 import '../features/provider/driver_assignment_screen.dart';
 import '../features/provider/provider_add_driver_screen.dart';
 import '../features/provider/provider_maintenance_screen.dart';
@@ -198,7 +198,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     GoRoute(
       path: '/notifications',
-      builder: (context, state) => const CustomerNotificationsScreen(),
+      builder: (context, state) => const NotificationsScreen(),
     ),
     GoRoute(
       path: '/driver-assignment/:id',
@@ -212,14 +212,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         return ProviderOrderScreen(
           orderId: id,
           onChangeDriver: () => context.push('/driver-assignment/$id'),
-          onTrack: () => context.push('/tracking/$id'),
+          onTrack: () => context.push('/trip-monitor/$id'),
           onChat: () => context.push('/chat/$id'),
         );
       },
     ),
     GoRoute(
-      path: '/trip-monitor',
-      builder: (context, state) => const TripMonitorScreen(),
+      path: '/trip-monitor/:id',
+      builder: (context, state) =>
+          TripMonitorScreen(orderId: state.pathParameters['id']!),
     ),
     GoRoute(
       path: '/maintenance/:truckId',
