@@ -1,25 +1,29 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Logger, Module } from '@nestjs/common';
 import { MinioStorageConnector } from './minio-storage.connector';
 import { STORAGE_CONNECTOR } from './storage.connector';
+import { IntegrationsService } from '../../modules/integrations/integrations.service';
 
-/// Binds the active storage connector behind `STORAGE_CONNECTOR`. Swap the
-/// provider via `STORAGE_PROVIDER` (default `minio`; `r2` once that connector
-/// lands) without touching any app code. Global so any module can inject it.
+/// Binds the active storage connector behind `STORAGE_CONNECTOR`, resolved by
+/// the Integration Hub (DB → env → default). A Cloudflare R2 connector drops in
+/// here; until then non-minio providers fall back to MinIO. MinIO credentials
+/// are infra-level and read from env.
 @Global()
 @Module({
   providers: [
     MinioStorageConnector,
     {
       provide: STORAGE_CONNECTOR,
-      useFactory: (minio: MinioStorageConnector) => {
-        switch (process.env.STORAGE_PROVIDER ?? 'minio') {
-          // case 'r2': return new R2StorageConnector();  // future drop-in
-          case 'minio':
-          default:
-            return minio;
+      useFactory: async (
+        integrations: IntegrationsService,
+        minio: MinioStorageConnector,
+      ) => {
+        const { provider } = await integrations.resolveActive('storage');
+        if (provider !== 'minio') {
+          new Logger('Storage').warn(`Storage provider "${provider}" not wired yet — using MinIO.`);
         }
+        return minio;
       },
-      inject: [MinioStorageConnector],
+      inject: [IntegrationsService, MinioStorageConnector],
     },
   ],
   exports: [STORAGE_CONNECTOR],

@@ -35,6 +35,7 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 
 @Module({
   imports: [
@@ -91,6 +92,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     TrackingModule,
     UploadsModule,
     RealtimeModule,
+    IntegrationsModule,
   ],
   controllers: [HealthController],
   providers: [

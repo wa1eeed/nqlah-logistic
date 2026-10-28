@@ -2,34 +2,32 @@ import { Global, Logger, Module } from '@nestjs/common';
 import { ConsoleEmailConnector } from './console-email.connector';
 import { ResendEmailConnector } from './resend-email.connector';
 import { EMAIL_CONNECTOR } from './email.connector';
+import { IntegrationsService } from '../../modules/integrations/integrations.service';
 
-/// Binds the active email connector behind `EMAIL_CONNECTOR`. Swap via
-/// `EMAIL_PROVIDER` (default `console`; `resend` for production). Feature code
-/// injects the token only and never changes when the provider does.
+/// Binds the active email connector behind `EMAIL_CONNECTOR`, resolved by the
+/// Integration Hub (DB → env → default). Admin can switch provider / set the
+/// Resend key from the console; feature code injects the token only.
 @Global()
 @Module({
   providers: [
     ConsoleEmailConnector,
-    ResendEmailConnector,
     {
       provide: EMAIL_CONNECTOR,
-      useFactory: (
+      useFactory: async (
+        integrations: IntegrationsService,
         consoleConn: ConsoleEmailConnector,
-        resend: ResendEmailConnector,
       ) => {
-        const provider = (process.env.EMAIL_PROVIDER ?? 'console').toLowerCase();
+        const { provider, config } = await integrations.resolveActive('email');
         if (provider === 'resend') {
-          if (!process.env.RESEND_API_KEY) {
-            new Logger('Email').warn(
-              'EMAIL_PROVIDER="resend" but RESEND_API_KEY missing — using console.',
-            );
+          if (!config.RESEND_API_KEY) {
+            new Logger('Email').warn('EMAIL provider "resend" selected but no API key — using console.');
             return consoleConn;
           }
-          return resend;
+          return new ResendEmailConnector(config.RESEND_API_KEY, config.EMAIL_FROM);
         }
         return consoleConn;
       },
-      inject: [ConsoleEmailConnector, ResendEmailConnector],
+      inject: [IntegrationsService, ConsoleEmailConnector],
     },
   ],
   exports: [EMAIL_CONNECTOR],

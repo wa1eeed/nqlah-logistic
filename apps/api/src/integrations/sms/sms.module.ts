@@ -1,27 +1,28 @@
 import { Global, Logger, Module } from '@nestjs/common';
 import { ConsoleSmsConnector } from './console-sms.connector';
 import { SMS_CONNECTOR } from './sms.connector';
+import { IntegrationsService } from '../../modules/integrations/integrations.service';
 
-/// Binds the active SMS connector behind `SMS_CONNECTOR`. Swap via
-/// `SMS_PROVIDER` (default `console`). A vendor adapter (Unifonic / mSegat)
-/// drops in here once credentials are provided — feature code injects the token
-/// only and never changes.
+/// Binds the active SMS connector behind `SMS_CONNECTOR`, resolved by the
+/// Integration Hub (DB → env → default). A vendor adapter (Unifonic / mSegat)
+/// drops in here; until then non-console providers fall back to console.
 @Global()
 @Module({
   providers: [
     ConsoleSmsConnector,
     {
       provide: SMS_CONNECTOR,
-      useFactory: (console: ConsoleSmsConnector) => {
-        const provider = process.env.SMS_PROVIDER ?? 'console';
+      useFactory: async (
+        integrations: IntegrationsService,
+        consoleConn: ConsoleSmsConnector,
+      ) => {
+        const { provider } = await integrations.resolveActive('sms');
         if (provider !== 'console') {
-          new Logger('SMS').warn(
-            `SMS_PROVIDER="${provider}" not wired yet — using console. Add the adapter + credentials.`,
-          );
+          new Logger('SMS').warn(`SMS provider "${provider}" not wired yet — using console.`);
         }
-        return console;
+        return consoleConn;
       },
-      inject: [ConsoleSmsConnector],
+      inject: [IntegrationsService, ConsoleSmsConnector],
     },
   ],
   exports: [SMS_CONNECTOR],

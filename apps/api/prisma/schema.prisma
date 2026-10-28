@@ -1125,6 +1125,29 @@ model Setting {
   updatedAt DateTime @updatedAt
 }
 
+/// Integration Hub: the control-plane record for one external-integration domain
+/// (payments, sms, email, storage, push, …). The catalog of domains/providers
+/// lives in code (IntegrationsRegistry); this row holds the admin-managed state:
+/// the active provider, enabled flag, config/secrets, and the last health check.
+/// Config is a JSON blob; secret values are stored encrypted (AES-GCM).
+model Integration {
+  id       String  @id @default(cuid())
+  domain   String  @unique // payments | sms | email | storage | push
+  provider String? // active provider id (null → fall back to env/default)
+  enabled  Boolean @default(true)
+
+  /// Non-secret settings + encrypted secrets (prefixed markers), as JSON.
+  config Json?
+
+  /// Last health check: ok | degraded | down | unknown, with details + time.
+  status      String    @default("unknown")
+  statusNote  String?
+  lastTestedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 /// Admin per-client / per-group platform policy. A client company belongs to at
 /// most one group (via `clientIds`); clients in no group use the defaults
 /// (everything enabled). `forcedCarrierId` locks direct-assign to one carrier.
