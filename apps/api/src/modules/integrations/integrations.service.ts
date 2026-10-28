@@ -1,7 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { AuditLogService } from '../../common/audit/audit-log.service';
 import { decryptSecret, encryptSecret, isEncrypted, maskSecret } from '../../common/security/secret-box';
 import { INTEGRATIONS, fieldsFor, specFor } from './integrations.registry';
+import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 type ConfigMap = Record<string, string>;
 
@@ -18,7 +20,10 @@ export interface UpdateIntegrationDto {
  */
 @Injectable()
 export class IntegrationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditLogService,
+  ) {}
 
   /** The active provider + resolved config for a domain. Precedence:
    *  DB (when the integration is enabled) → env → registry default. Secrets are
@@ -58,7 +63,7 @@ export class IntegrationsService {
     return this.view(domain, row);
   }
 
-  async update(domain: string, dto: UpdateIntegrationDto) {
+  async update(domain: string, dto: UpdateIntegrationDto, actor?: AuthUser) {
     const spec = specFor(domain);
     if (!spec) throw new NotFoundException({ code: 'INTEGRATION_NOT_FOUND', message: 'التكامل غير موجود' });
     if (dto.provider && !spec.providers.some((p) => p.id === dto.provider)) {
@@ -73,12 +78,19 @@ export class IntegrationsService {
     }
     const existing = await this.prisma.integration.findUnique({ where: { domain } });
     const provider = dto.provider ?? existing?.provider ?? process.env[spec.providerEnvKey] ?? spec.defaultProvider;
+    const fields = fieldsFor(domain, provider);
     const config: ConfigMap = { ...((existing?.config as ConfigMap | null) ?? {}) };
+
+    // Changes that touch a SECRET field require SUPER_ADMIN (provider / enabled
+    // and non-secret config may be changed by any admin).
+    const touchedSecrets: string[] = [];
+    const touchedConfig: string[] = [];
     if (dto.config) {
-      const fields = fieldsFor(domain, provider);
       for (const [k, raw] of Object.entries(dto.config)) {
         const field = fields.find((f) => f.key === k);
         if (!field) continue;
+        touchedConfig.push(k);
+        if (field.secret) touchedSecrets.push(k);
         if (raw == null || raw === '') {
           delete config[k]; // clearing a value reverts to env/default
           continue;
@@ -86,6 +98,13 @@ export class IntegrationsService {
         config[k] = field.secret ? encryptSecret(String(raw)) : String(raw);
       }
     }
+    if (touchedSecrets.length && actor && actor.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException({
+        code: 'SUPER_ADMIN_REQUIRED',
+        message: 'تعديل المفاتيح السرية يتطلب صلاحية المالك (SUPER_ADMIN)',
+      });
+    }
+
     await this.prisma.integration.upsert({
       where: { domain },
       create: {
@@ -98,6 +117,20 @@ export class IntegrationsService {
         ...(dto.provider !== undefined ? { provider: dto.provider } : {}),
         ...(dto.enabled !== undefined ? { enabled: dto.enabled } : {}),
         config,
+      },
+    });
+
+    // Immutable audit trail — never record secret VALUES, only which keys changed.
+    await this.audit.record({
+      userId: actor?.id ?? null,
+      action: 'integration.update',
+      resourceType: 'Integration',
+      resourceId: domain,
+      metadata: {
+        ...(dto.provider !== undefined ? { provider: dto.provider } : {}),
+        ...(dto.enabled !== undefined ? { enabled: dto.enabled } : {}),
+        ...(touchedConfig.length ? { changedConfig: touchedConfig } : {}),
+        ...(touchedSecrets.length ? { rotatedSecrets: touchedSecrets } : {}),
       },
     });
     return this.get(domain);
