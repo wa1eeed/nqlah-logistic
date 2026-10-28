@@ -2,16 +2,14 @@ import { Module } from '@nestjs/common';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { CollectionService } from './collection/collection.service';
-import { PaymentGateway, StubGateway } from './collection/gateway';
+import { PaymentsIntegrationModule } from '../../integrations/payments/payments-integration.module';
 
 @Module({
+  // The payment provider is bound behind PAYMENT_CONNECTOR by the integrations
+  // gateway (mock in dev; Moyasar/Tap/HyperPay drop in via PAYMENT_PROVIDER).
+  imports: [PaymentsIntegrationModule],
   controllers: [PaymentsController],
-  providers: [
-    PaymentsService,
-    CollectionService,
-    // Swap StubGateway for a real provider (Moyasar/Tap/HyperPay) here.
-    { provide: PaymentGateway, useClass: StubGateway },
-  ],
+  providers: [PaymentsService, CollectionService],
   exports: [CollectionService],
 })
 export class PaymentsModule {}
