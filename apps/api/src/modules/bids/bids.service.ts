@@ -4,6 +4,7 @@ import { money, round2 } from '../../common/money/money';
 import { computeOrderFinancials } from '../../common/pricing/pricing';
 import { CollectionService } from '../payments/collection/collection.service';
 import { PoliciesService } from '../policies/policies.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateBidDto, UpdateBidDto } from './dto/bid.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import type { Prisma } from '../../generated/prisma';
@@ -14,6 +15,7 @@ export class BidsService {
     private prisma: PrismaService,
     private collection: CollectionService,
     private policies: PoliciesService,
+    private notifications: NotificationsService,
   ) {}
 
   async list(orderId: string, legIndex?: number) {
@@ -100,6 +102,15 @@ export class BidsService {
     if (order.status === 'PUBLISHED') {
       await this.prisma.order.update({ where: { id: orderId }, data: { status: 'BIDDING' } });
     }
+    // Notify the client of the new offer (skip silent re-edits of a PENDING bid).
+    if (!existing) {
+      void this.notifications.notifyCompany(order.clientId, {
+        type: 'BID_RECEIVED',
+        titleAr: 'عرض جديد',
+        bodyAr: `عرض ${Math.round(Number(amount))} ر.س على ${order.orderNumber}`,
+        data: { orderId, kind: 'bid' },
+      });
+    }
     return bid;
   }
 
@@ -182,6 +193,15 @@ export class BidsService {
       // Open the collection per the order's method (escrow hold by default, or
       // prepaid-wallet/gateway/COD). Idempotent — one payment per order.
       await this.collection.initiate(tx, assignedOrder);
+      return updated;
+    }).then((updated) => {
+      // Notify the winning carrier that their bid was accepted.
+      void this.notifications.notifyCompany(bid.carrierId, {
+        type: 'BID_ACCEPTED',
+        titleAr: 'تم قبول عرضك',
+        bodyAr: `${order.orderNumber} — بانتظار إسناد سائق`,
+        data: { orderId, kind: 'bid' },
+      });
       return updated;
     });
   }
