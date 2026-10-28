@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/registration_controller.dart';
+import '../../core/platform/external_links.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
@@ -122,7 +123,7 @@ class _RegisterPendingScreenState extends ConsumerState<RegisterPendingScreen> {
                     label: 'تواصل مع الدعم',
                     variant: NqButtonVariant.secondary,
                     icon: NqIcons.headset,
-                    onPressed: () {},
+                    onPressed: () => ExternalLinks.contactSupportWhatsApp(),
                   ),
                 ],
               ),

@@ -377,17 +377,58 @@ model Truck {
   photos    String[]
   documents String[]
 
+  // Fleet maintenance («إدارة صيانة الأسطول», handoff 3g). All optional — the
+  // add-on is progressive; a truck with none simply shows an empty schedule.
+  odometerKm       Int?       // current distance reading
+  oilIntervalKm    Int?       @default(15000) // km between oil/filter services
+  lastServiceKm    Int?       // odometer at the last oil/filter service
+  inspectionExpiry DateTime?  // الفحص الفني الدوري
+  insuranceExpiry  DateTime?  // التأمين
+  tiresChangedAt   DateTime?  // آخر تغيير للإطارات
+
   currentDriverId String?
   currentDriver   DriverProfile? @relation(fields: [currentDriverId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orderTrucks OrderTruck[]
-  availability TruckAvailability?
+  orderTrucks        OrderTruck[]
+  availability       TruckAvailability?
+  maintenanceRecords MaintenanceRecord[]
 
   @@index([companyId])
   @@index([type])
+}
+
+/// A logged maintenance event on a truck («آخر الصيانات» + "تسجيل صيانة").
+model MaintenanceRecord {
+  id      String @id @default(cuid())
+  truckId String
+  truck   Truck  @relation(fields: [truckId], references: [id], onDelete: Cascade)
+
+  type       MaintenanceType
+  title      String
+  cost       Float?  // ر.س
+  odometerKm Int?    // reading when performed
+  workshop   String?
+  notes      String?
+  // For INSPECTION/INSURANCE, the new expiry this event rolls the schedule to.
+  nextDueDate DateTime?
+
+  performedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([truckId])
+}
+
+enum MaintenanceType {
+  OIL_CHANGE  // تغيير الزيت والفلاتر
+  BRAKES      // الفرامل
+  TIRES       // الإطارات
+  INSPECTION  // الفحص الفني الدوري
+  INSURANCE   // التأمين
+  REPAIR      // إصلاح
+  OTHER
 }
 
 /// A carrier-published listing that makes a truck visible in the customer-facing

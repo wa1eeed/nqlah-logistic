@@ -31,14 +31,10 @@ class ChatScreen extends ConsumerStatefulWidget {
     super.key,
     required this.orderId,
     this.partyName,
-    this.onCall,
-    this.onVideo,
   });
 
   final String orderId;
   final String? partyName;
-  final VoidCallback? onCall;
-  final VoidCallback? onVideo;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -419,18 +415,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ],
             ),
           ),
-          if (widget.onCall != null) ...[
-            const SizedBox(width: 12),
-            GestureDetector(
-                onTap: widget.onCall,
-                child: NqIcon(NqIcons.phone, size: 24, color: c.mintTx)),
-          ],
-          if (widget.onVideo != null) ...[
-            const SizedBox(width: 16),
-            GestureDetector(
-                onTap: widget.onVideo,
-                child: NqIcon(NqIcons.videoCamera, size: 24, color: c.mintTx)),
-          ],
         ],
       ),
     );

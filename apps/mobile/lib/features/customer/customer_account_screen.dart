@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/auth_models.dart';
+import '../../core/platform/external_links.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -53,18 +56,20 @@ class CustomerAccountScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _profileCard(c, user?.fullName),
+          _profileCard(c, user),
           const SizedBox(height: 16),
           _group(c, [
-            _row(c, NqIcons.users, 'المستخدمون والصلاحيات', value: '3'),
-            _row(c, NqIcons.fileText, 'مستندات المنشأة', value: 'سارية'),
-            _row(c, NqIcons.bell, 'الإشعارات'),
+            _row(c, NqIcons.users, 'المستخدمون والصلاحيات'),
+            _row(c, NqIcons.fileText, 'مستندات المنشأة'),
+            _row(c, NqIcons.bell, 'الإشعارات',
+                onTap: () => context.push('/notifications')),
             _row(c, NqIcons.globe, 'اللغة', value: 'العربية'),
             _row(c, NqIcons.moon, 'المظهر', value: 'تلقائي', last: true),
           ]),
           const SizedBox(height: 16),
           _group(c, [
-            _row(c, NqIcons.question, 'المساعدة والدعم'),
+            _row(c, NqIcons.question, 'المساعدة والدعم',
+                onTap: () => ExternalLinks.contactSupportWhatsApp()),
             _row(c, NqIcons.signOut, 'تسجيل الخروج',
                 danger: true,
                 chevron: false,
@@ -76,7 +81,13 @@ class CustomerAccountScreen extends ConsumerWidget {
     );
   }
 
-  Widget _profileCard(NqColors c, String? name) => Container(
+  Widget _profileCard(NqColors c, AuthUser? user) {
+    final company = (user?.companyNameAr?.isNotEmpty ?? false)
+        ? user!.companyNameAr!
+        : 'منشأتي';
+    final name = user?.fullName ?? '';
+    final cr = user?.crNumber;
+    return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: c.sf,
@@ -95,27 +106,32 @@ class CustomerAccountScreen extends ConsumerWidget {
                       NqIcon(NqIcons.sealCheck, fill: true, size: 18, color: c.mintTx),
                       const SizedBox(width: 6),
                       Flexible(
-                        child: Text('مصنع الرّواد للبلاستيك',
+                        child: Text(company,
                             style: NqType.h2.copyWith(color: c.tx),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Ltr('2050118472',
-                          style: NqType.numeric(12, FontWeight.w400)
-                              .copyWith(color: c.tx2)),
-                      Text(' عميل · سجل تجاري ',
-                          style: NqType.caption.copyWith(color: c.tx2)),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                      '${name != null && name.isNotEmpty ? name : 'عبدالرحمن السبيعي'} · مدير الحساب',
-                      style: NqType.caption.copyWith(color: c.tx2)),
+                  if (cr != null && cr.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Ltr(cr,
+                            style: NqType.numeric(12, FontWeight.w400)
+                                .copyWith(color: c.tx2)),
+                        Text(' عميل · سجل تجاري ',
+                            style: NqType.caption.copyWith(color: c.tx2)),
+                      ],
+                    ),
+                  ],
+                  if (name.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text('$name · مدير الحساب',
+                        style: NqType.caption.copyWith(color: c.tx2)),
+                  ],
                 ],
               ),
             ),
@@ -128,11 +144,13 @@ class CustomerAccountScreen extends ConsumerWidget {
                 color: c.hero,
                 borderRadius: BorderRadius.circular(NqRadius.card),
               ),
-              child: Text('م', style: NqType.h1.copyWith(color: NqFixed.heroText)),
+              child: Text(company.characters.first,
+                  style: NqType.h1.copyWith(color: NqFixed.heroText)),
             ),
           ],
         ),
       );
+  }
 
   Widget _group(NqColors c, List<Widget> rows) => Container(
         decoration: BoxDecoration(

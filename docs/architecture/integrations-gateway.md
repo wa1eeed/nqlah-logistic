@@ -49,8 +49,8 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
 |---|---|---|
 | Storage | `StorageConnector` ✅ | MinIO ✅ · Cloudflare R2 (drop-in) |
 | Push notifications | `NotificationConnector` ✅ | console ✅ (dev) · FCM/APNs (drop-in) |
-| Email | `EmailConnector` (planned) | Resend (resend.com) · … |
-| SMS / OTP | `OtpConnector` (planned) | console (dev) · a provider |
+| Email | `EmailConnector` ✅ | console ✅ (dev) · Resend ✅ (resend.com) |
+| SMS / OTP | `SmsConnector` ✅ | console ✅ (dev) · a Saudi gateway (drop-in) |
 | Payments | `PaymentConnector` ✅ | mock ✅ (dev) · Moyasar / Tap / HyperPay (drop-in) |
 
 ## Push notifications (implemented)
@@ -71,6 +71,30 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
 > The FCM/APNs adapter needs the user's Firebase project (Android) / APNs key
 > (iOS) and, on mobile, `firebase_messaging` to obtain the device token — that's
 > the only user-provided step; the backend pipeline is complete.
+
+## SMS / OTP (implemented)
+
+- **Port:** `integrations/sms/sms.connector.ts` → `SmsConnector.send({to, body})`
+  behind `SMS_CONNECTOR`.
+- **Adapter:** `ConsoleSmsConnector` (dev — logs the SMS so the OTP code is
+  visible without a paid gateway). Select with `SMS_PROVIDER` (`console` default;
+  `unifonic` / `msegat` warn + fall back to console until the vendor adapter is
+  added). `SMS_PROVIDER` cannot be `console` in production (enforced in env
+  validation).
+- **Consumer:** `OtpService.send` now injects `SMS_CONNECTOR` and delegates
+  delivery — no vendor logic lives in the OTP code.
+
+## Email (implemented)
+
+- **Port:** `integrations/email/email.connector.ts` → `EmailConnector.send({to,
+  subject, html, text, …})` behind `EMAIL_CONNECTOR`.
+- **Adapters:** `ConsoleEmailConnector` (dev — logs the email) and
+  `ResendEmailConnector` (prod — calls the Resend REST API via built-in `fetch`,
+  no new dependency). Select with `EMAIL_PROVIDER` (`console` default; `resend`
+  needs `RESEND_API_KEY` + `EMAIL_FROM`, enforced in env validation).
+- **Consumer:** `AuthService` sends a welcome email on registration when an
+  email is provided (fire-and-forget; never blocks/fails signup). Verification
+  magic-links and receipts can reuse the same connector.
 
 ## Payments (implemented)
 
