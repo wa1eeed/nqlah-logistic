@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/i18n/app_strings.dart';
+import '../../core/i18n/language_picker.dart';
+import '../../core/i18n/locale_controller.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -32,23 +35,24 @@ class AccountScreen extends ConsumerWidget {
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     final c = context.nq;
+    final s = ref.read(stringsProvider);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.sf,
-        title: Text('تسجيل الخروج', style: NqType.h2.copyWith(color: c.tx)),
-        content: Text('هل تريد تسجيل الخروج من حسابك؟',
+        title: Text(s('account.signOutTitle'), style: NqType.h2.copyWith(color: c.tx)),
+        content: Text(s('account.signOutBody'),
             style: NqType.body.copyWith(color: c.tx2)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child:
-                Text('إلغاء', style: NqType.labelStrong.copyWith(color: c.tx2)),
+                Text(s('common.cancel'), style: NqType.labelStrong.copyWith(color: c.tx2)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child:
-                Text('خروج', style: NqType.labelStrong.copyWith(color: c.err)),
+                Text(s('account.exit'), style: NqType.labelStrong.copyWith(color: c.err)),
           ),
         ],
       ),
@@ -58,19 +62,22 @@ class AccountScreen extends ConsumerWidget {
     }
   }
 
-  String _roleLabel(String role) {
+  String _roleLabel(S s, String role) {
     final r = role.toUpperCase();
-    if (r == 'DRIVER') return 'سائق';
-    if (r.startsWith('CARRIER')) return 'مزوّد نقل';
-    if (r.startsWith('CLIENT')) return 'عميل';
-    return 'مستخدم';
+    if (r == 'DRIVER') return s('role.driver');
+    if (r.startsWith('CARRIER')) return s('role.carrier');
+    if (r.startsWith('CLIENT')) return s('role.client');
+    return s('role.user');
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.nq;
+    final s = ref.watch(stringsProvider);
+    final lang = ref.watch(localeControllerProvider);
     final user = ref.watch(authControllerProvider).user;
-    final name = (user?.fullName.isNotEmpty ?? false) ? user!.fullName : 'حسابي';
+    final name =
+        (user?.fullName.isNotEmpty ?? false) ? user!.fullName : s('account.defaultName');
     final role = user?.role.toUpperCase() ?? '';
     final isDriver = role == 'DRIVER';
     final isCarrier = role.startsWith('CARRIER');
@@ -80,39 +87,42 @@ class AccountScreen extends ConsumerWidget {
         children: [
           Row(children: [
             const Spacer(),
-            Text('حسابي', style: NqType.h1.copyWith(color: c.tx)),
+            Text(s('account.title'), style: NqType.h1.copyWith(color: c.tx)),
           ]),
           const SizedBox(height: 16),
-          _profileCard(c, name, _roleLabel(user?.role ?? ''), user?.phone),
+          _profileCard(c, name, _roleLabel(s, user?.role ?? ''), user?.phone),
           const SizedBox(height: 16),
           // Provider (carrier) management: membership + fleet maintenance.
           if (isCarrier) ...[
             _group(c, [
-              _row(c, NqIcons.sealCheck, 'عضويتي والاشتراك',
+              _row(c, NqIcons.sealCheck, s('account.membership'),
                   onTap: () => context.push('/subscription')),
-              _row(c, NqIcons.wrench, 'إدارة الصيانة',
+              _row(c, NqIcons.wrench, s('account.maintenance'),
                   onTap: () => context.push('/maintenance-hub')),
-              _row(c, NqIcons.handCoins, 'الدفع عند التسليم',
+              _row(c, NqIcons.handCoins, s('account.cod'),
                   last: true, onTap: () => context.push('/payout-settings')),
             ]),
             const SizedBox(height: 16),
           ],
           _group(c, [
-            _row(c, NqIcons.bell, 'الإشعارات',
+            _row(c, NqIcons.bell, s('account.notifications'),
                 onTap: () => context.push('/notifications')),
             if (isDriver)
-              _row(c, NqIcons.path, 'رحلاتي',
+              _row(c, NqIcons.path, s('account.myTrips'),
                   onTap: () => context.go('/app'))
             else
-              _row(c, NqIcons.truck, 'الأسطول',
+              _row(c, NqIcons.truck, s('account.fleet'),
                   onTap: () => context.go('/app')),
-            _row(c, NqIcons.globe, 'اللغة', value: 'العربية'),
-            _row(c, NqIcons.moon, 'المظهر', value: 'تلقائي', last: true),
+            _row(c, NqIcons.globe, s('account.language'),
+                value: lang.nativeName,
+                onTap: () => showLanguagePicker(context, ref)),
+            _row(c, NqIcons.moon, s('account.appearance'),
+                value: s('account.appearanceAuto'), last: true),
           ]),
           const SizedBox(height: 16),
           _group(c, [
-            _row(c, NqIcons.question, 'المساعدة والدعم', onTap: _contactSupport),
-            _row(c, NqIcons.signOut, 'تسجيل الخروج',
+            _row(c, NqIcons.question, s('account.help'), onTap: _contactSupport),
+            _row(c, NqIcons.signOut, s('account.signOut'),
                 danger: true,
                 chevron: false,
                 last: true,

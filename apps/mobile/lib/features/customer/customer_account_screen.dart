@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/auth_models.dart';
+import '../../core/i18n/app_strings.dart';
+import '../../core/i18n/language_picker.dart';
+import '../../core/i18n/locale_controller.dart';
 import '../../core/platform/external_links.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -16,21 +19,22 @@ class CustomerAccountScreen extends ConsumerWidget {
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     final c = context.nq;
+    final s = ref.read(stringsProvider);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.sf,
-        title: Text('تسجيل الخروج', style: NqType.h2.copyWith(color: c.tx)),
-        content: Text('هل تريد تسجيل الخروج من حسابك؟',
+        title: Text(s('account.signOutTitle'), style: NqType.h2.copyWith(color: c.tx)),
+        content: Text(s('account.signOutBody'),
             style: NqType.body.copyWith(color: c.tx2)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('إلغاء', style: NqType.labelStrong.copyWith(color: c.tx2)),
+            child: Text(s('common.cancel'), style: NqType.labelStrong.copyWith(color: c.tx2)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('خروج', style: NqType.labelStrong.copyWith(color: c.err)),
+            child: Text(s('account.exit'), style: NqType.labelStrong.copyWith(color: c.err)),
           ),
         ],
       ),
@@ -44,6 +48,8 @@ class CustomerAccountScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.nq;
+    final s = ref.watch(stringsProvider);
+    final lang = ref.watch(localeControllerProvider);
     final user = ref.watch(authControllerProvider).user;
     return SafeArea(
       child: ListView(
@@ -52,25 +58,28 @@ class CustomerAccountScreen extends ConsumerWidget {
           Row(
             children: [
               const Spacer(),
-              Text('حسابي', style: NqType.h1.copyWith(color: c.tx)),
+              Text(s('account.title'), style: NqType.h1.copyWith(color: c.tx)),
             ],
           ),
           const SizedBox(height: 16),
           _profileCard(c, user),
           const SizedBox(height: 16),
           _group(c, [
-            _row(c, NqIcons.users, 'المستخدمون والصلاحيات'),
-            _row(c, NqIcons.fileText, 'مستندات المنشأة'),
-            _row(c, NqIcons.bell, 'الإشعارات',
+            _row(c, NqIcons.users, s('account.users')),
+            _row(c, NqIcons.fileText, s('account.docs')),
+            _row(c, NqIcons.bell, s('account.notifications'),
                 onTap: () => context.push('/notifications')),
-            _row(c, NqIcons.globe, 'اللغة', value: 'العربية'),
-            _row(c, NqIcons.moon, 'المظهر', value: 'تلقائي', last: true),
+            _row(c, NqIcons.globe, s('account.language'),
+                value: lang.nativeName,
+                onTap: () => showLanguagePicker(context, ref)),
+            _row(c, NqIcons.moon, s('account.appearance'),
+                value: s('account.appearanceAuto'), last: true),
           ]),
           const SizedBox(height: 16),
           _group(c, [
-            _row(c, NqIcons.question, 'المساعدة والدعم',
+            _row(c, NqIcons.question, s('account.help'),
                 onTap: () => ExternalLinks.contactSupportWhatsApp()),
-            _row(c, NqIcons.signOut, 'تسجيل الخروج',
+            _row(c, NqIcons.signOut, s('account.signOut'),
                 danger: true,
                 chevron: false,
                 last: true,

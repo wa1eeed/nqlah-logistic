@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/auth/auth_controller.dart';
 import 'core/auth/auth_models.dart';
+import 'core/i18n/app_strings.dart';
+import 'core/i18n/locale_controller.dart';
 import 'core/notifications/notifications_repository.dart';
 import 'core/notifications/push_service.dart';
 import 'core/router.dart';
@@ -50,6 +52,7 @@ class NqApp extends ConsumerWidget {
       }
     });
 
+    final lang = ref.watch(localeControllerProvider);
     return MaterialApp.router(
       title: 'نقلة',
       debugShowCheckedModeBanner: false,
@@ -57,16 +60,17 @@ class NqApp extends ConsumerWidget {
       theme: NqTheme.light(),
       darkTheme: NqTheme.dark(),
       themeMode: ThemeMode.system,
-      locale: const Locale('ar', 'SA'),
-      supportedLocales: const [Locale('ar', 'SA'), Locale('en')],
+      locale: lang.locale,
+      supportedLocales: const [Locale('ar', 'SA'), Locale('en'), Locale('ur')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       routerConfig: ref.watch(routerProvider),
+      // Arabic + Urdu render RTL, English LTR — follows the active language.
       builder: (context, child) => Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: lang.direction,
         child: child!,
       ),
     );
