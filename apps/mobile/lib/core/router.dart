@@ -11,6 +11,7 @@ import '../features/auth/otp_screen.dart';
 import '../features/auth/register_credentials_screen.dart';
 import '../features/auth/register_account_type_screen.dart';
 import '../features/auth/plan_picker_screen.dart';
+import '../features/auth/register_truck_screen.dart';
 import '../features/auth/register_documents_screen.dart';
 import '../features/auth/register_otp_screen.dart';
 import '../features/auth/register_pending_screen.dart';
@@ -121,6 +122,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/register/plan',
       builder: (context, state) => PlanPickerScreen(
+        // Individual carriers get an optional quick-truck step before documents.
+        onNext: () =>
+            ref.read(registrationControllerProvider).needsTruckStep
+                ? context.push('/register/truck')
+                : context.push('/register/documents'),
+      ),
+    ),
+    GoRoute(
+      path: '/register/truck',
+      builder: (context, state) => RegisterTruckScreen(
         onNext: () => context.push('/register/documents'),
       ),
     ),

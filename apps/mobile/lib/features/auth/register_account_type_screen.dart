@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/registration_controller.dart';
 import '../../core/platform/countries.dart';
+import '../../core/platform/geo.dart';
 import '../../core/platform/id_types.dart';
+import '../../core/platform/locations.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
@@ -12,16 +14,6 @@ import '../../design_system/option_picker.dart';
 import '../../design_system/segmented.dart';
 import '../../design_system/text_field.dart';
 import 'wizard_scaffold.dart';
-
-const _regions = [
-  'الرياض', 'مكة المكرمة', 'المدينة المنورة', 'القصيم', 'الشرقية', 'عسير',
-  'تبوك', 'حائل', 'الحدود الشمالية', 'جازان', 'نجران', 'الباحة', 'الجوف',
-];
-const _cities = [
-  'الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر',
-  'الظهران', 'الأحساء', 'الطائف', 'بريدة', 'عنيزة', 'تبوك', 'أبها',
-  'خميس مشيط', 'حائل', 'نجران', 'جازان', 'الجبيل', 'ينبع', 'عرعر', 'سكاكا',
-];
 
 /// Register step 2 — account type (handoff 1l). Carrier (= Provider) vs
 /// Customer; Company vs Individual; CR + VAT (15-digit) with a
@@ -40,6 +32,13 @@ class _RegisterAccountTypeScreenState
     extends ConsumerState<RegisterAccountTypeScreen> {
   late final TextEditingController _cr;
   late final TextEditingController _vat;
+  // Backing controllers for the free-text region/city fallback (countries with
+  // no admin-defined regions/cities).
+  late final TextEditingController _regionText;
+  late final TextEditingController _cityText;
+  // Whether the user has explicitly chosen a location country yet (gates the
+  // geo-IP default so we don't override a manual pick).
+  bool _countryPicked = false;
 
   @override
   void initState() {
@@ -47,13 +46,81 @@ class _RegisterAccountTypeScreenState
     final d = ref.read(registrationControllerProvider);
     _cr = TextEditingController(text: d.crNumber);
     _vat = TextEditingController(text: d.vatNumber);
+    _regionText = TextEditingController(text: d.region);
+    _cityText = TextEditingController(text: d.city);
+    // Default the location country to the IP-detected one (falls back to SA).
+    ref.read(geoCountryProvider.future).then((geo) {
+      if (!mounted || _countryPicked) return;
+      if (ref.read(registrationControllerProvider).country == kDefaultCountryCode &&
+          geo.code != kDefaultCountryCode) {
+        ref
+            .read(registrationControllerProvider.notifier)
+            .patch((x) => x.copyWith(country: geo.code));
+      }
+    });
   }
 
   @override
   void dispose() {
     _cr.dispose();
     _vat.dispose();
+    _regionText.dispose();
+    _cityText.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickCountry() async {
+    final picked = await nqPickOption<Country>(
+      context,
+      title: 'الدولة',
+      options: kCountries,
+      label: (x) => '${x.flag}  ${x.nameAr}',
+      subtitle: (x) => x.nameEn,
+      searchHint: 'ابحث عن دولة',
+    );
+    if (picked != null) {
+      _countryPicked = true;
+      // Changing the country invalidates the dependent region + city.
+      _regionText.clear();
+      _cityText.clear();
+      ref.read(registrationControllerProvider.notifier).patch(
+            (x) => x.copyWith(country: picked.code, region: '', city: ''),
+          );
+    }
+  }
+
+  Future<void> _pickRegion(List<LocationRegion> regions) async {
+    final picked = await nqPickOption<LocationRegion>(
+      context,
+      title: 'المنطقة',
+      options: regions,
+      label: (x) => x.nameAr,
+      subtitle: (x) => x.nameEn,
+      searchHint: 'ابحث عن منطقة',
+    );
+    if (picked != null) {
+      _cityText.clear();
+      // Selecting a region resets the city.
+      ref.read(registrationControllerProvider.notifier).patch(
+            (x) => x.copyWith(region: picked.nameAr, city: ''),
+          );
+    }
+  }
+
+  Future<void> _pickCity(List<LocationCity> cities) async {
+    final picked = await nqPickOption<LocationCity>(
+      context,
+      title: 'المدينة',
+      options: cities,
+      label: (x) => x.nameAr,
+      subtitle: (x) => x.nameEn,
+      searchHint: 'ابحث عن مدينة',
+    );
+    if (picked != null) {
+      ref
+          .read(registrationControllerProvider.notifier)
+          .patch((x) => x.copyWith(city: picked.nameAr));
+    }
   }
 
   Future<void> _pickNationality() async {
@@ -72,47 +139,12 @@ class _RegisterAccountTypeScreenState
     }
   }
 
-  void _pick(String title, List<String> options, ValueChanged<String> onPick) {
-    final c = context.nq;
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: c.sf,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(title,
-                  style: NqType.h3.copyWith(color: c.tx),
-                  textAlign: TextAlign.center),
-            ),
-            for (final o in options)
-              ListTile(
-                title: Text(o,
-                    style: NqType.body.copyWith(color: c.tx),
-                    textAlign: TextAlign.right),
-                onTap: () {
-                  onPick(o);
-                  Navigator.of(context).maybePop();
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
     final notifier = ref.read(registrationControllerProvider.notifier);
     final d = ref.watch(registrationControllerProvider);
+    final locs = ref.watch(locationsProvider).valueOrNull ?? LocationsData.empty;
     final notVat = !d.vatRegistered;
     final vatLen = _vat.text.trim().length;
     final vatError = !notVat && vatLen > 0 && vatLen != 15
@@ -121,7 +153,7 @@ class _RegisterAccountTypeScreenState
 
     return WizardScaffold(
       step: 2,
-      totalSteps: d.isCarrier ? 5 : 4,
+      totalSteps: d.totalSteps,
       nextLabel: d.isCarrier ? 'التالي: اختيار الباقة' : 'التالي: المستندات',
       nextIcon: NqIcons.arrowLeft,
       title: 'إنشاء حساب',
@@ -233,29 +265,98 @@ class _RegisterAccountTypeScreenState
           label: 'المنشأة غير مسجّلة في ضريبة القيمة المضافة',
         ),
         const SizedBox(height: 20),
+        // Country → Region → City cascade. Country first (searchable, all
+        // countries), then region, then city — each dependent on the previous
+        // and sourced from the admin-managed dataset (GET /settings/locations).
+        NqDropdownField(
+          label: 'الدولة',
+          value:
+              '${countryByCode(d.country).flag}  ${locs.byCode(d.country)?.nameAr ?? countryByCode(d.country).nameAr}',
+          onTap: _pickCountry,
+        ),
+        const SizedBox(height: 16),
+        ..._locationFields(c, d, locs, notifier),
+      ],
+    );
+  }
+
+  /// Region + city fields for the selected country. Falls back to free text
+  /// when the dataset defines no regions/cities, so registration is never
+  /// blocked for a country that isn't curated yet.
+  List<Widget> _locationFields(
+    NqColors c,
+    RegistrationData d,
+    LocationsData locs,
+    RegistrationController notifier,
+  ) {
+    final regions = locs.regionsFor(d.country);
+
+    // No admin-defined regions for this country → free-text region + city.
+    if (regions.isEmpty) {
+      return [
         Row(
           children: [
             Expanded(
-              child: NqDropdownField(
+              child: NqTextField(
                 label: 'المنطقة',
-                value: d.region,
-                onTap: () => _pick('المنطقة', _regions,
-                    (v) => notifier.patch((x) => x.copyWith(region: v))),
+                controller: _regionText,
+                onChanged: (v) => notifier.patch((x) => x.copyWith(region: v)),
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: NqDropdownField(
+              child: NqTextField(
                 label: 'المدينة',
-                value: d.city,
-                onTap: () => _pick('المدينة', _cities,
-                    (v) => notifier.patch((x) => x.copyWith(city: v))),
+                controller: _cityText,
+                onChanged: (v) => notifier.patch((x) => x.copyWith(city: v)),
               ),
             ),
           ],
         ),
-      ],
-    );
+      ];
+    }
+
+    final cities = locs.citiesFor(d.country, d.region);
+    final regionChosen = d.region.trim().isNotEmpty;
+
+    return [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: NqDropdownField(
+              label: 'المنطقة',
+              value: regionChosen ? d.region : 'اختر المنطقة',
+              onTap: () => _pickRegion(regions),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: !regionChosen
+                // City depends on a region being chosen first.
+                ? NqDropdownField(
+                    label: 'المدينة',
+                    value: 'اختر المنطقة أولاً',
+                    onTap: () {},
+                  )
+                : cities.isEmpty
+                    // Region has no curated cities → free text (don't block).
+                    ? NqTextField(
+                        label: 'المدينة',
+                        controller: _cityText,
+                        hint: 'اكتب المدينة',
+                        onChanged: (v) =>
+                            notifier.patch((x) => x.copyWith(city: v)),
+                      )
+                    : NqDropdownField(
+                        label: 'المدينة',
+                        value: d.city.trim().isEmpty ? 'اختر المدينة' : d.city,
+                        onTap: () => _pickCity(cities),
+                      ),
+          ),
+        ],
+      ),
+    ];
   }
 }
 

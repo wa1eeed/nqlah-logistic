@@ -111,11 +111,12 @@ class _RegisterDocumentsScreenState
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
-    final carrier = ref.watch(registrationControllerProvider).isCarrier;
+    final d = ref.watch(registrationControllerProvider);
+    final carrier = d.isCarrier;
     final docs = _docsFor(carrier);
     return WizardScaffold(
-      step: carrier ? 4 : 3,
-      totalSteps: carrier ? 5 : 4,
+      step: d.docsStep,
+      totalSteps: d.totalSteps,
       title: 'مستندات التحقّق',
       subtitle: 'نراجعها خلال 24 ساعة عمل',
       nextLabel: _busy ? 'جارٍ الإرسال…' : 'إرسال للمراجعة',
