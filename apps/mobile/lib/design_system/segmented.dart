@@ -12,12 +12,18 @@ class NqSegmented extends StatelessWidget {
     required this.index,
     required this.onChanged,
     this.height = 44,
+    this.counts,
+    this.dangerCounts = const {},
   });
 
   final List<String> options;
   final int index;
   final ValueChanged<int> onChanged;
   final double height;
+  /// Optional per-option count badge (null = no badge). Shown as a small circle.
+  final List<int?>? counts;
+  /// Option indices whose count badge is red (in-progress / incomplete).
+  final Set<int> dangerCounts;
 
   @override
   Widget build(BuildContext context) {
@@ -72,14 +78,24 @@ class NqSegmented extends StatelessWidget {
                         behavior: HitTestBehavior.opaque,
                         onTap: () => onChanged(i),
                         child: Center(
-                          child: Text(
-                            options[i],
-                            style: NqType.label.copyWith(
-                              fontSize: 14,
-                              fontWeight:
-                                  i == index ? FontWeight.w700 : FontWeight.w500,
-                              color: i == index ? c.tx : c.tx2,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                options[i],
+                                style: NqType.label.copyWith(
+                                  fontSize: 14,
+                                  fontWeight: i == index
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: i == index ? c.tx : c.tx2,
+                                ),
+                              ),
+                              if (_countAt(i) != null && _countAt(i)! > 0) ...[
+                                const SizedBox(width: 6),
+                                _badge(c, _countAt(i)!, dangerCounts.contains(i)),
+                              ],
+                            ],
                           ),
                         ),
                       ),
@@ -89,6 +105,29 @@ class NqSegmented extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  int? _countAt(int i) =>
+      (counts != null && i < counts!.length) ? counts![i] : null;
+
+  Widget _badge(NqColors c, int value, bool danger) {
+    final Color bg = danger ? c.err : c.sf2;
+    final Color txt = danger ? Colors.white : c.tx2;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 20),
+      height: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: danger ? null : Border.all(color: c.bd),
+      ),
+      child: Text(
+        '$value',
+        style: NqType.numeric(12, FontWeight.w700).copyWith(color: txt),
       ),
     );
   }

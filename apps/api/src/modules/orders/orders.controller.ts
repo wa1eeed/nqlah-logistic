@@ -112,6 +112,13 @@ export class OrdersController {
     return this.orders.complete(id, actor);
   }
 
+  /** Client attaches a bank-transfer proof (object-store key) on a COD order. */
+  @Post(':id/cod-proof')
+  @Audit({ action: 'order.codProof', resourceType: 'Order', idFrom: 'param', idKey: 'id' })
+  codProof(@Param('id') id: string, @Body() dto: { key: string }, @CurrentUser() actor: AuthUser) {
+    return this.orders.attachCodProof(id, dto?.key, actor);
+  }
+
   @Post(':id/decline-direct')
   @Audit({ action: 'order.declineDirect', resourceType: 'Order', idFrom: 'param', idKey: 'id' })
   declineDirect(@Param('id') id: string, @CurrentUser() actor: AuthUser) {

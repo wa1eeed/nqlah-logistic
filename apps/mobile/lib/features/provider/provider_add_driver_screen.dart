@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/fleet/fleet_repository.dart';
+import '../../core/platform/countries.dart';
+import '../../core/platform/id_types.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../design_system/option_picker.dart';
+import '../../design_system/segmented.dart';
 import '../../design_system/text_field.dart';
 
 /// Add employed driver (handoff 3f) — invites a driver to the carrier's fleet
@@ -29,8 +33,22 @@ class _ProviderAddDriverScreenState
   final _nationalId = TextEditingController();
   final _license = TextEditingController();
   DateTime? _licenseExpiry;
+  Country _nationality = countryByCode(kDefaultCountryCode);
+  String _idType = kIdTypes.first.value;
   bool _busy = false;
   String? _error;
+
+  Future<void> _pickNationality() async {
+    final picked = await nqPickOption<Country>(
+      context,
+      title: 'الجنسية',
+      options: kCountries,
+      label: (x) => '${x.flag}  ${x.nameAr}',
+      subtitle: (x) => x.nameEn,
+      searchHint: 'ابحث عن دولة',
+    );
+    if (picked != null) setState(() => _nationality = picked);
+  }
 
   @override
   void dispose() {
@@ -84,6 +102,8 @@ class _ProviderAddDriverScreenState
         'phone': phone,
         if (_nationalId.text.trim().isNotEmpty)
           'nationalId': _nationalId.text.trim(),
+        'nationality': _nationality.code,
+        'idType': _idType,
         'licenseNumber': license,
         'licenseExpiry': _licenseExpiry!.toUtc().toIso8601String(),
         'licenseType': 'PRIVATE',
@@ -140,6 +160,36 @@ class _ProviderAddDriverScreenState
                   const SizedBox(height: 16),
                   NqTextField(
                       label: 'رقم الجوال', phone: true, controller: _phone),
+                  const SizedBox(height: 16),
+                  _label(c, 'الجنسية'),
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: _pickNationality,
+                    child: Container(
+                      height: NqLayout.input,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: c.sf,
+                        borderRadius: BorderRadius.circular(NqRadius.input),
+                        border: Border.all(color: c.bd),
+                      ),
+                      child: Row(children: [
+                        NqIcon(NqIcons.caretDown, size: 16, color: c.tx3),
+                        const Spacer(),
+                        Text('${_nationality.flag}  ${_nationality.nameAr}',
+                            style: NqType.body.copyWith(color: c.tx, fontSize: 16)),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _label(c, 'نوع الهوية'),
+                  const SizedBox(height: 6),
+                  NqSegmented(
+                    options: [for (final t in kIdTypes) t.label],
+                    index: kIdTypes.indexWhere((t) => t.value == _idType),
+                    onChanged: (i) => setState(() => _idType = kIdTypes[i].value),
+                    height: 46,
+                  ),
                   const SizedBox(height: 16),
                   NqTextField(
                       label: 'رقم الهوية / الإقامة (اختياري)',

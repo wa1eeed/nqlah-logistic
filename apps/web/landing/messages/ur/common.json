@@ -1,0 +1,69 @@
+{
+ "buttons": {
+  "save": "محفوظ کریں",
+  "cancel": "منسوخ کریں",
+  "confirm": "تصدیق کریں",
+  "delete": "حذف کریں",
+  "edit": "ترمیم کریں",
+  "export": "برآمد کریں",
+  "search": "تلاش کریں",
+  "filter": "فلٹر",
+  "back": "واپس",
+  "next": "اگلا",
+  "submit": "جمع کرائیں",
+  "add": "شامل کریں",
+  "view": "دیکھیں",
+  "close": "بند کریں",
+  "yes": "ہاں",
+  "no": "نہیں",
+  "all": "سب",
+  "reset": "ری سیٹ کریں",
+  "retry": "دوبارہ کوشش کریں",
+  "more": "مزید",
+  "less": "کم"
+ },
+ "status": {
+  "active": "فعال",
+  "inactive": "غیر فعال",
+  "pending": "زیرِ التوا",
+  "approved": "منظور شدہ",
+  "rejected": "مسترد",
+  "completed": "مکمل",
+  "expired": "میعاد ختم"
+ },
+ "currency": "SAR",
+ "comingSoon": "جلد آ رہا ہے",
+ "loading": "لوڈ ہو رہا ہے...",
+ "noData": "کوئی ڈیٹا دستیاب نہیں",
+ "error": "ایک خرابی پیش آ گئی",
+ "success": "عمل کامیابی سے مکمل ہوا",
+ "confirm_dialog": "کیا آپ کو یقین ہے؟",
+ "cannot_undo": "یہ عمل واپس نہیں کیا جا سکتا",
+ "language": "زبان",
+ "languages": {
+  "ar": "عربی",
+  "en": "انگریزی",
+  "ur": "اردو"
+ },
+ "appearance": {
+  "title": "ڈسپلے ترجیحات",
+  "theme": "تھیم",
+  "light": "روشن",
+  "dark": "تاریک",
+  "system": "سسٹم"
+ },
+ "pagination": {
+  "page": "صفحہ",
+  "of": "از",
+  "showing": "دکھایا جا رہا ہے",
+  "to": "تا",
+  "results": "نتائج"
+ },
+ "validation": {
+  "required": "یہ خانہ ضروری ہے",
+  "invalidEmail": "غلط ای میل پتہ",
+  "invalidPhone": "غلط فون نمبر",
+  "passwordTooShort": "پاس ورڈ بہت مختصر ہے",
+  "passwordsDontMatch": "پاس ورڈ مماثل نہیں"
+ }
+}

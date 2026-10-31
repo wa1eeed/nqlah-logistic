@@ -1,0 +1,126 @@
+{
+ "title": "Fleet",
+ "trucks": "ٹرک",
+ "drivers": "ڈرائیور",
+ "addTruck": "Add Truck",
+ "addDriver": "Add Driver",
+ "plateNumber": "Plate Number",
+ "registrationType": {
+  "label": "Registration Type",
+  "light": "Light Transport",
+  "public": "Public Transport"
+ },
+ "truckType": {
+  "label": "Truck Type",
+  "smallVan": "Small Van",
+  "smallFlatbed": "Small Flatbed",
+  "mediumFlatbed": "Medium Flatbed",
+  "largeFlatbed": "Large Flatbed",
+  "refrigerated": "Refrigerated",
+  "container20": "20ft Container",
+  "container40": "40ft Container",
+  "containerTrailer": "Container Trailer",
+  "tanker": "Tanker",
+  "boxTruck": "Box Truck",
+  "lowbed": "Lowbed"
+ },
+ "truckStatus": {
+  "available": "دستیاب",
+  "onTrip": "سفر پر",
+  "maintenance": "دیکھ بھال",
+  "offDuty": "آف ڈیوٹی"
+ },
+ "driverStatus": {
+  "available": "دستیاب",
+  "onTrip": "سفر پر",
+  "offDuty": "آف ڈیوٹی"
+ },
+ "capacity": "Capacity",
+ "tons": "tons",
+ "kg": "kg",
+ "make": "Brand",
+ "model": "Model",
+ "year": "Year",
+ "hasGPS": "GPS Equipped",
+ "hasRefrigeration": "Refrigeration Equipped",
+ "specifications": "Specifications",
+ "documents": "دستاویزات",
+ "tripsHistory": "Trip History",
+ "totalTrips": "Total Trips",
+ "totalDistance": "Total Distance",
+ "currentDriver": "Current Driver",
+ "noDriverAssigned": "No driver assigned",
+ "driver": {
+  "fullName": "Full Name",
+  "nationalId": "National ID",
+  "licenseClass": "License Class",
+  "licenseExpiry": "License Expiry",
+  "phone": "Phone",
+  "totalTrips": "Completed Trips"
+ },
+ "adminDrivers": {
+  "title": "All Drivers on the Platform",
+  "subtitle": "A unified list of drivers across all carriers",
+  "stats": {
+   "total": "Total Drivers",
+   "onTrip": "سفر پر",
+   "available": "دستیاب",
+   "offDuty": "آف ڈیوٹی"
+  },
+  "searchPlaceholder": "Search by name, ID, phone, or carrier...",
+  "allStatuses": "All Statuses",
+  "independent": "Independent",
+  "affiliation": {
+   "all": "All drivers",
+   "carrier": "Carrier drivers",
+   "independent": "Independent"
+  },
+  "noResults": "No results",
+  "table": {
+   "driver": "Driver",
+   "carrier": "Carrier",
+   "id": "ID",
+   "licenseClass": "License Class",
+   "licenseExpiry": "License Expiry",
+   "trips": "Trips",
+   "phone": "Phone",
+   "currentOrder": "Current Order",
+   "status": "Status"
+  }
+ },
+ "adminTrucks": {
+  "title": "All Trucks on the Platform",
+  "subtitle": "A complete overview of the fleet across all registered carriers",
+  "stats": {
+   "total": "Total Trucks",
+   "onTrip": "سفر پر",
+   "available": "دستیاب",
+   "maintenance": "دیکھ بھال"
+  },
+  "searchPlaceholder": "Search by plate, number, or carrier name...",
+  "allStatuses": "All Statuses",
+  "allTypes": "All Types",
+  "capacityValue": "{value} tons",
+  "noResults": "No results",
+  "types": {
+   "SMALL_VAN": "Small Van",
+   "BOX_TRUCK": "Box Truck",
+   "MEDIUM_FLATBED": "Medium Flatbed",
+   "LARGE_FLATBED": "Large Flatbed",
+   "REFRIGERATED": "Refrigerated",
+   "TANKER": "Tanker",
+   "LOWBED": "Lowbed",
+   "CONTAINER_TRAILER": "Container Trailer"
+  },
+  "table": {
+   "plate": "Plate",
+   "carrier": "Carrier",
+   "type": "Type",
+   "capacity": "Capacity",
+   "model": "Model",
+   "driver": "Driver",
+   "lastInspection": "Last Inspection",
+   "status": "Status"
+  }
+ }
+}

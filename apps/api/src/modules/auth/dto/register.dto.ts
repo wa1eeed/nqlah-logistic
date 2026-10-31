@@ -9,8 +9,10 @@ import { IsStrongPassword } from '../../../common/validators/strong-password.val
  * via SMS OTP. Users without an email can still register.
  */
 export class RegisterDto {
-  // Phone — REQUIRED, used for SMS OTP verification & primary contact
-  @Matches(/^(\+?966|0)?5\d{8}$/, { message: 'رقم الجوال السعودي غير صالح' })
+  // Phone — REQUIRED, used for SMS OTP verification & primary contact.
+  // Accepts an international E.164 number (+<country><subscriber>) or the Saudi
+  // local shorthand (05XXXXXXXX / 5XXXXXXXX), which the server normalizes.
+  @Matches(/^(\+?[1-9]\d{6,14}|0?5\d{8})$/, { message: 'رقم الجوال غير صالح' })
   phone!: string;
 
   // Email — OPTIONAL (Option B). When provided, no OTP is sent; user can verify later.
@@ -45,6 +47,11 @@ export class RegisterDto {
 
   // National ID — relevant for an individual operator.
   @IsOptional() @IsString() nationalId?: string;
+
+  // For a driver / INDIVIDUAL operator: ISO-3166 alpha-2 nationality and the
+  // identity-document type (NATIONAL_ID | IQAMA | PASSPORT).
+  @IsOptional() @IsString() nationality?: string;
+  @IsOptional() @IsEnum(['NATIONAL_ID', 'IQAMA', 'PASSPORT'] as const) idType?: 'NATIONAL_ID' | 'IQAMA' | 'PASSPORT';
 
   // For an INDIVIDUAL carrier, the owner is also a driver; these seed their
   // driver profile (optional — completed later in the driver portal if omitted).

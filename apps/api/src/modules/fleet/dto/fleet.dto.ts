@@ -30,12 +30,17 @@ export class CreateTruckDto {
 
 export class UpdateTruckDto extends CreateTruckDto {}
 
+/** Identity-document types for drivers / individual operators. */
+export const ID_TYPES = ['NATIONAL_ID', 'IQAMA', 'PASSPORT'] as const;
+
 export class CreateDriverDto {
   @IsString() userId!: string;
   @IsString() licenseNumber!: string;
   @IsDateString() licenseExpiry!: string;
   @IsString() licenseType!: string;
   @IsOptional() @IsString() photo?: string;
+  @IsOptional() @IsString() nationality?: string;
+  @IsOptional() @IsEnum(ID_TYPES) idType?: (typeof ID_TYPES)[number];
 }
 
 /** Invite a new driver in one shot — creates User + DriverProfile atomically. */
@@ -43,6 +48,8 @@ export class InviteDriverDto {
   @IsString() fullName!: string;
   @IsString() phone!: string;
   @IsOptional() @IsString() nationalId?: string;
+  @IsOptional() @IsString() nationality?: string;
+  @IsOptional() @IsEnum(ID_TYPES) idType?: (typeof ID_TYPES)[number];
   @IsString() licenseNumber!: string;
   @IsDateString() licenseExpiry!: string;
   @IsString() licenseType!: string;

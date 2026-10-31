@@ -331,7 +331,8 @@
  "cities": "Cities",
  "cargoTypes": "Cargo Types",
  "smsTemplates": "SMS Templates",
- "general": "General"
+ "general": "General",
+ "language": "Language"
  },
  "countries": {
  "title": "Countries, Regions & Cities",

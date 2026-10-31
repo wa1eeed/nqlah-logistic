@@ -58,6 +58,17 @@ class _OtpScreenState extends State<OtpScreen> {
   void initState() {
     super.initState();
     _startCountdown();
+    // Guide the user to start at the first box.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focuses.first.requestFocus();
+    });
+  }
+
+  /// The box to fill next — the first empty one (or the last when all filled).
+  /// Used to highlight where input should go and to block out-of-order entry.
+  int get _activeIndex {
+    final i = _controllers.indexWhere((c) => c.text.isEmpty);
+    return i < 0 ? _n - 1 : i;
   }
 
   void _startCountdown() {
@@ -165,18 +176,28 @@ class _OtpScreenState extends State<OtpScreen> {
                   style: NqType.body.copyWith(color: c.tx2, height: 1.6),
                   children: [
                     const TextSpan(text: 'أرسلنا رمزًا إلى '),
-                    TextSpan(
-                      text: widget.phone,
-                      style: NqType.numeric(15, FontWeight.w600)
-                          .copyWith(color: c.tx),
+                    // Render the number in its own LTR box so it always reads
+                    // left-to-right in the RTL sentence, even with spaces.
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Text(
+                          widget.phone,
+                          style: NqType.numeric(15, FontWeight.w600)
+                              .copyWith(color: c.tx),
+                        ),
+                      ),
                     ),
                     if (widget.onEdit != null) const TextSpan(text: '  '),
                   ],
                 ),
               ),
               const SizedBox(height: 28),
+              // RTL: the first digit box sits on the RIGHT and entry flows
+              // right-to-left, matching how the user reads.
               Directionality(
-                textDirection: TextDirection.ltr,
+                textDirection: TextDirection.rtl,
                 child: Row(
                   children: [
                     for (var i = 0; i < _n; i++) ...[
@@ -245,13 +266,20 @@ class _OtpScreenState extends State<OtpScreen> {
   Widget _box(NqColors c, int i) {
     final filled = _controllers[i].text.isNotEmpty;
     final hasError = _error != null;
+    final active = i == _activeIndex; // the next box to fill — highlighted
     return SizedBox(
       height: 58,
       child: TextField(
         controller: _controllers[i],
         focusNode: _focuses[i],
         onChanged: (v) => _onChanged(i, v),
-        onTap: () => setState(() {}),
+        // Keep entry sequential: tapping a box ahead of the next one jumps
+        // focus back to the box that should be filled.
+        onTap: () {
+          final target = _activeIndex;
+          if (i > target) _focuses[target].requestFocus();
+          setState(() {});
+        },
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
         maxLength: i == 0 ? _n : 1, // first box accepts a pasted full code
@@ -261,12 +289,16 @@ class _OtpScreenState extends State<OtpScreen> {
         decoration: InputDecoration(
           counterText: '',
           filled: true,
-          fillColor: c.sf,
+          fillColor: active && !filled && !hasError ? c.mintBg : c.sf,
           contentPadding: EdgeInsets.zero,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(NqRadius.input),
             borderSide: BorderSide(
-                color: hasError ? c.err : (filled ? c.mintS : c.bd)),
+              color: hasError
+                  ? c.err
+                  : (filled || active ? c.mintS : c.bd),
+              width: active ? 2 : 1,
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(NqRadius.input),

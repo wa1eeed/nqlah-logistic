@@ -1,0 +1,75 @@
+{
+ "title": "آرڈرز",
+ "myOrders": "میرے آرڈرز",
+ "newOrder": "New Order",
+ "orderNumber": "Order #",
+ "details": "Order Details",
+ "timeline": "Timeline",
+ "noOrders": "No orders found",
+ "status": {
+  "draft": "مسودہ",
+  "published": "شائع شدہ",
+  "bidding": "بولی",
+  "assigned": "تفویض شدہ",
+  "confirmed": "تصدیق شدہ",
+  "inTransit": "راستے میں",
+  "delivered": "پہنچا دیا",
+  "completed": "مکمل",
+  "cancelled": "منسوخ",
+  "disputed": "متنازع"
+ },
+ "fields": {
+  "client": "کلائنٹ",
+  "carrier": "Carrier",
+  "route": "Route",
+  "amount": "Amount",
+  "date": "Date",
+  "pickupDate": "Pickup Date",
+  "deliveryDate": "Delivery Date",
+  "cargoType": "Cargo Type",
+  "description": "Cargo Description",
+  "weight": "Weight",
+  "from": "From",
+  "to": "To",
+  "specialInstructions": "Special Instructions",
+  "insurance": "Full Insurance",
+  "refrigeration": "Refrigeration"
+ },
+ "cargoTypes": {
+  "general": "General Goods",
+  "food": "Food & Beverages",
+  "perishable": "Perishable",
+  "chemicals": "Chemicals",
+  "electronics": "Electronics",
+  "furniture": "Furniture",
+  "construction": "Construction Materials",
+  "automotive": "Automotive Parts",
+  "medical": "Medical Supplies",
+  "hazardous": "Hazardous Materials",
+  "fragile": "Fragile Items",
+  "livestock": "Livestock",
+  "oversized": "Oversized Cargo"
+ },
+ "mode": {
+  "open": "Open Marketplace",
+  "direct": "Direct Request"
+ },
+ "actions": {
+  "publish": "Publish Order",
+  "cancel": "Cancel Order",
+  "confirmDelivery": "Confirm Delivery",
+  "openDispute": "Open Dispute",
+  "acceptBid": "Accept Bid",
+  "rejectBid": "Reject Bid"
+ },
+ "bidding": {
+  "title": "Received Bids",
+  "bidsCount": "{count} bids",
+  "submitBid": "Submit Bid",
+  "yourPrice": "Your Proposed Price",
+  "estimatedDays": "Estimated Days",
+  "notes": "Notes",
+  "noBids": "No bids yet",
+  "winRate": "Win Rate"
+ }
+}
