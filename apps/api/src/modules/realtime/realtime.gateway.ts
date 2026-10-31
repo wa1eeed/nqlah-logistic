@@ -15,6 +15,8 @@ interface OrderTrack {
   consolidated?: boolean;
   subscribers: number;
   timer?: NodeJS.Timeout;
+  /** Set once a real driver GPS fix arrives — suppresses the simulated ping. */
+  live?: boolean;
 }
 
 const PING_MS = 4000;
@@ -108,8 +110,60 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
           return 0;                               // undistributed → still at origin
         });
       }
-      if (!track.timer && order?.status === 'IN_TRANSIT') this.startPingStream(orderId);
+      // A real GPS stream, once seen, takes precedence over the simulation.
+      if (!track.timer && !track.live && order?.status === 'IN_TRANSIT') this.startPingStream(orderId);
     }
+  }
+
+  /// Real driver GPS fix. Authorizes the sender against the order's assigned
+  /// drivers, persists it (LocationHistory + the driver's current location),
+  /// and broadcasts the real coordinates — superseding the simulated ping.
+  /// The driver app throttles these (≈30–60s or ≥50m) to conserve map/API cost.
+  @SubscribeMessage('driver:location')
+  async driverLocation(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { orderId: string; lat: number; lng: number; speedKmh?: number },
+  ) {
+    const userId = client.data?.userId as string | undefined;
+    if (!userId || !data?.orderId) return;
+    if (typeof data.lat !== 'number' || typeof data.lng !== 'number') return;
+    if (Math.abs(data.lat) > 90 || Math.abs(data.lng) > 180) return;
+
+    const profile = await this.prisma.driverProfile
+      .findUnique({ where: { userId }, select: { id: true } })
+      .catch(() => null);
+    if (!profile) return;
+
+    // Authorization: the sender must be a driver assigned to this order.
+    const assigned = await this.prisma.orderDriver
+      .findFirst({ where: { orderId: data.orderId, driverId: profile.id }, select: { id: true } })
+      .catch(() => null);
+    if (!assigned) return;
+
+    const at = new Date();
+    await Promise.all([
+      this.prisma.locationHistory
+        .create({ data: { driverId: profile.id, lat: data.lat, lng: data.lng, speed: data.speedKmh ?? null } })
+        .catch(() => undefined),
+      this.prisma.driverProfile
+        .update({ where: { id: profile.id }, data: { currentLat: data.lat, currentLng: data.lng, lastLocationAt: at } })
+        .catch(() => undefined),
+    ]);
+
+    // Real GPS supersedes the simulated ping stream for this order.
+    const track = this.tracks.get(data.orderId);
+    if (track) {
+      track.live = true;
+      if (track.timer) { clearInterval(track.timer); track.timer = undefined; }
+    }
+    this.server.to(`order:${data.orderId}`).emit('tracking:location_update', {
+      orderId: data.orderId,
+      lat: data.lat,
+      lng: data.lng,
+      speedKmh: data.speedKmh ?? null,
+      at: at.getTime(),
+      live: true,
+    });
   }
 
   @SubscribeMessage('order:unsubscribe')
@@ -127,7 +181,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     const emit = () => {
       const t = this.tracks.get(orderId);
       if (!t) return;
-      const base = { speedKmh: Math.max(0, Math.round(80 + (Math.random() - 0.5) * 16)), at: Date.now() };
+      const base = { orderId, speedKmh: Math.max(0, Math.round(80 + (Math.random() - 0.5) * 16)), at: Date.now() };
       if (t.consolidated && t.legs) {
         this.server.to(`order:${orderId}`).emit('tracking:location_update', {
           ...base,
