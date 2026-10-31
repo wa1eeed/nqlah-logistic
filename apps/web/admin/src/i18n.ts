@@ -1,29 +1,23 @@
 import { cookies, headers } from 'next/headers';
 import { getRequestConfig } from 'next-intl/server';
+import {
+  DEFAULT_LOCALE,
+  isSupportedLocale as isSupported,
+  LOCALE_COOKIE,
+  type Locale,
+} from './i18n-config';
 
-// Supported UI locales. Adding a new language is a two-step change:
-//   1. drop a `messages/<lang>/*.json` folder (copy en, translate what you can)
-//   2. add the code here (and to RTL_LOCALES below if it's right-to-left)
-// Everything else — dynamic import, <html dir>, the language switcher — reads
-// from these two lists. See docs/I18N.md.
-export const SUPPORTED_LOCALES = ['ar', 'en', 'ur'] as const;
-export const DEFAULT_LOCALE = 'en';
-export type Locale = (typeof SUPPORTED_LOCALES)[number];
-
-// Right-to-left locales. Arabic and Urdu both use the Arabic script.
-export const RTL_LOCALES: readonly Locale[] = ['ar', 'ur'];
-export function isRtlLocale(locale: string): boolean {
-  return (RTL_LOCALES as readonly string[]).includes(locale);
-}
-
-function isSupported(value: string | undefined | null): value is Locale {
-  return !!value && (SUPPORTED_LOCALES as readonly string[]).includes(value);
-}
-
-// Cookies are scoped by hostname only, not port. On localhost all three
-// portals would share `naqla-locale` and flip each other's language. Use
-// a portal-specific cookie name so each app keeps its own locale.
-export const LOCALE_COOKIE = 'naqla-locale-admin';
+// Re-export the client-safe constants so existing `@/i18n` server imports keep
+// working. Client Components must import these from `@/i18n-config` instead —
+// this module pulls in `next/headers`, which is server-only. See docs/I18N.md.
+export {
+  SUPPORTED_LOCALES,
+  DEFAULT_LOCALE,
+  RTL_LOCALES,
+  isRtlLocale,
+  LOCALE_COOKIE,
+} from './i18n-config';
+export type { Locale } from './i18n-config';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
