@@ -5,6 +5,7 @@ import '../../../core/orders/order_draft_controller.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/ltr.dart';
+import 'order_validation.dart';
 import 'order_wizard_scaffold.dart';
 
 const _arWeekdays = {
@@ -25,6 +26,15 @@ class OrderStep3Schedule extends ConsumerStatefulWidget {
 
 class _OrderStep3ScheduleState extends ConsumerState<OrderStep3Schedule> {
   late final List<DateTime> _days;
+  final _dayKey = GlobalKey();
+
+  Future<void> _next() async {
+    final d = ref.read(orderDraftProvider);
+    final missing = <MissingField>[
+      if (d.pickupDate == null) MissingField('تاريخ الاستلام', _dayKey),
+    ];
+    if (await ensureStepComplete(context, missing)) widget.onNext?.call();
+  }
 
   @override
   void initState() {
@@ -56,11 +66,12 @@ class _OrderStep3ScheduleState extends ConsumerState<OrderStep3Schedule> {
       nextLabel: 'التسعير',
       title: 'متى تريد الاستلام؟',
       showPrev: true,
-      onNext: widget.onNext,
+      onNext: _next,
       children: [
         _label(c, 'اليوم'),
         const SizedBox(height: 10),
         SizedBox(
+          key: _dayKey,
           height: 72,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,

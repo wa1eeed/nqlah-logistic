@@ -10,6 +10,7 @@ import '../../../core/widgets/nq_icon.dart';
 import '../../../design_system/option_picker.dart';
 import '../../../design_system/text_field.dart';
 import '../../shell/app_shell.dart' show requestedShellTabProvider;
+import 'order_validation.dart';
 import 'order_wizard_scaffold.dart';
 
 /// Create-order step 2/6 — route & stops (handoff 4a). Single-order origin and
@@ -27,6 +28,23 @@ class OrderStep2Route extends ConsumerStatefulWidget {
 class _OrderStep2RouteState extends ConsumerState<OrderStep2Route> {
   late final TextEditingController _originAddr;
   late final TextEditingController _destAddr;
+  final _originKey = GlobalKey();
+  final _destKey = GlobalKey();
+  String? _originErr;
+  String? _destErr;
+
+  Future<void> _next() async {
+    final d = ref.read(orderDraftProvider);
+    setState(() {
+      _originErr = d.originAddress.trim().isEmpty ? 'أدخل عنوان الاستلام' : null;
+      _destErr = d.destinationAddress.trim().isEmpty ? 'أدخل عنوان التفريغ' : null;
+    });
+    final missing = <MissingField>[
+      if (_originErr != null) MissingField('عنوان الاستلام', _originKey),
+      if (_destErr != null) MissingField('عنوان التفريغ', _destKey),
+    ];
+    if (await ensureStepComplete(context, missing)) widget.onNext?.call();
+  }
 
   @override
   void initState() {
@@ -66,7 +84,7 @@ class _OrderStep2RouteState extends ConsumerState<OrderStep2Route> {
       nextLabel: 'الجدولة',
       title: 'حدّد مسار الرحلة',
       showPrev: true,
-      onNext: widget.onNext,
+      onNext: _next,
       children: [
         _miniMap(c),
         const SizedBox(height: 16),
@@ -79,7 +97,12 @@ class _OrderStep2RouteState extends ConsumerState<OrderStep2Route> {
           onCity: () =>
               _pickCity((v) => n.patch((x) => x.copyWith(originCity: v))),
           addrController: _originAddr,
-          onAddr: (v) => n.patch((x) => x.copyWith(originAddress: v)),
+          addrKey: _originKey,
+          addrError: _originErr,
+          onAddr: (v) {
+            n.patch((x) => x.copyWith(originAddress: v));
+            if (_originErr != null) setState(() => _originErr = null);
+          },
         ),
         const SizedBox(height: 14),
         _endpoint(
@@ -91,7 +114,12 @@ class _OrderStep2RouteState extends ConsumerState<OrderStep2Route> {
           onCity: () =>
               _pickCity((v) => n.patch((x) => x.copyWith(destinationCity: v))),
           addrController: _destAddr,
-          onAddr: (v) => n.patch((x) => x.copyWith(destinationAddress: v)),
+          addrKey: _destKey,
+          addrError: _destErr,
+          onAddr: (v) {
+            n.patch((x) => x.copyWith(destinationAddress: v));
+            if (_destErr != null) setState(() => _destErr = null);
+          },
         ),
         _availableTrucksBanner(c, d.originCity),
       ],
@@ -147,6 +175,8 @@ class _OrderStep2RouteState extends ConsumerState<OrderStep2Route> {
     required VoidCallback onCity,
     required TextEditingController addrController,
     required ValueChanged<String> onAddr,
+    Key? addrKey,
+    String? addrError,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -188,8 +218,10 @@ class _OrderStep2RouteState extends ConsumerState<OrderStep2Route> {
           ),
           const SizedBox(height: 12),
           NqTextField(
+            key: addrKey,
             hint: 'العنوان التفصيلي (حي، شارع، مَعلم)',
             controller: addrController,
+            error: addrError,
             onChanged: onAddr,
           ),
         ],
