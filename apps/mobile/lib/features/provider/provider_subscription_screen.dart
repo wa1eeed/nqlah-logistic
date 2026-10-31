@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_exception.dart';
+import '../../core/platform/format.dart';
 import '../../core/subscription/subscription_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -312,7 +313,7 @@ class ProviderSubscriptionScreen extends ConsumerWidget {
     }
   }
 
-  String _money(num v) => v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2);
+  String _money(num v) => money(v, decimals: v == v.roundToDouble() ? 0 : 2);
 
   String _fmtDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/orders/order_models.dart';
+import '../../core/platform/format.dart';
 import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -385,15 +386,24 @@ class OrderDetailScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
             children: [
-              Ltr(value != null ? value.toStringAsFixed(2) : '—',
-                  style: (strong
-                          ? NqType.numeric(16, FontWeight.w700)
-                          : NqType.numeric(14, FontWeight.w400))
-                      .copyWith(color: c.tx)),
-              const Spacer(),
-              Text(label,
-                  style: (strong ? NqType.bodyStrong : NqType.body)
-                      .copyWith(color: strong ? c.tx : c.tx2)),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Ltr(value != null ? money(value) : '—',
+                      style: (strong
+                              ? NqType.numeric(16, FontWeight.w700)
+                              : NqType.numeric(14, FontWeight.w400))
+                          .copyWith(color: c.tx)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(label,
+                    textAlign: TextAlign.end,
+                    style: (strong ? NqType.bodyStrong : NqType.body)
+                        .copyWith(color: strong ? c.tx : c.tx2)),
+              ),
             ],
           ),
         );
