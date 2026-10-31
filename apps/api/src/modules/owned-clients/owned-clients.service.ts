@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { normalizeSaudiPhone } from '@naqla/shared-utils';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { companyCode } from '../../common/codes';
+import { PoliciesService } from '../policies/policies.service';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 interface CreateOwnedClientDto {
@@ -27,7 +28,10 @@ interface CreateOwnedClientDto {
  */
 @Injectable()
 export class OwnedClientsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private policies: PoliciesService,
+  ) {}
 
   private assertCarrier(actor: AuthUser) {
     if (!actor.companyId || (actor.role !== 'CARRIER_ADMIN' && actor.role !== 'CARRIER_USER')) {
@@ -36,8 +40,19 @@ export class OwnedClientsService {
     return actor.companyId;
   }
 
+  /** «عملائي» is a gated plan module — deny unless the provider's plan includes it. */
+  private async assertModule(carrierId: string) {
+    if (!(await this.policies.hasModule(carrierId, 'ownedClients'))) {
+      throw new ForbiddenException({
+        code: 'FEATURE_OWNED_CLIENTS_DISABLED',
+        message: 'إدارة العملاء غير متاحة في باقتك الحالية',
+      });
+    }
+  }
+
   async list(actor: AuthUser) {
     const carrierId = this.assertCarrier(actor);
+    await this.assertModule(carrierId);
     return this.prisma.company.findMany({
       where: { ownerCarrierId: carrierId },
       orderBy: { createdAt: 'desc' },
@@ -51,6 +66,7 @@ export class OwnedClientsService {
 
   async create(dto: CreateOwnedClientDto, actor: AuthUser) {
     const carrierId = this.assertCarrier(actor);
+    await this.assertModule(carrierId);
     const phone = normalizeSaudiPhone(dto.phone);
     const email = dto.contactEmail?.toLowerCase();
 

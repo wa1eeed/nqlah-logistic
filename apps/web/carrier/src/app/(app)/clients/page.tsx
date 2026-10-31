@@ -13,6 +13,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState } from '@/components/empty-state';
+import { useHasModule } from '@/lib/use-has-module';
 import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
 import { formatDate, localizeCity } from '@naqla/shared-utils';
@@ -28,7 +29,9 @@ const BLANK = {
 
 export default function CarrierClientsPage() {
   const t = useTranslations('carrier');
-  const { data, mutate } = useSWR<OwnedClient[]>('/carrier/clients', fetcher);
+  // «عملائي» is a gated plan module — don't even fetch (would 403) when it's off.
+  const { has: hasModule, loading: moduleLoading } = useHasModule('ownedClients');
+  const { data, mutate } = useSWR<OwnedClient[]>(hasModule ? '/carrier/clients' : null, fetcher);
   const clients = Array.isArray(data) ? data : [];
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ ...BLANK });
@@ -61,6 +64,21 @@ export default function CarrierClientsPage() {
     } catch (e) { notify.error(e); }
     finally { setSaving(false); }
   };
+
+  // Gated: plan doesn't include «عملائي» → upgrade notice instead of the page.
+  if (!moduleLoading && !hasModule) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title={t('clientsPage.title')} subtitle={t('clientsPage.subtitle')} />
+        <EmptyState
+          icon={Building2}
+          title="غير متاح في باقتك الحالية"
+          description="إدارة العملاء ميزة ضمن باقات أعلى. رقِّ باقتك من صفحة الاشتراك لتفعيل «عملائي»."
+          action={{ label: 'عرض الباقات', href: '/subscription' }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -11,6 +11,7 @@ import {
 import Image from 'next/image';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
+import { useHasModule } from '@/lib/use-has-module';
 
 type PlatformBranding = { logoUrl: string; logoUrlDark: string; nameAr: string; nameEn: string };
 import { useAuthStore } from '@/lib/auth-store';
@@ -75,6 +76,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const nameAr  = branding?.nameAr  ?? t('appName');
   const authedCompanyId = useAuthStore((s) => s.user?.companyId);
   const myCompanyId = authedCompanyId ?? CURRENT_CARRIER_ID;
+  // «عملائي» is a gated plan module — only show its nav item when the plan has it.
+  const { has: hasOwnedClients } = useHasModule('ownedClients');
   // Live count of fresh opportunities — orders the carrier HASN'T bid on yet.
   // This must match what the /opportunities list shows under "السوق المفتوح"
   // + "موجّه لشركتي" tabs (excludes orders already in "بانتظار موافقة العميل").
@@ -124,7 +127,9 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <div className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t(`groups.${group.titleKey}`)}
             </div>
-            {group.items.map((item) => {
+            {group.items
+              .filter((item) => item.href !== '/clients' || hasOwnedClients)
+              .map((item) => {
               const Icon = item.icon;
               const isActive = item.href === '/' ? pathname === '/' : pathname === item.href || pathname.startsWith(item.href + '/');
               const showOppsBadge = item.href === '/opportunities' && openOppsCount > 0;

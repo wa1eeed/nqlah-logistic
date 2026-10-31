@@ -11,6 +11,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../design_system/option_picker.dart';
 
 /// Opens the publish/unpublish-availability sheet for one fleet truck.
 Future<void> showTruckAvailabilitySheet(
@@ -224,37 +225,44 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
     required ValueChanged<String?> onChanged,
     bool allowNone = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: c.sf,
-        borderRadius: BorderRadius.circular(NqRadius.input),
-        border: Border.all(color: c.bd),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          value: value,
-          isExpanded: true,
-          hint: Text(hint, style: NqType.body.copyWith(color: c.tx3)),
-          icon: NqIcon(NqIcons.caretDown, size: 16, color: c.tx2),
-          dropdownColor: c.sf,
-          borderRadius: BorderRadius.circular(NqRadius.card),
-          style: NqType.body.copyWith(color: c.tx),
-          items: [
-            if (allowNone)
-              DropdownMenuItem<String?>(
-                value: null,
-                child: Text('أي وجهة', style: NqType.body.copyWith(color: c.tx)),
+    return GestureDetector(
+      onTap: () async {
+        final picked = await nqPickOption<String>(
+          context,
+          title: hint,
+          options: saudiCities,
+          label: (x) => x,
+          subtitle: (x) => regionForCity(x),
+          searchHint: 'ابحث عن مدينة',
+        );
+        if (picked != null) onChanged(picked);
+      },
+      child: Container(
+        height: NqLayout.input,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: c.sf,
+          borderRadius: BorderRadius.circular(NqRadius.input),
+          border: Border.all(color: c.bd),
+        ),
+        child: Row(
+          children: [
+            NqIcon(NqIcons.caretDown, size: 16, color: c.tx2),
+            // Clear affordance for optional fields (e.g. «أي وجهة»).
+            if (allowNone && value != null) ...[
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () => onChanged(null),
+                child: NqIcon(NqIcons.x, size: 15, color: c.tx3),
               ),
-            for (final city in saudiCities)
-              DropdownMenuItem<String?>(
-                value: city,
-                child: Text(city,
-                    textAlign: TextAlign.right,
-                    style: NqType.body.copyWith(color: c.tx)),
-              ),
+            ],
+            const Spacer(),
+            Text(
+              value ?? hint,
+              style: NqType.body
+                  .copyWith(color: value == null ? c.tx3 : c.tx, fontSize: 16),
+            ),
           ],
-          onChanged: onChanged,
         ),
       ),
     );

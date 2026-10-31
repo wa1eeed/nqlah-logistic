@@ -7,6 +7,7 @@ import '../../../core/orders/order_draft_controller.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/nq_icon.dart';
+import '../../../design_system/option_picker.dart';
 import '../../../design_system/text_field.dart';
 import '../../shell/app_shell.dart' show requestedShellTabProvider;
 import 'order_wizard_scaffold.dart';
@@ -42,43 +43,16 @@ class _OrderStep2RouteState extends ConsumerState<OrderStep2Route> {
     super.dispose();
   }
 
-  void _pickCity(ValueChanged<String> onPick) {
-    final c = context.nq;
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: c.sf,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text('اختر المدينة',
-                  style: NqType.h3.copyWith(color: c.tx),
-                  textAlign: TextAlign.center),
-            ),
-            for (final city in saudiCities)
-              ListTile(
-                title: Text(city,
-                    style: NqType.body.copyWith(color: c.tx),
-                    textAlign: TextAlign.right),
-                subtitle: Text(regionForCity(city),
-                    style: NqType.caption.copyWith(color: c.tx3),
-                    textAlign: TextAlign.right),
-                onTap: () {
-                  onPick(city);
-                  Navigator.of(context).maybePop();
-                },
-              ),
-          ],
-        ),
-      ),
+  Future<void> _pickCity(ValueChanged<String> onPick) async {
+    final city = await nqPickOption<String>(
+      context,
+      title: 'اختر المدينة',
+      options: saudiCities,
+      label: (c) => c,
+      subtitle: (c) => regionForCity(c),
+      searchHint: 'ابحث عن مدينة',
     );
+    if (city != null) onPick(city);
   }
 
   @override

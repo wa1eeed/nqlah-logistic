@@ -25,6 +25,9 @@ const MODULES = [
   { key: 'contractedDrivers', name: 'السائقون المتعاقدون', nameEn: 'Contracted drivers', audience: 'CARRIER', price: 100, sortOrder: 3 },
   { key: 'advancedAnalytics', name: 'تحليلات متقدّمة', nameEn: 'Advanced analytics', audience: 'CARRIER', price: 80, sortOrder: 4 },
   { key: 'prioritySupport', name: 'دعم ذو أولوية', nameEn: 'Priority support', audience: 'BOTH', price: 60, sortOrder: 5 },
+  // Opt-in module: the carrier's own «عملائي» (owned clients) workspace. Gated —
+  // the «عملائي» section only appears for providers whose plan includes it.
+  { key: 'ownedClients', name: 'إدارة عملائي', nameEn: 'My Clients', audience: 'CARRIER', price: 120, sortOrder: 6 },
 ];
 
 async function main() {
@@ -74,12 +77,25 @@ async function main() {
         name: 'الباقة الاحترافية', nameEn: 'Professional', tier: 'PRO', audience: 'CARRIER',
         policyGroupId: profile.id, isFree: false, basePrice: 300, yearlyDiscountPct: 15,
         includedTruckLimit: 15, trialDays: 14, sortOrder: 2,
-        modules: { create: ['driverManagement', 'fleetMaintenance', 'contractedDrivers', 'advancedAnalytics', 'prioritySupport'].map((k) => ({ moduleId: idByKey[k] })) },
+        modules: { create: ['driverManagement', 'fleetMaintenance', 'contractedDrivers', 'advancedAnalytics', 'prioritySupport', 'ownedClients'].map((k) => ({ moduleId: idByKey[k] })) },
       },
     });
     console.log('✅ created plan «الباقة الاحترافية» (base 300 + modules)');
   } else {
     console.log('• plan «الباقة الاحترافية» kept');
+  }
+
+  // Ensure the Professional plan includes the «عملائي» module even on an
+  // already-created plan (idempotent — the module was added to the catalog after
+  // the plan may have been seeded). The gated «عملائي» section depends on this.
+  const proForModule = await prisma.plan.findFirst({ where: { name: 'الباقة الاحترافية', audience: 'CARRIER' } });
+  if (proForModule && idByKey.ownedClients) {
+    await prisma.planModuleLink.upsert({
+      where: { planId_moduleId: { planId: proForModule.id, moduleId: idByKey.ownedClients } },
+      create: { planId: proForModule.id, moduleId: idByKey.ownedClients },
+      update: {},
+    });
+    console.log('• «عملائي» module linked to «الباقة الاحترافية»');
   }
 
   // Safety: if no default carrier plan exists, make Basic the default.

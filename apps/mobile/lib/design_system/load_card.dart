@@ -25,8 +25,10 @@ class NqLoadCard extends StatelessWidget {
     this.meta = const [],
     this.price,
     this.offersText,
+    this.myBidText,
     this.onAccept,
     this.onBid,
+    this.hasBid = false,
     this.onTap,
   });
 
@@ -41,8 +43,14 @@ class NqLoadCard extends StatelessWidget {
   final List<MetaItem> meta; // fixed, 4 items
   final String? price; // fixed "3,200"
   final String? offersText; // tender "7 عروض مقدّمة"
+  /// The carrier's own bid line (e.g. «عرضك: 5,700 ر.س»), shown — stacked above
+  /// [offersText] and shrink-to-fit — when they already bid.
+  final String? myBidText;
   final VoidCallback? onAccept;
   final VoidCallback? onBid;
+  /// True when the current carrier already has a bid on this tender — the CTA
+  /// becomes a smaller «تعديل العرض» (edit) pill instead of «تقديم عرض».
+  final bool hasBid;
   final VoidCallback? onTap;
 
   @override
@@ -108,20 +116,58 @@ class NqLoadCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Row(
                   children: [
-                    NqButton(
-                      label: 'تقديم عرض',
-                      icon: NqIcons.gavel,
-                      variant: NqButtonVariant.secondary,
-                      expand: false,
-                      onPressed: onBid ?? () {},
-                    ),
+                    if (hasBid)
+                      // Already bid → a smaller, mint-toned «تعديل العرض» pill.
+                      GestureDetector(
+                        onTap: onBid,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: c.mintBg,
+                            borderRadius: BorderRadius.circular(NqRadius.pill),
+                            border: Border.all(color: c.mint),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            NqIcon(NqIcons.notePencil, size: 15, color: c.mintTx),
+                            const SizedBox(width: 6),
+                            Text('تعديل العرض',
+                                style: NqType.labelStrong.copyWith(color: c.mintTx)),
+                          ]),
+                        ),
+                      )
+                    else
+                      NqButton(
+                        label: 'تقديم عرض',
+                        icon: NqIcons.gavel,
+                        variant: NqButtonVariant.secondary,
+                        expand: false,
+                        onPressed: onBid ?? () {},
+                      ),
                     const SizedBox(width: 8),
+                    // Offer + count, stacked and shrink-to-fit so a long «عرضك»
+                    // line never collides with the CTA or overflows the row.
                     Expanded(
-                      child: Text(offersText ?? '',
-                          style: NqType.label.copyWith(color: c.tx2),
-                          textAlign: TextAlign.end,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (myBidText != null && myBidText!.isNotEmpty)
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: AlignmentDirectional.centerEnd,
+                              child: Text(myBidText!,
+                                  style: NqType.caption
+                                      .copyWith(color: c.mintTx, fontWeight: FontWeight.w600),
+                                  maxLines: 1),
+                            ),
+                          if (offersText != null && offersText!.isNotEmpty)
+                            Text(offersText!,
+                                style: NqType.caption.copyWith(color: c.tx2),
+                                textAlign: TextAlign.end,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
                     ),
                   ],
                 ),
