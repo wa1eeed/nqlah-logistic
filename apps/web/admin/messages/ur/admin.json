@@ -22,7 +22,8 @@
   "legal": "قانونی صفحات",
   "seo": "ایس ای او ترتیبات",
   "integrations": "انضمام",
-  "settings": "پلیٹ فارم ترتیبات"
+  "settings": "پلیٹ فارم ترتیبات",
+  "tracking": "لائیو ٹریکنگ"
  },
  "groups": {
   "platform": "Platform Management",
@@ -541,5 +542,48 @@
   "reject": "Reject",
   "rejectReason": "Reject Reason",
   "documentsRequired": "Required Documents"
+ },
+ "tracking": {
+  "title": "لائیو ٹریکنگ (تمام فراہم کنندگان)",
+  "subtitle": "{drivers} ڈرائیور · {orders} فعال آرڈرز",
+  "loadError": "ڈیٹا لوڈ نہیں ہو سکا",
+  "tasksWord": "ٹاسک",
+  "refresh": "ریفریش",
+  "view": {
+   "map": "نقشہ",
+   "list": "فہرست"
+  },
+  "drivers": {
+   "title": "ڈرائیورز",
+   "unnamed": "ڈرائیور",
+   "empty": "اس حالت میں کوئی ڈرائیور نہیں",
+   "noLocation": "کوئی معلوم مقام نہیں",
+   "search": "ڈرائیور یا فراہم کنندہ تلاش کریں",
+   "tabs": {
+    "busy": "مصروف",
+    "available": "دستیاب",
+    "offline": "آف لائن"
+   }
+  },
+  "orders": {
+   "title": "آرڈرز",
+   "emptyAwaiting": "تفویض کے منتظر کوئی آرڈر نہیں",
+   "emptyAssigned": "کسی ڈرائیور کو تفویض شدہ کوئی آرڈر نہیں",
+   "search": "آرڈر تلاش کریں",
+   "tabs": {
+    "awaiting": "تفویض کے منتظر",
+    "assigned": "ڈرائیور کو تفویض"
+   }
+  },
+  "selected": {
+   "live": "لائیو",
+   "clear": "انتخاب ہٹائیں",
+   "speedUnit": "کلومیٹر/گھنٹہ"
+  },
+  "legend": {
+   "busy": "مصروف (سفر میں)",
+   "available": "دستیاب",
+   "offline": "آف لائن"
+  }
  }
 }

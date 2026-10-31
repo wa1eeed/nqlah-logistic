@@ -58,6 +58,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       client.data.orders = new Set<string>();
       client.join(`user:${payload.sub}`);
       if (payload.companyId) client.join(`company:${payload.companyId}`);
+      // Platform admins join a global room: they receive every tenant's
+      // `data:changed` invalidation and all driver-location fixes (admin map).
+      if (payload.role === 'ADMIN' || payload.role === 'SUPER_ADMIN') client.join('admin');
       this.logger.log(`socket connected: ${payload.sub} (${payload.role})`);
     } catch {
       client.disconnect();
@@ -130,7 +133,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     if (Math.abs(data.lat) > 90 || Math.abs(data.lng) > 180) return;
 
     const profile = await this.prisma.driverProfile
-      .findUnique({ where: { userId }, select: { id: true } })
+      .findUnique({ where: { userId }, select: { id: true, companyId: true } })
       .catch(() => null);
     if (!profile) return;
 
@@ -163,6 +166,17 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       speedKmh: data.speedKmh ?? null,
       at: at.getTime(),
       live: true,
+    });
+    // Mirror the fix to the admin room so the platform-wide live map updates
+    // without being subscribed to each order. Keyed by driver (+ its provider).
+    this.server.to('admin').emit('tracking:driver_location', {
+      driverId: profile.id,
+      companyId: profile.companyId,
+      orderId: data.orderId,
+      lat: data.lat,
+      lng: data.lng,
+      speedKmh: data.speedKmh ?? null,
+      at: at.getTime(),
     });
   }
 
@@ -234,5 +248,18 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
   emitChatMessage(orderId: string, payload: unknown) {
     this.server.to(`order:${orderId}`).emit('chat:message', payload);
+  }
+
+  /**
+   * Coarse "something changed" signal that tells dashboards to revalidate their
+   * data, so every portal updates live without a page refresh. Fired after each
+   * successful mutating request by [RealtimeInvalidateInterceptor]. Scoped to the
+   * actor's company + user rooms; platform admins get every tenant's signal.
+   */
+  emitDataChanged(opts: { companyId?: string | null; userId?: string | null; entity?: string | null }) {
+    const payload = { entity: opts.entity ?? null, at: Date.now() };
+    if (opts.companyId) this.server.to(`company:${opts.companyId}`).emit('data:changed', payload);
+    if (opts.userId) this.server.to(`user:${opts.userId}`).emit('data:changed', payload);
+    this.server.to('admin').emit('data:changed', payload);
   }
 }

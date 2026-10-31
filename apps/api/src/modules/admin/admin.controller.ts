@@ -83,6 +83,12 @@ export class AdminController {
     return this.admin.listDrivers(q);
   }
 
+  /** All located drivers across every provider — the admin live-map feed. */
+  @Get('drivers/locations')
+  driverLocations() {
+    return this.admin.driverLocations();
+  }
+
   // ─── Per-company fleet + account statement (provider 360° view) ──────
 
   @Get('companies/:id/trucks')

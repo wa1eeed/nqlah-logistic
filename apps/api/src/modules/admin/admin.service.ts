@@ -91,6 +91,52 @@ export class AdminService {
     return paginate(items, total, page, limit);
   }
 
+  /**
+   * All drivers across every provider that have a known location — the data
+   * source for the admin live-tracking map. Unlike `GET /fleet/drivers` (company
+   * scoped), this spans all companies and tags each driver with its provider.
+   */
+  async driverLocations() {
+    const drivers = await this.prisma.driverProfile.findMany({
+      where: { currentLat: { not: null }, currentLng: { not: null } },
+      take: 1000,
+      include: {
+        user: { select: { firstName: true, lastName: true, phone: true } },
+        company: { select: { id: true, nameAr: true, nameEn: true, entityType: true } },
+        orderDrivers: {
+          where: { order: { status: { in: ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'] } } },
+          orderBy: { assignedAt: 'desc' },
+          take: 1,
+          include: {
+            order: { select: { id: true, orderNumber: true, status: true, originCity: true, destinationCity: true } },
+          },
+        },
+      },
+    });
+    return drivers.map((d) => {
+      const active = d.orderDrivers[0]?.order ?? null;
+      const name = [d.user?.firstName, d.user?.lastName].filter(Boolean).join(' ').trim();
+      return {
+        id: d.id,
+        code: d.code,
+        fullName: name || 'سائق',
+        phone: d.user?.phone ?? null,
+        status: d.status,
+        currentLat: d.currentLat,
+        currentLng: d.currentLng,
+        lastLocationAt: d.lastLocationAt,
+        rating: d.rating,
+        // The provider the driver belongs to (shown as a tag under the name).
+        provider: d.company
+          ? { id: d.company.id, nameAr: d.company.nameAr, nameEn: d.company.nameEn, entityType: d.company.entityType }
+          : null,
+        activeOrder: active
+          ? { id: active.id, orderNumber: active.orderNumber, status: active.status, originCity: active.originCity, destinationCity: active.destinationCity }
+          : null,
+      };
+    });
+  }
+
   async listCompanies(query: PaginationDto, type?: string, status?: string) {
     const { page = 1, limit = 20, sort = 'createdAt', order = 'desc', search } = query;
     const where: Prisma.CompanyWhereInput = {
