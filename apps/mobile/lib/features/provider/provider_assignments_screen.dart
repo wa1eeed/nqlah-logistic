@@ -178,9 +178,13 @@ class _ProviderAssignmentsScreenState
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                              '${truckLabel(o.requiredTruckType)} · ${fmtDate(o.pickupDate)} · ',
-                              style: NqType.caption.copyWith(color: c.tx2)),
+                          Flexible(
+                            child: Text(
+                                '${truckLabel(o.requiredTruckType)} · ${fmtDate(o.pickupDate)} · ',
+                                style: NqType.caption.copyWith(color: c.tx2),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
+                          ),
                           Ltr(o.orderNumber,
                               style:
                                   NqType.code(size: 12).copyWith(color: c.tx2)),

@@ -324,17 +324,23 @@ class ProviderHomeScreen extends ConsumerWidget {
           child: Row(
             children: [
               NqIcon(NqIcons.caretLeft, size: 18, color: c.mintTx),
-              const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('أعلن عن توفّر شاحنة',
-                      style: NqType.bodyStrong.copyWith(color: c.tx)),
-                  const SizedBox(height: 2),
-                  Text('انشر شاحنة متاحة لتصل للعملاء في السوق',
-                      style: NqType.caption.copyWith(color: c.tx2),
-                      textAlign: TextAlign.right),
-                ],
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('أعلن عن توفّر شاحنة',
+                        style: NqType.bodyStrong.copyWith(color: c.tx),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
+                    Text('انشر شاحنة متاحة لتصل للعملاء في السوق',
+                        style: NqType.caption.copyWith(color: c.tx2),
+                        textAlign: TextAlign.right,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                  ],
+                ),
               ),
               const SizedBox(width: 12),
               Container(

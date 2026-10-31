@@ -269,6 +269,32 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
   }
 
   Future<void> _withdraw(MyAvailability a) async {
+    final c = context.nq;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.sf,
+        title: Text('سحب توفّر الشاحنة', style: NqType.h2.copyWith(color: c.tx)),
+        content: Text(
+          'سيتم إيقاف عرض هذه الشاحنة في سوق الأحمال فلا يراها العملاء ولن تصلك '
+          'طلبات جديدة عليها. لن يؤثر ذلك على أي رحلة أو تكليف قائم.\n\n'
+          'يمكنك إعادتها لوضعها السابق في أي وقت بإعادة نشر توفّرها من تبويب '
+          '«الأسطول» عبر زر «أعلن عن توفّر».',
+          style: NqType.body.copyWith(color: c.tx2),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('تراجع', style: NqType.labelStrong.copyWith(color: c.tx2)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('تأكيد السحب', style: NqType.labelStrong.copyWith(color: c.err)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _busyAvailTruckId = a.truckId);
     try {
