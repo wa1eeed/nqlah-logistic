@@ -332,7 +332,8 @@
  "cargoTypes": "Cargo Types",
  "smsTemplates": "SMS Templates",
  "general": "General",
- "language": "Language"
+ "language": "Language",
+ "appSettings": "App Settings"
  },
  "countries": {
  "title": "Countries, Regions & Cities",
@@ -383,6 +384,72 @@
  "citySaved": "City saved",
  "cityDeleted": "City deleted",
  "saveFailed": "Save failed"
+ }
+ },
+ "appSettings": {
+ "title": "Mobile App Settings",
+ "subtitle": "Control the splash, onboarding and version numbers of the iOS & Android apps.",
+ "saveFailed": "Save failed",
+ "overview": {
+ "title": "Version overview",
+ "subtitle": "App version numbers in the stores. Updated automatically on each deploy; editable manually.",
+ "autoNote": "These numbers update automatically from the deploy pipeline (CI) on each release. Manual edits are for emergencies only.",
+ "ios": "iOS",
+ "android": "Android",
+ "live": "Live build",
+ "testFlight": "Test build (TestFlight / internal)",
+ "placeholder": "e.g. 1.4.0 (120)",
+ "save": "Save versions",
+ "saved": "Version numbers saved"
+ },
+ "splash": {
+ "title": "Splash screen",
+ "subtitle": "The first screen shown when the app opens.",
+ "bgColor": "Background color",
+ "useLogo": "Show platform logo",
+ "logoVariant": "Logo variant",
+ "light": "Light",
+ "dark": "Dark",
+ "taglineAr": "Tagline (Arabic)",
+ "taglineEn": "Tagline (English)",
+ "save": "Save splash",
+ "saved": "Splash screen saved"
+ },
+ "onboarding": {
+ "title": "Onboarding screens",
+ "subtitle": "Welcome slides shown to a new user on first launch.",
+ "enabled": "Enable onboarding",
+ "showOnce": "Show once only",
+ "showOnceHint": "When on, shows once per install; otherwise shows every launch.",
+ "addSlide": "Add slide",
+ "noSlides": "No slides yet. Add one to start.",
+ "slide": "Slide",
+ "image": "Image",
+ "uploadImage": "Upload image",
+ "imageUrlPlaceholder": "https://.../image.png",
+ "titleAr": "Title (Arabic)",
+ "titleEn": "Title (English)",
+ "bodyAr": "Body (Arabic)",
+ "bodyEn": "Body (English)",
+ "moveUp": "Move up",
+ "moveDown": "Move down",
+ "remove": "Remove",
+ "removeConfirmTitle": "Remove slide",
+ "removeConfirmBody": "This slide will be removed from onboarding.",
+ "save": "Save onboarding",
+ "saved": "Onboarding saved"
+ },
+ "update": {
+ "title": "Force update & minimum version",
+ "subtitle": "Control forcing users to update and the lowest allowed version.",
+ "minVersion": "Minimum supported version",
+ "minVersionHint": "Users on an older version are prompted to update.",
+ "forceUpdate": "Force update",
+ "forceUpdateHint": "When on, the app is blocked until updated.",
+ "messageAr": "Update message (Arabic)",
+ "messageEn": "Update message (English)",
+ "save": "Save update settings",
+ "saved": "Update settings saved"
  }
  }
  },

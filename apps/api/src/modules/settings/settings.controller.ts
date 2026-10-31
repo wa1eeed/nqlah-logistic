@@ -1,12 +1,22 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import {
+  Body, Controller, ForbiddenException, Get, Headers, Put, Req, UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Audit } from '../../common/audit/audit.decorator';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { AppSettingsService } from './app-settings.service';
+import { UpdateAppSettingsDto, UpdateVersionsDto } from './dto/app-settings.dto';
 
 @ApiTags('settings')
 @Controller('settings')
 export class SettingsController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private appSettings: AppSettingsService,
+  ) {}
 
   /**
    * Best-effort country of the caller, from the CDN/proxy geo headers
@@ -59,5 +69,44 @@ export class SettingsController {
       // explicitly chosen one. Arabic is the platform's primary locale.
       defaultLocale: map['platform.defaultLocale'] ?? 'ar',
     };
+  }
+
+  // ─── Mobile app settings ────────────────────────────────────────────
+  // Splash / onboarding config + store version overview, consumed by the
+  // iOS & Android apps. Managed from the admin Settings → "إعدادات التطبيق".
+
+  /** Public — the mobile app fetches its splash, onboarding and update config. */
+  @Public()
+  @Get('app')
+  getAppSettings() {
+    return this.appSettings.getConfig();
+  }
+
+  /** Admin-only — edit the full app config (any subset of sections). */
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Put('app')
+  @Audit({ action: 'admin.appSettings.update', resourceType: 'Setting' })
+  updateAppSettings(@Body() dto: UpdateAppSettingsDto) {
+    return this.appSettings.updateConfig(dto);
+  }
+
+  /**
+   * Deploy-pipeline hook — update the store build numbers on a new release so
+   * the "current version" overview auto-updates. Authenticated with the
+   * `x-deploy-token` header (shared secret from APP_VERSION_DEPLOY_TOKEN), so
+   * CI can call it without a user login. See the PR / docs for wiring.
+   */
+  @Public()
+  @Put('app/versions')
+  updateAppVersions(
+    @Body() dto: UpdateVersionsDto,
+    @Headers('x-deploy-token') token?: string,
+  ) {
+    const secret = process.env.APP_VERSION_DEPLOY_TOKEN;
+    if (!secret || token !== secret) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'رمز النشر غير صالح' });
+    }
+    return this.appSettings.updateVersions(dto);
   }
 }
