@@ -5,6 +5,7 @@ import '../../core/api/api_exception.dart';
 import '../../core/finance/finance_repository.dart';
 import '../../core/orders/order_models.dart';
 import '../../core/platform/external_links.dart';
+import '../../core/platform/format.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -171,7 +172,7 @@ class _CustomerFinanceScreenState extends ConsumerState<CustomerFinanceScreen> {
               ),
               const SizedBox(width: 4),
               Row(children: [
-                Ltr(inv.totalAmount.toStringAsFixed(2),
+                Ltr(money(inv.totalAmount),
                     style: NqType.price(size: 18).copyWith(color: c.tx)),
                 const SizedBox(width: 3),
                 Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
@@ -236,9 +237,15 @@ class _CustomerFinanceScreenState extends ConsumerState<CustomerFinanceScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Ltr(totalDue.toStringAsFixed(2),
-                      style: NqType.price(size: 30)
-                          .copyWith(color: NqFixed.heroText)),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Ltr(money(totalDue),
+                          style: NqType.price(size: 30)
+                              .copyWith(color: NqFixed.heroText)),
+                    ),
+                  ),
                   const SizedBox(width: 4),
                   Text('ر.س',
                       style: NqType.h3
@@ -282,7 +289,7 @@ class _CustomerFinanceScreenState extends ConsumerState<CustomerFinanceScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Row(mainAxisSize: MainAxisSize.min, children: [
-                      Ltr(held.toStringAsFixed(2),
+                      Ltr(money(held),
                           style: NqType.price(size: 18).copyWith(color: c.tx)),
                       const SizedBox(width: 3),
                       Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),

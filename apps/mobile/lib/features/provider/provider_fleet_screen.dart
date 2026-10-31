@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/fleet/fleet_repository.dart';
 import '../../core/marketplace/marketplace_repository.dart';
+import '../../core/platform/format.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -220,25 +221,33 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
           Row(
             children: [
               _statusPill(c, 'نشط', c.ok),
-              const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('${a.originCity} ← $dest',
-                      style: NqType.bodyStrong.copyWith(color: c.tx)),
-                  const SizedBox(height: 2),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    if (a.pricePerTrip != null) ...[
-                      Ltr(a.pricePerTrip!.toStringAsFixed(0),
-                          style: NqType.code(size: 12).copyWith(color: c.tx2)),
-                      Text(' ر.س · ',
-                          style: NqType.caption.copyWith(color: c.tx2)),
-                    ],
-                    if (a.plateNumber != null)
-                      Ltr(a.plateNumber!,
-                          style: NqType.code(size: 12).copyWith(color: c.tx2)),
-                  ]),
-                ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('${a.originCity} ← $dest',
+                        style: NqType.bodyStrong.copyWith(color: c.tx),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right),
+                    const SizedBox(height: 2),
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      if (a.pricePerTrip != null) ...[
+                        Flexible(
+                          child: Ltr(money(a.pricePerTrip!, decimals: 0),
+                              style: NqType.code(size: 12).copyWith(color: c.tx2),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ),
+                        Text(' ر.س · ',
+                            style: NqType.caption.copyWith(color: c.tx2)),
+                      ],
+                      if (a.plateNumber != null)
+                        Ltr(a.plateNumber!,
+                            style: NqType.code(size: 12).copyWith(color: c.tx2)),
+                    ]),
+                  ],
+                ),
               ),
             ],
           ),

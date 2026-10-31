@@ -6,6 +6,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/orders/order_draft_controller.dart' show truckOptions;
 import '../../core/orders/order_models.dart';
 import '../../core/orders/orders_repository.dart';
+import '../../core/platform/format.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -546,7 +547,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
           MetaItem(NqIcons.handCoins,
               _collectionLabels[o.collectionMethod.toUpperCase()] ?? 'الدفع'),
         ],
-        price: price?.toStringAsFixed(0),
+        price: price != null ? money(price, decimals: 0) : null,
         onAccept: busy
             ? null
             : (mine != null ? () => _alreadyBid(mine) : () => _acceptFixed(o)),
@@ -560,7 +561,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
       destCity: o.destinationCity,
       destDistance: '',
       offersText: mine != null
-          ? 'عرضك: ${mine.amount?.toStringAsFixed(0) ?? '—'} ر.س · ${o.bidsCount} عروض'
+          ? 'عرضك: ${mine.amount != null ? money(mine.amount!, decimals: 0) : '—'} ر.س · ${o.bidsCount} عروض'
           : '${o.bidsCount} عروض مقدّمة',
       onBid: busy ? null : () => _bidTender(o),
       onTap: () => _showLoadDetail(o, companyId),

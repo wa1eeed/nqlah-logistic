@@ -181,13 +181,19 @@ class ProviderHomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Ltr(value,
-                  style: NqType.numeric(22, FontWeight.w700)
-                      .copyWith(color: NqFixed.heroText)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Ltr(value,
+                    style: NqType.numeric(22, FontWeight.w700)
+                        .copyWith(color: NqFixed.heroText)),
+              ),
               const SizedBox(height: 2),
               Text(label,
                   style: NqType.caption
-                      .copyWith(color: NqFixed.heroTextSecondary)),
+                      .copyWith(color: NqFixed.heroTextSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
             ],
           ),
         ),
