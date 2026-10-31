@@ -5,6 +5,7 @@ import '../../core/api/api_exception.dart';
 import '../../core/finance/finance_repository.dart';
 import '../../core/orders/order_models.dart';
 import '../../core/platform/external_links.dart';
+import '../../core/platform/format.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -185,7 +186,7 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Row(mainAxisSize: MainAxisSize.min, children: [
-              Ltr(amount.toStringAsFixed(2),
+              Ltr(money(amount),
                   style: NqType.price(size: 16).copyWith(color: c.tx)),
               const SizedBox(width: 3),
               Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
@@ -263,7 +264,7 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                Ltr(inv.totalAmount.toStringAsFixed(2),
+                Ltr(money(inv.totalAmount),
                     style: NqType.price(size: 18).copyWith(color: c.tx)),
                 const SizedBox(width: 3),
                 Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
@@ -329,9 +330,15 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Ltr(totalDue.toStringAsFixed(2),
-                    style:
-                        NqType.price(size: 30).copyWith(color: NqFixed.heroText)),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Ltr(money(totalDue),
+                        style: NqType.price(size: 30)
+                            .copyWith(color: NqFixed.heroText)),
+                  ),
+                ),
                 const SizedBox(width: 4),
                 Text('ر.س',
                     style:
@@ -341,9 +348,9 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
             const SizedBox(height: 14),
             Row(
               children: [
-                _heroTile(c, '$dueCount', 'فواتير مستحقة'),
+                _heroTile(c, count(dueCount), 'فواتير مستحقة'),
                 const SizedBox(width: 12),
-                _heroTile(c, paidThisMonth.toStringAsFixed(0),
+                _heroTile(c, money(paidThisMonth, decimals: 0),
                     'مستلمة هذا الشهر'),
               ],
             ),
@@ -361,9 +368,13 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Ltr(value,
-                  style: NqType.numeric(22, FontWeight.w700)
-                      .copyWith(color: NqFixed.heroText)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Ltr(value,
+                    style: NqType.numeric(22, FontWeight.w700)
+                        .copyWith(color: NqFixed.heroText)),
+              ),
               const SizedBox(height: 2),
               Text(label,
                   style: NqType.caption

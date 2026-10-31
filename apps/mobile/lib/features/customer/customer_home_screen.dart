@@ -225,13 +225,18 @@ class CustomerHomeScreen extends ConsumerWidget {
     Widget col(int value, String label, Color valueColor) => Expanded(
           child: Column(
             children: [
-              Ltr('$value',
-                  style: NqType.numeric(22, FontWeight.w700)
-                      .copyWith(color: valueColor)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Ltr('$value',
+                    style: NqType.numeric(22, FontWeight.w700)
+                        .copyWith(color: valueColor)),
+              ),
               const SizedBox(height: 2),
               Text(label,
                   style: NqType.caption.copyWith(color: c.tx2),
-                  textAlign: TextAlign.center),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
             ],
           ),
         );

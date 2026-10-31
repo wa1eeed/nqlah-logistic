@@ -44,7 +44,9 @@ class NqContextSwitch extends StatelessWidget {
             AnimatedAlign(
               duration: NqMotion.segmented,
               curve: NqMotion.standard,
-              alignment: Alignment(n == 1 ? 0 : (index / (n - 1)) * 2 - 1, 0),
+              // RTL-aware (see NqSegmented): index 0 → start (right in Arabic),
+              // matching the options Row. Absolute Alignment mirrored the thumb.
+              alignment: AlignmentDirectional(n == 1 ? 0 : (index / (n - 1)) * 2 - 1, 0),
               child: Container(
                 width: w,
                 height: double.infinity,
