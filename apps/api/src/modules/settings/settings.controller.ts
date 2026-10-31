@@ -27,7 +27,7 @@ export class SettingsController {
   @Get('platform')
   async platform() {
     const rows = await this.prisma.setting.findMany({
-      where: { key: { in: ['platform.logoUrl', 'platform.logoUrlDark', 'platform.nameAr', 'platform.nameEn'] } },
+      where: { key: { in: ['platform.logoUrl', 'platform.logoUrlDark', 'platform.nameAr', 'platform.nameEn', 'platform.defaultLocale'] } },
     });
     const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
     const logoUrl = map['platform.logoUrl'] ?? '';
@@ -38,6 +38,9 @@ export class SettingsController {
       logoUrlDark: map['platform.logoUrlDark'] || logoUrl,
       nameAr:  map['platform.nameAr']  ?? 'نقلة لوجيستك',
       nameEn:  map['platform.nameEn']  ?? 'Naqla Logistics',
+      // Default UI language every dashboard adopts when the visitor hasn't
+      // explicitly chosen one. Arabic is the platform's primary locale.
+      defaultLocale: map['platform.defaultLocale'] ?? 'ar',
     };
   }
 }

@@ -3,6 +3,7 @@ import { Tajawal, Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { Toaster } from 'sonner';
+import { isRtlLocale } from '@/i18n';
 import { OnlineStatusBar } from '@/components/online-status-bar';
 import { SWRProvider } from '@/components/swr-provider';
 import { ConfirmProvider } from '@/components/confirm';
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   const messages = await getMessages();
-  const isRtl = locale === 'ar';
+  const isRtl = isRtlLocale(locale);
 
   return (
     <html

@@ -330,7 +330,8 @@
  "cities": "المدن",
  "cargoTypes": "أنواع البضائع",
  "smsTemplates": "قوالب SMS",
- "general": "عامة"
+ "general": "عامة",
+ "language": "اللغة"
  }
  },
  "branding": {

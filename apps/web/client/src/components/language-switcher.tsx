@@ -12,6 +12,7 @@ const LOCALE_COOKIE = 'naqla-locale-client';
 const LANGS = [
   { code: 'en', label: 'English' },
   { code: 'ar', label: 'العربية' },
+  { code: 'ur', label: 'اردو' },
 ] as const;
 
 /**
@@ -20,12 +21,13 @@ const LANGS = [
  * current locale is read from <html lang>, which the layout sets from it.
  */
 export function LanguageSwitcher() {
-  const [current, setCurrent] = React.useState<'ar' | 'en'>('en');
+  const [current, setCurrent] = React.useState<'ar' | 'en' | 'ur'>('en');
   React.useEffect(() => {
-    setCurrent(document.documentElement.lang === 'ar' ? 'ar' : 'en');
+    const l = document.documentElement.lang;
+    setCurrent(l === 'ar' || l === 'ur' ? l : 'en');
   }, []);
 
-  const choose = (code: 'ar' | 'en') => {
+  const choose = (code: 'ar' | 'en' | 'ur') => {
     if (code === current) return;
     try {
       document.cookie = `${LOCALE_COOKIE}=${code}; path=/; max-age=31536000; samesite=lax`;

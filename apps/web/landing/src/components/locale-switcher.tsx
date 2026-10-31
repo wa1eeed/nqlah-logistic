@@ -3,7 +3,9 @@ import { useLocale } from 'next-intl';
 import { useRouter as useNextRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { Languages } from 'lucide-react';
-import { usePathname, useRouter } from '@/navigation';
+import { usePathname, useRouter, SUPPORTED_LOCALES } from '@/navigation';
+
+const LABELS: Record<string, string> = { ar: 'العربية', en: 'English', ur: 'اردو' };
 
 /**
  * Landing locale switcher.
@@ -22,8 +24,11 @@ export function LocaleSwitcher() {
   const nextRouter = useNextRouter();
   const [pending, startTransition] = useTransition();
 
-  const switchTo = locale === 'ar' ? 'en' : 'ar';
-  const label = locale === 'ar' ? 'English' : 'العربية';
+  // Cycle through the supported locales so adding a language (ar → en → ur → …)
+  // needs no change here — the button advances to the next one and shows its name.
+  const idx = SUPPORTED_LOCALES.indexOf(locale as (typeof SUPPORTED_LOCALES)[number]);
+  const switchTo = SUPPORTED_LOCALES[(idx + 1) % SUPPORTED_LOCALES.length];
+  const label = LABELS[switchTo] ?? switchTo;
 
   const onClick = () => {
     startTransition(() => {
@@ -43,7 +48,7 @@ export function LocaleSwitcher() {
       aria-label="Toggle language"
     >
       <Languages className="h-4 w-4" />
-      <span className={switchTo === 'ar' ? 'font-arabic' : ''}>{label}</span>
+      <span className={switchTo === 'ar' || switchTo === 'ur' ? 'font-arabic' : ''}>{label}</span>
     </button>
   );
 }

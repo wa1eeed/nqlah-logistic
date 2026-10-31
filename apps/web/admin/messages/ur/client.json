@@ -1,0 +1,55 @@
+{
+ "appName": "Naqla Logistics",
+ "appSubtitle": "Client Portal",
+ "nav": {
+  "dashboard": "ڈیش بورڈ",
+  "orders": "میرے آرڈرز",
+  "tracking": "لائیو ٹریکنگ",
+  "addresses": "پتے",
+  "finance": "مالیات",
+  "invoices": "انوائسز",
+  "disputes": "تنازعات",
+  "support": "معاونت",
+  "notifications": "اطلاعات",
+  "company": "کمپنی کی معلومات",
+  "settings": "کمپنی ترتیبات"
+ },
+ "groups": {
+  "platform": "Client Portal",
+  "finance": "مالیات",
+  "support": "معاونت",
+  "settings": "Settings"
+ },
+ "dashboard": {
+  "welcome": "Welcome back",
+  "activeOrders": "Active Orders",
+  "completed": "مکمل",
+  "totalSpent": "Total Spent",
+  "totalOrders": "Total Orders",
+  "recentOrders": "Recent Orders",
+  "viewAll": "View All",
+  "pendingTasks": "Tasks Needing Attention"
+ },
+ "addresses": {
+  "title": "Saved Addresses",
+  "subtitle": "Frequently used pickup and delivery locations",
+  "addNew": "Add Address",
+  "label": "Label",
+  "city": "City",
+  "kind": "Type",
+  "kindPickup": "Pickup",
+  "kindDestination": "Destination",
+  "kindBoth": "Both",
+  "default": "Default",
+  "makeDefault": "Make default"
+ },
+ "tracking": {
+  "title": "لائیو ٹریکنگ",
+  "active": "Active Shipments",
+  "live": "Live",
+  "currentLocation": "Current Vehicle Location",
+  "remaining": "Remaining",
+  "estimatedArrival": "Estimated Arrival",
+  "progress": "Progress"
+ }
+}

@@ -1,0 +1,308 @@
+{
+ "nav": {
+  "features": "خصوصیات",
+  "howItWorks": "یہ کیسے کام کرتا ہے",
+  "pricing": "قیمتیں",
+  "about": "تعارف",
+  "contact": "رابطہ",
+  "login": "سائن اِن",
+  "signUp": "سائن اَپ",
+  "clientLogin": "کلائنٹ لاگ اِن",
+  "carrierLogin": "ناقل لاگ اِن"
+ },
+ "hero": {
+  "wordmark": "Naqla",
+  "badge": "Smart Logistics Platform",
+  "title": "Naqla Logistics",
+  "subtitle": "We connect businesses and individuals with Saudi Arabia's top transporters, competitive pricing, full transparency, and complete insurance on every shipment.",
+  "statement": "An open marketplace connecting shippers with verified carriers across the Kingdom.",
+  "statementAccent": "Post your request, receive competitive bids within minutes.",
+  "ctaClient": "Start as Client, Free",
+  "ctaCarrier": "Join as Carrier",
+  "liveBidding": "carriers bidding now",
+  "cityRiyadh": "Riyadh",
+  "heroTitle": "The open marketplace for freight in the Kingdom",
+  "heroSub": "Post your shipment for verified carriers to compete over, track it on the map until it arrives, and your money stays safe until you confirm delivery.",
+  "trustLine": "Trusted by 1,200+ verified carriers across 25 Saudi cities",
+  "marketHeadline": "The marketplace that connects shippers with carriers",
+  "marketSub": "One place that brings shippers and carriers together. Post a request or receive orders, and close the deal with confidence.",
+  "clientSide": "Have a shipment?",
+  "clientSideDesc": "Post your request and receive bids from verified carriers in minutes.",
+  "carrierSide": "Have a truck?",
+  "carrierSideDesc": "Receive real transport requests on your lanes, and get paid weekly.",
+  "connect": "Meet here"
+ },
+ "quote": {
+  "title": "Estimate your shipment now",
+  "from": "From",
+  "to": "To",
+  "cargo": "Cargo type",
+  "estimate": "Estimated price",
+  "perTrip": "per trip",
+  "distance": "Distance",
+  "km": "km",
+  "biddingNow": "verified carriers on this lane",
+  "cta": "Post request & receive bids",
+  "disclaimer": "Indicative estimate, the final price is set by carrier bids.",
+  "cargoGeneral": "General cargo",
+  "cargoRefrigerated": "Refrigerated",
+  "cargoHeavy": "Heavy / equipment",
+  "cargoContainers": "Containers",
+  "cities": {
+   "riyadh": "Riyadh",
+   "jeddah": "Jeddah",
+   "dammam": "Dammam",
+   "makkah": "Makkah",
+   "madinah": "Madinah",
+   "abha": "Abha",
+   "tabuk": "Tabuk",
+   "jubail": "Jubail",
+   "qassim": "Qassim",
+   "hail": "Hail"
+  }
+ },
+ "trust": {
+  "escrow": "Escrow payments",
+  "verified": "Verified carriers",
+  "tracking": "Live tracking",
+  "support": "24/7 support"
+ },
+ "stats": {
+  "heading": "Numbers we're proud of",
+  "carriers": "Verified carriers",
+  "cities": "Saudi cities covered",
+  "successRate": "On-time delivery rate",
+  "shipments": "Shipments delivered"
+ },
+ "features": {
+  "title": "Why Naqla Logistics?",
+  "subtitle": "Everything you need to manage your shipments safely and efficiently",
+  "marketplace": {
+   "title": "Open Bidding Marketplace",
+   "desc": "Publish your request and invite dozens of verified carriers to bid competitively in minutes."
+  },
+  "direct": {
+   "title": "Direct Carrier Request",
+   "desc": "Have a preferred carrier? Send them the request directly, they accept or propose a different price."
+  },
+  "tracking": {
+   "title": "Live Map Tracking",
+   "desc": "Track your shipment on the map from pickup to delivery."
+  },
+  "escrow": {
+   "title": "Secure Escrow Payments",
+   "desc": "Your money is held in escrow and only released to the carrier after delivery confirmation."
+  },
+  "verified": {
+   "title": "Verified Carriers Only",
+   "desc": "Every carrier undergoes KYC verification: commercial registration, insurance, and valid transport licenses."
+  },
+  "ratings": {
+   "title": "Transparent Rating System",
+   "desc": "Rate carriers after every trip, and view others' ratings before choosing your bid."
+  }
+ },
+ "howItWorks": {
+  "title": "یہ کیسے کام کرتا ہے",
+  "subtitle": "Four simple steps from request to delivery",
+  "step1Title": "Create Your Request",
+  "step1Desc": "Describe your cargo and define your route in five simple steps.",
+  "step2Title": "Receive Bids",
+  "step2Desc": "Verified carriers submit their bids, compare price, rating, and duration.",
+  "step3Title": "Select & Pay",
+  "step3Desc": "Funds held in Escrow until delivery. No surprises, no hidden fees.",
+  "step4Title": "Track & Deliver",
+  "step4Desc": "Monitor the truck live. On pickup, funds are released to the carrier automatically."
+ },
+ "showcase": {
+  "heading": "One platform, for both sides",
+  "clientTitle": "For shippers",
+  "clientDesc": "Companies or individuals, save time and money with competitive prices and strong guarantees.",
+  "clientBullets": [
+   "Post a request in minutes and receive multiple bids",
+   "Compare price, rating and duration before choosing",
+   "Pay once through secure Escrow",
+   "Track your shipment live on the map"
+  ],
+  "clientCta": "Start as client",
+  "carrierTitle": "For carriers",
+  "carrierDesc": "Real transport requests daily, full fleet management, and guaranteed weekly payouts.",
+  "carrierBullets": [
+   "Explore dozens of opportunities along your lanes",
+   "Submit bids fast from mobile or web",
+   "Manage your drivers and trucks from one dashboard",
+   "Receive weekly payouts via bank transfer"
+  ],
+  "carrierCta": "Join as carrier",
+  "uiTitle": "Carrier dashboard · Incoming bids",
+  "uiBidFrom": "Bid from",
+  "uiAccept": "Accept",
+  "uiNew": "New"
+ },
+ "dash": {
+  "title": "آرڈرز",
+  "newOrder": "New order",
+  "min": "min",
+  "activeShipments": "Active shipments",
+  "company": "BlueRock Trading",
+  "track": "Track now",
+  "tabs": {
+   "overview": "Overview",
+   "orders": "آرڈرز",
+   "bids": "Bids",
+   "payments": "ادائیگیاں"
+  },
+  "stat": {
+   "inProgress": "In progress",
+   "completed": "مکمل",
+   "avgBid": "Avg. bid time",
+   "payout": "Available payout"
+  },
+  "status": {
+   "transit": "In transit",
+   "bidding": "Awaiting bid",
+   "loading": "Loading",
+   "done": "پہنچا دیا"
+  },
+  "detail": {
+   "distance": "Distance · km",
+   "weight": "Weight · ton",
+   "commission": "Commission",
+   "total": "Total",
+   "fee": "Platform fee",
+   "due": "Net due"
+  }
+ },
+ "fleet": {
+  "heading": "A fleet for every shipment",
+  "subtitle": "From light vans to heavy equipment and refrigerated loads, a verified carrier for every cargo type.",
+  "van": "Panel van",
+  "box": "Box truck",
+  "curtain": "Curtain-side trailer",
+  "lowboy": "Lowboy, heavy equipment",
+  "dryVan": "Dry van trailer",
+  "livestock": "Livestock carrier",
+  "flatbed": "Flatbed with stakes",
+  "explore": "Explore the fleet",
+  "descVan": "Small shipments and fast in-city delivery.",
+  "descBox": "General, packaged goods with full protection.",
+  "descCurtain": "Fast side loading and unloading of cargo.",
+  "descLowboy": "Heavy equipment, vehicles and oversized loads.",
+  "descDryVan": "Dry goods in large volumes between cities.",
+  "descLivestock": "Livestock and poultry with safe ventilation.",
+  "descFlatbed": "Building materials, long and non-standard loads.",
+  "storageHeading": "Warehousing & storage",
+  "storageDesc": "We provide storage through a wide network of warehousing providers and cross-dock hubs across the Kingdom, for short and long-term storage and handling.",
+  "storageTag1": "Secure storage",
+  "storageTag2": "Handling & cross-dock",
+  "storageTag3": "Nationwide coverage"
+ },
+ "testimonials": {
+  "title": "What our customers say",
+  "items": [
+   {
+    "quote": "We cut transport costs by 22% in two months, with full transparency on every trip.",
+    "name": "Waleed Al-Harbi",
+    "role": "Procurement Manager · Al-Jazira Energy"
+   },
+   {
+    "quote": "Live tracking saved us from many delays, we now know where our shipments are at every moment.",
+    "name": "Sara Al-Omari",
+    "role": "Operations Manager · Al-Waha Foods"
+   },
+   {
+    "quote": "An easy platform that brings us real orders daily, and payouts reach our account weekly.",
+    "name": "Fahd Al-Dosari",
+    "role": "Manager · Al-Masar Express Transport"
+   }
+  ]
+ },
+ "pricing": {
+  "title": "Send and receive orders, free",
+  "subtitle": "No commission on clients or carriers, and no signup or subscription fees.",
+  "zeroLabel": "No commission for either side",
+  "clientFree": "For clients",
+  "clientFreeSub": "Post your request, compare offers, and pick the best, at no cost.",
+  "carrierFree": "For carriers",
+  "carrierFreeSub": "Receive orders and get your full payout.",
+  "note": "Pricing is controlled by the team from the admin dashboard; any change will be announced clearly."
+ },
+ "faq": {
+  "title": "Frequently asked questions",
+  "items": [
+   {
+    "q": "How is the money held in Escrow?",
+    "a": "When a bid is accepted, the amount is held in a secure escrow account and is only released to the carrier after you confirm receipt of the shipment."
+   },
+   {
+    "q": "How do you verify carriers?",
+    "a": "Every carrier undergoes full KYC verification: a valid commercial registration, an insurance policy, and approved transport licenses before being accepted on the platform."
+   },
+   {
+    "q": "Can I send a request to a specific carrier?",
+    "a": "Yes. You can post the request to the open marketplace, or send it directly to a preferred carrier who can accept it or propose an alternative price."
+   },
+   {
+    "q": "When does the carrier get paid?",
+    "a": "After delivery confirmation the amount is released automatically and reaches the carrier via bank transfer within the weekly payout cycle."
+   }
+  ]
+ },
+ "cta": {
+  "title": "Ready to ship your first order?",
+  "subtitle": "Sign up in two minutes and receive bids from verified carriers before your coffee gets cold.",
+  "client": "Start as client",
+  "carrier": "Join as carrier"
+ },
+ "footer": {
+  "tagline": "The smart logistics platform in the Kingdom, connecting businesses and individuals with Saudi Arabia's best carriers, with full transparency.",
+  "platform": "Platform",
+  "company": "Company",
+  "legal": "Legal",
+  "links": {
+   "about": "تعارف",
+   "contact": "رابطہ",
+   "privacy": "Privacy Policy",
+   "terms": "Terms & Conditions",
+   "transport": "Transport Terms"
+  },
+  "rights": "جملہ حقوق محفوظ ہیں",
+  "compliance": "Compliant with Saudi PDPL",
+  "madeIn": "From the Kingdom of Saudi Arabia",
+  "newsletterTitle": "Stay in the loop",
+  "newsletterDesc": "Platform updates and new lanes, first.",
+  "newsletterPlaceholder": "Your email",
+  "newsletterCta": "Subscribe",
+  "credits": "Photos: Riyadh skyline, B.alotaby, and Jubail road, Suresh Babunair, via Wikimedia Commons (CC BY-SA 4.0 / CC BY 3.0)."
+ },
+ "about": {
+  "title": "About Naqla Logistics",
+  "subtitle": "Redefining the logistics transport sector in Saudi Arabia",
+  "missionTag": "Our Mission",
+  "missionTitle": "Digitizing the Kingdom's transport sector",
+  "missionBody": "We aim to unify the logistics transport market into one transparent platform, where clients find the best prices and services in minutes, and carriers find real, steady orders to grow their business.",
+  "visionTag": "Our Vision",
+  "visionTitle": "The leading logistics platform",
+  "visionBody": "To be the leading transport and freight logistics platform in the Middle East, serving thousands of companies daily through an expanded network of verified carriers.",
+  "values": "Our Values",
+  "trust": "Trust",
+  "innovation": "Innovation",
+  "partnership": "Partnership",
+  "quality": "Quality"
+ },
+ "contact": {
+  "title": "Contact Us",
+  "subtitle": "Our team is ready to answer your questions and help with everything about the platform",
+  "phoneTitle": "Phone call",
+  "emailTitle": "Email",
+  "chatTitle": "Live chat",
+  "formTitle": "Send us a message",
+  "name": "Full name",
+  "subject": "Message subject (optional)",
+  "topic": "Topic",
+  "message": "Message",
+  "send": "Send message",
+  "sentTitle": "Your message has been received",
+  "sentBody": "We'll get back to you soon at your registered email."
+ }
+}

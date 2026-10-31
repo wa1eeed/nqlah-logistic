@@ -1,6 +1,7 @@
 import { createSharedPathnamesNavigation } from 'next-intl/navigation';
 
-export const SUPPORTED_LOCALES = ['ar', 'en'] as const;
+// Keep this list in sync with src/i18n.ts. See docs/I18N.md for adding a language.
+export const SUPPORTED_LOCALES = ['ar', 'en', 'ur'] as const;
 export const DEFAULT_LOCALE = 'ar';
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
 
