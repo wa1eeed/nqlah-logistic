@@ -38,7 +38,10 @@ class NqSegmented extends StatelessWidget {
               AnimatedAlign(
                 duration: NqMotion.segmented,
                 curve: NqMotion.standard,
-                alignment: Alignment(
+                // AlignmentDirectional (not Alignment) so the thumb tracks the
+                // selected option under RTL: index 0 → start (right in Arabic),
+                // matching the options Row. Absolute Alignment mirrored it.
+                alignment: AlignmentDirectional(
                   n == 1 ? 0 : (index / (n - 1)) * 2 - 1,
                   0,
                 ),
