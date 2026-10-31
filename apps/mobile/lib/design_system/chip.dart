@@ -13,12 +13,16 @@ class NqChip extends StatelessWidget {
     this.selected = false,
     this.onTap,
     this.count,
+    this.countDanger = false,
   });
 
   final String label;
   final bool selected;
   final VoidCallback? onTap;
   final int? count;
+  /// When true, a non-zero [count] badge is red — a cue that the tab holds
+  /// in-progress / incomplete items.
+  final bool countDanger;
 
   @override
   Widget build(BuildContext context) {
@@ -50,15 +54,39 @@ class NqChip extends StatelessWidget {
                 color: fg,
               ),
             ),
-            if (count != null) ...[
+            if (count != null && count! > 0) ...[
               const SizedBox(width: 6),
-              Text(
-                '$count',
-                style: NqType.numeric(13, FontWeight.w700).copyWith(color: fg),
-              ),
+              _badge(c, count!, fg),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// A circular/pill count badge. Red when [countDanger]; otherwise a subtle
+  /// badge that contrasts with the chip (light on a selected chip, grey tint
+  /// on an unselected one).
+  Widget _badge(NqColors c, int value, Color fg) {
+    final danger = countDanger;
+    final Color bg = danger
+        ? c.err
+        : selected
+            ? NqFixed.heroText.withValues(alpha: 0.22)
+            : c.sf2;
+    final Color txt = danger ? Colors.white : fg;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 20),
+      height: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$value',
+        style: NqType.numeric(12, FontWeight.w700).copyWith(color: txt),
       ),
     );
   }
