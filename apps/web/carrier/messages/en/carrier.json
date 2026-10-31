@@ -18,6 +18,7 @@
   "support": "Support",
   "notifications": "Notifications",
   "company": "Company Info",
+  "subscription": "Subscription",
   "settings": "Company Settings"
  },
  "groups": {
@@ -26,6 +27,43 @@
   "finance": "Finance",
   "complianceSupport": "Compliance & Support",
   "settings": "Settings"
+ },
+ "subscription": {
+  "title": "Subscription & Membership",
+  "subtitle": "Your current plan, its modules and upgrade options.",
+  "currentPlan": "Your current plan",
+  "noPlan": "No active subscription",
+  "noPlanHint": "Choose a plan to activate your membership and carrier modules.",
+  "includedTrucks": "Included trucks",
+  "billing": "Billing",
+  "monthly": "Monthly",
+  "yearly": "Yearly",
+  "perMonth": "SAR / month",
+  "perYear": "SAR / year",
+  "nextRenewal": "Next renewal",
+  "endsOn": "Ends on",
+  "includedModules": "Included modules",
+  "availablePlans": "Available plans",
+  "choosePlan": "Choose a plan",
+  "changePlan": "Change plan",
+  "currentBadge": "Current",
+  "subscribe": "Subscribe",
+  "cancel": "Cancel subscription",
+  "cancelTitle": "Cancel subscription",
+  "cancelBody": "Your subscription stays active until the end of the current period, then renewal stops. You can resubscribe anytime.",
+  "cancelConfirm": "Confirm cancel",
+  "back": "Back",
+  "cancelScheduledNote": "Renewal is turned off; your subscription stays active until the end of the current period.",
+  "savedCancel": "Cancellation scheduled for period end.",
+  "savedSubscribe": "Your subscription was updated.",
+  "error": "Could not complete the action. Please try again.",
+  "status": {
+   "ACTIVE": "Active",
+   "TRIALING": "Trial",
+   "PAST_DUE": "Past due",
+   "CANCELLED": "Cancelled",
+   "EXPIRED": "Expired"
+  }
  },
  "dashboard": {
   "welcome": "Welcome",
