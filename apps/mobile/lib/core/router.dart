@@ -57,12 +57,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (!auth.isResolved) return null;
       final loc = state.matchedLocation;
       final onAuthPage =
-          loc == '/login' || loc == '/otp' || loc.startsWith('/register');
+          loc == '/login' || loc == '/login-otp' || loc.startsWith('/register');
       if (!auth.isAuthenticated) {
         return onAuthPage ? null : '/login';
       }
       // Signed in: keep them out of the login / OTP entry pages.
-      if (loc == '/login' || loc == '/otp') return '/app';
+      if (loc == '/login' || loc == '/login-otp') return '/app';
       return null;
     },
     routes: [
