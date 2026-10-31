@@ -5,7 +5,8 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { FleetService } from './fleet.service';
 import {
   AssignDriverDto, CreateDriverDto, CreateTruckDto, DriverStatusDto, InviteDriverDto,
-  LocationDto, LogMaintenanceDto, TruckStatusDto, UpdateMaintenanceScheduleDto, UpdateTruckDto,
+  LocationDto, LogMaintenanceDto, PatchTruckDto, TruckStatusDto, UpdateDriverDto,
+  UpdateMaintenanceScheduleDto, UpdateTruckDto,
 } from './dto/fleet.dto';
 
 @ApiTags('fleet')
@@ -29,6 +30,10 @@ export class FleetController {
   @Put('trucks/:id')
   updateTruck(@Param('id') id: string, @Body() dto: UpdateTruckDto, @CurrentUser() actor: AuthUser) {
     return this.fleet.updateTruck(id, dto, actor);
+  }
+  @Patch('trucks/:id')
+  patchTruck(@Param('id') id: string, @Body() dto: PatchTruckDto, @CurrentUser() actor: AuthUser) {
+    return this.fleet.patchTruck(id, dto, actor);
   }
   @Post('trucks/:id/assign')
   assignDriver(@Param('id') id: string, @Body() dto: AssignDriverDto, @CurrentUser() actor: AuthUser) {
@@ -79,6 +84,10 @@ export class FleetController {
   @Get('drivers/:id')
   getDriver(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
     return this.fleet.getDriver(id, actor);
+  }
+  @Patch('drivers/:id')
+  updateDriver(@Param('id') id: string, @Body() dto: UpdateDriverDto, @CurrentUser() actor: AuthUser) {
+    return this.fleet.updateDriver(id, dto, actor);
   }
   @Post('drivers/:id/location')
   updateLocation(@Param('id') id: string, @Body() dto: LocationDto, @CurrentUser() actor: AuthUser) {

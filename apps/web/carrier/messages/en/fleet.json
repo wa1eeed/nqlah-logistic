@@ -1,4 +1,15 @@
 {
+ "note": {
+  "title": "Note",
+  "add": "Add note",
+  "edit": "Edit note",
+  "placeholder": "Write a note about this driver or truck…",
+  "empty": "No note yet.",
+  "save": "Save",
+  "cancel": "Cancel",
+  "saved": "Note saved.",
+  "error": "Could not save the note."
+ },
  "title": "Fleet",
  "trucks": "Trucks",
  "drivers": "Drivers",

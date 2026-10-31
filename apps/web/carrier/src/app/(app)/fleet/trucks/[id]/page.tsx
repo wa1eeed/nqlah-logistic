@@ -25,6 +25,7 @@ import { useFleetStore, makeFleetEvent } from '@/stores/fleet-store';
 import { notify } from '@/lib/notify';
 import { api, fetcher } from '@/lib/api';
 import { TruckMaintenanceSection } from '@/components/truck-maintenance-section';
+import { FleetNoteCard } from '@/components/fleet-note-card';
 import {
   DRIVERS, TRUCKS, auditForTruck, formatDate, tripsForTruck,
   normalizeTruckList, normalizeDriverList,
@@ -230,6 +231,11 @@ export default function TruckDetailPage() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Provider note */}
+      <div className="mt-6">
+        <FleetNoteCard kind="truck" id={truck.id} note={truck.note} />
       </div>
 
       {/* Maintenance management (schedule + log) */}

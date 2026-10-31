@@ -215,6 +215,8 @@ export interface Driver {
   status: DriverStatus;
   assignedTruckId?: string;
   totalTrips: number;
+  /** Free-text provider note («ملاحظة»), from the API. */
+  note?: string | null;
 }
 
 export type TruckStatus = 'AVAILABLE' | 'ON_TRIP' | 'MAINTENANCE' | 'OFF_DUTY';
@@ -231,6 +233,8 @@ export interface Truck {
   status: TruckStatus;
   lastInspection: string;
   assignedDriverId?: string;
+  /** Free-text provider note («ملاحظة»), from the API. */
+  note?: string | null;
 }
 
 export type EscrowState = 'HELD' | 'RELEASED' | 'REFUNDED' | 'DISPUTED';
