@@ -91,6 +91,22 @@ class NotificationsRepository {
       throw ApiException.fromDio(e);
     }
   }
+
+  /// `POST /notifications/devices` — register this device's push token so the
+  /// backend can deliver via FCM/APNs. Best-effort; never throws.
+  Future<void> registerDevice(String token, String platform) async {
+    try {
+      await _dio.post<dynamic>('/notifications/devices',
+          data: {'token': token, 'platform': platform});
+    } catch (_) {/* best-effort — push registration never blocks the app */}
+  }
+
+  /// `DELETE /notifications/devices/:token` — unregister on logout/refresh.
+  Future<void> unregisterDevice(String token) async {
+    try {
+      await _dio.delete<dynamic>('/notifications/devices/$token');
+    } catch (_) {/* best-effort */}
+  }
 }
 
 final notificationsRepositoryProvider =

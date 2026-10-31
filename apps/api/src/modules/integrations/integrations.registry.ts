@@ -141,10 +141,10 @@ export const INTEGRATIONS: IntegrationSpec[] = [
     defaultProvider: 'console',
     providers: [
       { id: 'console', labelAr: 'سجل (تطوير)', labelEn: 'Console (dev)', implemented: true },
-      { id: 'fcm', labelAr: 'FCM / APNs', labelEn: 'FCM / APNs', implemented: false,
+      { id: 'fcm', labelAr: 'FCM / APNs', labelEn: 'FCM / APNs', implemented: true,
         fields: [
-          { key: 'FCM_PROJECT_ID', labelAr: 'معرّف المشروع', labelEn: 'Project ID', secret: false },
-          { key: 'FCM_SERVICE_ACCOUNT', labelAr: 'حساب الخدمة (JSON)', labelEn: 'Service Account (JSON)', secret: true },
+          { key: 'FCM_PROJECT_ID', labelAr: 'معرّف المشروع', labelEn: 'Project ID', secret: false, required: true, placeholder: 'my-firebase-project' },
+          { key: 'FCM_SERVICE_ACCOUNT', labelAr: 'حساب الخدمة (JSON)', labelEn: 'Service Account (JSON)', secret: true, required: true, placeholder: '{ "type": "service_account", ... }' },
         ] },
     ],
   },

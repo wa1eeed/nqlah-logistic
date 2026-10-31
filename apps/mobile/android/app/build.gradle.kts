@@ -4,6 +4,13 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Apply the Google Services plugin only once a Firebase config file is dropped
+// in (apps/mobile/android/app/google-services.json). Until then the app builds
+// and runs normally — push simply stays inactive (see lib/core/notifications).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "sa.nx.nqlah.nqlah_mobile"
     compileSdk = flutter.compileSdkVersion
