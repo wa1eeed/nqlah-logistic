@@ -30,6 +30,9 @@ import '../features/provider/driver_assignment_screen.dart';
 import '../features/provider/provider_add_driver_screen.dart';
 import '../features/provider/provider_maintenance_screen.dart';
 import '../features/provider/provider_order_screen.dart';
+import '../features/provider/provider_subscription_screen.dart';
+import '../features/provider/provider_maintenance_hub_screen.dart';
+import '../features/account/account_screen.dart';
 import '../features/provider/trip_monitor_screen.dart';
 import '../features/driver/driver_trip_execution_screen.dart';
 import '../features/driver/driver_epod_screen.dart';
@@ -199,6 +202,18 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/notifications',
       builder: (context, state) => const NotificationsScreen(),
+    ),
+    GoRoute(
+      path: '/account',
+      builder: (context, state) => const AccountScreen(),
+    ),
+    GoRoute(
+      path: '/subscription',
+      builder: (context, state) => const ProviderSubscriptionScreen(),
+    ),
+    GoRoute(
+      path: '/maintenance-hub',
+      builder: (context, state) => const ProviderMaintenanceHubScreen(),
     ),
     GoRoute(
       path: '/driver-assignment/:id',

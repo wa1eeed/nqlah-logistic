@@ -173,6 +173,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             onFinance: () => setState(() => _index = 4),
             onAnnounceAvailability: () => setState(() => _index = 3),
             onOpenOrder: (id) => context.push('/provider-order/$id'),
+            onProfile: () => context.push('/account'),
           );
         case 1:
           return const ProviderLoadsScreen();

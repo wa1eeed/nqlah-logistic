@@ -23,6 +23,7 @@ class ProviderHomeScreen extends ConsumerWidget {
     this.onFinance,
     this.onAnnounceAvailability,
     this.onOpenOrder,
+    this.onProfile,
   });
 
   final VoidCallback? onBell;
@@ -31,6 +32,7 @@ class ProviderHomeScreen extends ConsumerWidget {
   final VoidCallback? onFinance;
   final VoidCallback? onAnnounceAvailability;
   final void Function(String orderId)? onOpenOrder;
+  final VoidCallback? onProfile;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -139,16 +141,19 @@ class ProviderHomeScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: NqFixed.heroFill2,
-                    borderRadius: BorderRadius.circular(NqRadius.input),
+                GestureDetector(
+                  onTap: onProfile,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: NqFixed.heroFill2,
+                      borderRadius: BorderRadius.circular(NqRadius.input),
+                    ),
+                    child: Text(name.isNotEmpty ? name.substring(0, 1) : 'م',
+                        style: NqType.h3.copyWith(color: NqFixed.heroText)),
                   ),
-                  child: Text(name.isNotEmpty ? name.substring(0, 1) : 'م',
-                      style: NqType.h3.copyWith(color: NqFixed.heroText)),
                 ),
               ],
             ),
