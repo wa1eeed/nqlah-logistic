@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { fetcher, api } from '@/lib/api';
 import { notify } from '@/lib/notify';
-import { Bell, Globe, MapPin, MessageSquare, Package, Palette, Pencil, Percent, Plus, ShieldCheck, Trash2, Truck, X } from 'lucide-react';
+import { Bell, Globe, Globe2, MapPin, MessageSquare, Package, Palette, Pencil, Percent, Plus, ShieldCheck, Trash2, Truck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +21,7 @@ import {
 import { PageHeader } from '@/components/page-header';
 import { BrandingPanel } from '@/components/settings/branding-panel';
 import { CitiesPanel } from '@/components/settings/cities-panel';
+import { CountriesPanel } from '@/components/settings/countries-panel';
 import { CargoTypesPanel } from '@/components/settings/cargo-types-panel';
 import { SmsTemplatesPanel } from '@/components/settings/sms-templates-panel';
 import { CompliancePanel } from '@/components/settings/compliance-panel';
@@ -204,6 +205,10 @@ export default function AdminSettingsPage() {
             <Package className="h-4 w-4 me-1.5" />
             {t('settings.tabs.cargoTypes')}
           </TabsTrigger>
+          <TabsTrigger value="countries">
+            <Globe2 className="h-4 w-4 me-1.5" />
+            {t('settings.tabs.countries')}
+          </TabsTrigger>
           <TabsTrigger value="cities">
             <MapPin className="h-4 w-4 me-1.5" />
             {t('settings.tabs.cities')}
@@ -301,6 +306,10 @@ export default function AdminSettingsPage() {
 
         <TabsContent value="cargo-types">
           <CargoTypesPanel onPersist={persistCargoTypes} />
+        </TabsContent>
+
+        <TabsContent value="countries">
+          <CountriesPanel />
         </TabsContent>
 
         <TabsContent value="cities">

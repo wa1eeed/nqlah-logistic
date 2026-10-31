@@ -1129,6 +1129,54 @@ model Setting {
   updatedAt DateTime @updatedAt
 }
 
+// ─── Geography: admin-managed Country → Region → City ─────────────────
+// Replaces the hardcoded Saudi-only city list so the platform can operate in
+// any country. Seeded with Saudi Arabia (ensure-locations.ts) and managed from
+// the admin Settings → Countries UI. The apps read the active tree from the
+// public GET /settings/locations to build cascading country→region→city pickers.
+
+model Country {
+  id        String   @id @default(cuid())
+  code      String   @unique // ISO 3166-1 alpha-2, uppercase (e.g. SA, AE)
+  nameAr    String
+  nameEn    String
+  dialCode  String? // international dialing prefix, e.g. +966
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  regions   Region[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Region {
+  id        String   @id @default(cuid())
+  countryId String
+  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  nameAr    String
+  nameEn    String
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  cities    City[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([countryId])
+}
+
+model City {
+  id        String   @id @default(cuid())
+  regionId  String
+  region    Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  nameAr    String
+  nameEn    String
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([regionId])
+}
+
 /// Integration Hub: the control-plane record for one external-integration domain
 /// (payments, sms, email, storage, push, …). The catalog of domains/providers
 /// lives in code (IntegrationsRegistry); this row holds the admin-managed state:
