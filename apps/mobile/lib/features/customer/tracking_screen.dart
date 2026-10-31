@@ -10,6 +10,7 @@ import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/party_card.dart';
 import '../../design_system/status_chip.dart';
+import 'live_tracking_map.dart';
 
 /// Live tracking (handoff 1d): full-bleed styled map + freshness pill + a
 /// bottom sheet with the next stop, status, progress and the provider row.
@@ -28,9 +29,12 @@ class TrackingScreen extends ConsumerWidget {
       backgroundColor: c.map,
       body: Stack(
         children: [
-          Positioned.fill(child: CustomPaint(painter: _MapPainter(c))),
-          _truckMarker(c),
-          _destFlag(c),
+          Positioned.fill(
+            child: async.maybeWhen(
+              data: (o) => LiveTrackingMap(order: o),
+              orElse: () => ColoredBox(color: c.map),
+            ),
+          ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -132,27 +136,6 @@ class TrackingScreen extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _truckMarker(NqColors c) => const Align(
-        alignment: Alignment(0.15, -0.05),
-        child: _TruckMarker(),
-      );
-
-  Widget _destFlag(NqColors c) => Align(
-        alignment: const Alignment(-0.45, -0.55),
-        child: Container(
-          width: 28,
-          height: 28,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: c.err,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 3),
-          ),
-          child: NqIcon(NqIcons.flagCheckered,
-              fill: true, size: 14, color: Colors.white),
-        ),
-      );
 
   double _progressFor(NqStatus s) => switch (s) {
         NqStatus.delivered || NqStatus.completed => 1.0,
@@ -302,81 +285,3 @@ class TrackingScreen extends ConsumerWidget {
   }
 }
 
-class _TruckMarker extends StatelessWidget {
-  const _TruckMarker();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.nq;
-    return Container(
-      width: 52,
-      height: 52,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0x3800C9A7),
-        shape: BoxShape.circle,
-      ),
-      child: Container(
-        width: 38,
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: c.hero,
-          shape: BoxShape.circle,
-          border: Border.all(color: c.mint, width: 2),
-        ),
-        child: NqIcon(NqIcons.truck, fill: true, size: 18, color: NqFixed.heroText),
-      ),
-    );
-  }
-}
-
-class _MapPainter extends CustomPainter {
-  _MapPainter(this.c);
-  final NqColors c;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final grid = Paint()
-      ..color = c.road
-      ..strokeWidth = 1.5;
-    const step = 90.0;
-    for (double x = 0; x <= size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
-    }
-    for (double y = 0; y <= size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
-    }
-
-    final road = Paint()
-      ..color = c.road
-      ..strokeWidth = 16
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-        Offset(0, size.height * 0.55), Offset(size.width, size.height * 0.28), road);
-
-    final truck = Offset(size.width * 0.575, size.height * 0.475);
-    final dest = Offset(size.width * 0.275, size.height * 0.225);
-
-    final solid = Paint()
-      ..color = c.mintS
-      ..strokeWidth = 5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    final path = Path()
-      ..moveTo(truck.dx, truck.dy)
-      ..quadraticBezierTo(truck.dx + 20, size.height * 0.62, truck.dx - 10,
-          size.height * 0.78);
-    canvas.drawPath(path, solid);
-
-    final dot = Paint()..color = c.mintS;
-    final total = (dest - truck).distance;
-    final dir = (dest - truck) / total;
-    for (double d = 0; d < total; d += 16) {
-      canvas.drawCircle(truck + dir * d, 3, dot);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_MapPainter old) => false;
-}

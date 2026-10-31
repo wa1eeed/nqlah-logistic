@@ -4,7 +4,7 @@ import { useState } from 'react';
 import useSWR from 'swr';
 import {
   Activity, AlertTriangle, Bell, CheckCircle2, CreditCard, Database,
-  HelpCircle, Loader2, Mail, MessageSquare, Plug, Save, Settings2, ShieldCheck, XCircle,
+  HelpCircle, Loader2, Mail, MapPin, MessageSquare, Plug, Save, Settings2, ShieldCheck, XCircle,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ interface Integration {
 
 const ICONS: Record<string, typeof Plug> = {
   'credit-card': CreditCard, message: MessageSquare, mail: Mail, database: Database, bell: Bell,
-  shield: ShieldCheck,
+  shield: ShieldCheck, map: MapPin,
 };
 const STATUS: Record<string, { label: string; cls: string; Icon: typeof CheckCircle2 }> = {
   ok: { label: 'يعمل', cls: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30', Icon: CheckCircle2 },

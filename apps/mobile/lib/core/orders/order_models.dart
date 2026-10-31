@@ -305,6 +305,10 @@ class OrderDetail {
     this.tracking = const [],
     this.mode = 'OPEN',
     this.targetCarrierId,
+    this.originLat,
+    this.originLng,
+    this.destinationLat,
+    this.destinationLng,
   });
 
   final String id;
@@ -343,6 +347,13 @@ class OrderDetail {
   final List<TrackingEventModel> tracking;
   final String mode; // OPEN or DIRECT
   final String? targetCarrierId;
+  final double? originLat;
+  final double? originLng;
+  final double? destinationLat;
+  final double? destinationLng;
+
+  bool get hasRouteCoords =>
+      originLat != null && originLng != null && destinationLat != null && destinationLng != null;
 
   NqStatus get nqStatus => nqStatusFromApi(status);
 
@@ -427,6 +438,10 @@ class OrderDetail {
           : const [],
       mode: (j['mode'] ?? 'OPEN').toString(),
       targetCarrierId: j['targetCarrierId']?.toString(),
+      originLat: _num(j['originLat'])?.toDouble(),
+      originLng: _num(j['originLng'])?.toDouble(),
+      destinationLat: _num(j['destinationLat'])?.toDouble(),
+      destinationLng: _num(j['destinationLng'])?.toDouble(),
     );
   }
 }
