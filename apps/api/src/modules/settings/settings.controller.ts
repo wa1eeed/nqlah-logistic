@@ -8,7 +8,9 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Audit } from '../../common/audit/audit.decorator';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AppSettingsService } from './app-settings.service';
+import { CurrenciesService } from './currencies.service';
 import { UpdateAppSettingsDto, UpdateVersionsDto } from './dto/app-settings.dto';
+import { UpdateCurrenciesDto } from './dto/currencies.dto';
 
 @ApiTags('settings')
 @Controller('settings')
@@ -16,6 +18,7 @@ export class SettingsController {
   constructor(
     private prisma: PrismaService,
     private appSettings: AppSettingsService,
+    private currencies: CurrenciesService,
   ) {}
 
   /**
@@ -69,6 +72,26 @@ export class SettingsController {
       // explicitly chosen one. Arabic is the platform's primary locale.
       defaultLocale: map['platform.defaultLocale'] ?? 'ar',
     };
+  }
+
+  // ─── Currencies ─────────────────────────────────────────────────────
+  // Admin-managed list of enabled currencies + the default one, consumed by
+  // the web dashboards and the mobile app to format every money value.
+
+  /** Public — dashboards & the app read the enabled currencies + default. */
+  @Public()
+  @Get('currencies')
+  getCurrencies() {
+    return this.currencies.getConfig();
+  }
+
+  /** Admin-only — replace the enabled list and set the default currency. */
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Put('currencies')
+  @Audit({ action: 'admin.currencies.update', resourceType: 'Setting' })
+  updateCurrencies(@Body() dto: UpdateCurrenciesDto) {
+    return this.currencies.updateConfig(dto);
   }
 
   // ─── Mobile app settings ────────────────────────────────────────────

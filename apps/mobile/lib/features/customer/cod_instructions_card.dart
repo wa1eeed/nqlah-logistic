@@ -92,7 +92,7 @@ class _CodInstructionsCardState extends ConsumerState<CodInstructionsCard> {
                 Ltr(money(amount, decimals: 0),
                     style: NqType.price(size: 18).copyWith(color: c.tx)),
                 const SizedBox(width: 3),
-                Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+                Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
               ]),
           ]),
           const SizedBox(height: 12),

@@ -93,7 +93,7 @@ class ProviderSubscriptionScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(' ريال / $cycle',
+                Text(' $kRiyalSymbol / $cycle',
                     style: NqType.caption.copyWith(color: NqFixed.heroText.withValues(alpha: 0.8))),
                 Ltr(_money(sub.priceSnapshot),
                     style: NqType.numeric(30, FontWeight.w800)

@@ -57,7 +57,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
     if (price == null) return;
     if (!await nqConfirm(context,
         title: 'قبول الحمولة بالسعر الثابت',
-        message: 'سيُقدَّم عرضك بالسعر الثابت ${money(price, decimals: 0)} ر.س، وبقبول العميل '
+        message: 'سيُقدَّم عرضك بالسعر الثابت ${money(price, decimals: 0)} ⃁، وبقبول العميل '
             'يُسنَد إليك الطلب ويلزمك تنفيذه. متابعة؟',
         confirmLabel: 'قبول الحمولة',
         icon: NqIcons.handCoins)) {
@@ -201,7 +201,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
                         borderRadius: BorderRadius.circular(NqRadius.input),
                       ),
                       child: Text(
-                          'عرضك الحالي: ${mine.amount?.toStringAsFixed(0) ?? '—'} ر.س',
+                          'عرضك الحالي: ${mine.amount?.toStringAsFixed(0) ?? '—'} ⃁',
                           style: NqType.label.copyWith(color: c.tx2),
                           textAlign: TextAlign.center),
                     ),
@@ -229,7 +229,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
                     borderRadius: BorderRadius.circular(NqRadius.input),
                   ),
                   child: Text(
-                      'سبق أن قبلت هذا الطلب بمبلغ ${mine.amount?.toStringAsFixed(0) ?? '—'} ر.س.',
+                      'سبق أن قبلت هذا الطلب بمبلغ ${mine.amount?.toStringAsFixed(0) ?? '—'} ⃁.',
                       style: NqType.label.copyWith(color: c.tx2),
                       textAlign: TextAlign.center),
                 )
@@ -363,7 +363,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
             Ltr(price.toStringAsFixed(0),
                 style: NqType.price(size: 20).copyWith(color: c.tx)),
             const SizedBox(width: 3),
-            Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+            Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
             const Spacer(),
             Text(o.isFixedPrice ? 'السعر الثابت للعميل' : 'ميزانية العميل',
                 style: NqType.label.copyWith(color: c.tx2)),
@@ -568,7 +568,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
       destCity: o.destinationCity,
       destDistance: '',
       myBidText: mine != null
-          ? 'عرضك: ${mine.amount != null ? money(mine.amount!, decimals: 0) : '—'} ر.س'
+          ? 'عرضك: ${mine.amount != null ? money(mine.amount!, decimals: 0) : '—'} ⃁'
           : null,
       offersText: mine != null
           ? '${o.bidsCount} عروض'
@@ -582,7 +582,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
   void _alreadyBid(BidRef mine) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-            'سبق أن قدّمت عرضًا بمبلغ ${mine.amount?.toStringAsFixed(0) ?? '—'} ر.س.')));
+            'سبق أن قدّمت عرضًا بمبلغ ${mine.amount?.toStringAsFixed(0) ?? '—'} ⃁.')));
   }
 
   Widget _filterButton(NqColors c) => GestureDetector(
@@ -878,7 +878,7 @@ class _BidSheetState extends State<_BidSheet> {
               ),
               child: Row(
                 children: [
-                  Text('ر.س', style: NqType.label.copyWith(color: c.tx2)),
+                  Text('⃁', style: NqType.label.copyWith(color: c.tx2)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextField(

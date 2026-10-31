@@ -35,7 +35,7 @@ class _CustomerOffersScreenState extends ConsumerState<CustomerOffersScreen> {
     final confirmed = await nqConfirm(context,
         title: 'قبول العرض',
         message: 'بقبول عرض ${bid.carrierName} بمبلغ '
-            '${bid.amount != null ? money(bid.amount!, decimals: 0) : '—'} ر.س سيُسنَد الطلب '
+            '${bid.amount != null ? money(bid.amount!, decimals: 0) : '—'} ⃁ سيُسنَد الطلب '
             'لهذا المزوّد ويُحجز المبلغ في الضمان، وتُرفض بقية العروض. هل تريد المتابعة؟',
         confirmLabel: 'قبول العرض',
         icon: NqIcons.handCoins);

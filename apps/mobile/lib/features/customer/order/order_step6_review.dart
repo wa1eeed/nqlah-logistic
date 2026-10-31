@@ -190,7 +190,7 @@ class _OrderStep6ReviewState extends ConsumerState<OrderStep6Review> {
               Ltr(d.clientBudget!.toStringAsFixed(0),
                   style: NqType.price(size: 20).copyWith(color: c.tx)),
               const SizedBox(width: 3),
-              Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+              Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
             ])
           else
             Text('عروض المزوّدين',

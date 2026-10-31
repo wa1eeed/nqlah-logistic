@@ -447,7 +447,7 @@ class OrderDetailScreen extends ConsumerWidget {
               children: [
                 Ltr(
                     o.clientBudget != null
-                        ? '${o.clientBudget!.toStringAsFixed(0)} ر.س'
+                        ? '${o.clientBudget!.toStringAsFixed(0)} ⃁'
                         : 'مفتوح للعروض',
                     style: NqType.numeric(16, FontWeight.w700).copyWith(color: c.tx)),
                 const Spacer(),
