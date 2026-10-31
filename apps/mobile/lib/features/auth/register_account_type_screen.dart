@@ -142,17 +142,21 @@ class _RegisterAccountTypeScreenState
           height: 52,
         ),
         const SizedBox(height: 20),
-        NqTextField(
-          label: 'رقم السجل التجاري',
-          controller: _cr,
-          keyboardType: TextInputType.number,
-          valid: _cr.text.trim().length == 10,
-          onChanged: (v) {
-            notifier.patch((x) => x.copyWith(crNumber: v));
-            setState(() {});
-          },
-        ),
-        const SizedBox(height: 18),
+        // Commercial Registration applies to an establishment («منشأة») only —
+        // hidden for individuals.
+        if (!d.isIndividual) ...[
+          NqTextField(
+            label: 'رقم السجل التجاري',
+            controller: _cr,
+            keyboardType: TextInputType.number,
+            valid: _cr.text.trim().length == 10,
+            onChanged: (v) {
+              notifier.patch((x) => x.copyWith(crNumber: v));
+              setState(() {});
+            },
+          ),
+          const SizedBox(height: 18),
+        ],
         NqTextField(
           label: 'الرقم الضريبي',
           controller: _vat,
