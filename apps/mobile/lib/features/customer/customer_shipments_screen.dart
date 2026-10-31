@@ -62,7 +62,10 @@ class _CustomerShipmentsScreenState
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: NqSegmented(
-              options: _segLabels(async.valueOrNull),
+              options: const ['نشطة', 'مسودات', 'مكتملة'],
+              counts: _segCounts(async.valueOrNull),
+              // نشطة + مسودات are in-progress / incomplete → red badge.
+              dangerCounts: const {0, 1},
               index: _seg,
               onChanged: (i) => setState(() => _seg = i),
             ),
@@ -94,14 +97,11 @@ class _CustomerShipmentsScreenState
     );
   }
 
-  List<String> _segLabels(List<OrderSummary>? orders) {
-    final labels = ['نشطة', 'مسودات', 'مكتملة'];
-    if (orders == null) return labels;
-    for (var i = 0; i < _buckets.length; i++) {
-      final n = orders.where((o) => o.bucket == _buckets[i]).length;
-      labels[i] = '${labels[i]} $n';
-    }
-    return labels;
+  List<int?> _segCounts(List<OrderSummary>? orders) {
+    if (orders == null) return List<int?>.filled(_buckets.length, null);
+    return [
+      for (final b in _buckets) orders.where((o) => o.bucket == b).length,
+    ];
   }
 
   Widget _list(NqColors c, List<OrderSummary> orders) {

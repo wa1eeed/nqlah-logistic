@@ -44,7 +44,10 @@ class _DriverMyTripsScreenState extends ConsumerState<DriverMyTripsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: NqSegmented(
-              options: _segLabels(jobsAsync.valueOrNull),
+              options: const ['جديدة', 'قادمة', 'مكتملة'],
+              counts: _segCounts(jobsAsync.valueOrNull),
+              // جديدة + قادمة are in-progress trips → red badge.
+              dangerCounts: const {0, 1},
               index: _seg,
               onChanged: (i) => setState(() => _seg = i),
             ),
@@ -90,14 +93,9 @@ class _DriverMyTripsScreenState extends ConsumerState<DriverMyTripsScreen> {
     }
   }
 
-  List<String> _segLabels(List<DriverJob>? jobs) {
-    final labels = ['جديدة', 'قادمة', 'مكتملة'];
-    if (jobs == null) return labels;
-    for (var i = 0; i < 3; i++) {
-      final n = _bucket(jobs, i).length;
-      if (n > 0) labels[i] = '${labels[i]} $n';
-    }
-    return labels;
+  List<int?> _segCounts(List<DriverJob>? jobs) {
+    if (jobs == null) return const [null, null, null];
+    return [for (var i = 0; i < 3; i++) _bucket(jobs, i).length];
   }
 
   Widget _list(NqColors c, List<DriverJob> jobs) {

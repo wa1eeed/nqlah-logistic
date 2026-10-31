@@ -105,6 +105,8 @@ class _ProviderAssignmentsScreenState
               label: labels[i],
               selected: _filter == i,
               count: counts[i],
+              // الكل (i==0) is neutral; the rest are in-progress → red badge.
+              countDanger: i != 0,
               onTap: () => setState(() => _filter = i),
             ),
             if (i < labels.length - 1) const SizedBox(width: 8),
