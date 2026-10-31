@@ -3,7 +3,7 @@
  "appSubtitle": "Carrier Portal",
  "nav": {
   "dashboard": "Dashboard",
-  "opportunities": "Opportunities",
+  "opportunities": "Market Orders",
   "orders": "My Orders",
   "tracking": "Tracking",
   "bids": "Bid History",

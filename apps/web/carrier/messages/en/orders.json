@@ -83,12 +83,24 @@
  "tabs": {
  "all": "All",
  "active": "Active",
- "inTransit": "In Transit",
+ "onTheWay": "On the way",
  "delivered": "Delivered",
- "completed": "Completed"
+ "completed": "Completed",
+ "direct": "Private orders"
  },
  "emptyTitle": "No orders found",
  "emptyDesc": "No transport orders have been assigned to you yet in this category",
+ "emptyDirectDesc": "No private orders directed to your company right now",
+ "searchPlaceholder": "Search by order number, city or cargo...",
+ "allCities": "All cities",
+ "clearSearch": "Clear search",
+ "legs": {
+ "pickup": "Heading to pickup",
+ "pickupHint": "Driver en route to the pickup point",
+ "delivery": "Heading to delivery",
+ "deliveryHint": "Cargo on board, en route to destination",
+ "none": "No orders at this stage"
+ },
  "colNumber": "No.",
  "colRoute": "Route",
  "colPickup": "Pickup",
@@ -254,8 +266,8 @@
  }
  },
  "opportunities": {
- "title": "Opportunities Market",
- "subtitle": "All transport orders available to your company",
+ "title": "Market Orders",
+ "subtitle": "Open-market transport orders published and available to your company",
  "tabOpen": "Open market orders",
  "tabDirect": "Private orders",
  "searchPlaceholder": "Search by city, cargo type, order number...",
