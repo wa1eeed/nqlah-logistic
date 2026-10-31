@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import {
-  BarChart3, Bell, Building2, Compass, FileCheck2, Gavel, LayoutDashboard,
+  BadgeCheck, BarChart3, Bell, Building2, Compass, FileCheck2, Gavel, LayoutDashboard,
   LifeBuoy, Package, Settings, Shield, TrendingUp, Truck, Users, Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -60,6 +60,7 @@ const NAV: NavGroup[] = [
   {
     titleKey: 'settings',
     items: [
+      { href: '/subscription', labelKey: 'subscription', icon: BadgeCheck },
       { href: '/settings', labelKey: 'settings', icon: Settings },
     ],
   },

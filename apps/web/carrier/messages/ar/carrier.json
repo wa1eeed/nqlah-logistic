@@ -18,6 +18,7 @@
   "support": "الدعم الفني",
   "notifications": "الإشعارات",
   "company": "بيانات الشركة",
+  "subscription": "الاشتراك والعضوية",
   "settings": "إعدادات الشركة"
  },
  "groups": {
@@ -26,6 +27,43 @@
   "finance": "المالية",
   "complianceSupport": "الامتثال والدعم",
   "settings": "الإعدادات"
+ },
+ "subscription": {
+  "title": "الاشتراك والعضوية",
+  "subtitle": "باقتك الحالية ووحداتها وخيارات الترقية.",
+  "currentPlan": "باقتك الحالية",
+  "noPlan": "لا يوجد اشتراك فعّال",
+  "noPlanHint": "اختر باقة لتفعيل عضويتك والوصول إلى وحدات المزوّد.",
+  "includedTrucks": "الشاحنات المشمولة",
+  "billing": "الفوترة",
+  "monthly": "شهري",
+  "yearly": "سنوي",
+  "perMonth": "ريال / شهري",
+  "perYear": "ريال / سنوي",
+  "nextRenewal": "التجديد التالي",
+  "endsOn": "ينتهي في",
+  "includedModules": "الوحدات المضمّنة",
+  "availablePlans": "الباقات المتاحة",
+  "choosePlan": "اختيار باقة",
+  "changePlan": "تغيير الباقة",
+  "currentBadge": "باقتك",
+  "subscribe": "اشترِ الآن",
+  "cancel": "إلغاء الاشتراك",
+  "cancelTitle": "إلغاء الاشتراك",
+  "cancelBody": "سيستمر اشتراكك فعّالاً حتى نهاية المدة الحالية ثم يتوقف التجديد. يمكنك إعادة الاشتراك في أي وقت.",
+  "cancelConfirm": "تأكيد الإلغاء",
+  "back": "تراجع",
+  "cancelScheduledNote": "سيتم إيقاف التجديد، ويبقى اشتراكك فعّالاً حتى نهاية المدة الحالية.",
+  "savedCancel": "تم جدولة الإلغاء في نهاية المدة.",
+  "savedSubscribe": "تم تحديث اشتراكك.",
+  "error": "تعذّر إتمام العملية. حاول مجددًا.",
+  "status": {
+   "ACTIVE": "فعّال",
+   "TRIALING": "تجريبي",
+   "PAST_DUE": "متأخر الدفع",
+   "CANCELLED": "ملغى",
+   "EXPIRED": "منتهٍ"
+  }
  },
  "dashboard": {
   "welcome": "مرحبا بك",

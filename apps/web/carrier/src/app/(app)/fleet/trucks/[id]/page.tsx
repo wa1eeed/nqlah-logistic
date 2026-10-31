@@ -24,6 +24,7 @@ import { useTruckTypesStore } from '@/stores/truck-types-store';
 import { useFleetStore, makeFleetEvent } from '@/stores/fleet-store';
 import { notify } from '@/lib/notify';
 import { api, fetcher } from '@/lib/api';
+import { TruckMaintenanceSection } from '@/components/truck-maintenance-section';
 import {
   DRIVERS, TRUCKS, auditForTruck, formatDate, tripsForTruck,
   normalizeTruckList, normalizeDriverList,
@@ -229,6 +230,11 @@ export default function TruckDetailPage() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Maintenance management (schedule + log) */}
+      <div className="mt-6">
+        <TruckMaintenanceSection truckId={truck.id} />
       </div>
 
       {/* Tabs: trips / audit / specs */}
