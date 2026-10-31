@@ -22,12 +22,17 @@ class RegistrationData {
     this.crNumber = '',
     this.vatNumber = '',
     this.vatRegistered = true,
+    this.locationCountry = 'SA',
     this.region = 'الرياض',
     this.city = 'الرياض',
     this.nationality = 'SA',
     this.idType,
     this.planId,
     this.documents = const {},
+    this.addTruck = false,
+    this.truckType,
+    this.truckPlate = '',
+    this.truckCapacity = '',
   });
 
   final String firstName;
@@ -44,6 +49,7 @@ class RegistrationData {
   final String crNumber;
   final String vatNumber;
   final bool vatRegistered;
+  final String locationCountry; // ISO-3166 alpha-2 of the company's base
   final String region;
   final String city;
   final String nationality; // ISO-3166 alpha-2 (individual operator)
@@ -51,8 +57,27 @@ class RegistrationData {
   final String? planId;
   final Map<String, String> documents;
 
+  // Quick-add truck (individual carrier only — optional & skippable at signup).
+  final bool addTruck;
+  final String? truckType; // Prisma TruckType enum value
+  final String truckPlate;
+  final String truckCapacity; // tons, kept as text while typing
+
   String get companyType => isCarrier ? 'CARRIER' : 'CLIENT';
   String get accountType => isIndividual ? 'INDIVIDUAL' : 'COMPANY';
+
+  bool get isIndividualCarrier => isCarrier && isIndividual;
+
+  /// Whether the quick-truck is complete enough to create at signup.
+  bool get hasQuickTruck {
+    final cap = double.tryParse(truckCapacity.trim());
+    return isIndividualCarrier &&
+        addTruck &&
+        truckPlate.trim().isNotEmpty &&
+        truckType != null &&
+        cap != null &&
+        cap > 0;
+  }
 
   /// Whether the plan step applies (providers only, per the design flow).
   bool get needsPlanStep => isCarrier;
@@ -71,12 +96,17 @@ class RegistrationData {
     String? crNumber,
     String? vatNumber,
     bool? vatRegistered,
+    String? locationCountry,
     String? region,
     String? city,
     String? nationality,
     String? idType,
     String? planId,
     Map<String, String>? documents,
+    bool? addTruck,
+    String? truckType,
+    String? truckPlate,
+    String? truckCapacity,
   }) {
     return RegistrationData(
       firstName: firstName ?? this.firstName,
@@ -92,12 +122,17 @@ class RegistrationData {
       crNumber: crNumber ?? this.crNumber,
       vatNumber: vatNumber ?? this.vatNumber,
       vatRegistered: vatRegistered ?? this.vatRegistered,
+      locationCountry: locationCountry ?? this.locationCountry,
       region: region ?? this.region,
       city: city ?? this.city,
       nationality: nationality ?? this.nationality,
       idType: idType ?? this.idType,
       planId: planId ?? this.planId,
       documents: documents ?? this.documents,
+      addTruck: addTruck ?? this.addTruck,
+      truckType: truckType ?? this.truckType,
+      truckPlate: truckPlate ?? this.truckPlate,
+      truckCapacity: truckCapacity ?? this.truckCapacity,
     );
   }
 
@@ -112,6 +147,7 @@ class RegistrationData {
       'accountType': accountType,
       'companyNameAr': companyNameAr.trim(),
       'vatRegistered': vatRegistered,
+      'countryCode': locationCountry,
       'city': city,
       'region': region,
       'contactPhone': phone.trim(),
@@ -132,6 +168,14 @@ class RegistrationData {
     }
     if (planId != null) body['planId'] = planId;
     if (documents.isNotEmpty) body['documents'] = documents;
+    // Quick-add truck for an individual carrier (optional, skippable).
+    if (hasQuickTruck) {
+      body['truck'] = {
+        'plateNumber': truckPlate.trim(),
+        'type': truckType,
+        'capacity': double.parse(truckCapacity.trim()),
+      };
+    }
     return body;
   }
 }

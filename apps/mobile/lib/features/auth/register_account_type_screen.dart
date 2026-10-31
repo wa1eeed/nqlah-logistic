@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/registration_controller.dart';
+import '../../core/fleet/fleet_repository.dart';
 import '../../core/platform/countries.dart';
 import '../../core/platform/id_types.dart';
+import '../../core/platform/locations.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
@@ -13,19 +15,10 @@ import '../../design_system/segmented.dart';
 import '../../design_system/text_field.dart';
 import 'wizard_scaffold.dart';
 
-const _regions = [
-  'الرياض', 'مكة المكرمة', 'المدينة المنورة', 'القصيم', 'الشرقية', 'عسير',
-  'تبوك', 'حائل', 'الحدود الشمالية', 'جازان', 'نجران', 'الباحة', 'الجوف',
-];
-const _cities = [
-  'الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر',
-  'الظهران', 'الأحساء', 'الطائف', 'بريدة', 'عنيزة', 'تبوك', 'أبها',
-  'خميس مشيط', 'حائل', 'نجران', 'جازان', 'الجبيل', 'ينبع', 'عرعر', 'سكاكا',
-];
-
 /// Register step 2 — account type (handoff 1l). Carrier (= Provider) vs
 /// Customer; Company vs Individual; CR + VAT (15-digit) with a
-/// "not VAT-registered" toggle; region + city.
+/// "not VAT-registered" toggle; a country → region → city cascade; and, for an
+/// individual carrier, an optional quick-add truck to speed their readiness.
 class RegisterAccountTypeScreen extends ConsumerStatefulWidget {
   const RegisterAccountTypeScreen({super.key, this.onNext});
 
@@ -40,6 +33,12 @@ class _RegisterAccountTypeScreenState
     extends ConsumerState<RegisterAccountTypeScreen> {
   late final TextEditingController _cr;
   late final TextEditingController _vat;
+  // Free-text fallbacks when a country/region has no admin-defined children.
+  late final TextEditingController _region;
+  late final TextEditingController _city;
+  // Quick-add truck.
+  late final TextEditingController _plate;
+  late final TextEditingController _capacity;
 
   @override
   void initState() {
@@ -47,14 +46,40 @@ class _RegisterAccountTypeScreenState
     final d = ref.read(registrationControllerProvider);
     _cr = TextEditingController(text: d.crNumber);
     _vat = TextEditingController(text: d.vatNumber);
+    _region = TextEditingController(text: d.region);
+    _city = TextEditingController(text: d.city);
+    _plate = TextEditingController(text: d.truckPlate);
+    _capacity = TextEditingController(text: d.truckCapacity);
+
+    // Seed the company's location country from the (geo-resolved) phone country
+    // the first time this step opens, while the SA defaults are untouched. A
+    // non-SA country clears the SA region/city defaults so the user re-picks.
+    final untouched =
+        d.locationCountry == 'SA' && d.region == 'الرياض' && d.city == 'الرياض';
+    if (untouched && d.countryCode != 'SA') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _region.clear();
+        _city.clear();
+        ref.read(registrationControllerProvider.notifier).patch(
+            (x) => x.copyWith(locationCountry: d.countryCode, region: '', city: ''));
+      });
+    }
   }
 
   @override
   void dispose() {
     _cr.dispose();
     _vat.dispose();
+    _region.dispose();
+    _city.dispose();
+    _plate.dispose();
+    _capacity.dispose();
     super.dispose();
   }
+
+  RegistrationController get _notifier =>
+      ref.read(registrationControllerProvider.notifier);
 
   Future<void> _pickNationality() async {
     final picked = await nqPickOption<Country>(
@@ -66,53 +91,73 @@ class _RegisterAccountTypeScreenState
       searchHint: 'ابحث عن دولة',
     );
     if (picked != null) {
-      ref
-          .read(registrationControllerProvider.notifier)
-          .patch((x) => x.copyWith(nationality: picked.code));
+      _notifier.patch((x) => x.copyWith(nationality: picked.code));
     }
   }
 
-  void _pick(String title, List<String> options, ValueChanged<String> onPick) {
-    final c = context.nq;
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: c.sf,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(title,
-                  style: NqType.h3.copyWith(color: c.tx),
-                  textAlign: TextAlign.center),
-            ),
-            for (final o in options)
-              ListTile(
-                title: Text(o,
-                    style: NqType.body.copyWith(color: c.tx),
-                    textAlign: TextAlign.right),
-                onTap: () {
-                  onPick(o);
-                  Navigator.of(context).maybePop();
-                },
-              ),
-          ],
-        ),
-      ),
+  Future<void> _pickCountry() async {
+    final picked = await nqPickOption<Country>(
+      context,
+      title: 'الدولة',
+      options: kCountries,
+      label: (x) => '${x.flag}  ${x.nameAr}',
+      subtitle: (x) => x.nameEn,
+      searchHint: 'ابحث عن دولة',
     );
+    if (picked == null) return;
+    // Changing the country resets the dependent region + city.
+    _region.clear();
+    _city.clear();
+    _notifier
+        .patch((x) => x.copyWith(locationCountry: picked.code, region: '', city: ''));
+  }
+
+  Future<void> _pickRegion(List<LocRegion> regions) async {
+    final picked = await nqPickOption<LocRegion>(
+      context,
+      title: 'المنطقة',
+      options: regions,
+      label: (x) => x.nameAr,
+      searchHint: 'ابحث عن منطقة',
+    );
+    if (picked == null) return;
+    // Changing the region resets the dependent city.
+    _city.clear();
+    _notifier.patch((x) => x.copyWith(region: picked.nameAr, city: ''));
+  }
+
+  Future<void> _pickCity(List<LocCity> cities) async {
+    final picked = await nqPickOption<LocCity>(
+      context,
+      title: 'المدينة',
+      options: cities,
+      label: (x) => x.nameAr,
+      searchHint: 'ابحث عن مدينة',
+    );
+    if (picked == null) return;
+    _notifier.patch((x) => x.copyWith(city: picked.nameAr));
+  }
+
+  Future<void> _pickTruckType() async {
+    final picked = await nqPickOption<String>(
+      context,
+      title: 'نوع الشاحنة',
+      options: kTruckTypeValues,
+      label: truckTypeLabel,
+      searchHint: 'ابحث عن نوع',
+    );
+    if (picked != null) {
+      _notifier.patch((x) => x.copyWith(truckType: picked));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
-    final notifier = ref.read(registrationControllerProvider.notifier);
     final d = ref.watch(registrationControllerProvider);
+    final locs = ref.watch(locationsProvider);
+    final data = locs.asData?.value ?? LocationsData.empty;
+
     final notVat = !d.vatRegistered;
     final vatLen = _vat.text.trim().length;
     final vatError = !notVat && vatLen > 0 && vatLen != 15
@@ -137,7 +182,7 @@ class _RegisterAccountTypeScreenState
                 icon: NqIcons.package,
                 selected: !d.isCarrier,
                 onTap: () =>
-                    notifier.patch((x) => x.copyWith(isCarrier: false)),
+                    _notifier.patch((x) => x.copyWith(isCarrier: false)),
               ),
             ),
             const SizedBox(width: 14),
@@ -148,7 +193,7 @@ class _RegisterAccountTypeScreenState
                 icon: NqIcons.truck,
                 selected: d.isCarrier,
                 onTap: () =>
-                    notifier.patch((x) => x.copyWith(isCarrier: true)),
+                    _notifier.patch((x) => x.copyWith(isCarrier: true)),
               ),
             ),
           ],
@@ -158,7 +203,7 @@ class _RegisterAccountTypeScreenState
           options: const ['منشأة', 'فرد'],
           index: d.isIndividual ? 1 : 0,
           onChanged: (i) =>
-              notifier.patch((x) => x.copyWith(isIndividual: i == 1)),
+              _notifier.patch((x) => x.copyWith(isIndividual: i == 1)),
           height: 52,
         ),
         const SizedBox(height: 20),
@@ -171,14 +216,14 @@ class _RegisterAccountTypeScreenState
             keyboardType: TextInputType.number,
             valid: _cr.text.trim().length == 10,
             onChanged: (v) {
-              notifier.patch((x) => x.copyWith(crNumber: v));
+              _notifier.patch((x) => x.copyWith(crNumber: v));
               setState(() {});
             },
           ),
           const SizedBox(height: 18),
         ],
         // Nationality + ID type for a sole-operator (individual) carrier.
-        if (d.isIndividual && d.isCarrier) ...[
+        if (d.isIndividualCarrier) ...[
           Text('الجنسية', style: NqType.labelStrong.copyWith(color: c.tx2)),
           const SizedBox(height: 6),
           GestureDetector(
@@ -209,7 +254,7 @@ class _RegisterAccountTypeScreenState
             options: [for (final t in kIdTypes) t.label],
             index: kIdTypes.indexWhere((t) => t.value == d.idType).clamp(0, kIdTypes.length - 1),
             onChanged: (i) =>
-                notifier.patch((x) => x.copyWith(idType: kIdTypes[i].value)),
+                _notifier.patch((x) => x.copyWith(idType: kIdTypes[i].value)),
             height: 46,
           ),
           const SizedBox(height: 18),
@@ -221,38 +266,184 @@ class _RegisterAccountTypeScreenState
           counter: notVat ? null : '$vatLen/15',
           error: vatError,
           onChanged: (v) {
-            notifier.patch((x) => x.copyWith(vatNumber: v));
+            _notifier.patch((x) => x.copyWith(vatNumber: v));
             setState(() {});
           },
         ),
         const SizedBox(height: 16),
         NqCheckbox(
           value: notVat,
-          onChanged: (v) =>
-              notifier.patch((x) => x.copyWith(vatRegistered: !v)),
+          onChanged: (v) => _notifier.patch((x) => x.copyWith(vatRegistered: !v)),
           label: 'المنشأة غير مسجّلة في ضريبة القيمة المضافة',
         ),
         const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
-              child: NqDropdownField(
-                label: 'المنطقة',
-                value: d.region,
-                onTap: () => _pick('المنطقة', _regions,
-                    (v) => notifier.patch((x) => x.copyWith(region: v))),
+        // Country → Region → City cascade (each dependent on the previous).
+        _CountryField(
+          country: countryByCode(d.locationCountry),
+          onTap: _pickCountry,
+        ),
+        const SizedBox(height: 16),
+        _locationRow(c, d, data),
+        // Quick-add truck — individual carrier only (optional & skippable).
+        if (d.isIndividualCarrier) ...[
+          const SizedBox(height: 24),
+          _quickTruck(c, d),
+        ],
+      ],
+    );
+  }
+
+  /// The region + city row. Each is a searchable dropdown when the admin dataset
+  /// defines options for the parent, otherwise a free-text fallback so a country
+  /// with no regions/cities never blocks registration.
+  Widget _locationRow(NqColors c, RegistrationData d, LocationsData data) {
+    final regions = data.regionsFor(d.locationCountry);
+    final hasRegions = regions.isNotEmpty;
+    final cities = data.citiesFor(d.locationCountry, d.region);
+    final hasCities = cities.isNotEmpty;
+
+    final Widget regionField = hasRegions
+        ? NqDropdownField(
+            label: 'المنطقة',
+            value: d.region.isEmpty ? 'اختر المنطقة' : d.region,
+            onTap: () => _pickRegion(regions),
+          )
+        : NqTextField(
+            label: 'المنطقة',
+            controller: _region,
+            onChanged: (v) => _notifier.patch((x) => x.copyWith(region: v)),
+          );
+
+    final Widget cityField;
+    if (hasRegions && d.region.isEmpty) {
+      // A region must be chosen first before its cities are known.
+      cityField = NqDropdownField(
+        label: 'المدينة',
+        value: 'اختر المنطقة أولاً',
+        onTap: null,
+      );
+    } else if (hasCities) {
+      cityField = NqDropdownField(
+        label: 'المدينة',
+        value: d.city.isEmpty ? 'اختر المدينة' : d.city,
+        onTap: () => _pickCity(cities),
+      );
+    } else {
+      cityField = NqTextField(
+        label: 'المدينة',
+        controller: _city,
+        hint: hasRegions ? 'لا مدن مُعرّفة — اكتب المدينة' : 'أدخل المدينة',
+        onChanged: (v) => _notifier.patch((x) => x.copyWith(city: v)),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: regionField),
+        const SizedBox(width: 14),
+        Expanded(child: cityField),
+      ],
+    );
+  }
+
+  Widget _quickTruck(NqColors c, RegistrationData d) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.sf,
+        borderRadius: BorderRadius.circular(NqRadius.cardOverlap),
+        border: Border.all(color: c.bd),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              NqIcon(NqIcons.truck, size: 20, color: c.tx2),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('أضف شاحنتك الآن',
+                        style: NqType.labelStrong.copyWith(color: c.tx)),
+                    const SizedBox(height: 2),
+                    Text('اختياري — يمكنك تخطّيها وإضافتها لاحقًا',
+                        style: NqType.caption.copyWith(color: c.tx3)),
+                  ],
+                ),
               ),
+              Switch.adaptive(
+                value: d.addTruck,
+                onChanged: (v) => _notifier.patch((x) => x.copyWith(addTruck: v)),
+              ),
+            ],
+          ),
+          if (d.addTruck) ...[
+            const SizedBox(height: 16),
+            NqDropdownField(
+              label: 'نوع الشاحنة',
+              value: d.truckType == null
+                  ? 'اختر النوع'
+                  : truckTypeLabel(d.truckType),
+              onTap: _pickTruckType,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: NqDropdownField(
-                label: 'المدينة',
-                value: d.city,
-                onTap: () => _pick('المدينة', _cities,
-                    (v) => notifier.patch((x) => x.copyWith(city: v))),
-              ),
+            const SizedBox(height: 14),
+            NqTextField(
+              label: 'رقم اللوحة',
+              controller: _plate,
+              onChanged: (v) => _notifier.patch((x) => x.copyWith(truckPlate: v)),
+            ),
+            const SizedBox(height: 14),
+            NqTextField(
+              label: 'الحمولة (طن)',
+              controller: _capacity,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) =>
+                  _notifier.patch((x) => x.copyWith(truckCapacity: v)),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The country selector shown first in the cascade: a flag + Arabic name with a
+/// caret, opening the searchable all-countries picker.
+class _CountryField extends StatelessWidget {
+  const _CountryField({required this.country, required this.onTap});
+
+  final Country country;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.nq;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('الدولة', style: NqType.labelStrong.copyWith(color: c.tx)),
+        const SizedBox(height: 6),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            height: NqLayout.input,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: c.sf,
+              borderRadius: BorderRadius.circular(NqRadius.input),
+              border: Border.all(color: c.bd),
+            ),
+            child: Row(children: [
+              NqIcon(NqIcons.caretDown, size: 16, color: c.tx3),
+              const Spacer(),
+              Text('${country.flag}  ${country.nameAr}',
+                  style: NqType.body.copyWith(color: c.tx, fontSize: 16)),
+            ]),
+          ),
         ),
       ],
     );

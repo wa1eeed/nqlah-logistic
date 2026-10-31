@@ -1,7 +1,26 @@
 import {
-  IsEmail, IsEnum, IsObject, IsOptional, IsString, IsBoolean, IsDateString, Matches, MinLength,
+  IsEmail, IsEnum, IsNumber, IsObject, IsOptional, IsString, IsBoolean, IsDateString, Matches, MinLength, ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { IsStrongPassword } from '../../../common/validators/strong-password.validator';
+
+// Must stay in sync with Prisma enum `TruckType` and the carrier fleet
+// `CreateTruckDto` (apps/api/src/modules/fleet/dto/fleet.dto.ts).
+const TRUCK_TYPES = [
+  'SMALL_VAN', 'SMALL_FLATBED', 'MEDIUM_FLATBED', 'LARGE_FLATBED', 'REFRIGERATED',
+  'CONTAINER_20', 'CONTAINER_40', 'CONTAINER_TRAILER', 'TANKER', 'CURTAINSIDER', 'BOX_TRUCK', 'LOWBED',
+] as const;
+
+/**
+ * Quick-add truck captured during an individual carrier's signup, so the
+ * sole-operator is ready to work right after registration. Only the essentials
+ * — the rest of the fleet details are completed later in the app.
+ */
+export class InitialTruckDto {
+  @IsString() plateNumber!: string;
+  @IsEnum(TRUCK_TYPES) type!: (typeof TRUCK_TYPES)[number];
+  @Type(() => Number) @IsNumber() capacity!: number;
+}
 
 /**
  * Phone-first onboarding (Option A — default).
@@ -78,6 +97,11 @@ export class RegisterDto {
   vatNumber?: string;
   @IsOptional() @IsBoolean() vatRegistered?: boolean;
 
+  // ISO-3166 alpha-2 country of the company's base (e.g. "SA"). Optional —
+  // the registration cascade (country → region → city) sends it so the stored
+  // region/city are unambiguous across countries.
+  @IsOptional() @IsString() countryCode?: string;
+
   @IsString()
   city!: string;
 
@@ -101,4 +125,9 @@ export class RegisterDto {
 
   @IsBoolean()
   acceptedTransport!: boolean;
+
+  // Quick-add truck — only for an INDIVIDUAL carrier (sole operator). Optional
+  // and skippable at signup; when present, an initial fleet truck is created
+  // for the new company so the carrier can start working immediately.
+  @IsOptional() @ValidateNested() @Type(() => InitialTruckDto) truck?: InitialTruckDto;
 }

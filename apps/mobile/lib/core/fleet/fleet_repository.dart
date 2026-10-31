@@ -48,17 +48,27 @@ class DriverModel {
 }
 
 const _truckTypeLabels = <String, String>{
+  'SMALL_VAN': 'فان صغير',
   'SMALL_FLATBED': 'سطحة صغيرة',
   'MEDIUM_FLATBED': 'سطحة متوسطة',
   'LARGE_FLATBED': 'تريلا سطحة',
   'REFRIGERATED': 'مبرّدة',
   'CONTAINER_20': 'حاوية 20',
   'CONTAINER_40': 'حاوية 40',
+  'CONTAINER_TRAILER': 'ناقلة حاويات',
   'TANKER': 'صهريج',
   'CURTAINSIDER': 'ستائرية',
   'BOX_TRUCK': 'صندوقية',
   'LOWBED': 'لوبد',
 };
+
+/// Truck-type enum values in display order — the quick-add/fleet pickers build
+/// their options from this. Must stay in sync with the backend `TruckType`.
+const List<String> kTruckTypeValues = [
+  'SMALL_VAN', 'SMALL_FLATBED', 'MEDIUM_FLATBED', 'LARGE_FLATBED', 'REFRIGERATED',
+  'CONTAINER_20', 'CONTAINER_40', 'CONTAINER_TRAILER', 'TANKER', 'CURTAINSIDER',
+  'BOX_TRUCK', 'LOWBED',
+];
 
 String truckTypeLabel(String? v) =>
     _truckTypeLabels[(v ?? '').toUpperCase()] ?? 'شاحنة';

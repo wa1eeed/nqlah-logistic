@@ -114,6 +114,7 @@ export class AuthService {
         vatRegistered,
         nameAr: dto.companyNameAr,
         nameEn: dto.companyNameEn,
+        country: dto.countryCode ?? null,
         city: dto.city,
         region: dto.region,
         contactPhone: dto.contactPhone,
@@ -173,6 +174,24 @@ export class AuthService {
           status: 'AVAILABLE',
         },
       });
+
+      // Quick-add truck: if the sole operator added their truck during signup,
+      // create it now so they're ready to work. Best-effort — a failure here
+      // (e.g. a duplicate plate) must not fail registration; the carrier can
+      // simply add the truck later from the app.
+      if (dto.truck) {
+        try {
+          await this.prisma.truck.create({
+            data: {
+              companyId: company.id,
+              plateNumber: dto.truck.plateNumber.trim(),
+              type: dto.truck.type,
+              capacity: dto.truck.capacity,
+              ownership: 'OWNED',
+            },
+          });
+        } catch { /* ignore — registration succeeds without the truck */ }
+      }
     }
 
     // Send phone OTP automatically — this is the canonical verification path

@@ -270,6 +270,7 @@ model Company {
   /// object store (via the storage connector); only the keys are stored here.
   documents Json?
 
+  country String? // ISO-3166 alpha-2 of the company's base (e.g. "SA")
   city    String
   region  String
   address String?
