@@ -98,11 +98,13 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
   }
 
   Future<void> _bidTender(OrderSummary o) async {
+    final companyId = ref.read(authControllerProvider).user?.companyId;
+    final existing = o.myBid(companyId);
     final result = await showModalBottomSheet<({num amount, String notes})>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _BidSheet(order: o),
+      builder: (_) => _BidSheet(order: o, initialAmount: existing?.amount),
     );
     if (result != null) await _submitBid(o, result.amount, notes: result.notes);
   }
@@ -187,7 +189,39 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
                 _detailPrice(c, o, price),
               ],
               const SizedBox(height: 20),
-              if (mine != null)
+              if (mine != null && !o.isFixedPrice)
+                // Already bid on a tender → show the current offer + an edit CTA.
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: c.sf2,
+                        borderRadius: BorderRadius.circular(NqRadius.input),
+                      ),
+                      child: Text(
+                          'عرضك الحالي: ${mine.amount?.toStringAsFixed(0) ?? '—'} ر.س',
+                          style: NqType.label.copyWith(color: c.tx2),
+                          textAlign: TextAlign.center),
+                    ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.center,
+                      child: NqButton(
+                        label: 'تعديل العرض',
+                        icon: NqIcons.notePencil,
+                        variant: NqButtonVariant.secondary,
+                        expand: false,
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _bidTender(o);
+                        },
+                      ),
+                    ),
+                  ],
+                )
+              else if (mine != null)
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -195,7 +229,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
                     borderRadius: BorderRadius.circular(NqRadius.input),
                   ),
                   child: Text(
-                      'سبق أن قدّمت عرضًا بمبلغ ${mine.amount?.toStringAsFixed(0) ?? '—'} ر.س.',
+                      'سبق أن قبلت هذا الطلب بمبلغ ${mine.amount?.toStringAsFixed(0) ?? '—'} ر.س.',
                       style: NqType.label.copyWith(color: c.tx2),
                       textAlign: TextAlign.center),
                 )
@@ -533,9 +567,13 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
       originArea: '',
       destCity: o.destinationCity,
       destDistance: '',
+      myBidText: mine != null
+          ? 'عرضك: ${mine.amount != null ? money(mine.amount!, decimals: 0) : '—'} ر.س'
+          : null,
       offersText: mine != null
-          ? 'عرضك: ${mine.amount != null ? money(mine.amount!, decimals: 0) : '—'} ر.س · ${o.bidsCount} عروض'
+          ? '${o.bidsCount} عروض'
           : '${o.bidsCount} عروض مقدّمة',
+      hasBid: mine != null,
       onBid: busy ? null : () => _bidTender(o),
       onTap: () => _showLoadDetail(o, companyId),
     );
@@ -767,8 +805,11 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
 
 /// Bottom sheet to enter a bid amount for a tender load.
 class _BidSheet extends StatefulWidget {
-  const _BidSheet({required this.order});
+  const _BidSheet({required this.order, this.initialAmount});
   final OrderSummary order;
+  /// When set, the sheet is in EDIT mode — pre-filled with the carrier's current
+  /// bid amount (re-submitting updates the existing bid on the backend).
+  final num? initialAmount;
 
   @override
   State<_BidSheet> createState() => _BidSheetState();
@@ -777,6 +818,14 @@ class _BidSheet extends StatefulWidget {
 class _BidSheetState extends State<_BidSheet> {
   final _amount = TextEditingController();
   final _notes = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialAmount != null) {
+      _amount.text = widget.initialAmount!.toStringAsFixed(0);
+    }
+  }
 
   @override
   void dispose() {
@@ -811,7 +860,7 @@ class _BidSheetState extends State<_BidSheet> {
                       color: c.bd, borderRadius: BorderRadius.circular(2))),
             ),
             const SizedBox(height: 16),
-            Text('قدّم عرضك',
+            Text(widget.initialAmount != null ? 'تعديل العرض' : 'قدّم عرضك',
                 style: NqType.h2.copyWith(color: c.tx),
                 textAlign: TextAlign.right),
             const SizedBox(height: 4),
