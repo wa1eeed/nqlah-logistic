@@ -37,7 +37,9 @@ export interface TrackingMapImplProps {
   drivers: TrackingDriver[];
   selectedDriverId?: string | null;
   order?: TrackingOrderRoute | null;
-  /** The pin "B" label on the destination. */
+  /** Render a dark-dispatch basemap by CSS-filtering the (light) tiles. The
+   *  route/marker overlays live in separate panes, so they stay full-color. */
+  dark?: boolean;
   height?: number | string;
 }
 
@@ -219,7 +221,7 @@ function LiveTruck({ line, order }: { line: LatLngTuple[]; order: TrackingOrderR
 }
 
 export function TrackingMapImpl({
-  tileUrl, attribution, maxZoom = 19, drivers, selectedDriverId, order, height = '100%',
+  tileUrl, attribution, maxZoom = 19, drivers, selectedDriverId, order, dark = false, height = '100%',
 }: TrackingMapImplProps) {
   const [route, setRoute] = React.useState<LatLngTuple[] | null>(null);
 
@@ -269,18 +271,22 @@ export function TrackingMapImpl({
         .naqla-truck-ring{position:absolute;inset:0;border-radius:9999px;background:rgba(0,201,167,.45);animation:naqla-ping 1.6s cubic-bezier(0,0,.2,1) infinite}
         .naqla-truck-dot{position:absolute;inset:4px;background:#fff;border:2px solid #0A3D3A;border-radius:9999px;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.2)}
         @keyframes naqla-ping{0%{transform:scale(.7);opacity:.8}80%,100%{transform:scale(2);opacity:0}}
+        .naqla-dark-map{background:#0b1220}
+        .naqla-dark-map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.95) contrast(.9) saturate(.8)}
       `}</style>
-      <MapContainer center={SAUDI_CENTER} zoom={6} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
+      <MapContainer center={SAUDI_CENTER} zoom={6} style={{ height: '100%', width: '100%' }} scrollWheelZoom
+        className={dark ? 'naqla-dark-map' : undefined}>
         <TileLayer attribution={attribution} url={tileUrl} maxZoom={maxZoom} />
         <ViewController routeLine={routeLine} selectedDriver={selectedDriverPoint} driverPoints={driverPoints} />
 
-        {/* Selected order route — casing + main, then the traveled overlay. */}
+        {/* Selected order route — casing + main, then the traveled overlay.
+            Colors chosen to read on a dark basemap (teal on near-black). */}
         {routeLine && (
           <>
-            <Polyline positions={routeLine} pathOptions={{ color: '#ffffff', weight: 8, opacity: 0.9 }} />
-            <Polyline positions={routeLine} pathOptions={{ color: '#9CA3AF', weight: 4, opacity: 0.9 }} />
+            <Polyline positions={routeLine} pathOptions={{ color: '#0b1220', weight: 8, opacity: 0.6 }} />
+            <Polyline positions={routeLine} pathOptions={{ color: '#5eead4', weight: 4, opacity: 0.9 }} />
             {traveled.length > 1 && (
-              <Polyline positions={traveled} pathOptions={{ color: '#0A3D3A', weight: 5, opacity: 0.95 }} />
+              <Polyline positions={traveled} pathOptions={{ color: '#00C9A7', weight: 5, opacity: 1 }} />
             )}
           </>
         )}

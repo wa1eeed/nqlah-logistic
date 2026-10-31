@@ -309,14 +309,21 @@
   "ordersUnit": "طلب"
  },
  "tracking": {
-  "title": "التتبّع المباشر",
+  "title": "لوحة التتبّع المباشر",
   "subtitle": "{drivers} سائق · {orders} طلب نشِط",
   "loadError": "تعذّر تحميل البيانات",
+  "tasksWord": "مهمة",
+  "refresh": "تحديث",
+  "view": {
+   "map": "خريطة",
+   "list": "قائمة"
+  },
   "drivers": {
    "title": "السائقون",
    "unnamed": "سائق",
    "empty": "لا يوجد سائقون في هذه الحالة",
    "noLocation": "لا يوجد موقع معروف",
+   "search": "ابحث عن سائق",
    "tabs": {
     "busy": "مشغول",
     "available": "متاح",
@@ -327,6 +334,7 @@
    "title": "الطلبات",
    "emptyAwaiting": "لا توجد طلبات بانتظار الإسناد",
    "emptyAssigned": "لا توجد طلبات مُسندة لسائق",
+   "search": "ابحث عن طلب",
    "tabs": {
     "awaiting": "بانتظار الإسناد",
     "assigned": "مُسندة لسائق"

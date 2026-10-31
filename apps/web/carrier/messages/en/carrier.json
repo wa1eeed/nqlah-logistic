@@ -309,14 +309,21 @@
   "ordersUnit": "orders"
  },
  "tracking": {
-  "title": "Live Tracking",
+  "title": "Live Tracking Board",
   "subtitle": "{drivers} drivers · {orders} active orders",
   "loadError": "Failed to load data",
+  "tasksWord": "tasks",
+  "refresh": "Refresh",
+  "view": {
+   "map": "Map",
+   "list": "List"
+  },
   "drivers": {
    "title": "Drivers",
    "unnamed": "Driver",
    "empty": "No drivers in this state",
    "noLocation": "No known location",
+   "search": "Search drivers",
    "tabs": {
     "busy": "Busy",
     "available": "Available",
@@ -327,6 +334,7 @@
    "title": "Orders",
    "emptyAwaiting": "No orders awaiting assignment",
    "emptyAssigned": "No orders assigned to a driver",
+   "search": "Search orders",
    "tabs": {
     "awaiting": "Awaiting assignment",
     "assigned": "Assigned to driver"
