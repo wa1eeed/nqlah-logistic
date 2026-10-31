@@ -37,6 +37,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { MapsModule } from './modules/maps/maps.module';
+import { LocationsModule } from './modules/locations/locations.module';
 
 @Module({
   imports: [
@@ -95,6 +96,7 @@ import { MapsModule } from './modules/maps/maps.module';
     RealtimeModule,
     IntegrationsModule,
     MapsModule,
+    LocationsModule,
   ],
   controllers: [HealthController],
   providers: [
