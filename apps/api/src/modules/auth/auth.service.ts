@@ -173,6 +173,26 @@ export class AuthService {
           status: 'AVAILABLE',
         },
       });
+
+      // Optional "quick truck" captured during signup — provision the carrier's
+      // first vehicle now so they're ready to start. Non-blocking: a bad plate
+      // (e.g. a duplicate, as plateNumber is unique) must not fail registration;
+      // the owner can add it from the fleet UI instead.
+      if (dto.truck) {
+        try {
+          await this.prisma.truck.create({
+            data: {
+              companyId: company.id,
+              plateNumber: dto.truck.plateNumber.trim(),
+              type: dto.truck.type as never,
+              capacity: dto.truck.capacity,
+              ownership: 'OWNED',
+            },
+          });
+        } catch (err) {
+          this.logger.warn(`quick-truck create failed: ${(err as Error).message}`);
+        }
+      }
     }
 
     // Send phone OTP automatically — this is the canonical verification path

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/registration_controller.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -10,13 +12,13 @@ import 'wizard_scaffold.dart';
 /// Register step 2/4 — provider plan picker (handoff 1m). Interactive: truck
 /// stepper (5–50, +39 each over 5) and add-on toggles, with a live monthly
 /// total. Formula: total = 299 + max(0, trucks−5)×39 + Σ enabled add-ons.
-class PlanPickerScreen extends StatefulWidget {
+class PlanPickerScreen extends ConsumerStatefulWidget {
   const PlanPickerScreen({super.key, this.onNext});
 
   final VoidCallback? onNext;
 
   @override
-  State<PlanPickerScreen> createState() => _PlanPickerScreenState();
+  ConsumerState<PlanPickerScreen> createState() => _PlanPickerScreenState();
 }
 
 class _Addon {
@@ -39,7 +41,7 @@ const _addons = [
       NqIcons.headset, 49),
 ];
 
-class _PlanPickerScreenState extends State<PlanPickerScreen> {
+class _PlanPickerScreenState extends ConsumerState<PlanPickerScreen> {
   int _trucks = 8;
   final _enabled = {'maint': true, 'fuel': false, 'reports': false, 'support': false};
 
@@ -53,7 +55,7 @@ class _PlanPickerScreenState extends State<PlanPickerScreen> {
     final c = context.nq;
     return WizardScaffold(
       step: 3,
-      totalSteps: 5,
+      totalSteps: ref.watch(registrationControllerProvider).totalSteps,
       title: 'اختر باقتك',
       subtitle: 'تجربة مجانية 14 يومًا على كل الباقات',
       nextLabel: 'ابدأ التجربة المجانية',

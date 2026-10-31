@@ -1,7 +1,28 @@
 import {
-  IsEmail, IsEnum, IsObject, IsOptional, IsString, IsBoolean, IsDateString, Matches, MinLength,
+  IsEmail, IsEnum, IsNumber, IsObject, IsOptional, IsString, IsBoolean, IsDateString, Matches, MinLength, ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { IsStrongPassword } from '../../../common/validators/strong-password.validator';
+
+// Keep in sync with Prisma enum `TruckType` (apps/api/prisma/schema.prisma) and
+// the fleet CreateTruckDto. Used by the optional quick-truck add during an
+// individual carrier's signup.
+const REGISTER_TRUCK_TYPES = [
+  'SMALL_VAN','SMALL_FLATBED','MEDIUM_FLATBED','LARGE_FLATBED','REFRIGERATED',
+  'CONTAINER_20','CONTAINER_40','CONTAINER_TRAILER','TANKER','CURTAINSIDER','BOX_TRUCK','LOWBED',
+] as const;
+
+/**
+ * Minimal truck payload captured as a "quick add" while an individual carrier
+ * signs up (speeds up their readiness to start). All the essentials only —
+ * plate, type, capacity. The owner can complete the rest later in the fleet UI.
+ */
+export class RegisterTruckDto {
+  @IsString() plateNumber!: string;
+  @IsEnum(REGISTER_TRUCK_TYPES, { message: 'نوع الشاحنة غير صالح' })
+  type!: (typeof REGISTER_TRUCK_TYPES)[number];
+  @IsNumber() capacity!: number;
+}
 
 /**
  * Phone-first onboarding (Option A — default).
@@ -78,11 +99,19 @@ export class RegisterDto {
   vatNumber?: string;
   @IsOptional() @IsBoolean() vatRegistered?: boolean;
 
+  // ISO-3166 alpha-2 of the company's country (drives the location cascade in
+  // the app: country → region → city). Optional/forward-compatible — region +
+  // city remain the persisted location fields today.
+  @IsOptional() @IsString() country?: string;
+
   @IsString()
   city!: string;
 
   @IsString()
   region!: string;
+
+  // Optional quick-truck add for an individual carrier (created at signup).
+  @IsOptional() @ValidateNested() @Type(() => RegisterTruckDto) truck?: RegisterTruckDto;
 
   @IsString()
   contactPhone!: string;

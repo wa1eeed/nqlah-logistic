@@ -191,10 +191,9 @@ class _RegisterCredentialsScreenState
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
-    final carrier = ref.watch(registrationControllerProvider).isCarrier;
     return WizardScaffold(
       step: 1,
-      totalSteps: carrier ? 5 : 4,
+      totalSteps: ref.watch(registrationControllerProvider).totalSteps,
       nextLabel: 'التالي: نوع الحساب',
       nextIcon: NqIcons.arrowLeft,
       title: 'إنشاء حساب',
