@@ -369,18 +369,29 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
             const SizedBox(width: 8),
             _publishedPill(c),
           ],
-          const Spacer(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(name,
-                  style: NqType.bodyStrong.copyWith(color: c.tx, fontSize: 16)),
-              const SizedBox(height: 2),
-              if (plate != null)
-                Ltr(plate, style: NqType.code(size: 12).copyWith(color: c.tx2))
-              else
-                Text(sub, style: NqType.caption.copyWith(color: c.tx2)),
-            ],
+          const SizedBox(width: 8),
+          // Takes the remaining width and ellipsizes, so a long name next to the
+          // status + «في السوق» pills never overflows the row.
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(name,
+                    style: NqType.bodyStrong.copyWith(color: c.tx, fontSize: 16),
+                    textAlign: TextAlign.end,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                if (plate != null)
+                  Ltr(plate, style: NqType.code(size: 12).copyWith(color: c.tx2))
+                else
+                  Text(sub,
+                      style: NqType.caption.copyWith(color: c.tx2),
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+              ],
+            ),
           ),
           const SizedBox(width: 12),
           Container(
