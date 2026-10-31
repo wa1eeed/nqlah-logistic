@@ -171,6 +171,18 @@ class OrdersRepository {
     }
   }
 
+  /// `POST /orders/:id/cod-proof` — the client attaches a bank-transfer proof
+  /// (object-store key) on a cash-on-delivery order.
+  Future<void> attachCodProof(String orderId, String key) async {
+    try {
+      final res =
+          await _dio.post('/orders/$orderId/cod-proof', data: {'key': key});
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `POST /orders/:id/complete` — the client confirms receipt and closes a
   /// DELIVERED order.
   Future<void> completeOrder(String orderId) async {

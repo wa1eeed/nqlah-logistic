@@ -12,6 +12,7 @@ import '../../core/widgets/nq_icon.dart';
 import '../../design_system/confirm_dialog.dart';
 import '../../design_system/party_card.dart';
 import '../../design_system/order_status_timeline.dart';
+import 'cod_instructions_card.dart';
 import '../../design_system/status_chip.dart';
 
 /// Customer order detail (handoff 1c) — wired to `GET /orders/:id`. Shows the
@@ -94,6 +95,10 @@ class OrderDetailScreen extends ConsumerWidget {
               Text('تفصيل السعر', style: NqType.h2.copyWith(color: c.tx)),
               const SizedBox(height: 10),
               _priceCard(c, o),
+              if (o.isCod) ...[
+                const SizedBox(height: 16),
+                CodInstructionsCard(order: o),
+              ],
             ],
           ),
         ),

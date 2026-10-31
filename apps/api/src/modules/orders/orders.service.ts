@@ -491,6 +491,28 @@ export class OrdersService {
     return delivered;
   }
 
+  /** Client attaches a bank-transfer proof (object-store key) on a COD order. */
+  async attachCodProof(id: string, key: string | undefined, actor: AuthUser) {
+    if (!key || typeof key !== 'string') {
+      throw new BadRequestException({ code: 'PROOF_REQUIRED', message: 'مرفق الإثبات مطلوب' });
+    }
+    const order = await this.requireOrder(id);
+    if (order.clientId !== actor.companyId && !this.isAdmin(actor)) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
+    }
+    if (order.collectionMethod !== 'COD') {
+      throw new BadRequestException({ code: 'NOT_COD', message: 'هذا الطلب ليس دفعاً عند التسليم' });
+    }
+    const res = await this.prisma.payment.updateMany({
+      where: { orderId: id },
+      data: { codProofUrl: key },
+    });
+    if (res.count === 0) {
+      throw new BadRequestException({ code: 'PAYMENT_NOT_READY', message: 'لم تُجهَّز الدفعة بعد' });
+    }
+    return { ok: true };
+  }
+
   /**
    * Client confirms receipt (or the 72-hour auto-release fires from a cron).
    * Atomic: order → COMPLETED + Payment → RELEASED + releasedAt timestamped +

@@ -224,17 +224,35 @@ class BidRef {
 
 /// The contracted carrier on an order (for the party card + contact reveal).
 class CarrierParty {
-  CarrierParty({required this.nameAr, this.phone, this.city, this.region});
+  CarrierParty({
+    required this.nameAr,
+    this.phone,
+    this.city,
+    this.region,
+    this.codPayoutMethod = 'CASH',
+    this.iban,
+    this.bankName,
+    this.bankAccountName,
+  });
   final String nameAr;
   final String? phone;
   final String? city;
   final String? region;
+  // COD collection: CASH (pay driver) or BANK_TRANSFER (to the carrier's IBAN).
+  final String codPayoutMethod;
+  final String? iban;
+  final String? bankName;
+  final String? bankAccountName;
 
   factory CarrierParty.fromJson(Map<String, dynamic> j) => CarrierParty(
         nameAr: (j['nameAr'] ?? 'المزوّد').toString(),
         phone: j['contactPhone']?.toString(),
         city: j['city']?.toString(),
         region: j['region']?.toString(),
+        codPayoutMethod: (j['codPayoutMethod'] ?? 'CASH').toString(),
+        iban: j['iban']?.toString(),
+        bankName: j['bankName']?.toString(),
+        bankAccountName: j['bankAccountName']?.toString(),
       );
 }
 
@@ -302,6 +320,9 @@ class OrderDetail {
     this.commissionAmount,
     this.commissionVatAmount,
     this.clientTotalDue,
+    this.collectionMethod = 'ESCROW',
+    this.dueOnDelivery,
+    this.codProofUrl,
     this.tracking = const [],
     this.mode = 'OPEN',
     this.targetCarrierId,
@@ -344,6 +365,10 @@ class OrderDetail {
   final num? commissionAmount;
   final num? commissionVatAmount;
   final num? clientTotalDue;
+  final String collectionMethod; // ESCROW | PREPAID_WALLET | PREPAID_GATEWAY | COD
+  final num? dueOnDelivery; // amount to collect on delivery (COD)
+  final String? codProofUrl; // client's attached bank-transfer proof (COD)
+  bool get isCod => collectionMethod.toUpperCase() == 'COD';
   final List<TrackingEventModel> tracking;
   final String mode; // OPEN or DIRECT
   final String? targetCarrierId;
@@ -430,6 +455,9 @@ class OrderDetail {
       commissionAmount: _num(j['commissionAmount']),
       commissionVatAmount: _num(j['commissionVatAmount']),
       clientTotalDue: _num(j['clientTotalDue']),
+      collectionMethod: (j['collectionMethod'] ?? 'ESCROW').toString(),
+      dueOnDelivery: j['payment'] is Map ? _num((j['payment'] as Map)['dueOnDelivery']) : null,
+      codProofUrl: j['payment'] is Map ? (j['payment'] as Map)['codProofUrl']?.toString() : null,
       tracking: te is List
           ? te
               .whereType<Map>()

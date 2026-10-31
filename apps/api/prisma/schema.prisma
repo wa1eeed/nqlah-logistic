@@ -282,6 +282,15 @@ model Company {
   creditLimit    Decimal @default(0) @db.Decimal(12, 2)
   walletBalance  Decimal @default(0) @db.Decimal(12, 2)
 
+  /// Cash-on-delivery collection preference for a carrier: CASH (the driver
+  /// takes the cash on delivery) or BANK_TRANSFER (the client transfers to the
+  /// carrier's IBAN). The bank fields are shown to the client as payment
+  /// instructions on a COD order when the method is BANK_TRANSFER.
+  codPayoutMethod String  @default("CASH")
+  iban            String?
+  bankName        String?
+  bankAccountName String?
+
   subscriptionPlan   String    @default("basic")
   subscriptionEndsAt DateTime?
 
@@ -908,6 +917,9 @@ model Payment {
   releasedAt  DateTime?
   /// When the on-delivery amount (COD) was recorded as collected.
   collectedAt DateTime?
+  /// Object-store key of the bank-transfer proof the client attached (COD with
+  /// BANK_TRANSFER). Null until the client uploads a receipt.
+  codProofUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

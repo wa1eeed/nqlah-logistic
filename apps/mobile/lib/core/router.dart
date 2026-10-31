@@ -32,6 +32,7 @@ import '../features/provider/provider_add_driver_screen.dart';
 import '../features/provider/provider_maintenance_screen.dart';
 import '../features/provider/provider_order_screen.dart';
 import '../features/provider/provider_subscription_screen.dart';
+import '../features/provider/provider_payout_settings_screen.dart';
 import '../features/provider/provider_maintenance_hub_screen.dart';
 import '../features/account/account_screen.dart';
 import '../features/provider/trip_monitor_screen.dart';
@@ -219,6 +220,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/subscription',
       builder: (context, state) => const ProviderSubscriptionScreen(),
+    ),
+    GoRoute(
+      path: '/payout-settings',
+      builder: (context, state) => const ProviderPayoutSettingsScreen(),
     ),
     GoRoute(
       path: '/maintenance-hub',
