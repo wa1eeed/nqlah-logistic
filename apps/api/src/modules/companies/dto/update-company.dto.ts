@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class UpdateCompanyDto {
   @IsOptional() @IsString() nameAr?: string;
@@ -12,6 +12,12 @@ export class UpdateCompanyDto {
   @IsOptional() @IsString() contactPhone?: string;
   @IsOptional() @IsEmail() contactEmail?: string;
   @IsOptional() @IsUrl({ require_protocol: false }) website?: string;
+
+  // Cash-on-delivery collection preference + bank details (carrier).
+  @IsOptional() @IsEnum(['CASH', 'BANK_TRANSFER'] as const) codPayoutMethod?: 'CASH' | 'BANK_TRANSFER';
+  @IsOptional() @IsString() iban?: string;
+  @IsOptional() @IsString() bankName?: string;
+  @IsOptional() @IsString() bankAccountName?: string;
 }
 
 export class SubmitKycDto {
