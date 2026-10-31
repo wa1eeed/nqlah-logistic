@@ -29,6 +29,11 @@ const MAP: Array<{ key: string; env: string; fallback: string; category: string 
   { key: 'platform_cr_number', env: 'PLATFORM_CR_NUMBER', fallback: '', category: 'finance' },
   { key: 'platform_address', env: 'PLATFORM_ADDRESS', fallback: 'الرياض، المملكة العربية السعودية', category: 'finance' },
   { key: 'platform_name_ar', env: 'PLATFORM_NAME_AR', fallback: 'نقلة لوجيستك', category: 'branding' },
+  // Configurable platform logo (dot-key convention — the one GET /settings/platform
+  // reads and the web portals consume). Empty by default → portals fall back to the
+  // built-in mark until an admin uploads a logo.
+  { key: 'platform.logoUrl', env: 'PLATFORM_LOGO_URL', fallback: '', category: 'branding' },
+  { key: 'platform.logoUrlDark', env: 'PLATFORM_LOGO_URL_DARK', fallback: '', category: 'branding' },
 ];
 
 async function main() {

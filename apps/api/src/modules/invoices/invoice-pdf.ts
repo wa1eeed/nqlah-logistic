@@ -35,6 +35,9 @@ export interface InvoicePdfData {
   buyerCrNumber?: string | null;
   zatcaQr?: string | null;
   orderNumber?: string | null;
+  /** Configured platform logo bytes (PNG/JPG). When set it replaces the drawn
+   * «نقلة» mark in the header; otherwise the built-in mark is drawn. */
+  logo?: Buffer | null;
 }
 
 const NAVY = '#0A2A28';
@@ -80,11 +83,24 @@ export async function renderInvoicePdf(inv: InvoicePdfData): Promise<Buffer> {
   // ───────────────────────── Header band ─────────────────────────
   const H = 104;
   doc.rect(0, 0, doc.page.width, H).fill(NAVY);
-  doc.save();
-  doc.translate(L + 8, 36).rotate(45).rect(0, 0, 16, 16).fill(MINT);
-  doc.restore();
-  ar('نقلة', L + 40, 30, 180, { font: 'arB', size: 24, color: '#FFFFFF', align: 'left' });
-  en('NQLAH · Logistics', L + 40, 64, 180, { size: 9, color: '#9FB4B0' });
+  // Configured platform logo (on the dark band) or the built-in «نقلة» mark.
+  if (inv.logo) {
+    try {
+      doc.image(inv.logo, L + 8, (H - 44) / 2, { fit: [180, 44] });
+    } catch {
+      // Corrupt/unsupported bytes — fall back to the drawn mark below.
+      drawBuiltInMark();
+    }
+  } else {
+    drawBuiltInMark();
+  }
+  function drawBuiltInMark() {
+    doc.save();
+    doc.translate(L + 8, 36).rotate(45).rect(0, 0, 16, 16).fill(MINT);
+    doc.restore();
+    ar('نقلة', L + 40, 30, 180, { font: 'arB', size: 24, color: '#FFFFFF', align: 'left' });
+    en('NQLAH · Logistics', L + 40, 64, 180, { size: 9, color: '#9FB4B0' });
+  }
   ar('فاتورة ضريبية', R - 230, 28, 230, { font: 'arB', size: 22, color: '#FFFFFF' });
   en('TAX INVOICE', R - 230, 58, 230, { size: 10, color: MINT, align: 'right' });
   ar(inv.kind === 'COMMISSION' ? 'فاتورة عمولة' : 'فاتورة خدمة نقل', R - 230, 76, 230, { size: 9, color: '#9FB4B0' });

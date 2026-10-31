@@ -1,62 +1,162 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Image as ImageIcon, Link as LinkIcon, RotateCcw, Trash2, Upload } from 'lucide-react';
+import useSWR from 'swr';
+import { Image as ImageIcon, Link as LinkIcon, Loader2, RotateCcw, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/logo';
-import { usePlatformStore } from '@/stores/platform-store';
-import { api } from '@/lib/api';
+import { api, fetcher } from '@/lib/api';
 import { notify } from '@/lib/notify';
 
 const MAX_BYTES = 2 * 1024 * 1024; // 2MB
 const ACCEPTED = ['image/png', 'image/svg+xml', 'image/jpeg', 'image/webp'];
 
-/**
- * Branding panel: lets the admin upload (or paste a URL for) the platform
- * logo, plus change the display name in both languages. Writes flow through
- * `usePlatformStore`; the Logo component picks up changes immediately.
- *
- * Upload path: file → base64 data URL in localStorage. In production this
- * would POST to MinIO and store only the resulting public URL.
- */
-export function BrandingPanel() {
-  const t = useTranslations('admin');
-  const tc = useTranslations('common');
+interface Branding { logoUrl: string; logoUrlDark: string; nameAr: string; nameEn: string }
 
-  const logoUrl = usePlatformStore((s) => s.logoUrl);
-  const nameAr = usePlatformStore((s) => s.nameAr);
-  const nameEn = usePlatformStore((s) => s.nameEn);
-  const setLogoUrl = usePlatformStore((s) => s.setLogoUrl);
-  const setName = usePlatformStore((s) => s.setName);
-  const reset = usePlatformStore((s) => s.reset);
+/** Upload a file through the presigned-PUT flow and return its public URL. */
+async function uploadBranding(file: File): Promise<string> {
+  const presign = (await api.post('/uploads/presign', {
+    filename: file.name,
+    contentType: file.type,
+    folder: 'branding',
+    sizeBytes: file.size,
+  })).data.data as { uploadUrl: string; publicUrl: string | null; key: string };
+  await fetch(presign.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+  if (!presign.publicUrl) throw new Error('STORAGE_NO_PUBLIC_URL');
+  return presign.publicUrl;
+}
 
+/** A single logo slot (light or dark): preview + upload + paste-URL + remove. */
+function LogoSlot({
+  label, hint, value, dark, onSave,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  dark?: boolean;
+  onSave: (url: string) => Promise<void>;
+}) {
+  const [urlDraft, setUrlDraft] = useState(value);
   const [mode, setMode] = useState<'upload' | 'url'>('upload');
-  const [urlDraft, setUrlDraft] = useState(logoUrl);
-  const [arDraft, setArDraft] = useState(nameAr);
-  const [enDraft, setEnDraft] = useState(nameEn);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const onFile = (file: File) => {
+  useEffect(() => { setUrlDraft(value); }, [value]);
+
+  const save = async (url: string) => {
+    setBusy(true);
     setError(null);
-    if (!ACCEPTED.includes(file.type)) {
-      setError(t('branding.errorFormat'));
-      return;
+    try { await onSave(url); } finally { setBusy(false); }
+  };
+
+  const onFile = async (file: File) => {
+    setError(null);
+    if (!ACCEPTED.includes(file.type)) { setError('صيغة غير مدعومة — استخدم PNG أو SVG أو JPG أو WebP.'); return; }
+    if (file.size > MAX_BYTES) { setError('حجم الملف كبير — الحد الأقصى 2 ميجابايت.'); return; }
+    setBusy(true);
+    try {
+      const url = await uploadBranding(file);
+      await onSave(url);
+    } catch (err) {
+      notify.error(err, 'تعذّر رفع الشعار. تأكد من إعداد التخزين أو استخدم رابطاً.');
+    } finally {
+      setBusy(false);
     }
-    if (file.size > MAX_BYTES) {
-      setError(t('branding.errorSize'));
-      return;
+  };
+
+  return (
+    <div className="space-y-3 rounded-lg border p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-medium">{label}</div>
+          <div className="text-xs text-muted-foreground">{hint}</div>
+        </div>
+        {value && (
+          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"
+            onClick={() => save('')} disabled={busy}>
+            <Trash2 className="h-4 w-4" /> إزالة
+          </Button>
+        )}
+      </div>
+
+      {/* Preview on the matching background */}
+      <div className={`flex h-20 items-center justify-center rounded-md border ${dark ? 'bg-[#0A2A28]' : 'bg-white'}`}>
+        {value
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={value} alt={label} className="max-h-14 max-w-[70%] object-contain" />
+          : <span className={`text-xs ${dark ? 'text-white/50' : 'text-muted-foreground'}`}>لا يوجد شعار</span>}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button type="button" size="sm" variant={mode === 'upload' ? 'default' : 'outline'} onClick={() => setMode('upload')}>
+          <Upload className="h-4 w-4" /> رفع
+        </Button>
+        <Button type="button" size="sm" variant={mode === 'url' ? 'default' : 'outline'} onClick={() => setMode('url')}>
+          <LinkIcon className="h-4 w-4" /> رابط
+        </Button>
+        {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+      </div>
+
+      {mode === 'upload' ? (
+        <>
+          <input ref={fileRef} type="file" accept={ACCEPTED.join(',')} className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={busy}
+            className="w-full rounded-lg border-2 border-dashed p-6 text-center transition-colors hover:bg-muted/40 disabled:opacity-50">
+            <ImageIcon className="mx-auto mb-2 h-7 w-7 text-muted-foreground" />
+            <div className="text-sm font-medium">اختر صورة من جهازك</div>
+            <div className="mt-1 text-xs text-muted-foreground">PNG مفضّل (شفاف) · SVG/JPG/WebP · حتى 2MB</div>
+          </button>
+        </>
+      ) : (
+        <div className="flex items-center gap-2">
+          <Input dir="ltr" value={urlDraft} onChange={(e) => setUrlDraft(e.target.value)}
+            placeholder="https://example.com/logo.png" />
+          <Button onClick={() => save(urlDraft.trim())} disabled={busy || !urlDraft.trim() || urlDraft === value}>
+            حفظ
+          </Button>
+        </div>
+      )}
+
+      {error && <div className="text-sm text-destructive">{error}</div>}
+    </div>
+  );
+}
+
+/**
+ * Branding panel: platform logo (light + dark variants) and display name in
+ * both languages. Logos upload through the presigned-PUT storage flow (or a
+ * pasted URL) and persist to platform settings; the whole platform (web
+ * portals, mobile app, invoice PDF) reads them from `GET /settings/platform`.
+ */
+export function BrandingPanel() {
+  const t = useTranslations('admin');
+  const { data, mutate } = useSWR<Branding>('/settings/platform', fetcher);
+
+  const nameAr = data?.nameAr ?? 'نقلة لوجيستك';
+  const nameEn = data?.nameEn ?? 'Naqla Logistics';
+  const [arDraft, setArDraft] = useState(nameAr);
+  const [enDraft, setEnDraft] = useState(nameEn);
+  const [savingNames, setSavingNames] = useState(false);
+
+  useEffect(() => { setArDraft(nameAr); setEnDraft(nameEn); }, [nameAr, nameEn]);
+
+  const saveSetting = async (key: string, value: string) => {
+    try {
+      await api.put('/admin/settings', { settings: [{ key, value }] });
+      await mutate();
+      notify.success('تم الحفظ');
+    } catch (err) {
+      notify.error(err, 'فشل الحفظ في قاعدة البيانات');
+      throw err;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result ?? '');
-      setLogoUrl(result);
-      setUrlDraft(result);
-    };
-    reader.readAsDataURL(file);
   };
 
   return (
@@ -65,157 +165,70 @@ export function BrandingPanel() {
         <CardTitle>{t('branding.title')}</CardTitle>
         <CardDescription>{t('branding.subtitle')}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6 max-w-2xl">
-        {/* Preview */}
-        <div className="flex items-center gap-4 rounded-lg border bg-muted/30 p-4">
-          <Logo size="lg" />
-          <div className="min-w-0">
-            <div className="font-semibold truncate">{nameAr}</div>
-            <div className="text-xs text-muted-foreground truncate" dir="ltr">{nameEn}</div>
-          </div>
-          {logoUrl && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ms-auto text-destructive hover:text-destructive"
-              onClick={() => { setLogoUrl(''); setUrlDraft(''); }}
-            >
-              <Trash2 className="h-4 w-4" />
-              {t('branding.removeLogo')}
-            </Button>
-          )}
+      <CardContent className="max-w-3xl space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <LogoSlot
+            label="الشعار (الوضع الفاتح)"
+            hint="يظهر على الخلفيات الفاتحة في الويب والتطبيق والفاتورة"
+            value={data?.logoUrl ?? ''}
+            onSave={(url) => saveSetting('platform.logoUrl', url)}
+          />
+          <LogoSlot
+            label="شعار الوضع الداكن"
+            hint="يظهر على الخلفيات الداكنة (ويُستخدم في ترويسة الفاتورة)"
+            value={data?.logoUrlDark ?? ''}
+            dark
+            onSave={(url) => saveSetting('platform.logoUrlDark', url)}
+          />
         </div>
-
-        {/* Mode toggle */}
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant={mode === 'upload' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setMode('upload')}
-          >
-            <Upload className="h-4 w-4" />
-            {t('branding.uploadFromDevice')}
-          </Button>
-          <Button
-            type="button"
-            variant={mode === 'url' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setMode('url')}
-          >
-            <LinkIcon className="h-4 w-4" />
-            {t('branding.fromUrl')}
-          </Button>
-        </div>
-
-        {/* Upload mode */}
-        {mode === 'upload' && (
-          <div className="space-y-2">
-            <Label>{t('branding.chooseImage')}</Label>
-            <input
-              ref={fileRef}
-              type="file"
-              accept={ACCEPTED.join(',')}
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onFile(file);
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="w-full rounded-lg border-2 border-dashed p-8 text-center hover:bg-muted/40 transition-colors"
-            >
-              <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <div className="text-sm font-medium">{t('branding.dropOrClick')}</div>
-              <div className="text-xs text-muted-foreground mt-1">{t('branding.formats')}</div>
-            </button>
-          </div>
-        )}
-
-        {/* URL mode */}
-        {mode === 'url' && (
-          <div className="space-y-2">
-            <Label htmlFor="logo-url">{t('branding.imageUrl')}</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="logo-url"
-                dir="ltr"
-                value={urlDraft}
-                onChange={(e) => setUrlDraft(e.target.value)}
-                placeholder="https://example.com/logo.png"
-              />
-              <Button
-                onClick={async () => {
-                  const url = urlDraft.trim();
-                  setLogoUrl(url);
-                  setError(null);
-                  try {
-                    await api.put('/admin/settings', {
-                      settings: [{ key: 'platform.logoUrl', value: url }],
-                    });
-                  } catch (err) { notify.error(err, 'فشل حفظ الشعار في قاعدة البيانات'); }
-                }}
-                disabled={!urlDraft.trim() || urlDraft === logoUrl}
-              >
-                {tc('buttons.save')}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {error && <div className="text-sm text-destructive">{error}</div>}
 
         {/* Name fields */}
-        <div className="space-y-4 pt-2 border-t">
+        <div className="space-y-4 border-t pt-4">
           <div className="space-y-2">
             <Label htmlFor="brand-name-ar">{t('branding.nameAr')}</Label>
-            <Input
-              id="brand-name-ar"
-              value={arDraft}
-              onChange={(e) => setArDraft(e.target.value)}
-              placeholder="نقلة لوجيستك"
-            />
+            <Input id="brand-name-ar" value={arDraft} onChange={(e) => setArDraft(e.target.value)} placeholder="نقلة لوجيستك" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="brand-name-en">{t('branding.nameEn')}</Label>
-            <Input
-              id="brand-name-en"
-              dir="ltr"
-              value={enDraft}
-              onChange={(e) => setEnDraft(e.target.value)}
-              placeholder="Naqla Logistics"
-            />
+            <Input id="brand-name-en" dir="ltr" value={enDraft} onChange={(e) => setEnDraft(e.target.value)} placeholder="Naqla Logistics" />
           </div>
           <div className="flex items-center gap-2 pt-2">
             <Button
+              disabled={savingNames || (arDraft === nameAr && enDraft === nameEn)}
               onClick={async () => {
-                const ar = arDraft.trim() || nameAr;
-                const en = enDraft.trim() || nameEn;
-                setName({ nameAr: ar, nameEn: en });
+                setSavingNames(true);
                 try {
                   await api.put('/admin/settings', {
                     settings: [
-                      { key: 'platform.nameAr', value: ar },
-                      { key: 'platform.nameEn', value: en },
+                      { key: 'platform.nameAr', value: arDraft.trim() || nameAr },
+                      { key: 'platform.nameEn', value: enDraft.trim() || nameEn },
                     ],
                   });
-                } catch (err) { notify.error(err, 'فشل حفظ الاسم في قاعدة البيانات'); }
+                  await mutate();
+                  notify.success('تم حفظ الاسم');
+                } catch (err) { notify.error(err, 'فشل حفظ الاسم'); }
+                finally { setSavingNames(false); }
               }}
-              disabled={arDraft === nameAr && enDraft === nameEn}
             >
+              {savingNames && <Loader2 className="h-4 w-4 animate-spin" />}
               {t('branding.saveNames')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => {
-                if (confirm(t('branding.confirmReset'))) {
-                  reset();
-                  setArDraft('نقلة لوجيستك');
-                  setEnDraft('Naqla Logistics');
-                  setUrlDraft('');
-                }
+              onClick={async () => {
+                if (!confirm(t('branding.confirmReset'))) return;
+                try {
+                  await api.put('/admin/settings', {
+                    settings: [
+                      { key: 'platform.logoUrl', value: '' },
+                      { key: 'platform.logoUrlDark', value: '' },
+                      { key: 'platform.nameAr', value: 'نقلة لوجيستك' },
+                      { key: 'platform.nameEn', value: 'Naqla Logistics' },
+                    ],
+                  });
+                  await mutate();
+                  notify.success('تمت الاستعادة للافتراضي');
+                } catch (err) { notify.error(err, 'فشل الاستعادة'); }
               }}
             >
               <RotateCcw className="h-4 w-4" />

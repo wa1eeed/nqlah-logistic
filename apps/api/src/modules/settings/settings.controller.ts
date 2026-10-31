@@ -27,11 +27,15 @@ export class SettingsController {
   @Get('platform')
   async platform() {
     const rows = await this.prisma.setting.findMany({
-      where: { key: { in: ['platform.logoUrl', 'platform.nameAr', 'platform.nameEn'] } },
+      where: { key: { in: ['platform.logoUrl', 'platform.logoUrlDark', 'platform.nameAr', 'platform.nameEn'] } },
     });
     const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    const logoUrl = map['platform.logoUrl'] ?? '';
     return {
-      logoUrl: map['platform.logoUrl'] ?? '',
+      logoUrl,
+      // Dark-mode logo variant; falls back to the light logo when unset so
+      // portals can always render something on a dark surface.
+      logoUrlDark: map['platform.logoUrlDark'] || logoUrl,
       nameAr:  map['platform.nameAr']  ?? 'نقلة لوجيستك',
       nameEn:  map['platform.nameEn']  ?? 'Naqla Logistics',
     };
