@@ -9,7 +9,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Logo } from '@/components/logo';
-import { usePlatformStore } from '@/stores/platform-store';
+import useSWR from 'swr';
+import { fetcher } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 export interface NavItem {
@@ -93,8 +94,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const pathname = usePathname() ?? '/';
   const t = useTranslations('admin');
   const tc = useTranslations('common');
-  // Live-reads the admin's custom brand name (falls back to t('appName')).
-  const brandNameAr = usePlatformStore((s) => s.nameAr);
+  // Live-reads the platform brand name from settings (falls back to t('appName')).
+  const { data: branding } = useSWR<{ nameAr: string }>('/settings/platform', fetcher);
+  const brandNameAr = branding?.nameAr;
   return (
     <>
       {/* Brand */}

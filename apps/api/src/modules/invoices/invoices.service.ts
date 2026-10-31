@@ -34,6 +34,37 @@ export class InvoicesService {
     @Inject(STORAGE_CONNECTOR) private storage: StorageConnector,
   ) {}
 
+  // Small in-memory cache so we don't re-fetch the logo on every PDF render.
+  private logoCache: { url: string; buf: Buffer | null; at: number } | null = null;
+
+  /** Fetch the configured platform logo bytes for the invoice header. Prefers
+   * the dark-mode variant (the header band is navy). Returns null when unset or
+   * when the format is one pdfkit can't embed (SVG) → renderer draws the mark. */
+  private async platformLogoBytes(): Promise<Buffer | null> {
+    const rows = await this.prisma.setting.findMany({
+      where: { key: { in: ['platform.logoUrlDark', 'platform.logoUrl'] } },
+    });
+    const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    const url = map['platform.logoUrlDark'] || map['platform.logoUrl'] || '';
+    if (!url) return null;
+    if (this.logoCache && this.logoCache.url === url && Date.now() - this.logoCache.at < 300_000) {
+      return this.logoCache.buf;
+    }
+    try {
+      // pdfkit only embeds PNG/JPEG; SVG logos are skipped here (web/app still use them).
+      if (/\.svg($|\?)/i.test(url)) throw new Error('svg-unsupported');
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`logo fetch ${res.status}`);
+      if ((res.headers.get('content-type') ?? '').includes('svg')) throw new Error('svg-unsupported');
+      const buf = Buffer.from(await res.arrayBuffer());
+      this.logoCache = { url, buf, at: Date.now() };
+      return buf;
+    } catch {
+      this.logoCache = { url, buf: null, at: Date.now() };
+      return null;
+    }
+  }
+
   /** Render the invoice's ZATCA tax-invoice PDF, store it, and return a
    *  short-lived download URL (the object key is cached on `pdfUrl`). */
   async getPdfUrl(id: string, actor: AuthUser): Promise<{ url: string }> {
@@ -62,6 +93,7 @@ export class InvoicesService {
       buyerCrNumber: inv.buyerCrNumber,
       zatcaQr: inv.zatcaQr,
       orderNumber: inv.order?.orderNumber ?? null,
+      logo: await this.platformLogoBytes(),
     });
     const key = `invoices/${inv.invoiceNumber}.pdf`;
     await this.storage.put(key, pdf, pdf.length, 'application/pdf');
