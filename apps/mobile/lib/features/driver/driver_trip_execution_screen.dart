@@ -11,6 +11,7 @@ import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 import '../../design_system/status_chip.dart';
+import 'driver_location_beacon.dart';
 
 /// Employed-driver trip execution (handoff 1j), wired to `GET /orders/:id`.
 /// Big targets, no prices/customer identity. The primary action advances the
@@ -28,21 +29,28 @@ class DriverTripExecutionScreen extends ConsumerWidget {
     final async = ref.watch(orderDetailModelProvider(orderId));
     return Scaffold(
       backgroundColor: c.bg,
-      body: async.when(
-        loading: () => Center(
-          child: SizedBox(
-            width: 30,
-            height: 30,
-            child:
-                CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
+      body: Stack(
+        children: [
+          // Reports the driver's throttled GPS for this order while open.
+          DriverLocationBeacon(orderId: orderId),
+          Positioned.fill(
+            child: async.when(
+              loading: () => Center(
+                child: SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
+                ),
+              ),
+              error: (e, _) => SafeArea(
+                child: _error(context, c,
+                    e is ApiException ? e.message : 'تعذّر تحميل الرحلة.',
+                    () => ref.invalidate(orderDetailModelProvider(orderId))),
+              ),
+              data: (o) => _content(context, ref, c, o),
+            ),
           ),
-        ),
-        error: (e, _) => SafeArea(
-          child: _error(context, c,
-              e is ApiException ? e.message : 'تعذّر تحميل الرحلة.',
-              () => ref.invalidate(orderDetailModelProvider(orderId))),
-        ),
-        data: (o) => _content(context, ref, c, o),
+        ],
       ),
     );
   }

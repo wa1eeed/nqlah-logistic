@@ -148,6 +148,36 @@ export const INTEGRATIONS: IntegrationSpec[] = [
         ] },
     ],
   },
+  {
+    domain: 'maps',
+    labelAr: 'الخرائط والتتبّع',
+    labelEn: 'Maps & Tracking',
+    descAr: 'مزوّد الخرائط للتتبّع الحي (MapLibre/OSM مجاناً، أو Google/Mapbox بمفتاح).',
+    icon: 'map',
+    category: 'other',
+    providerEnvKey: 'MAPS_PROVIDER',
+    defaultProvider: 'maplibre',
+    providers: [
+      // Free, no key — raster OSM tiles. Served to clients via GET /config/maps.
+      { id: 'maplibre', labelAr: 'MapLibre / OSM (مجاني)', labelEn: 'MapLibre / OSM (free)', implemented: true,
+        fields: [
+          { key: 'MAPS_TILE_URL', labelAr: 'رابط البلاطات', labelEn: 'Tile URL', secret: false, envKey: 'MAPS_TILE_URL', placeholder: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png' },
+          { key: 'MAPS_ATTRIBUTION', labelAr: 'حقوق الإسناد', labelEn: 'Attribution', secret: false, envKey: 'MAPS_ATTRIBUTION', placeholder: '© OpenStreetMap contributors' },
+        ] },
+      // Raster tiles via Mapbox token (works with the same tile renderer).
+      { id: 'mapbox', labelAr: 'Mapbox', labelEn: 'Mapbox', implemented: true,
+        fields: [
+          { key: 'MAPBOX_TOKEN', labelAr: 'التوكن', labelEn: 'Token', secret: true, envKey: 'MAPBOX_TOKEN', required: true },
+          { key: 'MAPBOX_STYLE', labelAr: 'النمط', labelEn: 'Style', secret: false, envKey: 'MAPBOX_STYLE', placeholder: 'mapbox/streets-v12' },
+        ] },
+      // Google Maps uses its own SDKs (JS API + google_maps_flutter); wired as a
+      // later upgrade once a key is provided.
+      { id: 'google', labelAr: 'Google Maps', labelEn: 'Google Maps', implemented: false,
+        fields: [
+          { key: 'GOOGLE_MAPS_API_KEY', labelAr: 'مفتاح API', labelEn: 'API Key', secret: true, envKey: 'GOOGLE_MAPS_API_KEY', required: true },
+        ] },
+    ],
+  },
 ];
 
 export const INTEGRATION_DOMAINS = INTEGRATIONS.map((i) => i.domain);
