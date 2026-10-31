@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import {
   AlertCircle, BarChart3, Bell, Building2, FileText, History, LayoutDashboard,
-  LifeBuoy, Megaphone, Plug, Scale, Search, Settings, ShieldCheck, SlidersHorizontal, Truck, Users, Wallet,
+  LifeBuoy, Megaphone, Navigation, Plug, Scale, Search, Settings, ShieldCheck, SlidersHorizontal, Truck, Users, Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import { Logo } from '@/components/logo';
@@ -51,6 +51,7 @@ const NAV: NavGroupKey[] = [
     items: [
       { href: '/trucks',  labelKey: 'trucks',  icon: Truck },
       { href: '/drivers', labelKey: 'drivers', icon: Users },
+      { href: '/tracking', labelKey: 'tracking', icon: Navigation },
     ],
   },
   {

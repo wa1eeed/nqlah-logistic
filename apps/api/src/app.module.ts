@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 
 import { validateEnv } from './config/env.validation';
 
@@ -35,6 +35,7 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { RealtimeInvalidateInterceptor } from './modules/realtime/realtime-invalidate.interceptor';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { MapsModule } from './modules/maps/maps.module';
 import { LocationsModule } from './modules/locations/locations.module';
@@ -104,6 +105,9 @@ import { LocationsModule } from './modules/locations/locations.module';
     // then JwtAuthGuard.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Broadcasts a `data:changed` signal after each successful mutation so every
+    // dashboard updates live (see RealtimeInvalidateInterceptor).
+    { provide: APP_INTERCEPTOR, useClass: RealtimeInvalidateInterceptor },
   ],
 })
 export class AppModule {}

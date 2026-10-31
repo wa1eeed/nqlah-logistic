@@ -1,6 +1,7 @@
 'use client';
 import { SWRConfig } from 'swr';
 import { fetcher } from '@/lib/api';
+import { RealtimeInvalidator } from '@/components/realtime-invalidator';
 
 /**
  * App-wide SWR defaults. `keepPreviousData` is the key one: when a key changes
@@ -21,6 +22,7 @@ export function SWRProvider({ children }: { children: React.ReactNode }) {
         errorRetryCount: 2,
       }}
     >
+      <RealtimeInvalidator tokenKey="naqla_client_token" />
       {children}
     </SWRConfig>
   );
