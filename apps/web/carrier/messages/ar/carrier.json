@@ -5,6 +5,7 @@
   "dashboard": "لوحة التحكم",
   "opportunities": "فرص النقل",
   "orders": "طلباتي",
+  "tracking": "التتبّع",
   "bids": "سجل العروض",
   "clients": "عملائي",
   "trucks": "الشاحنات",
@@ -306,5 +307,40 @@
   "cancel": "إلغاء",
   "created": "تم تسجيل العميل",
   "ordersUnit": "طلب"
+ },
+ "tracking": {
+  "title": "التتبّع المباشر",
+  "subtitle": "{drivers} سائق · {orders} طلب نشِط",
+  "loadError": "تعذّر تحميل البيانات",
+  "drivers": {
+   "title": "السائقون",
+   "unnamed": "سائق",
+   "empty": "لا يوجد سائقون في هذه الحالة",
+   "noLocation": "لا يوجد موقع معروف",
+   "tabs": {
+    "busy": "مشغول",
+    "available": "متاح",
+    "offline": "غير متصل"
+   }
+  },
+  "orders": {
+   "title": "الطلبات",
+   "emptyAwaiting": "لا توجد طلبات بانتظار الإسناد",
+   "emptyAssigned": "لا توجد طلبات مُسندة لسائق",
+   "tabs": {
+    "awaiting": "بانتظار الإسناد",
+    "assigned": "مُسندة لسائق"
+   }
+  },
+  "selected": {
+   "live": "مباشر",
+   "clear": "إلغاء التحديد",
+   "speedUnit": "كم/س"
+  },
+  "legend": {
+   "busy": "مشغول (في رحلة)",
+   "available": "متاح",
+   "offline": "غير متصل"
+  }
  }
 }

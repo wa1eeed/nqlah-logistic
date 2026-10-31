@@ -5,6 +5,7 @@
   "dashboard": "Dashboard",
   "opportunities": "Opportunities",
   "orders": "My Orders",
+  "tracking": "Tracking",
   "bids": "Bid History",
   "clients": "My Clients",
   "trucks": "Trucks",
@@ -306,5 +307,40 @@
   "cancel": "Cancel",
   "created": "Client registered",
   "ordersUnit": "orders"
+ },
+ "tracking": {
+  "title": "Live Tracking",
+  "subtitle": "{drivers} drivers · {orders} active orders",
+  "loadError": "Failed to load data",
+  "drivers": {
+   "title": "Drivers",
+   "unnamed": "Driver",
+   "empty": "No drivers in this state",
+   "noLocation": "No known location",
+   "tabs": {
+    "busy": "Busy",
+    "available": "Available",
+    "offline": "Offline"
+   }
+  },
+  "orders": {
+   "title": "Orders",
+   "emptyAwaiting": "No orders awaiting assignment",
+   "emptyAssigned": "No orders assigned to a driver",
+   "tabs": {
+    "awaiting": "Awaiting assignment",
+    "assigned": "Assigned to driver"
+   }
+  },
+  "selected": {
+   "live": "Live",
+   "clear": "Clear selection",
+   "speedUnit": "km/h"
+  },
+  "legend": {
+   "busy": "Busy (on trip)",
+   "available": "Available",
+   "offline": "Offline"
+  }
  }
 }
