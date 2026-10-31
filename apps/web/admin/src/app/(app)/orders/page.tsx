@@ -1,27 +1,23 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
+import { OrderFilterBar } from '@/components/order-filter-bar';
 import { MiniStat } from '@/components/ui/mini-stat';
 import { FadeIn } from '@/components/ui/fade-in';
 import { FileText, Truck, Gavel, Wallet } from 'lucide-react';
 import useSWR from 'swr';
 import { useTranslations } from 'next-intl';
 import { fetcher } from '@/lib/api';
-import { ORDERS, companyById, formatDate, normalizeOrderList, SAUDI_CITIES, localizeCity, type Order } from '@naqla/shared-utils';
+import { ORDERS, companyById, formatDate, normalizeOrderList, localizeCity, type Order } from '@naqla/shared-utils';
 
 export default function AdminOrdersPage() {
   const t = useTranslations('orders');
@@ -36,6 +32,13 @@ export default function AdminOrdersPage() {
     const normalized = normalizeOrderList(data);
     return normalized.length > 0 ? normalized : ORDERS;
   }, [data]);
+
+  // City options are populated from the orders actually in view (origin or
+  // destination), so the dropdown never offers a city with zero matches.
+  const cities = useMemo(
+    () => Array.from(new Set(all.flatMap((o) => [o.originCity, o.destinationCity]).filter(Boolean))).sort(),
+    [all],
+  );
 
   const rows = useMemo(() => {
     let arr = all;
@@ -87,26 +90,24 @@ export default function AdminOrdersPage() {
                 {t.label}
                 {' '}
                 <Badge variant="secondary" className="ms-1 num">
-                  {t.key === 'ALL' ? ORDERS.length : ORDERS.filter((o) => o.status === t.key).length}
+                  {t.key === 'ALL' ? all.length : all.filter((o) => o.status === t.key).length}
                 </Badge>
               </TabsTrigger>
             ))}
           </TabsList>
         </Tabs>
 
-        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-          <Select value={city} onValueChange={setCity}>
-            <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder={t('adminList.allCities')} /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">{t('adminList.allCities')}</SelectItem>
-              {SAUDI_CITIES.slice(0, 20).map((c) => <SelectItem key={c} value={c}>{localizeCity(c)}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <div className="relative w-full md:w-80">
-            <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder={t('adminList.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9" />
-          </div>
-        </div>
+        <OrderFilterBar
+          className="w-full md:w-auto"
+          search={search}
+          onSearchChange={setSearch}
+          city={city}
+          onCityChange={setCity}
+          cities={cities}
+          searchPlaceholder={t('adminList.searchPlaceholder')}
+          allCitiesLabel={t('adminList.allCities')}
+          clearSearchLabel={t('adminList.clearSearch')}
+        />
       </div>
 
       <FadeIn delay={0.08}>

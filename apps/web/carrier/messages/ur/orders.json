@@ -83,12 +83,24 @@
   "tabs": {
    "all": "سب",
    "active": "فعال",
-   "inTransit": "راستے میں",
+   "onTheWay": "راستے میں",
    "delivered": "پہنچا دیا",
-   "completed": "مکمل"
+   "completed": "مکمل",
+   "direct": "خصوصی آرڈرز"
   },
   "emptyTitle": "No orders found",
   "emptyDesc": "No transport orders have been assigned to you yet in this category",
+  "emptyDirectDesc": "فی الحال آپ کی کمپنی کے لیے کوئی خصوصی آرڈر موجود نہیں",
+  "searchPlaceholder": "آرڈر نمبر، شہر یا سامان سے تلاش کریں...",
+  "allCities": "تمام شہر",
+  "clearSearch": "تلاش صاف کریں",
+  "legs": {
+   "pickup": "وصولی کی طرف",
+   "pickupHint": "ڈرائیور وصولی مقام کی طرف جا رہا ہے",
+   "delivery": "ترسیل کی طرف",
+   "deliveryHint": "سامان گاڑی میں لد کر منزل کی طرف رواں",
+   "none": "اس مرحلے پر کوئی آرڈر نہیں"
+  },
   "colNumber": "No.",
   "colRoute": "Route",
   "colPickup": "Pickup",
@@ -243,8 +255,8 @@
   }
  },
  "opportunities": {
-  "title": "Opportunities Market",
-  "subtitle": "All transport orders available to your company",
+  "title": "مارکیٹ آرڈرز",
+  "subtitle": "کھلی مارکیٹ میں شائع شدہ اور آپ کی کمپنی کے لیے دستیاب نقل و حمل کے آرڈرز",
   "tabOpen": "Open market orders",
   "tabDirect": "Private orders",
   "searchPlaceholder": "Search by city, cargo type, order number...",

@@ -3,17 +3,15 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import {
-  ArrowLeft, Calendar, Compass, MapPin, Radio, Search, ShieldCheck, Snowflake, Truck, UserSearch, Weight,
+  ArrowLeft, Calendar, Compass, MapPin, Radio, Search, ShieldCheck, Snowflake, Truck, Weight,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
-import { PulsingBadge } from '@/components/pulsing-badge';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
 import useSWR from 'swr';
@@ -26,7 +24,6 @@ import {
 
 export default function CarrierOpportunitiesPage() {
   const t = useTranslations('orders');
-  const [tab, setTab] = useState<'OPEN' | 'DIRECT'>('OPEN');
   const authedCompanyId = useAuthStore((s) => s.user?.companyId);
   const myCompanyId = authedCompanyId ?? CURRENT_CARRIER_ID;
   const [search, setSearch] = useState('');
@@ -41,39 +38,31 @@ export default function CarrierOpportunitiesPage() {
   const opps: Order[] = useMemo(() => {
     const normalized = normalizeOrderList(data);
     const source = normalized.length > 0 ? normalized : openOpportunitiesForCarrier(CURRENT_CARRIER_ID);
-    // The backend list endpoint bundles three buckets together: OPEN
-    // marketplace, DIRECT-to-me, and orders already assigned to me. The
-    // opportunities page should NOT show the third bucket — those aren't
-    // opportunities anymore, they belong in /orders. Filter them out here.
+    // The backend list endpoint bundles three buckets: OPEN marketplace,
+    // DIRECT-to-me, and orders already assigned to me. This page — «طلبات
+    // السوق» (the open market) — shows ONLY the open marketplace. Orders
+    // already assigned to me live in «طلباتي»; private DIRECT requests now
+    // live in «طلباتي» too (the «طلبات خاصة» tab), so both are filtered out.
     return source.filter((o) => {
       const assignedToMe =
         (o as { carrierId?: string }).carrierId === myCompanyId &&
         !['DRAFT', 'PUBLISHED', 'BIDDING'].includes(o.status);
-      return !assignedToMe;
+      if (assignedToMe) return false;
+      if (o.mode === 'DIRECT') return false;
+      return true;
     });
   }, [data, myCompanyId]);
   // Per-order: which of THIS carrier's bids (if any) is on the order, used to
   // switch the row CTA between "قدّم عرضا" / "تفاصيل" / "إعادة تقديم".
   type OppWithBids = Order & { bids?: Array<{ carrierId: string; status: string }> };
-  const hasMyPendingBid = (o: Order) => {
-    const bids = (o as OppWithBids).bids ?? [];
-    return bids.some((b) => b.carrierId === myCompanyId && b.status === 'PENDING');
-  };
   const myBidStatus = (o: Order): string | null => {
     const bids = (o as OppWithBids).bids ?? [];
     const mine = bids.find((b) => b.carrierId === myCompanyId);
     return mine?.status ?? null;
   };
-  // Effective visibility mode. Real API / rich mock data carry `mode`; the
-  // offline demo fixtures don't, so default those to the open marketplace
-  // instead of letting an undefined `mode` empty every tab.
-  const orderMode = (o: Order): 'OPEN' | 'DIRECT' => (o.mode as 'OPEN' | 'DIRECT') ?? 'OPEN';
-
-  // `pool` = opps after the cross-tab filters (city + search) but BEFORE the
-  // tab filter. Counts derived from `pool` therefore always match what the
-  // user sees inside each tab — previously counts used raw `opps` while the
-  // tab content respected city+search, causing "Tab says 1 but it's empty".
-  const pool = useMemo(() => {
+  // `filtered` = open-market opps after city + search, sorted. This page no
+  // longer has OPEN/DIRECT tabs — DIRECT (private) orders moved to «طلباتي».
+  const filtered = useMemo(() => {
     let arr = opps;
     if (city !== 'ALL') arr = arr.filter((o) => o.originCity === city || o.destinationCity === city);
     if (search.trim()) {
@@ -85,46 +74,15 @@ export default function CarrierOpportunitiesPage() {
         o.destinationCity.includes(search),
       );
     }
-    return arr;
-  }, [opps, city, search]);
-
-  // Tab counts highlight opportunities the carrier hasn't bid on yet (the
-  // actionable ones). Orders awaiting client decision still appear in the
-  // lists with a "تفاصيل" CTA, but aren't counted as "new actions to take".
-  const openCount  = pool.filter((o) => orderMode(o) === 'OPEN'   && !hasMyPendingBid(o)).length;
-  const directCount = pool.filter((o) => orderMode(o) === 'DIRECT' && !hasMyPendingBid(o)).length;
-
-  // Note: "new order" chime is handled centrally by NotificationCenter when
-  // an unread notification arrives — not on every visit to this page.
-
-  const filtered = useMemo(() => {
-    // Tab filter applied on `pool` (already filtered by city + search) so the
-    // displayed list matches the badge counts exactly.
-    let arr = pool.filter((o) => orderMode(o) === tab);
     if (sort === 'newest') arr = [...arr].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
     if (sort === 'weight') arr = [...arr].sort((a, b) => b.weightKg - a.weightKg);
     if (sort === 'pickup') arr = [...arr].sort((a, b) => +new Date(a.pickupDate) - +new Date(b.pickupDate));
     return arr;
-  }, [pool, tab, sort]);
+  }, [opps, city, search, sort]);
 
   return (
     <>
       <PageHeader title={t('opportunities.title')} subtitle={t('opportunities.subtitle')} />
-
-      <Tabs value={tab} onValueChange={(v) => setTab(v as 'OPEN' | 'DIRECT')}>
-        <TabsList>
-          <TabsTrigger value="OPEN" className="gap-2">
-            <Radio className="h-3.5 w-3.5 me-0.5" />
-            {t('opportunities.tabOpen')}
-            {openCount > 0 && <PulsingBadge count={openCount} tone="red" />}
-          </TabsTrigger>
-          <TabsTrigger value="DIRECT" className="gap-2">
-            <UserSearch className="h-3.5 w-3.5 me-0.5" />
-            {t('opportunities.tabDirect')}
-            {directCount > 0 && <PulsingBadge count={directCount} tone="amber" />}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
@@ -158,7 +116,6 @@ export default function CarrierOpportunitiesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((o) => {
             const client = companyById(o.clientId);
-            const isDirect = orderMode(o) === 'DIRECT';
             const myStatus = myBidStatus(o);
             const isPending = myStatus === 'PENDING';
             const isRejected = myStatus === 'REJECTED';
@@ -169,8 +126,8 @@ export default function CarrierOpportunitiesPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</h3>
-                        <Badge variant={isDirect ? 'warning' : 'success'}>
-                          {isDirect ? <><UserSearch className="h-3 w-3" /> {t('opportunities.directedToYou')}</> : <><Radio className="h-3 w-3" /> {t('opportunities.openMarket')}</>}
+                        <Badge variant="success">
+                          <Radio className="h-3 w-3" /> {t('opportunities.openMarket')}
                         </Badge>
                       </div>
                       <div className="mt-0.5 text-xs font-mono text-muted-foreground">{o.orderNumber}</div>

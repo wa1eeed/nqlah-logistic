@@ -3,14 +3,10 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { MapPin, Package, Plus, Search, X } from 'lucide-react';
+import { Package, Plus, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,6 +15,7 @@ import { EmptyState } from '@/components/empty-state';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
 import { PageTransition, FadeItem } from '@/components/page-transition';
+import { OrderFilterBar } from '@/components/order-filter-bar';
 import {
   CURRENT_CLIENT_ID, formatDate, ordersForClient,
   normalizeOrderList, localizeCity, type Order,
@@ -109,41 +106,16 @@ export default function ClientOrdersPage() {
       </FadeItem>
 
       <FadeItem>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t('list.searchPlaceholder')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="ps-9 pe-9"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
-                aria-label={t('list.clearSearch')}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <Select value={cityFilter} onValueChange={setCityFilter}>
-            <SelectTrigger className="w-full sm:w-56">
-              <span className="flex items-center gap-2 min-w-0">
-                <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <SelectValue placeholder={t('list.allCities')} />
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">{t('list.allCities')}</SelectItem>
-              {cities.map((c) => (
-                <SelectItem key={c} value={c}>{localizeCity(c)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <OrderFilterBar
+          search={search}
+          onSearchChange={setSearch}
+          city={cityFilter}
+          onCityChange={setCityFilter}
+          cities={cities}
+          searchPlaceholder={t('list.searchPlaceholder')}
+          allCitiesLabel={t('list.allCities')}
+          clearSearchLabel={t('list.clearSearch')}
+        />
       </FadeItem>
 
       <FadeItem>
