@@ -71,7 +71,9 @@ class AccountScreen extends ConsumerWidget {
     final c = context.nq;
     final user = ref.watch(authControllerProvider).user;
     final name = (user?.fullName.isNotEmpty ?? false) ? user!.fullName : 'حسابي';
-    final isDriver = (user?.role.toUpperCase() ?? '') == 'DRIVER';
+    final role = user?.role.toUpperCase() ?? '';
+    final isDriver = role == 'DRIVER';
+    final isCarrier = role.startsWith('CARRIER');
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -83,6 +85,16 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _profileCard(c, name, _roleLabel(user?.role ?? ''), user?.phone),
           const SizedBox(height: 16),
+          // Provider (carrier) management: membership + fleet maintenance.
+          if (isCarrier) ...[
+            _group(c, [
+              _row(c, NqIcons.sealCheck, 'عضويتي والاشتراك',
+                  onTap: () => context.push('/subscription')),
+              _row(c, NqIcons.wrench, 'إدارة الصيانة',
+                  last: true, onTap: () => context.push('/maintenance-hub')),
+            ]),
+            const SizedBox(height: 16),
+          ],
           _group(c, [
             _row(c, NqIcons.bell, 'الإشعارات',
                 onTap: () => context.push('/notifications')),
