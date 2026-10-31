@@ -7,31 +7,10 @@ import { cn } from '@/lib/utils';
  * Thin status bar pinned to the top of the viewport. Shows red ("offline")
  * when `navigator.onLine` is false, and briefly flashes green ("reconnected")
  * for 3s when the connection comes back. Auto-hides otherwise.
- *
- * On mount it also defensively tears down any service worker that may have
- * been registered by older builds of this app (v0.7.0 shipped a PWA SW that
- * caused offline-trap issues). The PWA itself has been fully removed; this
- * one-shot cleanup ensures any user with a stale browser SW from a prior
- * session is rescued the first time they load the app.
  */
 export function OnlineStatusBar() {
   const [online, setOnline] = useState(true);
   const [flash, setFlash] = useState(false);
-
-  // ─── One-shot rescue: unregister any stale SW + clear all caches ────────
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations()
-        .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-        .catch(() => { /* ignore */ });
-    }
-    if (typeof window !== 'undefined' && 'caches' in window) {
-      caches.keys()
-        .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-        .catch(() => { /* ignore */ });
-    }
-  }, []);
 
   // ─── Online/offline status tracking ─────────────────────────────────────
   useEffect(() => {
