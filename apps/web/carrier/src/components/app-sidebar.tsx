@@ -11,7 +11,8 @@ import {
 import Image from 'next/image';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
-import { useHasModule } from '@/lib/use-has-module';
+import { useModuleAccess } from '@/lib/use-has-module';
+import { LockedFeature } from '@/components/locked-feature';
 
 type PlatformBranding = { logoUrl: string; logoUrlDark: string; nameAr: string; nameEn: string };
 import { useAuthStore } from '@/lib/auth-store';
@@ -77,8 +78,10 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const nameAr  = branding?.nameAr  ?? t('appName');
   const authedCompanyId = useAuthStore((s) => s.user?.companyId);
   const myCompanyId = authedCompanyId ?? CURRENT_CARRIER_ID;
-  // «عملائي» is a gated plan module — only show its nav item when the plan has it.
-  const { has: hasOwnedClients } = useHasModule('ownedClients');
+  // «عملائي» is a gated plan module. "Locked but visible": the entry stays in
+  // the nav even when the plan lacks it, shown with a Pro lock that opens an
+  // upgrade dialog instead of navigating.
+  const clientsAccess = useModuleAccess('ownedClients');
   // Live count of fresh opportunities — orders the carrier HASN'T bid on yet.
   // This must match what the /opportunities list shows under "السوق المفتوح"
   // + "موجّه لشركتي" tabs (excludes orders already in "بانتظار موافقة العميل").
@@ -128,22 +131,16 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <div className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t(`groups.${group.titleKey}`)}
             </div>
-            {group.items
-              .filter((item) => item.href !== '/clients' || hasOwnedClients)
-              .map((item) => {
+            {group.items.map((item) => {
               const Icon = item.icon;
               const isActive = item.href === '/' ? pathname === '/' : pathname === item.href || pathname.startsWith(item.href + '/');
               const showOppsBadge = item.href === '/opportunities' && openOppsCount > 0;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={cn(
-                    'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                    isActive ? 'text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  )}
-                >
+              const rowClass = cn(
+                'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                isActive ? 'text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+              );
+              const inner = (
+                <>
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active"
@@ -154,6 +151,28 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   <Icon className="h-4 w-4 shrink-0 relative z-10" />
                   <span className="flex-1 relative z-10">{t(`nav.${item.labelKey}`)}</span>
                   {showOppsBadge && <span className="relative z-10"><PulsingBadge count={openOppsCount} compact /></span>}
+                </>
+              );
+
+              // «عملائي» locked but visible when the plan lacks the module.
+              if (item.href === '/clients' && !clientsAccess.loading && !clientsAccess.allowed) {
+                return (
+                  <LockedFeature
+                    key={item.href}
+                    locked
+                    featureName={t('nav.clients')}
+                    description="سجِّل عملاءك وأدِر طلباتهم وفوترتهم من لوحة تحكّمك مباشرةً."
+                    planName={clientsAccess.requiredPlanName}
+                    className={rowClass}
+                  >
+                    {inner}
+                  </LockedFeature>
+                );
+              }
+
+              return (
+                <Link key={item.href} href={item.href} onClick={onNavigate} className={rowClass}>
+                  {inner}
                 </Link>
               );
             })}
