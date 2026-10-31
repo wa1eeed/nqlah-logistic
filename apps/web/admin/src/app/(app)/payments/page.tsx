@@ -16,11 +16,13 @@ import { FadeIn } from '@/components/ui/fade-in';
 import useSWR from 'swr';
 import { Loader2 } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
+import { useConfirm } from '@/components/confirm';
 import { notify } from '@/lib/notify';
 import { PAYMENTS, companyById, formatDate, type Payment } from '@naqla/shared-utils';
 
 export default function AdminPaymentsPage() {
   const t = useTranslations('payments');
+  const confirm = useConfirm();
   const [tab, setTab] = useState('ALL');
   const [releasingId, setReleasingId] = useState<string | null>(null);
 
@@ -32,6 +34,14 @@ export default function AdminPaymentsPage() {
   // flips state HELD → RELEASED and credits the carrier's wallet.
   const release = async (id: string) => {
     if (releasingId) return;
+    const p = all.find((x) => x.id === id);
+    const ok = await confirm({
+      title: 'تحرير المبلغ المحجوز',
+      description: `سيتم تحرير مبلغ ${(p?.amount ?? 0).toLocaleString('en-US')} ر.س من الضمان وإيداعه في محفظة الناقل فوراً، متجاوزاً التحرير التلقائي. لا يمكن التراجع عن هذا الإجراء.`,
+      confirmLabel: 'تحرير المبلغ',
+      destructive: true,
+    });
+    if (!ok) return;
     setReleasingId(id);
     try {
       await api.post(`/payments/${id}/release`, {});

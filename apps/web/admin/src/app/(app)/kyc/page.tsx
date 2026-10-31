@@ -16,6 +16,7 @@ import {
 import { PageHeader } from '@/components/page-header';
 import { StatsCard } from '@/components/stats-card';
 import { api, fetcher } from '@/lib/api';
+import { useConfirm } from '@/components/confirm';
 import { notify } from '@/lib/notify';
 import { COMPANIES, formatRelative, pendingKycCompanies, localizeCity, localizeRegion, type Company } from '@naqla/shared-utils';
 
@@ -29,6 +30,7 @@ const REQUIRED_DOCS = [
 
 export default function KycQueuePage() {
   const t = useTranslations('compliance');
+  const confirm = useConfirm();
   // Live company list from admin endpoint. Falls back to mock COMPANIES when
   // the API isn't reachable so the page never goes blank.
   type ApiCompany = Company & { status?: string };
@@ -54,6 +56,12 @@ export default function KycQueuePage() {
 
   const approve = async () => {
     if (!reviewing || submitting) return;
+    const ok = await confirm({
+      title: 'اعتماد المنشأة وتفعيلها',
+      description: `سيتم اعتماد توثيق «${reviewing.nameAr}» وتفعيل حسابها، فتتمكّن من العمل على المنصة. يمكن تعليق الحساب لاحقاً عند الحاجة.`,
+      confirmLabel: 'اعتماد وتفعيل',
+    });
+    if (!ok) return;
     setSubmitting(true);
     try {
       await api.put(`/admin/companies/${reviewing.id}/status`, { status: 'ACTIVE' });

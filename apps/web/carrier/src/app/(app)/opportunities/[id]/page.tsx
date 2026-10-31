@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { fetcher, api } from '@/lib/api';
+import { useConfirm } from '@/components/confirm';
 import { notify } from '@/lib/notify';
 import { useAuthStore } from '@/lib/auth-store';
 import {
@@ -39,6 +40,7 @@ const TRUCK_LABEL_KEYS = [
 
 export default function CarrierOpportunityDetail() {
   const t = useTranslations('orders');
+  const confirm = useConfirm();
   const TRUCK_LABELS: Record<string, string> = Object.fromEntries(
     TRUCK_LABEL_KEYS.map((k) => [k, t(`oppDetail.truckLabels.${k}`)]),
   );
@@ -446,6 +448,14 @@ export default function CarrierOpportunityDetail() {
               <Button
                 onClick={async () => {
                   if (!order) return;
+                  const ok = await confirm({
+                    title: fixedPrice != null ? 'قبول السعر وتقديم العرض' : 'تأكيد تقديم العرض',
+                    description: fixedPrice != null
+                      ? `سيتم تقديم عرضك بسعر ${effPrice.toLocaleString('en-US')} ر.س على هذا الطلب. صافي ما سيصلك بعد العمولة والضريبة ${net.toLocaleString('en-US')} ر.س. يظل العرض قائماً حتى يقبله العميل أو تسحبه.`
+                      : `سيتم إرسال عرضك بسعر ${effPrice.toLocaleString('en-US')} ر.س للعميل. صافي ما سيصلك بعد العمولة والضريبة ${net.toLocaleString('en-US')} ر.س. يمكنك سحب العرض ما دام لم يُقبل.`,
+                    confirmLabel: 'تقديم العرض',
+                  });
+                  if (!ok) return;
                   setSubmitErr(null);
                   setSubmitting(true);
                   try {
@@ -579,6 +589,7 @@ function DirectNegotiationView({
   onBack: () => void;
 }) {
   const t = useTranslations('orders');
+  const confirm = useConfirm();
   const [action, setAction] = useState<null | 'ACCEPT' | 'COUNTER' | 'DECLINE'>(null);
   const [price, setPrice] = useState<number>(0);
   const [days, setDays] = useState<number>(2);
@@ -601,6 +612,17 @@ function DirectNegotiationView({
   const [submitting, setSubmitting] = useState(false);
   const submit = async () => {
     if (submitting) return;
+    // DECLINE already goes through its own confirmation panel; gate ACCEPT/COUNTER.
+    if (action === 'ACCEPT' || action === 'COUNTER') {
+      const ok = await confirm({
+        title: action === 'ACCEPT' ? 'قبول السعر المعروض' : 'إرسال عرض مضاد',
+        description: action === 'ACCEPT'
+          ? `سيتم تقديم عرضك بسعر ${price.toLocaleString('en-US')} ر.س للعميل للموافقة النهائية.`
+          : `سيتم إرسال عرض مضاد بسعر ${price.toLocaleString('en-US')} ر.س، وينتظر ردّ العميل.`,
+        confirmLabel: action === 'ACCEPT' ? 'قبول وإرسال' : 'إرسال العرض',
+      });
+      if (!ok) return;
+    }
     setSubmitting(true);
     try {
       if (action === 'ACCEPT' || action === 'COUNTER') {
@@ -943,9 +965,17 @@ function DirectNegotiationView({
 
 function WithdrawBidButton({ orderId, bidId, onSuccess }: { orderId: string; bidId: string; onSuccess: () => void }) {
   const t = useTranslations('orders');
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(false);
   const withdraw = async () => {
     if (loading) return;
+    const ok = await confirm({
+      title: 'سحب العرض',
+      description: 'سيتم سحب عرضك من هذا الطلب ولن يعود ظاهراً للعميل. يمكنك تقديم عرض جديد لاحقاً ما دام الطلب مفتوحاً.',
+      confirmLabel: 'سحب العرض',
+      destructive: true,
+    });
+    if (!ok) return;
     setLoading(true);
     try {
       await api.post(`/orders/${orderId}/bids/${bidId}/withdraw`, {});

@@ -17,6 +17,7 @@ import { StopsPanel } from '@/components/stops-panel';
 import useSWR, { useSWRConfig } from 'swr';
 import { useTranslations } from 'next-intl';
 import { api, fetcher } from '@/lib/api';
+import { useConfirm } from '@/components/confirm';
 import { notify } from '@/lib/notify';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -664,6 +665,7 @@ function ConsolidatedReadonly({ order }: {
   order: { id: string; orderNumber: string; truckCount?: number; legs?: ConsolidatedLeg[]; agreedPrice: number | null; commission?: number | null };
 }) {
   const t = useTranslations('orders');
+  const confirm = useConfirm();
   const LEG_LABEL: Record<ConsolidatedLeg['status'], string> = {
     PENDING: t('adminDetail.legs.PENDING'),
     ASSIGNED: t('adminDetail.legs.ASSIGNED'),
@@ -696,6 +698,13 @@ function ConsolidatedReadonly({ order }: {
   const { data: legBids } = useSWR<Array<{ id: string; amount: number; carrier?: { nameAr: string }; status: string }>>(
     bidsLeg != null ? `/orders/${order.id}/bids?legIndex=${bidsLeg}` : null, fetcher);
   const acceptLegBid = async (bidId: string) => {
+    const bid = legBids?.find((b) => b.id === bidId);
+    const ok = await confirm({
+      title: 'ترسية عرض الشحنة الفرعية',
+      description: `سيتم ترسية هذه الشحنة الفرعية على ${bid?.carrier?.nameAr ?? 'الناقل'} بسعر ${(bid?.amount ?? 0).toLocaleString('en-US')} ر.س وإسنادها إليه. لا يمكن التراجع بعد الترسية.`,
+      confirmLabel: 'ترسية وإسناد',
+    });
+    if (!ok) return;
     try {
       await api.post(`/orders/${order.id}/bids/${bidId}/accept`, {});
       setBidsLeg(null);
