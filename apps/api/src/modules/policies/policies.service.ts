@@ -225,6 +225,18 @@ export class PoliciesService {
     return f?.[key] !== false;
   }
 
+  /**
+   * Opt-IN capability check: the feature is granted ONLY when the company's plan
+   * explicitly includes it (`features[key] === true`). Unlike [hasFeature] this
+   * denies by default, so a gated add-on module (e.g. «عملائي») stays hidden
+   * until the provider's plan includes it.
+   */
+  async hasModule(companyId: string | null | undefined, key: string): Promise<boolean> {
+    const policy = await this.effectiveForCompany(companyId);
+    const f = policy.features as Record<string, boolean | number> | undefined;
+    return f?.[key] === true;
+  }
+
   // ─── Provider visibility ─────────────────────────────────────
 
   /**
