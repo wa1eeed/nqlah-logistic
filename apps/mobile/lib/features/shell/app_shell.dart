@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/i18n/locale_controller.dart';
 import '../../core/session/identity.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -55,7 +56,9 @@ class _AppShellState extends ConsumerState<AppShell> {
   int _index = 0;
 
   List<NqTab> get _tabs => tabsFor(_identity,
-      isOwnerDriver: _ownerDriver, ownerDriverContext: _odContext);
+      s: ref.read(stringsProvider),
+      isOwnerDriver: _ownerDriver,
+      ownerDriverContext: _odContext);
 
   void _switchTo(NqIdentity id, {bool ownerDriver = false}) {
     setState(() {
@@ -69,6 +72,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
+    ref.watch(localeControllerProvider); // rebuild tab labels on language change
     final tabs = _tabs;
     // Honor an external tab request (e.g. the wizard linking to the Trucks tab).
     final requested = ref.watch(requestedShellTabProvider);

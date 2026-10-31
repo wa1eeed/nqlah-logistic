@@ -1,3 +1,4 @@
+import '../i18n/app_strings.dart';
 import '../widgets/nq_icon.dart';
 
 /// The three real account identities (handoff §1). The server's policy engine
@@ -15,9 +16,11 @@ class NqTab {
   final String icon;
 }
 
-/// Resolves the bottom-tab set for a session (handoff §2a).
+/// Resolves the bottom-tab set for a session (handoff §2a). Labels are
+/// localized via [s] (the active-language lookup).
 List<NqTab> tabsFor(
   NqIdentity identity, {
+  required S s,
   bool isOwnerDriver = false,
   OwnerDriverContext ownerDriverContext = OwnerDriverContext.provider,
 }) {
@@ -25,42 +28,42 @@ List<NqTab> tabsFor(
     case NqIdentity.customer:
       // Addendum 01 §0: Finance leaves the bar (moves to a wallet button in the
       // Home header); the Trucks tab takes slot 2.
-      return const [
-        NqTab('الرئيسية', NqIcons.houseSimple),
-        NqTab('الشاحنات', NqIcons.truck),
-        NqTab('شحناتي', NqIcons.package),
-        NqTab('العروض', NqIcons.handCoins),
-        NqTab('حسابي', NqIcons.userCircle),
+      return [
+        NqTab(s('nav.home'), NqIcons.houseSimple),
+        NqTab(s('nav.trucks'), NqIcons.truck),
+        NqTab(s('nav.myShipments'), NqIcons.package),
+        NqTab(s('nav.offers'), NqIcons.handCoins),
+        NqTab(s('nav.account'), NqIcons.userCircle),
       ];
     case NqIdentity.provider:
       if (isOwnerDriver) {
         if (ownerDriverContext == OwnerDriverContext.driving) {
-          return const [
-            NqTab('رحلاتي', NqIcons.path),
-            NqTab('الرسائل', NqIcons.chats),
-            NqTab('حسابي', NqIcons.userCircle),
+          return [
+            NqTab(s('nav.myTrips'), NqIcons.path),
+            NqTab(s('nav.messages'), NqIcons.chats),
+            NqTab(s('nav.account'), NqIcons.userCircle),
           ];
         }
-        return const [
-          NqTab('الرئيسية', NqIcons.houseSimple),
-          NqTab('الأحمال', NqIcons.magnifyingGlass),
-          NqTab('عملياتي', NqIcons.briefcase),
-          NqTab('رحلاتي', NqIcons.path),
-          NqTab('حسابي', NqIcons.userCircle),
+        return [
+          NqTab(s('nav.home'), NqIcons.houseSimple),
+          NqTab(s('nav.loads'), NqIcons.magnifyingGlass),
+          NqTab(s('nav.operations'), NqIcons.briefcase),
+          NqTab(s('nav.myTrips'), NqIcons.path),
+          NqTab(s('nav.account'), NqIcons.userCircle),
         ];
       }
-      return const [
-        NqTab('الرئيسية', NqIcons.houseSimple),
-        NqTab('الأحمال', NqIcons.magnifyingGlass),
-        NqTab('التكليفات', NqIcons.clipboardText),
-        NqTab('الأسطول', NqIcons.truck),
-        NqTab('المالية', NqIcons.wallet),
+      return [
+        NqTab(s('nav.home'), NqIcons.houseSimple),
+        NqTab(s('nav.loads'), NqIcons.magnifyingGlass),
+        NqTab(s('nav.assignments'), NqIcons.clipboardText),
+        NqTab(s('nav.fleet'), NqIcons.truck),
+        NqTab(s('nav.finance'), NqIcons.wallet),
       ];
     case NqIdentity.employedDriver:
-      return const [
-        NqTab('رحلاتي', NqIcons.path),
-        NqTab('الإشعارات', NqIcons.bell),
-        NqTab('حسابي', NqIcons.userCircle),
+      return [
+        NqTab(s('nav.myTrips'), NqIcons.path),
+        NqTab(s('nav.notifications'), NqIcons.bell),
+        NqTab(s('nav.account'), NqIcons.userCircle),
       ];
   }
 }
