@@ -45,7 +45,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
           Row(children: [
             Ltr('2,898.00', style: NqType.price(size: 24).copyWith(color: c.tx)),
             const SizedBox(width: 6),
-            Text('ر.س', style: NqType.label.copyWith(color: c.tx2)),
+            Text('⃁', style: NqType.label.copyWith(color: c.tx2)),
           ]),
           Ltr('NQ-24-08812 · TGHU 771392-0', style: NqType.code().copyWith(color: c.tx)),
           const SizedBox(height: NqSpace.x6),

@@ -311,7 +311,7 @@ class OwnerDriverHomeScreen extends ConsumerWidget {
                       NqType.numeric(26, FontWeight.w700).copyWith(color: c.tx)),
             ),
             const SizedBox(height: 2),
-            Text('أرباح هذا الشهر · ر.س',
+            Text('أرباح هذا الشهر · ⃁',
                 style: NqType.caption.copyWith(color: c.tx2)),
           ]),
         ),

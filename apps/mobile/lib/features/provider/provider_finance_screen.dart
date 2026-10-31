@@ -8,6 +8,7 @@ import '../../core/platform/external_links.dart';
 import '../../core/platform/format.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
+import '../../core/widgets/currency_symbol.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/segmented.dart';
@@ -189,7 +190,7 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
               Ltr(money(amount),
                   style: NqType.price(size: 16).copyWith(color: c.tx)),
               const SizedBox(width: 3),
-              Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+              CurrencySymbol( style: NqType.caption.copyWith(color: c.tx2)),
             ]),
             if (p.orderNumber != null) ...[
               const SizedBox(height: 2),
@@ -267,7 +268,7 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
                 Ltr(money(inv.totalAmount),
                     style: NqType.price(size: 18).copyWith(color: c.tx)),
                 const SizedBox(width: 3),
-                Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+                CurrencySymbol( style: NqType.caption.copyWith(color: c.tx2)),
               ]),
               const SizedBox(height: 6),
               Container(
@@ -340,7 +341,7 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Text('ر.س',
+                CurrencySymbol(
                     style:
                         NqType.h3.copyWith(color: NqFixed.heroTextSecondary)),
               ],

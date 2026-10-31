@@ -303,7 +303,7 @@ class TruckDetailScreen extends ConsumerWidget {
                 Ltr(_fmtNum(t.pricePerTrip!),
                     style: NqType.price(size: 19).copyWith(color: c.tx)),
                 const SizedBox(width: 3),
-                Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+                Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
               ] else
                 Text('السعر بعد الطلب',
                     style: NqType.bodyStrong.copyWith(color: c.tx)),

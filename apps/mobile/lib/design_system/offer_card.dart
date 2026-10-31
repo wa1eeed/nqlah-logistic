@@ -155,7 +155,7 @@ class NqOfferCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Ltr(price, style: NqType.price(size: 22).copyWith(color: c.tx)),
-          Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+          Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
         ],
       );
 

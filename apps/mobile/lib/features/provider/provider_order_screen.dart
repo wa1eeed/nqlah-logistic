@@ -339,7 +339,7 @@ class ProviderOrderScreen extends ConsumerWidget {
           row('الوزن', o.weight != null ? '${o.weight} طن' : '—'),
           if (o.agreedPrice != null || o.carrierAmount != null)
             row('قيمتك',
-                '${(o.carrierAmount ?? o.agreedPrice)!.toStringAsFixed(0)} ر.س'),
+                '${(o.carrierAmount ?? o.agreedPrice)!.toStringAsFixed(0)} ⃁'),
         ],
       ),
     );

@@ -218,7 +218,7 @@ class NqAvailabilityCard extends StatelessWidget {
               Row(children: [
                 Ltr(price!, style: NqType.price(size: 17).copyWith(color: c.tx)),
                 const SizedBox(width: 3),
-                Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+                Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
               ]),
             ],
           )

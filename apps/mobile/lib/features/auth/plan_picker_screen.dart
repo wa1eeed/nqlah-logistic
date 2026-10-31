@@ -68,7 +68,7 @@ class _PlanPickerScreenState extends ConsumerState<PlanPickerScreen> {
           Row(children: [
             Ltr('$_total', style: NqType.price(size: 18).copyWith(color: c.tx)),
             const SizedBox(width: 3),
-            Text('ر.س/شهر', style: NqType.caption.copyWith(color: c.tx2)),
+            Text('⃁/شهر', style: NqType.caption.copyWith(color: c.tx2)),
           ]),
         ],
       ),
@@ -95,7 +95,7 @@ class _PlanPickerScreenState extends ConsumerState<PlanPickerScreen> {
           Row(children: [
             Ltr('199', style: NqType.price(size: 18).copyWith(color: c.tx)),
             const SizedBox(width: 3),
-            Text('ر.س/شهر', style: NqType.caption.copyWith(color: c.tx2)),
+            Text('⃁/شهر', style: NqType.caption.copyWith(color: c.tx2)),
           ]),
           const Spacer(),
           Column(
@@ -162,7 +162,7 @@ class _PlanPickerScreenState extends ConsumerState<PlanPickerScreen> {
                       Text('احترافي',
                           style: NqType.h1.copyWith(color: NqFixed.heroText)),
                       const SizedBox(height: 2),
-                      Text('من 299 ر.س · 5 شاحنات مشمولة',
+                      Text('من 299 ⃁ · 5 شاحنات مشمولة',
                           style: NqType.caption
                               .copyWith(color: NqFixed.heroTextSecondary)),
                     ],
@@ -170,7 +170,7 @@ class _PlanPickerScreenState extends ConsumerState<PlanPickerScreen> {
                 ],
               ),
               const SizedBox(height: 18),
-              _sectionLabel('عدد الشاحنات', '+39 ر.س لكل شاحنة إضافية'),
+              _sectionLabel('عدد الشاحنات', '+39 ⃁ لكل شاحنة إضافية'),
               const SizedBox(height: 10),
               _stepper(),
               const SizedBox(height: 18),

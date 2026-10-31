@@ -255,7 +255,7 @@ class _OrderStep4PricingState extends ConsumerState<OrderStep4Pricing> {
           ),
           child: Row(
             children: [
-              Text('ر.س', style: NqType.label.copyWith(color: c.tx2)),
+              Text('⃁', style: NqType.label.copyWith(color: c.tx2)),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(

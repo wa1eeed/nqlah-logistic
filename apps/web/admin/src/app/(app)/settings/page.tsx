@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { fetcher, api } from '@/lib/api';
 import { notify } from '@/lib/notify';
-import { Bell, Globe, Globe2, Languages, MapPin, MessageSquare, Package, Palette, Pencil, Percent, Plus, ShieldCheck, Smartphone, Trash2, Truck, X } from 'lucide-react';
+import { Bell, Coins, Globe, Globe2, Languages, MapPin, MessageSquare, Package, Palette, Pencil, Percent, Plus, ShieldCheck, Smartphone, Trash2, Truck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +26,7 @@ import { PageHeader } from '@/components/page-header';
 import { BrandingPanel } from '@/components/settings/branding-panel';
 import { CitiesPanel } from '@/components/settings/cities-panel';
 import { CountriesPanel } from '@/components/settings/countries-panel';
+import { CurrenciesPanel } from '@/components/settings/currencies-panel';
 import { CargoTypesPanel } from '@/components/settings/cargo-types-panel';
 import { SmsTemplatesPanel } from '@/components/settings/sms-templates-panel';
 import { CompliancePanel } from '@/components/settings/compliance-panel';
@@ -252,6 +253,10 @@ export default function AdminSettingsPage() {
             <Smartphone className="h-4 w-4 me-1.5" />
             {t('settings.tabs.appSettings')}
           </TabsTrigger>
+          <TabsTrigger value="currencies">
+            <Coins className="h-4 w-4 me-1.5" />
+            {t('settings.tabs.currencies')}
+          </TabsTrigger>
           <TabsTrigger value="language">
             <Languages className="h-4 w-4 me-1.5" />
             {t('settings.tabs.language')}
@@ -365,6 +370,10 @@ export default function AdminSettingsPage() {
 
         <TabsContent value="app-settings">
           <AppSettingsPanel />
+        </TabsContent>
+
+        <TabsContent value="currencies">
+          <CurrenciesPanel />
         </TabsContent>
 
         <TabsContent value="language">

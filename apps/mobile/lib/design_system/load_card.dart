@@ -43,7 +43,7 @@ class NqLoadCard extends StatelessWidget {
   final List<MetaItem> meta; // fixed, 4 items
   final String? price; // fixed "3,200"
   final String? offersText; // tender "7 عروض مقدّمة"
-  /// The carrier's own bid line (e.g. «عرضك: 5,700 ر.س»), shown — stacked above
+  /// The carrier's own bid line (e.g. «عرضك: 5,700 ⃁»), shown — stacked above
   /// [offersText] and shrink-to-fit — when they already bid.
   final String? myBidText;
   final VoidCallback? onAccept;
@@ -105,7 +105,7 @@ class NqLoadCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 3),
-                        Text('ر.س', style: NqType.caption.copyWith(color: c.tx2)),
+                        Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
                       ]),
                     ),
                   ],

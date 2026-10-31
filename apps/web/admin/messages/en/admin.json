@@ -333,7 +333,38 @@
  "smsTemplates": "SMS Templates",
  "general": "General",
  "language": "Language",
- "appSettings": "App Settings"
+ "appSettings": "App Settings",
+ "currencies": "Currencies"
+ },
+ "currencies": {
+ "title": "Currencies",
+ "subtitle": "Enable the available currencies and pick the default. The default currency's symbol is what every amount renders with across the platform and app.",
+ "add": "Add currency",
+ "addTitle": "Add a new currency",
+ "addHint": "Enter the 3-letter code, display symbol, Arabic + English name and the number of decimals.",
+ "addAction": "Add",
+ "empty": "No currencies yet — add one to start",
+ "makeDefault": "Set default",
+ "defaultBadge": "Default",
+ "removeTitle": "Remove currency",
+ "confirmRemove": "Remove the \"{name}\" currency?",
+ "decimalsLabel": "{n} decimals",
+ "codeInvalid": "The code must be 3 uppercase letters.",
+ "duplicate": "This code is already added.",
+ "needOne": "At least one currency must be enabled.",
+ "pickDefault": "Pick the default currency.",
+ "save": "Save currencies",
+ "saving": "Saving…",
+ "saved": "Currencies saved",
+ "saveFailed": "Failed to save currencies",
+ "cancel": "Cancel",
+ "fields": {
+ "code": "Code",
+ "symbol": "Symbol",
+ "nameAr": "Arabic name",
+ "nameEn": "English name",
+ "decimals": "Decimals"
+ }
  },
  "countries": {
  "title": "Countries, Regions & Cities",
