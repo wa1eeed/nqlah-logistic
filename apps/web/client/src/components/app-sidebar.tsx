@@ -3,7 +3,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import {
-  Bell, FileText, LayoutDashboard, LifeBuoy, MapPin,
+  BadgeCheck, Bell, FileText, LayoutDashboard, LifeBuoy, MapPin,
   Navigation, Package, Settings, Shield, Truck, Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -31,8 +31,9 @@ const NAV: NavGroup[] = [
   {
     titleKey: 'finance',
     items: [
-      { href: '/finance',  labelKey: 'finance',  icon: Wallet },
-      { href: '/invoices', labelKey: 'invoices', icon: FileText },
+      { href: '/finance',      labelKey: 'finance',      icon: Wallet },
+      { href: '/invoices',     labelKey: 'invoices',     icon: FileText },
+      { href: '/subscription', labelKey: 'subscription', icon: BadgeCheck },
     ],
   },
   {
