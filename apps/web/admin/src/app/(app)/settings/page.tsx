@@ -21,7 +21,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { SUPPORTED_LOCALES } from '@/i18n';
+import { SUPPORTED_LOCALES } from '@/i18n-config';
 import { PageHeader } from '@/components/page-header';
 import { BrandingPanel } from '@/components/settings/branding-panel';
 import { CitiesPanel } from '@/components/settings/cities-panel';
