@@ -9,6 +9,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../design_system/confirm_dialog.dart';
 
 /// Electronic proof of delivery (handoff 1k). Photos + signature + recipient
 /// OTP are the design's capture steps (upload + a POD-verify backend are
@@ -35,9 +36,16 @@ class _DriverEpodScreenState extends ConsumerState<DriverEpodScreen> {
   }
 
   Future<void> _confirm() async {
-    setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
+    if (!await nqConfirm(context,
+        title: 'تأكيد التسليم',
+        message: 'سيتم تسجيل الشحنة كـ«تم التسليم» نهائياً وإشعار العميل لتأكيد الاستلام '
+            'وبدء تحرير المستحقات. لا يمكن التراجع عن هذا الإجراء.',
+        confirmLabel: 'تأكيد التسليم')) {
+      return;
+    }
+    setState(() => _busy = true);
     try {
       await ref.read(ordersRepositoryProvider).addTracking(
             widget.orderId,

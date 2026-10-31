@@ -9,6 +9,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
+import '../../design_system/confirm_dialog.dart';
 import '../../design_system/party_card.dart';
 import '../../design_system/status_chip.dart';
 
@@ -591,6 +592,14 @@ extension _OrderActions on OrderDetailScreen {
   Future<void> _complete(
       BuildContext context, WidgetRef ref, OrderDetail o) async {
     final messenger = ScaffoldMessenger.of(context);
+    if (!await nqConfirm(context,
+        title: 'تأكيد الاستلام',
+        message: 'بتأكيد استلام الشحنة سيُغلق الطلب نهائياً وتُحرَّر مستحقات المزوّد من الضمان. '
+            'أكّد فقط بعد استلام شحنتك كاملةً.',
+        confirmLabel: 'تأكيد الاستلام',
+        icon: NqIcons.checkCircle)) {
+      return;
+    }
     try {
       await ref.read(ordersRepositoryProvider).completeOrder(o.id);
       ref.invalidate(myShipmentsProvider);

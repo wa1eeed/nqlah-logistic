@@ -10,6 +10,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../design_system/confirm_dialog.dart';
 import '../../design_system/status_chip.dart';
 import 'driver_location_beacon.dart';
 
@@ -253,6 +254,14 @@ class DriverTripExecutionScreen extends ConsumerWidget {
   Future<void> _confirmPickup(
       BuildContext context, WidgetRef ref, OrderDetail o) async {
     final messenger = ScaffoldMessenger.of(context);
+    if (!await nqConfirm(context,
+        title: 'تأكيد التحميل',
+        message: 'سيتم تحديث حالة الشحنة إلى «جارية» وإشعار العميل بانطلاق الرحلة. '
+            'تأكّد من تحميل الشحنة فعلياً قبل المتابعة.',
+        confirmLabel: 'تأكيد التحميل',
+        icon: NqIcons.package)) {
+      return;
+    }
     try {
       await ref
           .read(ordersRepositoryProvider)
