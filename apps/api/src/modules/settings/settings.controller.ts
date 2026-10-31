@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -7,6 +7,23 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 @Controller('settings')
 export class SettingsController {
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * Best-effort country of the caller, from the CDN/proxy geo headers
+   * (Cloudflare / Vercel / App Engine). Used to pre-select the phone country
+   * code at registration. Falls back to SA when unknown.
+   */
+  @Public()
+  @Get('geo')
+  geo(@Req() req: { headers: Record<string, string | string[] | undefined> }) {
+    const h = req.headers;
+    const raw = (h['cf-ipcountry'] ?? h['x-vercel-ip-country'] ?? h['x-appengine-country']) as
+      | string
+      | undefined;
+    const country = (raw ?? '').toString().toUpperCase();
+    const valid = /^[A-Z]{2}$/.test(country) && country !== 'XX';
+    return { country: valid ? country : 'SA' };
+  }
 
   @Public()
   @Get('catalogs')

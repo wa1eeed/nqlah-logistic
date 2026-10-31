@@ -12,6 +12,7 @@ class RegistrationData {
     this.firstName = '',
     this.lastName = '',
     this.phone = '',
+    this.countryCode = 'SA',
     this.email = '',
     this.password = '',
     this.companyNameAr = '',
@@ -29,7 +30,8 @@ class RegistrationData {
 
   final String firstName;
   final String lastName;
-  final String phone; // local Saudi digits (e.g. 5XXXXXXXX)
+  final String phone; // full international number, e.g. +966501234567
+  final String countryCode; // ISO-3166 alpha-2 of the phone's country, e.g. SA
   final String email;
   final String password;
   final String companyNameAr;
@@ -55,6 +57,7 @@ class RegistrationData {
     String? firstName,
     String? lastName,
     String? phone,
+    String? countryCode,
     String? email,
     String? password,
     String? companyNameAr,
@@ -73,6 +76,7 @@ class RegistrationData {
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       phone: phone ?? this.phone,
+      countryCode: countryCode ?? this.countryCode,
       email: email ?? this.email,
       password: password ?? this.password,
       companyNameAr: companyNameAr ?? this.companyNameAr,

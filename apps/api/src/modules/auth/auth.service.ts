@@ -51,6 +51,21 @@ export class AuthService {
 
   // ─── Register (Phone-first, email optional) ─────────────────────
 
+  /** Whether a phone / email is already taken (for the sign-up pre-check). */
+  async checkAvailability(phone?: string, email?: string) {
+    const normPhone = phone ? normalizeSaudiPhone(phone) : undefined;
+    const normEmail = email?.trim().toLowerCase() || undefined;
+    const [byPhone, byEmail] = await Promise.all([
+      normPhone
+        ? this.prisma.user.findFirst({ where: { phone: normPhone }, select: { id: true } })
+        : Promise.resolve(null),
+      normEmail
+        ? this.prisma.user.findFirst({ where: { email: normEmail }, select: { id: true } })
+        : Promise.resolve(null),
+    ]);
+    return { phoneTaken: !!byPhone, emailTaken: !!byEmail };
+  }
+
   async register(dto: RegisterDto, meta: { ip?: string; userAgent?: string } = {}) {
     if (!(dto.acceptedTerms && dto.acceptedPrivacy && dto.acceptedTransport)) {
       throw new BadRequestException({
@@ -62,11 +77,23 @@ export class AuthService {
     const phone = normalizeSaudiPhone(dto.phone);
     const email = dto.email?.toLowerCase();
 
-    const existing = await this.prisma.user.findFirst({
-      where: { OR: [{ phone }, ...(email ? [{ email }] : [])] },
-    });
-    if (existing) {
-      throw new ConflictException({ code: 'USER_EXISTS', message: 'هذا المستخدم مسجل مسبقاً' });
+    // Field-specific duplicate checks so the UI can point the user at the exact
+    // field (and suggest signing in) instead of a generic "already registered".
+    const byPhone = await this.prisma.user.findFirst({ where: { phone }, select: { id: true } });
+    if (byPhone) {
+      throw new ConflictException({
+        code: 'PHONE_TAKEN',
+        message: 'رقم الجوال مسجّل مسبقاً. سجّل الدخول بدلاً من ذلك.',
+      });
+    }
+    if (email) {
+      const byEmail = await this.prisma.user.findFirst({ where: { email }, select: { id: true } });
+      if (byEmail) {
+        throw new ConflictException({
+          code: 'EMAIL_TAKEN',
+          message: 'البريد الإلكتروني مسجّل مسبقاً. سجّل الدخول بدلاً من ذلك.',
+        });
+      }
     }
 
     const passwordHash = await bcrypt.hash(dto.password, Number(process.env.BCRYPT_ROUNDS ?? 12));

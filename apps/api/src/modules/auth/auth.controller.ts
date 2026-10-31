@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
@@ -25,6 +25,15 @@ export class AuthController {
   @Post('register')
   register(@Body() dto: RegisterDto, @Req() req: any) {
     return this.auth.register(dto, reqMeta(req));
+  }
+
+  // Pre-submit availability so the sign-up form can flag a taken phone/email at
+  // the first step instead of only failing on the final POST.
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60 * 1000 } })
+  @Get('check-availability')
+  checkAvailability(@Query('phone') phone?: string, @Query('email') email?: string) {
+    return this.auth.checkAvailability(phone, email);
   }
 
   // TODO: re-enable throttle after app testing is complete
