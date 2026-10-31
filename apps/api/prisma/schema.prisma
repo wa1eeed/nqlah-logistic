@@ -386,6 +386,9 @@ model Truck {
   photos    String[]
   documents String[]
 
+  /// Free-text provider note on the truck («ملاحظة»), editable from the detail page.
+  note String?
+
   // Fleet maintenance («إدارة صيانة الأسطول», handoff 3g). All optional — the
   // add-on is progressive; a truck with none simply shows an empty schedule.
   odometerKm       Int?       // current distance reading
@@ -499,6 +502,9 @@ model DriverProfile {
 
   photo    String?
   isActive Boolean @default(true)
+
+  /// Free-text provider note on the driver («ملاحظة»), editable from the detail page.
+  note String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 // Must stay in sync with Prisma enum `TruckType` in apps/api/prisma/schema.prisma.
 // The carrier UI's truck-types catalog (DEFAULT_TRUCK_TYPES) is the source of
@@ -26,9 +26,23 @@ export class CreateTruckDto {
   @IsOptional() @IsBoolean() hasGPS?: boolean;
   @IsOptional() @IsArray() photos?: string[];
   @IsOptional() @IsArray() documents?: string[];
+  /// Free-text provider note on the truck («ملاحظة»). Shown on the detail page.
+  @IsOptional() @IsString() @MaxLength(2000) note?: string;
 }
 
 export class UpdateTruckDto extends CreateTruckDto {}
+
+/** Partial patch of a truck's editable free-text fields (provider note). */
+export class PatchTruckDto {
+  /// Free-text provider note on the truck («ملاحظة»). Shown on the detail page.
+  @IsOptional() @IsString() @MaxLength(2000) note?: string;
+}
+
+/** Patch an existing driver's editable fields (currently the provider note). */
+export class UpdateDriverDto {
+  /// Free-text provider note on the driver («ملاحظة»). Shown on the detail page.
+  @IsOptional() @IsString() @MaxLength(2000) note?: string;
+}
 
 /** Identity-document types for drivers / individual operators. */
 export const ID_TYPES = ['NATIONAL_ID', 'IQAMA', 'PASSPORT'] as const;

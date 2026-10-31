@@ -10,6 +10,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/segmented.dart';
+import 'fleet_detail_sheet.dart';
 import 'truck_availability_sheet.dart';
 
 /// Provider fleet (handoff 3e/3f) — trucks + drivers segments, wired to
@@ -331,6 +332,7 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
       sub: sub,
       initial: d.name.isNotEmpty ? d.name.substring(0, 1) : 'س',
       status: _driverStatus(d.status),
+      onTap: () => showDriverDetailSheet(context, d),
     );
   }
 
@@ -343,8 +345,7 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
         initial: 'ش',
         status: _truckStatus(t.status),
         published: availability != null,
-        onTap: () =>
-            showTruckAvailabilitySheet(context, ref, t, availability),
+        onTap: () => showTruckDetailSheet(context, ref, t, availability),
       );
 
   Widget _rowCard(NqColors c,

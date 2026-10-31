@@ -18,6 +18,7 @@ class DriverModel {
     this.totalTrips = 0,
     this.status = 'AVAILABLE',
     this.licenseType,
+    this.note,
   });
 
   final String id;
@@ -28,6 +29,7 @@ class DriverModel {
   final int totalTrips;
   final String status;
   final String? licenseType;
+  final String? note; // free-text provider note («ملاحظة»)
 
   factory DriverModel.fromJson(Map<String, dynamic> j) {
     final user = j['user'];
@@ -43,6 +45,7 @@ class DriverModel {
       totalTrips: _num(j['totalTrips'])?.toInt() ?? 0,
       status: (j['status'] ?? 'AVAILABLE').toString(),
       licenseType: j['licenseType']?.toString(),
+      note: j['note']?.toString(),
     );
   }
 }
@@ -73,6 +76,7 @@ class TruckModel {
     this.make,
     this.model,
     this.year,
+    this.note,
   });
 
   final String id;
@@ -82,6 +86,7 @@ class TruckModel {
   final String? make;
   final String? model;
   final int? year;
+  final String? note; // free-text provider note («ملاحظة»)
 
   String get typeLabel => truckTypeLabel(type);
   String get makeModel => [make, model, year?.toString()]
@@ -96,6 +101,7 @@ class TruckModel {
         make: j['make']?.toString(),
         model: j['model']?.toString(),
         year: _num(j['year'])?.toInt(),
+        note: j['note']?.toString(),
       );
 }
 

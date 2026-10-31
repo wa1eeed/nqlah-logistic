@@ -4,7 +4,7 @@ import { normalizeSaudiPhone } from '@naqla/shared-utils';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import {
   CreateDriverDto, CreateTruckDto, InviteDriverDto, LocationDto,
-  LogMaintenanceDto, UpdateMaintenanceScheduleDto, UpdateTruckDto,
+  LogMaintenanceDto, PatchTruckDto, UpdateDriverDto, UpdateMaintenanceScheduleDto, UpdateTruckDto,
 } from './dto/fleet.dto';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import { driverCode } from '../../common/codes';
@@ -76,6 +76,12 @@ export class FleetService {
       where: { id },
       data: { ...dto, photos: dto.photos ?? undefined, documents: dto.documents ?? undefined },
     });
+  }
+
+  /** Partial patch of a truck's editable free-text fields (provider note). */
+  async patchTruck(id: string, dto: PatchTruckDto, actor: AuthUser) {
+    await this.getTruck(id, actor);
+    return this.prisma.truck.update({ where: { id }, data: { ...dto } });
   }
 
   /** Link a driver to a truck. The driver is freed from any other truck, the
@@ -260,6 +266,12 @@ export class FleetService {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
     }
     return driver;
+  }
+
+  /** Patch an existing driver's editable fields (provider note). Company-scoped. */
+  async updateDriver(id: string, dto: UpdateDriverDto, actor: AuthUser) {
+    await this.getDriver(id, actor);
+    return this.prisma.driverProfile.update({ where: { id }, data: { ...dto } });
   }
 
   async updateDriverLocation(id: string, dto: LocationDto, actor: AuthUser) {
