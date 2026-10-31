@@ -20,6 +20,7 @@ import '../features/customer/order/order_step3_schedule.dart';
 import '../features/customer/order/order_step4_pricing.dart';
 import '../features/customer/order/order_step5_consignee.dart';
 import '../features/customer/order/order_step6_review.dart';
+import '../features/customer/order/order_created_screen.dart';
 import '../features/customer/order_detail_screen.dart';
 import '../features/customer/tracking_screen.dart';
 import '../features/customer/truck_detail_screen.dart';
@@ -173,7 +174,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/order/review',
       builder: (context, state) => OrderStep6Review(
-          onPublished: (id) => context.go('/order-detail/$id')),
+          onPublished: (id, direct) =>
+              context.go('/order/created/$id', extra: direct)),
+    ),
+    GoRoute(
+      path: '/order/created/:id',
+      builder: (context, state) => OrderCreatedScreen(
+        orderId: state.pathParameters['id']!,
+        direct: state.extra is bool ? state.extra as bool : false,
+      ),
     ),
     GoRoute(
       path: '/order-detail/:id',

@@ -10,6 +10,7 @@ import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 import '../../design_system/party_card.dart';
+import '../../design_system/order_status_timeline.dart';
 import '../../design_system/status_chip.dart';
 
 /// Provider order view (handoff 3a) — the carrier's view of an order it serves,
@@ -76,6 +77,10 @@ class ProviderOrderScreen extends ConsumerWidget {
                     revealLabel: 'بيانات العميل متاحة بعد القبول',
                   ),
                 const SizedBox(height: 14),
+                Text('حالة الطلب', style: NqType.h2.copyWith(color: c.tx)),
+                const SizedBox(height: 10),
+                OrderStatusTimeline(status: o.nqStatus),
+                const SizedBox(height: 18),
                 _driverCard(c, o),
                 const SizedBox(height: 18),
                 Text('المسار', style: NqType.h2.copyWith(color: c.tx)),
@@ -358,18 +363,31 @@ class ProviderOrderScreen extends ConsumerWidget {
         ),
       );
     } else if (status == NqStatus.confirmed || status == NqStatus.inTransit) {
-      action = NqButton(
-        label: 'تأكيد التسليم',
-        icon: NqIcons.package,
-        onPressed: () => _runTransition(
-          context, ref, o,
-          confirm: false,
-          title: 'تأكيد التسليم',
-          body: 'سيُعلَّم الطلب كمُسلَّم وينتظر تأكيد العميل لتحرير المستحقات.',
-          cta: 'تم التسليم',
-        ),
-      );
+      // Delivery can't be confirmed before a driver is assigned — gate it behind
+      // an «إسناد سائق» CTA so the provider can't skip assignment.
+      if (o.driverName == null) {
+        action = NqButton(
+          label: 'إسناد سائق',
+          icon: NqIcons.steeringWheel,
+          onPressed: onChangeDriver ?? () {},
+        );
+      } else {
+        action = NqButton(
+          label: 'تأكيد التسليم',
+          icon: NqIcons.package,
+          onPressed: () => _runTransition(
+            context, ref, o,
+            confirm: false,
+            title: 'تأكيد التسليم',
+            body: 'سيُعلَّم الطلب كمُسلَّم وينتظر تأكيد العميل لتحرير المستحقات.',
+            cta: 'تم التسليم',
+          ),
+        );
+      }
     }
+    final needsDriver =
+        (status == NqStatus.confirmed || status == NqStatus.inTransit) &&
+            o.driverName == null;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
@@ -381,6 +399,21 @@ class ProviderOrderScreen extends ConsumerWidget {
         children: [
           if (action != null) ...[
             action,
+            if (needsDriver) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  NqIcon(NqIcons.info, size: 14, color: c.tx3),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text('أسنِد الطلب لسائق قبل تأكيد التسليم.',
+                        style: NqType.caption.copyWith(color: c.tx3),
+                        textAlign: TextAlign.center),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 12),
           ],
           Row(

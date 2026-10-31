@@ -15,8 +15,9 @@ import 'order_wizard_scaffold.dart';
 class OrderStep6Review extends ConsumerStatefulWidget {
   const OrderStep6Review({super.key, this.onPublished});
 
-  /// Called with the new order id after a successful publish.
-  final void Function(String orderId)? onPublished;
+  /// Called with the new order id (and whether it's a DIRECT order) after a
+  /// successful publish.
+  final void Function(String orderId, bool direct)? onPublished;
 
   @override
   ConsumerState<OrderStep6Review> createState() => _OrderStep6ReviewState();
@@ -38,9 +39,10 @@ class _OrderStep6ReviewState extends ConsumerState<OrderStep6Review> {
       _error = null;
     });
     try {
+      final direct = draft.isDirectTargeted;
       final id = await ref.read(orderDraftProvider.notifier).submitAndPublish();
       ref.read(orderDraftProvider.notifier).reset();
-      if (mounted) (widget.onPublished ?? (_) {})(id);
+      if (mounted) (widget.onPublished ?? (_, _) {})(id, direct);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {

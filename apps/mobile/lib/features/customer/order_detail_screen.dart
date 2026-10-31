@@ -11,6 +11,7 @@ import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/confirm_dialog.dart';
 import '../../design_system/party_card.dart';
+import '../../design_system/order_status_timeline.dart';
 import '../../design_system/status_chip.dart';
 
 /// Customer order detail (handoff 1c) — wired to `GET /orders/:id`. Shows the
@@ -73,6 +74,10 @@ class OrderDetailScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 16),
+              _sectionHeader(c, 'حالة الطلب'),
+              const SizedBox(height: 10),
+              OrderStatusTimeline(status: o.nqStatus),
+              const SizedBox(height: 20),
               _party(c, o),
               const SizedBox(height: 20),
               _sectionHeader(c, 'مسار الرحلة',

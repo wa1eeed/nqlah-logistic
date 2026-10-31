@@ -7,6 +7,7 @@ import '../../../core/theme/typography.dart';
 import '../../../core/widgets/nq_icon.dart';
 import '../../../design_system/chip.dart';
 import '../../../design_system/segmented.dart';
+import 'order_validation.dart';
 import 'order_wizard_scaffold.dart';
 
 /// Create-order step 4/6 — pricing & visibility (handoff 4c).
@@ -21,6 +22,22 @@ class OrderStep4Pricing extends ConsumerStatefulWidget {
 
 class _OrderStep4PricingState extends ConsumerState<OrderStep4Pricing> {
   late final TextEditingController _budget;
+  final _priceKey = GlobalKey();
+  String? _priceErr;
+
+  Future<void> _next() async {
+    final d = ref.read(orderDraftProvider);
+    // A fixed-price order needs an amount; a tender («مناقصة») leaves it open.
+    setState(() {
+      _priceErr = (d.fixedPrice && (d.clientBudget ?? 0) < 1)
+          ? 'أدخل السعر الثابت للرحلة'
+          : null;
+    });
+    final missing = <MissingField>[
+      if (_priceErr != null) MissingField('السعر الثابت', _priceKey),
+    ];
+    if (await ensureStepComplete(context, missing)) widget.onNext?.call();
+  }
 
   // Payment chip → collection method.
   static const _payment = [
@@ -53,7 +70,7 @@ class _OrderStep4PricingState extends ConsumerState<OrderStep4Pricing> {
       nextLabel: 'المستلم والمستندات',
       title: 'كيف تريد التسعير؟',
       showPrev: true,
-      onNext: widget.onNext,
+      onNext: _next,
       children: [
         _radioCard(
           c,
@@ -222,17 +239,19 @@ class _OrderStep4PricingState extends ConsumerState<OrderStep4Pricing> {
       );
 
   Widget _priceField(NqColors c, OrderDraftController n) {
+    final hasError = _priceErr != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
+          key: _priceKey,
           height: NqLayout.input,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: c.sf,
             borderRadius: BorderRadius.circular(NqRadius.input),
-            border: Border.all(color: c.mintS, width: 2),
-            boxShadow: [BoxShadow(color: c.mintBg, spreadRadius: 3)],
+            border: Border.all(color: hasError ? c.err : c.mintS, width: hasError ? 1.5 : 2),
+            boxShadow: hasError ? null : [BoxShadow(color: c.mintBg, spreadRadius: 3)],
           ),
           child: Row(
             children: [
@@ -244,8 +263,10 @@ class _OrderStep4PricingState extends ConsumerState<OrderStep4Pricing> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   textAlign: TextAlign.right,
-                  onChanged: (v) =>
-                      n.patch((x) => x.copyWith(clientBudget: num.tryParse(v.trim()))),
+                  onChanged: (v) {
+                    n.patch((x) => x.copyWith(clientBudget: num.tryParse(v.trim())));
+                    if (_priceErr != null) setState(() => _priceErr = null);
+                  },
                   style: NqType.price(size: 20).copyWith(color: c.tx),
                   cursorColor: c.mintS,
                   decoration: InputDecoration(
@@ -259,6 +280,7 @@ class _OrderStep4PricingState extends ConsumerState<OrderStep4Pricing> {
             ],
           ),
         ),
+        NqInlineError(_priceErr),
         const SizedBox(height: 10),
         Row(
           children: [
