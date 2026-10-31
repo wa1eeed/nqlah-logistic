@@ -80,7 +80,7 @@ export class AuthService {
     const company = await this.prisma.company.create({
       data: {
         type: dto.companyType,
-        code: companyCode(),
+        code: await companyCode(this.prisma),
         entityType,
         crNumber: dto.crNumber ?? null,
         vatNumber: dto.vatNumber ?? null,
@@ -134,7 +134,7 @@ export class AuthService {
     if (dto.companyType === 'CARRIER' && dto.accountType === 'INDIVIDUAL') {
       await this.prisma.driverProfile.create({
         data: {
-          code: driverCode(),
+          code: await driverCode(this.prisma),
           userId: user.id,
           companyId: company.id,
           licenseNumber: dto.licenseNumber ?? `IND-${user.id}`,
