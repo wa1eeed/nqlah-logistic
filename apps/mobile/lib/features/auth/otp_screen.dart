@@ -165,10 +165,18 @@ class _OtpScreenState extends State<OtpScreen> {
                   style: NqType.body.copyWith(color: c.tx2, height: 1.6),
                   children: [
                     const TextSpan(text: 'أرسلنا رمزًا إلى '),
-                    TextSpan(
-                      text: widget.phone,
-                      style: NqType.numeric(15, FontWeight.w600)
-                          .copyWith(color: c.tx),
+                    // Render the number in its own LTR box so it always reads
+                    // left-to-right in the RTL sentence, even with spaces.
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Text(
+                          widget.phone,
+                          style: NqType.numeric(15, FontWeight.w600)
+                              .copyWith(color: c.tx),
+                        ),
+                      ),
                     ),
                     if (widget.onEdit != null) const TextSpan(text: '  '),
                   ],

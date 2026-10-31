@@ -19,7 +19,8 @@ class RegisterOtpScreen extends ConsumerWidget {
     final phone = ref.read(registrationControllerProvider).phone;
     final repo = ref.read(authRepositoryProvider);
     return OtpScreen(
-      phone: '+966 ${_pretty(phone)}',
+      // Full international number (already carries its country code); shown LTR.
+      phone: phone,
       resendSeconds: 60,
       onVerify: (code) async {
         try {
@@ -34,12 +35,5 @@ class RegisterOtpScreen extends ConsumerWidget {
       onResend: () => repo.sendOtp(phone),
       onSuccess: onVerified,
     );
-  }
-
-  String _pretty(String local) {
-    // Group a 5XXXXXXXX local number as "5X XXX XXXX" for display (LTR context).
-    final d = local.replaceAll(RegExp(r'\D'), '');
-    if (d.length < 9) return local;
-    return '${d.substring(0, 2)} ${d.substring(2, 5)} ${d.substring(5)}';
   }
 }
