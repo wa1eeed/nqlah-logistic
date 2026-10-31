@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -35,6 +36,10 @@ class _DriverLocationBeaconState extends ConsumerState<DriverLocationBeacon> {
   }
 
   Future<void> _start() async {
+    // GPS reporting targets real driver devices (Android/iOS). Skip on web —
+    // the web build is a preview and the browser geolocation flow would prompt
+    // / hang needlessly.
+    if (kIsWeb) return;
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return;
       var perm = await Geolocator.checkPermission();

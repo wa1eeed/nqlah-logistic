@@ -29,27 +29,29 @@ class DriverTripExecutionScreen extends ConsumerWidget {
     final async = ref.watch(orderDetailModelProvider(orderId));
     return Scaffold(
       backgroundColor: c.bg,
+      // StackFit.expand so the Stack fills the Scaffold; otherwise it would
+      // size to its only non-positioned child (the 0×0 beacon) and collapse,
+      // leaving the screen blank.
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Reports the driver's throttled GPS for this order while open.
-          DriverLocationBeacon(orderId: orderId),
-          Positioned.fill(
-            child: async.when(
-              loading: () => Center(
-                child: SizedBox(
-                  width: 30,
-                  height: 30,
-                  child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
-                ),
+          async.when(
+            loading: () => Center(
+              child: SizedBox(
+                width: 30,
+                height: 30,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
               ),
-              error: (e, _) => SafeArea(
-                child: _error(context, c,
-                    e is ApiException ? e.message : 'تعذّر تحميل الرحلة.',
-                    () => ref.invalidate(orderDetailModelProvider(orderId))),
-              ),
-              data: (o) => _content(context, ref, c, o),
             ),
+            error: (e, _) => SafeArea(
+              child: _error(context, c,
+                  e is ApiException ? e.message : 'تعذّر تحميل الرحلة.',
+                  () => ref.invalidate(orderDetailModelProvider(orderId))),
+            ),
+            data: (o) => _content(context, ref, c, o),
           ),
+          // Reports the driver's throttled GPS for this order while open (invisible).
+          DriverLocationBeacon(orderId: orderId),
         ],
       ),
     );
