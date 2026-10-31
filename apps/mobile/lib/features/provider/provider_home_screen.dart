@@ -23,6 +23,7 @@ class ProviderHomeScreen extends ConsumerWidget {
     this.onFinance,
     this.onAnnounceAvailability,
     this.onOpenOrder,
+    this.onProfile,
   });
 
   final VoidCallback? onBell;
@@ -31,6 +32,7 @@ class ProviderHomeScreen extends ConsumerWidget {
   final VoidCallback? onFinance;
   final VoidCallback? onAnnounceAvailability;
   final void Function(String orderId)? onOpenOrder;
+  final VoidCallback? onProfile;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -139,16 +141,19 @@ class ProviderHomeScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: NqFixed.heroFill2,
-                    borderRadius: BorderRadius.circular(NqRadius.input),
+                GestureDetector(
+                  onTap: onProfile,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: NqFixed.heroFill2,
+                      borderRadius: BorderRadius.circular(NqRadius.input),
+                    ),
+                    child: Text(name.isNotEmpty ? name.substring(0, 1) : 'م',
+                        style: NqType.h3.copyWith(color: NqFixed.heroText)),
                   ),
-                  child: Text(name.isNotEmpty ? name.substring(0, 1) : 'م',
-                      style: NqType.h3.copyWith(color: NqFixed.heroText)),
                 ),
               ],
             ),
@@ -319,17 +324,23 @@ class ProviderHomeScreen extends ConsumerWidget {
           child: Row(
             children: [
               NqIcon(NqIcons.caretLeft, size: 18, color: c.mintTx),
-              const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('أعلن عن توفّر شاحنة',
-                      style: NqType.bodyStrong.copyWith(color: c.tx)),
-                  const SizedBox(height: 2),
-                  Text('انشر شاحنة متاحة لتصل للعملاء في السوق',
-                      style: NqType.caption.copyWith(color: c.tx2),
-                      textAlign: TextAlign.right),
-                ],
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('أعلن عن توفّر شاحنة',
+                        style: NqType.bodyStrong.copyWith(color: c.tx),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
+                    Text('انشر شاحنة متاحة لتصل للعملاء في السوق',
+                        style: NqType.caption.copyWith(color: c.tx2),
+                        textAlign: TextAlign.right,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                  ],
+                ),
               ),
               const SizedBox(width: 12),
               Container(
