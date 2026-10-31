@@ -10,6 +10,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../design_system/confirm_dialog.dart';
 
 /// Driver assignment (handoff 1h). Single-select an available driver for an
 /// order; wired to `GET /fleet/drivers/available` + `POST /orders/:id/assign-driver`.
@@ -38,6 +39,14 @@ class _DriverAssignmentScreenState
   }
 
   Future<void> _confirm(DriverModel driver) async {
+    if (!await nqConfirm(context,
+        title: 'إسناد السائق',
+        message: 'سيتم إسناد ${driver.name} لهذا الطلب وإشعاره ببدء المهمة. '
+            'يمكنك تغيير السائق لاحقاً قبل انطلاق الرحلة.',
+        confirmLabel: 'إسناد السائق',
+        icon: NqIcons.steeringWheel)) {
+      return;
+    }
     setState(() => _busy = true);
     try {
       await ref

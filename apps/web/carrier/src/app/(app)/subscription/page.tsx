@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { api, fetcher } from '@/lib/api';
+import { useConfirm } from '@/components/confirm';
 import { notify } from '@/lib/notify';
 
 interface PlanModule { key: string; name: string; price?: number }
@@ -48,8 +49,17 @@ export default function SubscriptionPage() {
   const { data: plans } = useSWR<Plan[]>('/policies/plans/public', fetcher);
   const [busy, setBusy] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const confirm = useConfirm();
 
   async function subscribe(planId: string) {
+    const plan = plans?.find((p) => p.id === planId);
+    const price = monthly(plan?.price);
+    const ok = await confirm({
+      title: 'تأكيد الاشتراك',
+      description: `سيتم اشتراكك في باقة «${plan?.name ?? ''}» بقيمة ${price.toLocaleString('en-US')} ر.س شهرياً، وتُفعَّل ميزاتها فوراً${sub?.plan ? ' بدلاً من باقتك الحالية' : ''}. يمكنك إلغاء الاشتراك لاحقاً من هذه الصفحة.`,
+      confirmLabel: 'اشتراك',
+    });
+    if (!ok) return;
     setBusy(planId);
     try {
       await api.post('/policies/subscription/subscribe', { planId, billingCycle: 'MONTHLY' });

@@ -25,10 +25,8 @@ import {
   UpdateStopDto,
 } from './dto/create-order.dto';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
-import { customAlphabet } from 'nanoid';
+import { nextPublicId, PublicIdPrefix } from '../../common/public-id';
 import type { OrderStatus, Prisma } from '../../generated/prisma';
-
-const orderNumberGen = customAlphabet('0123456789', 6);
 
 /// Stop types that count as "the cargo reached a customer" (vs. a logistics
 /// stop like a warehouse transfer or returning an empty container).
@@ -244,7 +242,8 @@ export class OrdersService {
     if (!actor.companyId) {
       throw new BadRequestException({ code: 'NO_COMPANY', message: 'يجب أن تكون ضمن شركة' });
     }
-    const orderNumber = `ORD-${new Date().getFullYear()}-${orderNumberGen()}`;
+    // Compact public reference, e.g. ORD26A001 — atomic, unique, per-year.
+    const orderNumber = await nextPublicId(this.prisma, PublicIdPrefix.ORDER);
 
     // Consolidated orders ship `truckCount` legs. A HETEROGENEOUS order sends a
     // `legs` spec (each leg its own truck type / destination / price); a

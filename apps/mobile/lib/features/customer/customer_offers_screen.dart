@@ -9,7 +9,9 @@ import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
+import '../../core/platform/format.dart';
 import '../../design_system/chip.dart';
+import '../../design_system/confirm_dialog.dart';
 import '../../design_system/offer_card.dart';
 
 /// Customer offers (handoff 4f): the most recent order that is collecting
@@ -30,32 +32,14 @@ class _CustomerOffersScreenState extends ConsumerState<CustomerOffersScreen> {
   String? _acceptingBidId;
 
   Future<void> _accept(OrderSummary order, BidModel bid) async {
-    final c = context.nq;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.sf,
-        title: Text('قبول العرض', style: NqType.h2.copyWith(color: c.tx)),
-        content: Text(
-          'قبول عرض ${bid.carrierName} بمبلغ ${bid.amount?.toStringAsFixed(0) ?? '—'} ر.س؟ '
-          'سيُسنَد الطلب لهذا المزوّد.',
-          style: NqType.body.copyWith(color: c.tx2, height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child:
-                Text('إلغاء', style: NqType.labelStrong.copyWith(color: c.tx2)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child:
-                Text('قبول', style: NqType.labelStrong.copyWith(color: c.mintTx)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
+    final confirmed = await nqConfirm(context,
+        title: 'قبول العرض',
+        message: 'بقبول عرض ${bid.carrierName} بمبلغ '
+            '${bid.amount != null ? money(bid.amount!, decimals: 0) : '—'} ر.س سيُسنَد الطلب '
+            'لهذا المزوّد ويُحجز المبلغ في الضمان، وتُرفض بقية العروض. هل تريد المتابعة؟',
+        confirmLabel: 'قبول العرض',
+        icon: NqIcons.handCoins);
+    if (!confirmed) return;
     setState(() => _acceptingBidId = bid.id);
     try {
       await ref.read(ordersRepositoryProvider).acceptBid(order.id, bid.id);

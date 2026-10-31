@@ -65,7 +65,7 @@ export class OwnedClientsService {
       const company = await tx.company.create({
         data: {
           type: 'CLIENT',
-          code: companyCode(),
+          code: await companyCode(tx),
           nameAr: dto.companyNameAr,
           nameEn: dto.companyNameEn,
           city: dto.city,

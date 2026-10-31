@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import { money, round2, toNum } from '../../common/money/money';
+import { nextPublicId, PublicIdPrefix } from '../../common/public-id';
 import type { CompanyStatus, DisputeStatus, Prisma } from '../../generated/prisma';
 
 @Injectable()
@@ -296,12 +297,14 @@ export class AdminService {
   ) {
     const company = await this.prisma.company.findUnique({ where: { id: companyId } });
     if (!company) throw new NotFoundException({ code: 'COMPANY_NOT_FOUND', message: 'الشركة غير موجودة' });
-    const year = new Date().getFullYear();
-    const seq = Math.floor(100000 + Math.random() * 900000);
-    const reference = `${dto.type === 'CREDIT' ? 'CN' : 'DN'}-${year}-${seq}`;
     const delta = money(dto.amount).mul(dto.type === 'DEBIT' ? -1 : 1);
     const newBalance = round2(money(company.walletBalance).add(delta));
     return this.prisma.$transaction(async (tx) => {
+      // Compact, atomic, collision-free note reference (e.g. CN26A001 / DN26A001).
+      const reference = await nextPublicId(
+        tx,
+        dto.type === 'CREDIT' ? PublicIdPrefix.CREDIT_NOTE : PublicIdPrefix.DEBIT_NOTE,
+      );
       await tx.company.update({ where: { id: companyId }, data: { walletBalance: newBalance } });
       return tx.transaction.create({
         data: {

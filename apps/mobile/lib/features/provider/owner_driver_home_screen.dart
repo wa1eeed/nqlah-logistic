@@ -13,6 +13,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../design_system/confirm_dialog.dart';
 import '../../design_system/context_switch.dart';
 
 /// Owner-driver home — one screen with a context switch (handoff 1i «أعمل
@@ -257,6 +258,13 @@ class OwnerDriverHomeScreen extends ConsumerWidget {
     final container = ProviderScope.containerOf(context);
     final fleet = container.read(fleetRepositoryProvider);
     final orders = container.read(ordersRepositoryProvider);
+    if (!await nqConfirm(context,
+        title: 'إسناد الرحلة لك',
+        message: 'ستُسنَد هذه الرحلة إليك كسائق وتُؤكَّد مباشرةً لتصبح ضمن رحلاتك القادمة. متابعة؟',
+        confirmLabel: 'إسنادها لي',
+        icon: NqIcons.steeringWheel)) {
+      return;
+    }
     try {
       final drivers = await fleet.drivers();
       if (drivers.isEmpty) {

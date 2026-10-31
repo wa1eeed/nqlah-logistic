@@ -14,6 +14,7 @@ import '../../core/widgets/nq_icon.dart';
 import '../../design_system/availability_card.dart' show MetaItem;
 import '../../design_system/button.dart';
 import '../../design_system/chip.dart';
+import '../../design_system/confirm_dialog.dart';
 import '../../design_system/load_card.dart';
 import '../../design_system/segmented.dart';
 
@@ -52,55 +53,27 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
   }
 
   Future<void> _acceptFixed(OrderSummary o) async {
-    final c = context.nq;
     final price = o.agreedPrice ?? o.clientBudget;
     if (price == null) return;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.sf,
-        title: Text('قبول الحمولة', style: NqType.h2.copyWith(color: c.tx)),
-        content: Text(
-            'قبول النقل بالسعر الثابت ${price.toStringAsFixed(0)} ر.س؟ سيُقدَّم عرضك بهذا السعر.',
-            style: NqType.body.copyWith(color: c.tx2, height: 1.5)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text('إلغاء',
-                  style: NqType.labelStrong.copyWith(color: c.tx2))),
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text('قبول',
-                  style: NqType.labelStrong.copyWith(color: c.mintTx))),
-        ],
-      ),
-    );
-    if (ok == true) await _submitBid(o, price);
+    if (!await nqConfirm(context,
+        title: 'قبول الحمولة بالسعر الثابت',
+        message: 'سيُقدَّم عرضك بالسعر الثابت ${money(price, decimals: 0)} ر.س، وبقبول العميل '
+            'يُسنَد إليك الطلب ويلزمك تنفيذه. متابعة؟',
+        confirmLabel: 'قبول الحمولة',
+        icon: NqIcons.handCoins)) {
+      return;
+    }
+    await _submitBid(o, price);
   }
 
   Future<void> _declineDirect(OrderSummary o) async {
-    final c = context.nq;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.sf,
-        title: Text('رفض الطلب المباشر', style: NqType.h2.copyWith(color: c.tx)),
-        content: Text(
-            'سيُعاد الطلب إلى السوق المفتوح ولن يبقى مخصّصًا لك. متابعة؟',
-            style: NqType.body.copyWith(color: c.tx2, height: 1.5)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text('تراجع',
-                  style: NqType.labelStrong.copyWith(color: c.tx2))),
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text('رفض',
-                  style: NqType.labelStrong.copyWith(color: c.err))),
-        ],
-      ),
-    );
-    if (ok != true) return;
+    if (!await nqConfirm(context,
+        title: 'رفض الطلب المباشر',
+        message: 'سيُعاد الطلب إلى السوق المفتوح ولن يبقى مخصّصاً لك، وقد يأخذه مزوّد آخر. متابعة؟',
+        confirmLabel: 'رفض الطلب',
+        danger: true)) {
+      return;
+    }
     setState(() => _busyOrderId = o.id);
     try {
       await ref.read(ordersRepositoryProvider).declineDirect(o.id);

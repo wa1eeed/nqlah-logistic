@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { fetcher, api } from '@/lib/api';
+import { useConfirm } from '@/components/confirm';
 import {
   AlertTriangle, ArrowRight, BadgeCheck, Calendar, CheckCircle2, Layers, MapPin, MessageSquare,
   Package, Phone, ShieldCheck, Shield, Snowflake, Star, Timer, Truck, User, Users, UserSearch,
@@ -69,6 +70,7 @@ function dayDiff(later: string | Date | undefined, earlier: string | Date | unde
 export default function ClientOrderDetail() {
   const t = useTranslations('orders');
   const tc = useTranslations('common');
+  const confirm = useConfirm();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   // Real-API source of truth (with mock fallback via the api interceptor).
@@ -569,6 +571,13 @@ export default function ClientOrderDetail() {
               variant="destructive"
               onClick={async () => {
                 if (!detailsBid || !order) return;
+                const ok = await confirm({
+                  title: 'رفض العرض',
+                  description: 'سيتم رفض هذا العرض وإشعار الناقل، ولن يظهر ضمن العروض المقدّمة. تبقى بقية العروض كما هي ويمكنك قبول غيره.',
+                  confirmLabel: 'رفض العرض',
+                  destructive: true,
+                });
+                if (!ok) return;
                 try {
                   await api.post(`/orders/${order.id}/bids/${detailsBid.id}/reject`, {});
                   notify.success(t('detail.toast.bidRejected'));
@@ -1201,6 +1210,7 @@ function RouteStat({ icon: Icon, label, value }: { icon: React.ElementType; labe
 function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () => void }) {
   const t = useTranslations('orders');
   const tcDirect = useTranslations('common');
+  const confirm = useConfirm();
   const proposal = proposalForOrder(order.id);
   const carrier = companyById(order.targetCarrierId);
   const [action, setAction] = useState<null | 'ACCEPT' | 'COUNTER' | 'REJECT'>(null);
@@ -1234,6 +1244,31 @@ function DirectProposalView({ order, onRefetch }: { order: Order; onRefetch: () 
   const activeBidId = pendingBid?.id;
   const submit = async () => {
     if (submitting) return;
+    const acceptPrice = onTable?.price ?? pendingBid?.amount ?? pendingBid?.price ?? 0;
+    const confirmMap = {
+      ACCEPT: {
+        title: 'قبول السعر وإسناد الطلب',
+        description: `بالقبول سيتم إسناد الطلب إلى ${carrier?.nameAr ?? 'الناقل'} بسعر ${acceptPrice.toLocaleString('en-US')} ر.س وحجز المبلغ في الضمان. لا يمكن التراجع بعد الإسناد.`,
+        confirmLabel: 'قبول وإسناد',
+        destructive: false,
+      },
+      COUNTER: {
+        title: 'إرسال عرض مضاد',
+        description: `سيتم إرسال سعرك المقترح ${counterPrice.toLocaleString('en-US')} ر.س للناقل، وينتظر الطلب ردّه.`,
+        confirmLabel: 'إرسال العرض',
+        destructive: false,
+      },
+      REJECT: {
+        title: 'رفض عرض الناقل',
+        description: 'سيتم رفض العرض الحالي وإشعار الناقل. يبقى الطلب قائماً ويمكن التفاوض مجدداً.',
+        confirmLabel: 'رفض العرض',
+        destructive: true,
+      },
+    } as const;
+    if (action && confirmMap[action]) {
+      const ok = await confirm(confirmMap[action]);
+      if (!ok) return;
+    }
     setSubmitting(true);
     try {
       if (action === 'ACCEPT' && activeBidId) {

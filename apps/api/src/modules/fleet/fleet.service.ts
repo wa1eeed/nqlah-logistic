@@ -165,7 +165,7 @@ export class FleetService {
     if (!actor.companyId) throw new BadRequestException({ code: 'NO_COMPANY', message: 'لا توجد شركة' });
     return this.prisma.driverProfile.create({
       data: {
-        code: driverCode(),
+        code: await driverCode(this.prisma),
         userId: dto.userId,
         companyId: actor.companyId,
         licenseNumber: dto.licenseNumber,
@@ -209,7 +209,7 @@ export class FleetService {
       });
       return tx.driverProfile.create({
         data: {
-          code: driverCode(),
+          code: await driverCode(tx),
           userId: user.id,
           companyId: actor.companyId!,
           licenseNumber: dto.licenseNumber,

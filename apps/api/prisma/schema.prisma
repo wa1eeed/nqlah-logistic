@@ -1397,3 +1397,17 @@ model SavedAddress {
 
   @@index([companyId])
 }
+
+/// Atomic per-(type, year) counter backing the compact public-ID scheme
+/// (`<PREFIX><YY><LETTERS><NNN>`, see src/common/public-id.ts). One row per
+/// (prefix, calendar year); `value` is the last reserved sequence number,
+/// bumped via `INSERT … ON CONFLICT … RETURNING` so concurrent requests can
+/// never mint a duplicate. `year` only advances when the real year arrives.
+model PublicIdCounter {
+  type      String
+  year      Int
+  value     BigInt   @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@id([type, year])
+}

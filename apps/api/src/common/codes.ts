@@ -1,11 +1,16 @@
-import { customAlphabet } from 'nanoid';
+import type { Prisma } from '../generated/prisma';
+import { nextPublicId, PublicIdPrefix } from './public-id';
 
-// Unambiguous uppercase alphabet (no 0/O/1/I) for readable public codes.
-const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const gen = customAlphabet(alphabet, 6);
+/**
+ * Human-friendly public reference codes. These now use the shared compact
+ * public-ID scheme (`<PREFIX><YY><LETTERS><NNN>`, see ./public-id.ts) so every
+ * auto-generated reference shares one atomic, collision-free, per-year series.
+ */
 
-/** A short, human-friendly public company reference, e.g. "NQ-7K4F2P". */
-export const companyCode = (): string => `NQ-${gen()}`;
+/** A short public company reference, e.g. "CMP26A001". */
+export const companyCode = (db: Prisma.TransactionClient): Promise<string> =>
+  nextPublicId(db, PublicIdPrefix.COMPANY);
 
-/** A short, human-friendly public driver reference, e.g. "DR-7K4F2P". */
-export const driverCode = (): string => `DR-${gen()}`;
+/** A short public driver reference, e.g. "DRV26A001". */
+export const driverCode = (db: Prisma.TransactionClient): Promise<string> =>
+  nextPublicId(db, PublicIdPrefix.DRIVER);

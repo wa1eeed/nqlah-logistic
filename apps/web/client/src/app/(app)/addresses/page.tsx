@@ -19,6 +19,7 @@ import {
 import { PageHeader } from '@/components/page-header';
 import { useAuthStore } from '@/lib/auth-store';
 import { fetcher, api } from '@/lib/api';
+import { useConfirm } from '@/components/confirm';
 import { notify } from '@/lib/notify';
 import { localizeCity } from '@naqla/shared-utils';
 
@@ -55,6 +56,7 @@ const blank = (): Omit<SavedAddress, 'id' | 'companyId'> => ({
 
 export default function AddressesPage() {
   const t = useTranslations('client');
+  const confirm = useConfirm();
   const kindLabel: Record<AddressKind, string> = {
     PICKUP: t('addresses.kindPickup'),
     DESTINATION: t('addresses.kindDestination'),
@@ -107,6 +109,13 @@ export default function AddressesPage() {
 
   const remove = async (a: SavedAddress) => {
     if (!companyId) return;
+    const ok = await confirm({
+      title: 'حذف العنوان',
+      description: `سيتم حذف العنوان «${a.label}» نهائياً من عناوينك المحفوظة. لن يؤثّر ذلك على الطلبات التي استخدمته سابقاً.`,
+      confirmLabel: 'حذف',
+      destructive: true,
+    });
+    if (!ok) return;
     setDeletingId(a.id);
     try {
       await api.delete(`/companies/${companyId}/addresses/${a.id}`);
