@@ -3,6 +3,28 @@
     "client": "عميل",
     "carrier": "ناقل"
   },
+  "subscription": {
+    "title": "الاشتراك والعضوية",
+    "noPlan": "لا يوجد اشتراك فعّال لهذه الشركة.",
+    "plan": "الباقة",
+    "price": "السعر",
+    "perMonth": "ريال/شهري",
+    "perYear": "ريال/سنوي",
+    "billing": "الفوترة",
+    "monthly": "شهري",
+    "yearly": "سنوي",
+    "renewal": "التجديد التالي",
+    "endsOn": "ينتهي في",
+    "trucks": "الشاحنات المشمولة",
+    "modules": "الوحدات المضمّنة",
+    "status": {
+      "ACTIVE": "فعّال",
+      "TRIALING": "تجريبي",
+      "PAST_DUE": "متأخر الدفع",
+      "CANCELLED": "ملغى",
+      "EXPIRED": "منتهٍ"
+    }
+  },
   "clientsPage": {
     "eyebrow": "إدارة المنصة",
     "title": "العملاء",

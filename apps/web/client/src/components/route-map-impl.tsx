@@ -4,6 +4,8 @@ import { useTranslations } from 'next-intl';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import L, { type LatLngTuple } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import useSWR from 'swr';
+import { fetcher } from '@/lib/api';
 
 export interface RoutePoint {
   lat: number;
@@ -190,6 +192,15 @@ function TruckMarker({ line, progress, label, reference }: {
 
 export function RouteMapImpl({ origin, destination, progress, trucks, height = 300 }: RouteMapImplProps) {
   const t = useTranslations('orders');
+  // Map provider is hub-controlled (Integration Hub → maps). Falls back to free
+  // OSM so the map always renders.
+  const { data: mapsCfg } = useSWR<{ tileUrl?: string; attribution?: string; maxZoom?: number }>(
+    '/config/maps', fetcher,
+  );
+  const tileUrl = mapsCfg?.tileUrl || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileAttribution = mapsCfg?.attribution
+    ? mapsCfg.attribution
+    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
   const o: LatLngTuple = [origin.lat, origin.lng];
   const d: LatLngTuple = [destination.lat, destination.lng];
 
@@ -245,10 +256,7 @@ export function RouteMapImpl({ origin, destination, progress, trucks, height = 3
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom={false}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <TileLayer attribution={tileAttribution} url={tileUrl} maxZoom={mapsCfg?.maxZoom ?? 19} />
         <FitBounds bounds={line} />
 
         {/* Road path — casing + main (Google-like), then the traveled overlay */}

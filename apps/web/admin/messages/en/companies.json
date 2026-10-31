@@ -3,6 +3,28 @@
     "client": "Client",
     "carrier": "Carrier"
   },
+  "subscription": {
+    "title": "Subscription & Membership",
+    "noPlan": "No active subscription for this company.",
+    "plan": "Plan",
+    "price": "Price",
+    "perMonth": "SAR/month",
+    "perYear": "SAR/year",
+    "billing": "Billing",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "renewal": "Next renewal",
+    "endsOn": "Ends on",
+    "trucks": "Included trucks",
+    "modules": "Included modules",
+    "status": {
+      "ACTIVE": "Active",
+      "TRIALING": "Trial",
+      "PAST_DUE": "Past due",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired"
+    }
+  },
   "clientsPage": {
     "eyebrow": "Platform Management",
     "title": "Clients",

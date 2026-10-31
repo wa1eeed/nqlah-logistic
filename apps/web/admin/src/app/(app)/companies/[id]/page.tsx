@@ -41,6 +41,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { notify } from '@/lib/notify';
 import { api, fetcher } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CompanySubscriptionCard } from '@/components/company-subscription-card';
 import {
   COMPANIES, ORDERS, formatDate, teamMembersFor, permissionsFor,
   normalizeCompany, normalizeOrderList, localizeCity, localizeRegion,
@@ -188,9 +189,10 @@ export default function AdminCompanyDetail() {
           <TabsTrigger value="team"><Users className="h-4 w-4 me-1.5" /> {t('detail.tabs.team')}</TabsTrigger>
         </TabsList>
 
-        {/* ─── Overview: KPIs + charts ─── */}
-        <TabsContent value="overview">
+        {/* ─── Overview: KPIs + charts + subscription ─── */}
+        <TabsContent value="overview" className="space-y-6">
           <OverviewTab stats={statsData} isCarrier={isCarrier} />
+          <CompanySubscriptionCard companyId={company.id} />
         </TabsContent>
 
         {/* ─── Orders ─── */}
