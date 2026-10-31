@@ -24,6 +24,8 @@ class RegistrationData {
     this.vatRegistered = true,
     this.region = 'الرياض',
     this.city = 'الرياض',
+    this.nationality = 'SA',
+    this.idType,
     this.planId,
     this.documents = const {},
   });
@@ -44,6 +46,8 @@ class RegistrationData {
   final bool vatRegistered;
   final String region;
   final String city;
+  final String nationality; // ISO-3166 alpha-2 (individual operator)
+  final String? idType; // NATIONAL_ID | IQAMA | PASSPORT (individual operator)
   final String? planId;
   final Map<String, String> documents;
 
@@ -69,6 +73,8 @@ class RegistrationData {
     bool? vatRegistered,
     String? region,
     String? city,
+    String? nationality,
+    String? idType,
     String? planId,
     Map<String, String>? documents,
   }) {
@@ -88,6 +94,8 @@ class RegistrationData {
       vatRegistered: vatRegistered ?? this.vatRegistered,
       region: region ?? this.region,
       city: city ?? this.city,
+      nationality: nationality ?? this.nationality,
+      idType: idType ?? this.idType,
       planId: planId ?? this.planId,
       documents: documents ?? this.documents,
     );
@@ -116,6 +124,11 @@ class RegistrationData {
     if (crNumber.trim().isNotEmpty) body['crNumber'] = crNumber.trim();
     if (vatRegistered && vatNumber.trim().isNotEmpty) {
       body['vatNumber'] = vatNumber.trim();
+    }
+    // Nationality + id-type seed the individual operator's driver profile.
+    if (isIndividual && isCarrier) {
+      body['nationality'] = nationality;
+      body['idType'] = idType ?? 'NATIONAL_ID';
     }
     if (planId != null) body['planId'] = planId;
     if (documents.isNotEmpty) body['documents'] = documents;

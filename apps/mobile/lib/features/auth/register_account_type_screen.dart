@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/registration_controller.dart';
+import '../../core/platform/countries.dart';
+import '../../core/platform/id_types.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/form_fields.dart';
+import '../../design_system/option_picker.dart';
 import '../../design_system/segmented.dart';
 import '../../design_system/text_field.dart';
 import 'wizard_scaffold.dart';
@@ -53,6 +56,22 @@ class _RegisterAccountTypeScreenState
     super.dispose();
   }
 
+  Future<void> _pickNationality() async {
+    final picked = await nqPickOption<Country>(
+      context,
+      title: 'الجنسية',
+      options: kCountries,
+      label: (x) => '${x.flag}  ${x.nameAr}',
+      subtitle: (x) => x.nameEn,
+      searchHint: 'ابحث عن دولة',
+    );
+    if (picked != null) {
+      ref
+          .read(registrationControllerProvider.notifier)
+          .patch((x) => x.copyWith(nationality: picked.code));
+    }
+  }
+
   void _pick(String title, List<String> options, ValueChanged<String> onPick) {
     final c = context.nq;
     showModalBottomSheet<void>(
@@ -91,6 +110,7 @@ class _RegisterAccountTypeScreenState
 
   @override
   Widget build(BuildContext context) {
+    final c = context.nq;
     final notifier = ref.read(registrationControllerProvider.notifier);
     final d = ref.watch(registrationControllerProvider);
     final notVat = !d.vatRegistered;
@@ -154,6 +174,43 @@ class _RegisterAccountTypeScreenState
               notifier.patch((x) => x.copyWith(crNumber: v));
               setState(() {});
             },
+          ),
+          const SizedBox(height: 18),
+        ],
+        // Nationality + ID type for a sole-operator (individual) carrier.
+        if (d.isIndividual && d.isCarrier) ...[
+          Text('الجنسية', style: NqType.labelStrong.copyWith(color: c.tx2)),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: _pickNationality,
+            child: Container(
+              height: NqLayout.input,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: c.sf,
+                borderRadius: BorderRadius.circular(NqRadius.input),
+                border: Border.all(color: c.bd),
+              ),
+              child: Row(children: [
+                NqIcon(NqIcons.caretDown, size: 16, color: c.tx3),
+                const Spacer(),
+                Builder(builder: (_) {
+                  final nat = countryByCode(d.nationality);
+                  return Text('${nat.flag}  ${nat.nameAr}',
+                      style: NqType.body.copyWith(color: c.tx, fontSize: 16));
+                }),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('نوع الهوية', style: NqType.labelStrong.copyWith(color: c.tx2)),
+          const SizedBox(height: 6),
+          NqSegmented(
+            options: [for (final t in kIdTypes) t.label],
+            index: kIdTypes.indexWhere((t) => t.value == d.idType).clamp(0, kIdTypes.length - 1),
+            onChanged: (i) =>
+                notifier.patch((x) => x.copyWith(idType: kIdTypes[i].value)),
+            height: 46,
           ),
           const SizedBox(height: 18),
         ],

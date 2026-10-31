@@ -473,6 +473,12 @@ model DriverProfile {
   licenseExpiry DateTime
   licenseType   String
 
+  /// ISO-3166 alpha-2 nationality (e.g. "SA") and identity-document type
+  /// (NATIONAL_ID | IQAMA | PASSPORT). Collected for drivers and sole-operator
+  /// (individual) carriers.
+  nationality String?
+  idType      String?
+
   status         DriverStatus   @default(OFF_DUTY)
   ownership      FleetOwnership @default(OWNED)
   currentLat     Float?

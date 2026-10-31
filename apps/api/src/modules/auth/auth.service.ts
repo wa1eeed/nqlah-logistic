@@ -168,6 +168,8 @@ export class AuthService {
           licenseExpiry: dto.licenseExpiry ? new Date(dto.licenseExpiry) : new Date(),
           licenseType: dto.licenseType ?? 'PENDING',
           ownership: 'OWNED',
+          nationality: dto.nationality,
+          idType: dto.idType,
           status: 'AVAILABLE',
         },
       });
