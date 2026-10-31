@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { fetcher, api } from '@/lib/api';
 import { notify } from '@/lib/notify';
-import { Bell, Globe, MapPin, MessageSquare, Package, Palette, Pencil, Percent, Plus, ShieldCheck, Trash2, Truck, X } from 'lucide-react';
+import { Bell, Globe, Languages, MapPin, MessageSquare, Package, Palette, Pencil, Percent, Plus, ShieldCheck, Trash2, Truck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,10 @@ import { Label } from '@/components/ui/label';
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from '@/components/ui/tabs';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { SUPPORTED_LOCALES } from '@/i18n';
 import { PageHeader } from '@/components/page-header';
 import { BrandingPanel } from '@/components/settings/branding-panel';
 import { CitiesPanel } from '@/components/settings/cities-panel';
@@ -31,6 +35,9 @@ import { useCitiesStore } from '@/stores/cities-store';
 import { useCargoTypesStore } from '@/stores/cargo-types-store';
 import { useTruckTypesStore } from '@/stores/truck-types-store';
 import type { City, CargoTypeDef, TruckTypeOption } from '@naqla/shared-utils';
+
+// Display names for the supported locales, shown in the default-language picker.
+const LOCALE_LABELS: Record<string, string> = { ar: 'العربية', en: 'English', ur: 'اردو' };
 
 export default function AdminSettingsPage() {
   const t = useTranslations('admin');
@@ -54,6 +61,12 @@ export default function AdminSettingsPage() {
   const [savingTaxIdentity, setSavingTaxIdentity] = useState(false);
   const platformVatInvalid = platformVat.length > 0 && !/^\d{15}$/.test(platformVat);
 
+  // Platform default language — the locale each dashboard adopts when the
+  // visitor hasn't explicitly chosen one (stored under `platform.defaultLocale`,
+  // also exposed on the public GET /settings/platform).
+  const [defaultLocale, setDefaultLocale] = useState<string>('ar');
+  const [savingLanguage, setSavingLanguage] = useState(false);
+
   // General settings
   const [brandName, setBrandName] = useState('نقلة لوجيستك');
   const [supportEmail, setSupportEmail] = useState('support@naqla.sa');
@@ -70,6 +83,7 @@ export default function AdminSettingsPage() {
     if (settingMap['platform_vat_number']) setPlatformVat(settingMap['platform_vat_number']);
     if (settingMap['platform_cr_number']) setPlatformCr(settingMap['platform_cr_number']);
     if (settingMap['platform_address']) setPlatformAddress(settingMap['platform_address']);
+    if (settingMap['platform.defaultLocale']) setDefaultLocale(settingMap['platform.defaultLocale']);
     if (settingMap['general.brandName']) setBrandName(settingMap['general.brandName']);
     if (settingMap['general.supportEmail']) setSupportEmail(settingMap['general.supportEmail']);
     if (settingMap['general.supportPhone']) setSupportPhone(settingMap['general.supportPhone']);
@@ -146,6 +160,22 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const saveLanguage = async () => {
+    if (savingLanguage) return;
+    setSavingLanguage(true);
+    try {
+      await api.put('/admin/settings', {
+        settings: [{ key: 'platform.defaultLocale', value: defaultLocale }],
+      });
+      notify.success('تم حفظ اللغة الافتراضية للمنصة');
+      await mutateSettings();
+    } catch (err) {
+      notify.error(err, 'فشل حفظ اللغة الافتراضية');
+    } finally {
+      setSavingLanguage(false);
+    }
+  };
+
   const saveGeneral = async () => {
     if (savingGeneral) return;
     setSavingGeneral(true);
@@ -211,6 +241,10 @@ export default function AdminSettingsPage() {
           <TabsTrigger value="branding">
             <Palette className="h-4 w-4 me-1.5" />
             {t('settings.tabs.branding')}
+          </TabsTrigger>
+          <TabsTrigger value="language">
+            <Languages className="h-4 w-4 me-1.5" />
+            {t('settings.tabs.language')}
           </TabsTrigger>
           <TabsTrigger value="general">
             <Globe className="h-4 w-4 me-1.5" />
@@ -313,6 +347,45 @@ export default function AdminSettingsPage() {
 
         <TabsContent value="branding">
           <BrandingPanel />
+        </TabsContent>
+
+        <TabsContent value="language">
+          <div className="space-y-6 max-w-2xl">
+            <Card>
+              <CardHeader>
+                <CardTitle>لغة المنصة الافتراضية</CardTitle>
+                <CardDescription>
+                  اللغة التي تظهر بها كل لوحات التحكم للزائر الذي لم يختر لغة بنفسه.
+                  اختيار المستخدم الشخصي يبقى مُقدَّمًا دائمًا.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="default-locale">اللغة الافتراضية</Label>
+                  <Select value={defaultLocale} onValueChange={setDefaultLocale}>
+                    <SelectTrigger id="default-locale" className="max-w-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUPPORTED_LOCALES.map((code) => (
+                        <SelectItem key={code} value={code}>
+                          {LOCALE_LABELS[code] ?? code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    العربية والأردية تُعرضان من اليمين إلى اليسار (RTL).
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <Button onClick={saveLanguage} disabled={savingLanguage}>
+                    {savingLanguage ? 'جار الحفظ…' : 'حفظ'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="general">

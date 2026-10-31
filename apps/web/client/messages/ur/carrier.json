@@ -1,0 +1,61 @@
+{
+ "appName": "Naqla Logistics",
+ "appSubtitle": "Carrier Portal",
+ "nav": {
+  "dashboard": "ڈیش بورڈ",
+  "opportunities": "مواقع",
+  "orders": "میرے آرڈرز",
+  "bids": "بولی کی تاریخ",
+  "trucks": "ٹرک",
+  "drivers": "ڈرائیور",
+  "earnings": "کمائی",
+  "finance": "مالیات",
+  "reports": "رپورٹس",
+  "documents": "دستاویزات",
+  "disputes": "تنازعات",
+  "support": "معاونت",
+  "notifications": "اطلاعات",
+  "company": "کمپنی کی معلومات",
+  "settings": "کمپنی ترتیبات"
+ },
+ "groups": {
+  "carrier": "Carrier",
+  "fleet": "Fleet",
+  "finance": "مالیات",
+  "complianceSupport": "Compliance & Support",
+  "settings": "Settings"
+ },
+ "dashboard": {
+  "welcome": "Welcome",
+  "activeTrips": "Active Trips",
+  "earnings": "کمائی",
+  "fleetSize": "Fleet Size",
+  "rating": "Rating",
+  "openOpportunities": "Open Opportunities",
+  "viewAll": "View All"
+ },
+ "opportunities": {
+  "title": "Opportunities Market",
+  "subtitle": "All available transport requests",
+  "openMarket": "Open Market",
+  "direct": "Direct to me",
+  "submitBid": "Submit Bid",
+  "competitivePrice": "Submit your competitive price"
+ },
+ "bids": {
+  "title": "بولی کی تاریخ",
+  "total": "Total Bids",
+  "accepted": "قبول شدہ",
+  "pending": "زیرِ التوا",
+  "winRate": "Win Rate"
+ },
+ "documents": {
+  "title": "Documents & Compliance",
+  "validUntil": "Valid Until",
+  "expired": "میعاد ختم",
+  "expiringSoon": "Expiring Soon",
+  "missing": "Missing",
+  "uploadNow": "Upload Now",
+  "replace": "Replace"
+ }
+}

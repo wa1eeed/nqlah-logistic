@@ -1,0 +1,39 @@
+{
+ "title": "ادائیگیاں",
+ "wallet": "Wallet",
+ "balance": "Current Balance",
+ "transactions": "Transactions",
+ "escrow": "Escrow (Held)",
+ "released": "جاری کر دیا",
+ "commission": "Commission",
+ "vat": "VAT",
+ "netAmount": "Net Amount",
+ "totalRevenue": "Total Revenue",
+ "totalSpent": "Total Spent",
+ "invoice": "Invoice",
+ "invoices": "انوائسز",
+ "exportPDF": "Export PDF",
+ "exportExcel": "Export Excel",
+ "statementOfAccount": "Statement of Account",
+ "transactionType": {
+  "credit": "Credit",
+  "debit": "Debit",
+  "commission": "Commission",
+  "payout": "Payout",
+  "refund": "Refund",
+  "escrowHold": "Escrow Hold",
+  "escrowRelease": "Escrow Release"
+ },
+ "invoiceStatus": {
+  "issued": "جاری شدہ",
+  "paid": "ادا شدہ",
+  "overdue": "واجب الادا",
+  "cancelled": "منسوخ"
+ },
+ "paymentStatus": {
+  "held": "روکا گیا",
+  "released": "جاری کر دیا",
+  "refunded": "رقم واپس",
+  "disputed": "متنازع"
+ }
+}

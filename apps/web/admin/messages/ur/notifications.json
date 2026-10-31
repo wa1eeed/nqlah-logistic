@@ -1,0 +1,41 @@
+{
+ "title": "اطلاعات",
+ "eyebrow": "سسٹم",
+ "centerTitle": "Notification Center",
+ "unreadCount": "{count} unread notifications",
+ "viewAll": "View all notifications",
+ "selectAllRead": "Mark all as read",
+ "updateFailed": "Failed to update notification",
+ "allMarkedRead": "All notifications marked as read",
+ "operationFailed": "Operation failed",
+ "all": "سب",
+ "unread": "Unread",
+ "markAllRead": "Mark all as read",
+ "markRead": "Mark as read",
+ "noNotifications": "No notifications",
+ "channels": {
+  "email": "Email",
+  "sms": "SMS",
+  "inApp": "In-App",
+  "whatsapp": "WhatsApp",
+  "push": "Push Notifications"
+ },
+ "categories": {
+  "otp": "OTP Verification",
+  "transactional": "Transactional",
+  "notification": "Notification",
+  "alert": "Alert"
+ },
+ "events": {
+  "newBid": "New Bid",
+  "bidAccepted": "Bid Accepted",
+  "orderConfirmed": "Order Confirmed",
+  "orderPickedUp": "Order Picked Up",
+  "orderDelivered": "Order Delivered",
+  "paymentReleased": "Payment Released",
+  "newOpportunity": "New Opportunity",
+  "kycPending": "KYC Pending",
+  "newDispute": "New Dispute",
+  "invoiceOverdue": "Invoice Overdue"
+ }
+}

@@ -1,0 +1,59 @@
+{
+ "appName": "Naqla Logistics",
+ "appSubtitle": "Admin Dashboard",
+ "nav": {
+  "dashboard": "ڈیش بورڈ",
+  "companies": "ناقلین اور کلائنٹس",
+  "kyc": "کے وائی سی منظوری",
+  "orders": "آرڈرز",
+  "disputes": "تنازعات",
+  "trucks": "تمام ٹرک",
+  "drivers": "تمام ڈرائیور",
+  "payments": "ادائیگیاں",
+  "wallets": "کمپنی والٹس",
+  "reports": "رپورٹس",
+  "support": "معاونت",
+  "notifications": "اطلاعات",
+  "promotions": "پروموشنز",
+  "audit": "آڈٹ لاگ",
+  "legal": "قانونی صفحات",
+  "seo": "ایس ای او ترتیبات",
+  "settings": "پلیٹ فارم ترتیبات"
+ },
+ "groups": {
+  "platform": "Platform Management",
+  "fleet": "Fleet",
+  "finance": "مالیات",
+  "system": "سسٹم",
+  "legalSeo": "Legal & SEO",
+  "settings": "Settings"
+ },
+ "dashboard": {
+  "title": "ڈیش بورڈ",
+  "subtitle": "Overview of platform activity",
+  "totalCompanies": "Total Companies",
+  "totalOrders": "Total Orders",
+  "openDisputes": "Open Disputes",
+  "platformRevenue": "Platform Revenue"
+ },
+ "settings": {
+  "title": "پلیٹ فارم ترتیبات",
+  "tabs": {
+   "financial": "Financial",
+   "compliance": "Compliance",
+   "notifications": "اطلاعات",
+   "truckTypes": "Truck Types",
+   "brands": "Brands & Models",
+   "general": "General"
+  }
+ },
+ "kyc": {
+  "title": "کے وائی سی منظوری",
+  "queue": "Approval Queue",
+  "review": "Review",
+  "approve": "Approve",
+  "reject": "Reject",
+  "rejectReason": "Reject Reason",
+  "documentsRequired": "Required Documents"
+ }
+}

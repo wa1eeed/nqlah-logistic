@@ -1,15 +1,26 @@
 import { notFound } from 'next/navigation';
 import { getRequestConfig } from 'next-intl/server';
 
-export const SUPPORTED_LOCALES = ['ar', 'en'] as const;
+// Supported UI locales. Adding a new language is a two-step change: drop a
+// `messages/<lang>/*.json` folder and add the code here (and to RTL_LOCALES if
+// it's right-to-left). Keep this list in sync with src/navigation.ts (the
+// middleware reads the locale list from there). See docs/I18N.md.
+export const SUPPORTED_LOCALES = ['ar', 'en', 'ur'] as const;
 export const DEFAULT_LOCALE = 'ar';
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
+
+// Right-to-left locales. Arabic and Urdu both use the Arabic script.
+export const RTL_LOCALES: readonly Locale[] = ['ar', 'ur'];
+export function isRtlLocale(locale: string): boolean {
+  return (RTL_LOCALES as readonly string[]).includes(locale);
+}
 
 /**
  * URL-based locale routing for the landing site.
  *   - `/`        → middleware redirects to `/ar` (Accept-Language aware)
  *   - `/ar/...`  → Arabic, RTL, Tajawal
  *   - `/en/...`  → English, LTR, Inter
+ *   - `/ur/...`  → Urdu, RTL, Tajawal
  */
 async function buildConfig({ locale }: { locale: string }) {
   if (!SUPPORTED_LOCALES.includes(locale as Locale)) notFound();
