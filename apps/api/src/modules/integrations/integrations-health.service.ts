@@ -3,6 +3,7 @@ import { IntegrationsService } from './integrations.service';
 import { specFor } from './integrations.registry';
 import { STORAGE_CONNECTOR, type StorageConnector } from '../../integrations/storage/storage.connector';
 import { FcmNotificationConnector } from '../../integrations/notifications/fcm-notification.connector';
+import { AuthenticaOtpConnector } from '../../integrations/otp/authentica-otp.connector';
 
 export interface HealthResult {
   domain: string;
@@ -58,6 +59,30 @@ export class IntegrationsHealthService {
     }
 
     if (dev) return { domain, status: 'ok', note: 'وضع التطوير (محاكاة/سجل) يعمل' };
+
+    // OTP: `local` and Authentica **test** mode are simulated (no live call);
+    // Authentica **live** validates the key via the balance endpoint.
+    if (domain === 'otp') {
+      if (provider === 'local') {
+        return { domain, status: 'ok', note: 'وضع محلي (رمز في Redis عبر الرسائل) يعمل' };
+      }
+      if (provider === 'authentica') {
+        const apiKey = (config.AUTHENTICA_API_KEY || '').trim();
+        const isProd = process.env.NODE_ENV === 'production';
+        const live = isProd || (config.AUTHENTICA_MODE || '').toLowerCase() === 'live';
+        if (!live) {
+          const testOtp = (config.AUTHENTICA_TEST_OTP || '123456').trim();
+          return { domain, status: 'ok', note: `الوضع التجريبي فعّال — الرمز الثابت: ${testOtp}` };
+        }
+        if (!apiKey) return { domain, status: 'down', note: 'الوضع الحقيقي يتطلب مفتاح API' };
+        try {
+          const balance = await new AuthenticaOtpConnector(apiKey, {}).balance();
+          return { domain, status: 'ok', note: `Authentica متصل — الرصيد: ${balance}` };
+        } catch (e) {
+          return { domain, status: 'down', note: `فشل الاتصال بـ Authentica: ${(e as Error).message}` };
+        }
+      }
+    }
 
     // Real provider: verify required config is present.
     const missing = (providerSpec?.fields ?? [])
