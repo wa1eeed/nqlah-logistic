@@ -60,6 +60,10 @@ jobs:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
+          # Optional: auto-report the shipped build to the admin dashboard.
+          # When unset, fastlane just logs a skip line (upload still succeeds).
+          APP_VERSION_API_BASE: ${{ secrets.APP_VERSION_API_BASE }}
+          APP_VERSION_DEPLOY_TOKEN: ${{ secrets.APP_VERSION_DEPLOY_TOKEN }}
         run: fastlane beta
 
       - name: Upload IPA artifact (debugging)

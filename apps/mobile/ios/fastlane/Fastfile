@@ -73,5 +73,38 @@ platform :ios do
       app_identifier: APP_ID,
       skip_waiting_for_build_processing: true,
     )
+
+    # Tell the admin dashboard which build just shipped, so Settings →
+    # "إعدادات التطبيق" shows the current TestFlight version automatically.
+    report_version_to_dashboard(channel: "iosTestFlight", build: next_build)
   end
+end
+
+# Posts the shipped version/build to the NQLAH admin dashboard via the deploy
+# hook (PUT /settings/app/versions, APP_VERSION_DEPLOY_TOKEN). Marketing version
+# is read from pubspec. No-op (just a log line) when the dashboard env vars
+# aren't set, and never fails the lane — the upload already succeeded here.
+def report_version_to_dashboard(channel:, build:)
+  base  = ENV["APP_VERSION_API_BASE"].to_s   # e.g. https://api.nqlah.nx.sa/api
+  token = ENV["APP_VERSION_DEPLOY_TOKEN"].to_s
+  if base.empty? || token.empty?
+    UI.important("Skipping dashboard version report — set APP_VERSION_API_BASE and APP_VERSION_DEPLOY_TOKEN to enable it.")
+    return
+  end
+  version = File.read("../pubspec.yaml")[/^version:\s*([^\s+]+)/, 1] || "0.0.0"
+  label   = "#{version} (#{build})"
+  require "json"
+  # Payload goes through the shell env (not string-interpolated) and logging is
+  # off, so the deploy token never lands in the CI log.
+  ENV["NQ_VERSION_PAYLOAD"] = { channel => label }.to_json
+  sh(
+    'curl -fsS -X PUT "$APP_VERSION_API_BASE/settings/app/versions" ' \
+    '-H "Content-Type: application/json" ' \
+    '-H "x-deploy-token: $APP_VERSION_DEPLOY_TOKEN" ' \
+    '-d "$NQ_VERSION_PAYLOAD"',
+    log: false,
+  )
+  UI.success("Reported #{channel} = #{label} to the admin dashboard.")
+rescue => e
+  UI.important("Dashboard version report failed (non-fatal): #{e.message}")
 end
