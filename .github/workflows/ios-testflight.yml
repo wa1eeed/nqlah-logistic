@@ -60,6 +60,11 @@ jobs:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
+          # match: passphrase for the encrypted signing files, and the Git Basic
+          # auth header (base64 of "x-access-token:<PAT>") it uses to read/write
+          # the ios-signing storage branch. Both are repository secrets.
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           # Optional: auto-report the shipped build to the admin dashboard.
           # When unset, fastlane just logs a skip line (upload still succeeds).
           APP_VERSION_API_BASE: ${{ secrets.APP_VERSION_API_BASE }}
