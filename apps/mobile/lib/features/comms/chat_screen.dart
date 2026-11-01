@@ -251,14 +251,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Future<void> _pickFile() async {
     try {
-      final res = await FilePicker.pickFiles(withData: true);
-      if (res == null || res.files.isEmpty) return;
-      final f = res.files.first;
-      final bytes = f.bytes;
-      if (bytes == null) {
-        _snack('تعذّر قراءة الملف.');
-        return;
-      }
+      final res = await FilePicker.pickFiles();
+      if (res.isEmpty) return;
+      final f = res.first;
+      final bytes = await f.readAsBytes();
       await _uploadAndSend(
         kind: 'FILE',
         bytes: bytes,
