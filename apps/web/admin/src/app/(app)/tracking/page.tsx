@@ -24,6 +24,7 @@ interface AdminDriver {
   fullName: string;
   phone?: string | null;
   status: string;
+  online?: boolean | null;
   currentLat?: number | null;
   currentLng?: number | null;
   lastLocationAt?: string | null;
@@ -38,6 +39,23 @@ const OSM_TILE = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const OSM_ATTR = '© OpenStreetMap contributors';
 const ACTIVE_STATUSES = ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT'] as const;
 const STATUS_HEX: Record<string, string> = { ON_TRIP: '#00C9A7', AVAILABLE: '#2563EB', OFF_DUTY: '#9CA3AF' };
+/** A GPS fix newer than this = "live"; older = last-known/stale. */
+const FRESH_MS = 90_000;
+
+// Language-neutral compact "last seen" (e.g. "5m", "2h", "3d").
+const lastSeen = (iso?: string | null): string | null => {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return '<1m';
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+};
+const isFresh = (iso?: string | null) =>
+  !!iso && Date.now() - new Date(iso).getTime() < FRESH_MS;
 
 function orderCoords(o: Order, which: 'origin' | 'destination'): { lat: number; lng: number } {
   const r = o as unknown as Record<string, number | null | undefined>;
@@ -76,6 +94,8 @@ export default function AdminTrackingPage() {
   // of the last-known positions from the REST feed.
   const [moves, setMoves] = useState<Record<string, { lat: number; lng: number; at?: number }>>({});
   const [live, setLive] = useState<AdminOrderPing | null>(null);
+  // Live presence overrides from `driver:presence` events (driverId → online).
+  const [presence, setPresence] = useState<Record<string, boolean>>({});
 
   const drivers = useMemo<AdminDriver[]>(() => (Array.isArray(driversRaw) ? driversRaw : []), [driversRaw]);
   const posOf = (d: AdminDriver): { lat: number; lng: number } | null => {
@@ -124,6 +144,7 @@ export default function AdminTrackingPage() {
       token,
       onDriverMove: (m: AdminDriverMove) => setMoves((cur) => ({ ...cur, [m.driverId]: { lat: m.lat, lng: m.lng, at: m.at } })),
       onOrderPing: (p: AdminOrderPing) => setLive(p),
+      onPresence: (p) => setPresence((cur) => ({ ...cur, [p.driverId]: p.online })),
     });
     setSocket(s);
     return () => s.close();
@@ -191,7 +212,7 @@ export default function AdminTrackingPage() {
 
       <div className="flex flex-col lg:flex-row gap-3 h-[calc(100vh-12rem)] min-h-[560px]">
         <DriversPanel t={t} error={!!driversErr} drivers={drivers} posOf={posOf} taskCount={driverTaskCount}
-          selectedDriverId={selectedDriverId} onSelect={selectDriver} expanded={view === 'LIST'} />
+          presence={presence} selectedDriverId={selectedDriverId} onSelect={selectDriver} expanded={view === 'LIST'} />
 
         {view === 'MAP' && (
           <div className="relative min-h-[320px] flex-1 lg:min-w-0">
@@ -263,10 +284,11 @@ function StatusAvatar({ name, status }: { name: string; status: string }) {
 }
 
 function DriversPanel({
-  t, error, drivers, posOf, taskCount, selectedDriverId, onSelect, expanded,
+  t, error, drivers, posOf, taskCount, presence, selectedDriverId, onSelect, expanded,
 }: {
   t: TFn; error: boolean; drivers: AdminDriver[]; posOf: (d: AdminDriver) => { lat: number; lng: number } | null;
-  taskCount: Map<string, number>; selectedDriverId: string | null; onSelect: (id: string) => void; expanded: boolean;
+  taskCount: Map<string, number>; presence: Record<string, boolean>;
+  selectedDriverId: string | null; onSelect: (id: string) => void; expanded: boolean;
 }) {
   const [tab, setTab] = useState<'ON_TRIP' | 'AVAILABLE' | 'OFF_DUTY'>('ON_TRIP');
   const [query, setQuery] = useState('');
@@ -324,6 +346,22 @@ function DriversPanel({
                     <span className="num truncate" style={{ direction: 'ltr', unicodeBidi: 'plaintext' }}>{d.code}</span>
                   )}
                 </div>
+                {(() => {
+                  const online = presence[d.id] ?? d.online ?? false;
+                  const fresh = isFresh(d.lastLocationAt);
+                  const color = online ? (fresh ? '#15803D' : '#B45309') : '#9CA3AF';
+                  const label = online
+                    ? (fresh ? t('tracking.presence.live') : t('tracking.presence.connected'))
+                    : t('tracking.presence.offline');
+                  const seen = lastSeen(d.lastLocationAt);
+                  return (
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[11px]">
+                      <span className={`inline-block h-2 w-2 rounded-full ${online && fresh ? 'animate-pulse' : ''}`} style={{ background: color }} />
+                      <span style={{ color }}>{label}</span>
+                      {seen && <span className="num text-muted-foreground" style={{ direction: 'ltr', unicodeBidi: 'plaintext' }}>· {seen}</span>}
+                    </div>
+                  );
+                })()}
                 {!located && (
                   <div className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-500">
                     <MapPin className="h-3 w-3" /> {t('tracking.drivers.noLocation')}

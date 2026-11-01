@@ -584,6 +584,11 @@
    "busy": "مصروف (سفر میں)",
    "available": "دستیاب",
    "offline": "آف لائن"
+  },
+  "presence": {
+   "live": "لائیو",
+   "connected": "منسلک",
+   "offline": "آف لائن"
   }
  }
 }

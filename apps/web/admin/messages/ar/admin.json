@@ -636,6 +636,11 @@
    "busy": "مشغول (في رحلة)",
    "available": "متاح",
    "offline": "غير متصل"
+  },
+  "presence": {
+   "live": "مباشر",
+   "connected": "متصل",
+   "offline": "غير متصل"
   }
  }
 }

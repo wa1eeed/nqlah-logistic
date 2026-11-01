@@ -30,6 +30,12 @@ export interface AdminOrderPing {
   live?: boolean;
 }
 
+export interface AdminPresence {
+  driverId: string;
+  online: boolean;
+  at?: number;
+}
+
 export interface AdminTrackingSocket {
   subscribeOrder: (orderId: string, startProgress?: number) => void;
   unsubscribeOrder: (orderId: string) => void;
@@ -40,6 +46,7 @@ export interface AdminTrackingOpts {
   token?: string;
   onDriverMove?: (m: AdminDriverMove) => void;
   onOrderPing?: (p: AdminOrderPing) => void;
+  onPresence?: (p: AdminPresence) => void;
   url?: string;
 }
 
@@ -76,6 +83,9 @@ export function openAdminTrackingSocket(opts: AdminTrackingOpts): AdminTrackingS
     const hasCoords = typeof p.lat === 'number' && typeof p.lng === 'number';
     const hasProgress = typeof p.progress === 'number';
     if (hasCoords || hasProgress) opts.onOrderPing?.(p);
+  });
+  socket.on('driver:presence', (p: AdminPresence) => {
+    if (p && p.driverId) opts.onPresence?.({ driverId: p.driverId, online: !!p.online, at: p.at });
   });
 
   return {
