@@ -27,7 +27,13 @@ jobs:
 
       - name: Flutter deps
         working-directory: apps/mobile
-        run: flutter pub get
+        # Pre-create the SPM package dir: this project is Swift Package Manager
+        # (no Podfile), and `flutter pub get` copies plugins (firebase_messaging)
+        # into build/ios/SourcePackages — which rsync can't create on a clean
+        # runner because its parent doesn't exist yet.
+        run: |
+          mkdir -p build/ios/SourcePackages
+          flutter pub get
 
       # Generates the Flutter artifacts + runs `pod install`; fastlane then
       # re-archives this with signing.
