@@ -52,7 +52,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    initialLocation: '/login',
+    // Explore-first: the app opens into the shell. A guest (unauthenticated)
+    // browses the visitor experience; actions that need an account bounce to
+    // /login via the redirect below.
+    initialLocation: '/app',
     refreshListenable: refresh,
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
@@ -61,8 +64,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       final onAuthPage =
           loc == '/login' || loc == '/login-otp' || loc.startsWith('/register');
+      // Read-only routes a guest may browse without an account. Everything else
+      // requires auth and redirects to /login.
+      final guestAllowed = loc == '/app' || loc == '/truck-detail';
       if (!auth.isAuthenticated) {
-        return onAuthPage ? null : '/login';
+        if (onAuthPage || guestAllowed) return null;
+        return '/login';
       }
       // Signed in: keep them out of the login / OTP entry pages.
       if (loc == '/login' || loc == '/login-otp') return '/app';

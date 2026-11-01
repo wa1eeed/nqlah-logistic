@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'guest_cta.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/i18n/locale_controller.dart';
 import '../../core/session/identity.dart';
@@ -86,10 +88,14 @@ class _AppShellState extends ConsumerState<AppShell> {
       });
     }
     final index = _index.clamp(0, tabs.length - 1);
+    // A guest is an unauthenticated visitor browsing the (customer) shell.
+    final isGuest =
+        widget.identity == null && ref.watch(authControllerProvider).user == null;
     // Drivers (employed or owner-driver) keep a socket open app-wide so the
     // server marks them online (presence) the whole time the app is open.
-    final isDriver = _identity == NqIdentity.employedDriver ||
-        (_identity == NqIdentity.provider && _ownerDriver);
+    final isDriver = !isGuest &&
+        (_identity == NqIdentity.employedDriver ||
+            (_identity == NqIdentity.provider && _ownerDriver));
     return Scaffold(
       backgroundColor: c.bg,
       body: SafeArea(
@@ -97,8 +103,9 @@ class _AppShellState extends ConsumerState<AppShell> {
           children: [
             if (isDriver) const DriverPresence(),
             if (isDriver) const DriverActiveOrderBeacon(),
-            _devBar(c),
-            Expanded(child: _body(c, tabs[index], index)),
+            // Dev-only role previewer — never shown to real users or guests.
+            if (!kReleaseMode && !isGuest) _devBar(c),
+            Expanded(child: _body(c, tabs[index], index, isGuest)),
           ],
         ),
       ),
@@ -110,7 +117,43 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
   }
 
-  Widget _body(NqColors c, NqTab tab, int index) {
+  Widget _body(NqColors c, NqTab tab, int index, bool isGuest) {
+    // Guest (unauthenticated) browses the customer shell: the Trucks tab is the
+    // real marketplace (public), the rest invite sign-in. Order/account actions
+    // are gated at their routes (redirect → /login).
+    if (isGuest) {
+      switch (index) {
+        case 1:
+          return const CustomerTrucksScreen();
+        case 2:
+          return const GuestCta(
+            title: 'شحناتي',
+            subtitle: 'سجّل الدخول لمتابعة شحناتك وطلباتك.',
+            icon: NqIcons.shippingContainer,
+          );
+        case 3:
+          return const GuestCta(
+            title: 'العروض',
+            subtitle: 'سجّل الدخول لاستقبال عروض المزوّدين على طلباتك.',
+            icon: NqIcons.handshake,
+          );
+        case 4:
+          return const GuestCta(
+            title: 'حسابك',
+            subtitle: 'سجّل الدخول أو أنشئ حسابًا للوصول إلى حسابك وطلباتك.',
+            icon: NqIcons.userCircle,
+          );
+        default:
+          return GuestCta(
+            title: 'مرحبًا بك في نقلة',
+            subtitle:
+                'تصفّح الشاحنات والمزوّدين المتاحين الآن. أنشئ حسابًا عندما تريد إرسال طلب.',
+            icon: NqIcons.truck,
+            browseLabel: 'تصفّح الشاحنات المتاحة',
+            onBrowse: () => setState(() => _index = 1),
+          );
+      }
+    }
     // Real screens as they're built; placeholders otherwise.
     if (_identity == NqIdentity.customer) {
       switch (index) {
