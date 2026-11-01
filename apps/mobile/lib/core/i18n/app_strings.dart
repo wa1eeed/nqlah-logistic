@@ -90,6 +90,21 @@ const Map<String, Map<AppLang, String>> _catalog = {
   // ── Language picker ────────────────────────────────────────────────
   'lang.choose': {AppLang.ar: 'اختر اللغة', AppLang.en: 'Choose language', AppLang.ur: 'زبان منتخب کریں'},
 
+  // ── Login / onboarding ─────────────────────────────────────────────
+  'login.welcome': {AppLang.ar: 'أهلًا بك', AppLang.en: 'Welcome', AppLang.ur: 'خوش آمدید'},
+  'login.subtitle': {AppLang.ar: 'حساب واحد للعملاء والمزوّدين والسائقين', AppLang.en: 'One account for clients, carriers and drivers', AppLang.ur: 'کلائنٹس، کیریئرز اور ڈرائیورز کے لیے ایک اکاؤنٹ'},
+  'login.phone': {AppLang.ar: 'رقم الجوال', AppLang.en: 'Mobile number', AppLang.ur: 'موبائل نمبر'},
+  'login.password': {AppLang.ar: 'كلمة المرور', AppLang.en: 'Password', AppLang.ur: 'پاس ورڈ'},
+  'login.forgot': {AppLang.ar: 'نسيت كلمة المرور؟', AppLang.en: 'Forgot password?', AppLang.ur: 'پاس ورڈ بھول گئے؟'},
+  'login.signIn': {AppLang.ar: 'دخول', AppLang.en: 'Sign in', AppLang.ur: 'سائن اِن'},
+  'login.otpLogin': {AppLang.ar: 'الدخول برمز تحقق', AppLang.en: 'Sign in with a code', AppLang.ur: 'کوڈ سے سائن اِن'},
+  'login.noAccount': {AppLang.ar: 'ليس لديك حساب؟ ', AppLang.en: "Don't have an account? ", AppLang.ur: 'اکاؤنٹ نہیں ہے؟ '},
+  'login.createAccount': {AppLang.ar: 'إنشاء حساب', AppLang.en: 'Create account', AppLang.ur: 'اکاؤنٹ بنائیں'},
+  'login.errFill': {AppLang.ar: 'أدخل رقم الجوال وكلمة المرور.', AppLang.en: 'Enter your mobile number and password.', AppLang.ur: 'موبائل نمبر اور پاس ورڈ درج کریں۔'},
+  'login.errPhone': {AppLang.ar: 'أدخل رقم الجوال لإرسال رمز الدخول.', AppLang.en: 'Enter your mobile number to get a sign-in code.', AppLang.ur: 'سائن اِن کوڈ کے لیے موبائل نمبر درج کریں۔'},
+  'login.errUnexpected': {AppLang.ar: 'حدث خطأ غير متوقع. حاول مجددًا.', AppLang.en: 'Something went wrong. Please try again.', AppLang.ur: 'کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔'},
+  'login.errOtp': {AppLang.ar: 'تعذّر إرسال الرمز. حاول مجددًا.', AppLang.en: "Couldn't send the code. Try again.", AppLang.ur: 'کوڈ نہیں بھیجا جا سکا۔ دوبارہ کوشش کریں۔'},
+
   // ── Common actions ─────────────────────────────────────────────────
   'common.cancel': {AppLang.ar: 'إلغاء', AppLang.en: 'Cancel', AppLang.ur: 'منسوخ'},
   'common.save': {AppLang.ar: 'حفظ', AppLang.en: 'Save', AppLang.ur: 'محفوظ کریں'},

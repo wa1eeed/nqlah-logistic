@@ -4,10 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/i18n/app_strings.dart';
+import '../../core/i18n/language_picker.dart';
+import '../../core/i18n/locale_controller.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../design_system/button.dart';
 import '../../design_system/hero_panel.dart';
+import '../../core/widgets/nq_icon.dart';
 import '../../design_system/logo.dart';
 import '../../design_system/text_field.dart';
 
@@ -46,10 +50,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    final s = ref.read(stringsProvider);
     final id = _identifier.text.trim();
     final pw = _password.text;
     if (id.isEmpty || pw.isEmpty) {
-      setState(() => _error = 'أدخل رقم الجوال وكلمة المرور.');
+      setState(() => _error = s('login.errFill'));
       return;
     }
     setState(() {
@@ -63,7 +68,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'حدث خطأ غير متوقع. حاول مجددًا.');
+        setState(() => _error = ref.read(stringsProvider)('login.errUnexpected'));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -71,9 +76,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _otpLogin() async {
+    final s = ref.read(stringsProvider);
     final id = _identifier.text.trim();
     if (id.isEmpty) {
-      setState(() => _error = 'أدخل رقم الجوال لإرسال رمز الدخول.');
+      setState(() => _error = s('login.errPhone'));
       return;
     }
     setState(() {
@@ -86,7 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      if (mounted) setState(() => _error = 'تعذّر إرسال الرمز. حاول مجددًا.');
+      if (mounted) setState(() => _error = ref.read(stringsProvider)('login.errOtp'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -95,6 +101,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
+    final s = ref.watch(stringsProvider);
+    final lang = ref.watch(localeControllerProvider);
     return Scaffold(
       backgroundColor: c.bg,
       body: SafeArea(
@@ -114,14 +122,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       children: [
                         const NqLogoLockup(),
                         const Spacer(),
-                        _langPill(),
+                        _langPill(lang),
                       ],
                     ),
                     const Spacer(),
-                    Text('أهلًا بك',
+                    Text(s('login.welcome'),
                         style: NqType.display.copyWith(color: NqFixed.heroText)),
                     const SizedBox(height: 6),
-                    Text('حساب واحد للعملاء والمزوّدين والسائقين',
+                    Text(s('login.subtitle'),
                         style: NqType.body
                             .copyWith(color: NqFixed.heroTextSecondary)),
                   ],
@@ -133,13 +141,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     NqTextField(
-                      label: 'رقم الجوال',
+                      label: s('login.phone'),
                       phone: true,
                       controller: _identifier,
                     ),
                     const SizedBox(height: 18),
                     NqTextField(
-                      label: 'كلمة المرور',
+                      label: s('login.password'),
                       obscure: true,
                       controller: _password,
                       error: _error,
@@ -149,19 +157,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       alignment: AlignmentDirectional.centerStart,
                       child: GestureDetector(
                         onTap: widget.onForgot,
-                        child: Text('نسيت كلمة المرور؟',
+                        child: Text(s('login.forgot'),
                             style: NqType.labelStrong.copyWith(color: c.mintTx)),
                       ),
                     ),
                     const SizedBox(height: 20),
                     NqButton(
-                      label: 'دخول',
+                      label: s('login.signIn'),
                       loading: _busy,
                       onPressed: _busy ? null : _submit,
                     ),
                     const SizedBox(height: 12),
                     NqButton(
-                      label: 'الدخول برمز تحقق',
+                      label: s('login.otpLogin'),
                       variant: NqButtonVariant.secondary,
                       icon: 'chat-centered-dots',
                       onPressed: _busy ? null : _otpLogin,
@@ -175,11 +183,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onTap: widget.onRegister,
                   child: Text.rich(
                     TextSpan(
-                      text: 'ليس لديك حساب؟ ',
+                      text: s('login.noAccount'),
                       style: NqType.body.copyWith(color: c.tx2),
                       children: [
                         TextSpan(
-                          text: 'إنشاء حساب',
+                          text: s('login.createAccount'),
                           style: NqType.bodyStrong.copyWith(color: c.mintTx),
                         ),
                       ],
@@ -195,17 +203,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _langPill() {
-    return Container(
-      height: 36,
-      width: 36,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: NqFixed.heroFill2,
-        borderRadius: BorderRadius.circular(NqRadius.pill),
+  /// Language chooser on the onboarding/login screen — shows the active
+  /// language and opens the picker so a user whose device is in another
+  /// language can pick theirs from the very first screen.
+  Widget _langPill(AppLang lang) {
+    final code = switch (lang) {
+      AppLang.ar => 'ع',
+      AppLang.en => 'EN',
+      AppLang.ur => 'اُر',
+    };
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => showLanguagePicker(context, ref),
+      child: Container(
+        height: 36,
+        constraints: const BoxConstraints(minWidth: 36),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: NqFixed.heroFill2,
+          borderRadius: BorderRadius.circular(NqRadius.pill),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          NqIcon(NqIcons.globe, size: 14, color: NqFixed.heroText),
+          const SizedBox(width: 5),
+          Text(code,
+              style: NqType.labelStrong.copyWith(color: NqFixed.heroText)),
+        ]),
       ),
-      child: Text('EN',
-          style: NqType.labelStrong.copyWith(color: NqFixed.heroText)),
     );
   }
 }
