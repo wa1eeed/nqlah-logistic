@@ -21,6 +21,10 @@ platform :ios do
     # Creates a throwaway keychain on CI (so the new cert has somewhere to live).
     setup_ci
 
+    # Resolve pubspec now, while fastlane's CWD is still apps/mobile/ios — later
+    # build_app changes the working directory, which broke the relative read.
+    pubspec_path = File.expand_path("../pubspec.yaml")
+
     api_key = app_store_connect_api_key(
       key_id: ENV.fetch("ASC_KEY_ID"),
       issuer_id: ENV.fetch("ASC_ISSUER_ID"),
@@ -87,7 +91,7 @@ platform :ios do
 
     # Tell the admin dashboard which build just shipped, so Settings →
     # "إعدادات التطبيق" shows the current TestFlight version automatically.
-    report_version_to_dashboard(channel: "iosTestFlight", build: next_build)
+    report_version_to_dashboard(channel: "iosTestFlight", build: next_build, pubspec_path: pubspec_path)
   end
 end
 
@@ -95,14 +99,14 @@ end
 # hook (PUT /settings/app/versions, APP_VERSION_DEPLOY_TOKEN). Marketing version
 # is read from pubspec. No-op (just a log line) when the dashboard env vars
 # aren't set, and never fails the lane — the upload already succeeded here.
-def report_version_to_dashboard(channel:, build:)
+def report_version_to_dashboard(channel:, build:, pubspec_path:)
   base  = ENV["APP_VERSION_API_BASE"].to_s   # e.g. https://api.nqlah.nx.sa/api
   token = ENV["APP_VERSION_DEPLOY_TOKEN"].to_s
   if base.empty? || token.empty?
     UI.important("Skipping dashboard version report — set APP_VERSION_API_BASE and APP_VERSION_DEPLOY_TOKEN to enable it.")
     return
   end
-  version = File.read("../pubspec.yaml")[/^version:\s*([^\s+]+)/, 1] || "0.0.0"
+  version = File.read(pubspec_path)[/^version:\s*([^\s+]+)/, 1] || "0.0.0"
   label   = "#{version} (#{build})"
   require "json"
   # Payload goes through the shell env (not string-interpolated) and logging is
