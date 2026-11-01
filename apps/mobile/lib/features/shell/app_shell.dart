@@ -21,6 +21,7 @@ import '../provider/provider_home_screen.dart';
 import '../provider/provider_loads_screen.dart';
 import '../provider/owner_driver_home_screen.dart';
 import '../driver/driver_my_trips_screen.dart';
+import '../driver/driver_active_order_beacon.dart';
 import '../driver/driver_presence.dart';
 import '../comms/notifications_screen.dart';
 import '../comms/conversations_screen.dart';
@@ -95,6 +96,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         child: Column(
           children: [
             if (isDriver) const DriverPresence(),
+            if (isDriver) const DriverActiveOrderBeacon(),
             _devBar(c),
             Expanded(child: _body(c, tabs[index], index)),
           ],

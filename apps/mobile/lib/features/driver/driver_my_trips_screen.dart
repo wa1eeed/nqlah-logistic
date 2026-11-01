@@ -26,6 +26,28 @@ class DriverMyTripsScreen extends ConsumerStatefulWidget {
 
 class _DriverMyTripsScreenState extends ConsumerState<DriverMyTripsScreen> {
   int _seg = 0; // 0 new, 1 upcoming, 2 done
+  bool _dutyBusy = false;
+
+  /// Toggle «متفرّغ» (AVAILABLE) ↔ «منتهي الدوام» (OFF_DUTY). The server rejects
+  /// the change mid-trip, so the pill is non-interactive while ON_TRIP.
+  Future<void> _toggleDuty(DriverMe? me) async {
+    if (_dutyBusy) return;
+    final cur = (me?.status.toUpperCase() ?? 'OFF_DUTY');
+    if (cur == 'ON_TRIP') return;
+    final next = cur == 'AVAILABLE' ? 'OFF_DUTY' : 'AVAILABLE';
+    setState(() => _dutyBusy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(driverRepositoryProvider).setDuty(next);
+      ref.invalidate(driverMeProvider);
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(content: Text('تعذّر تغيير حالة الدوام.')));
+    } finally {
+      if (mounted) setState(() => _dutyBusy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,28 +147,45 @@ class _DriverMyTripsScreenState extends ConsumerState<DriverMyTripsScreen> {
 
   Widget _header(NqColors c, DriverMe? me) {
     final name = me?.name ?? 'السائق';
-    final available = (me?.status.toUpperCase() ?? '') == 'AVAILABLE';
+    final status = me?.status.toUpperCase() ?? 'OFF_DUTY';
+    final onTrip = status == 'ON_TRIP';
+    final available = status == 'AVAILABLE';
+    final dotColor = onTrip ? c.info : (available ? c.ok : c.tx3);
+    final bg = onTrip ? c.infoBg : (available ? c.okBg : c.sf2);
+    final label = onTrip ? 'في رحلة' : (available ? 'متاح' : 'غير متاح');
     return Row(
       children: [
-        Container(
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-              color: available ? c.okBg : c.sf2,
-              borderRadius: BorderRadius.circular(NqRadius.pill)),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                    color: available ? c.ok : c.tx3, shape: BoxShape.circle)),
-            const SizedBox(width: 6),
-            Text(available ? 'متاح' : 'غير متاح',
-                style: NqType.caption.copyWith(
-                    color: available ? c.ok : c.tx2,
-                    fontWeight: FontWeight.w700)),
-          ]),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTrip ? null : () => _toggleDuty(me),
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                color: bg, borderRadius: BorderRadius.circular(NqRadius.pill)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (_dutyBusy)
+                SizedBox(
+                    width: 11,
+                    height: 11,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: dotColor))
+              else
+                Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: NqType.caption.copyWith(
+                      color: onTrip ? c.info : (available ? c.ok : c.tx2),
+                      fontWeight: FontWeight.w700)),
+              if (!onTrip) ...[
+                const SizedBox(width: 5),
+                NqIcon(NqIcons.caretDown, size: 11, color: available ? c.ok : c.tx3),
+              ],
+            ]),
+          ),
         ),
         const Spacer(),
         Text(name, style: NqType.h2.copyWith(color: c.tx)),

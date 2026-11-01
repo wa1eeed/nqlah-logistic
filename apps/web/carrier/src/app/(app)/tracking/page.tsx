@@ -13,6 +13,7 @@ import { StatusBadge } from '@/components/status-badge';
 import { TrackingMap, type TrackingDriver, type TrackingOrderRoute } from '@/components/tracking-map';
 import { api, fetcher } from '@/lib/api';
 import { openFleetTrackingSocket, type FleetTrackingPing } from '@/lib/fleet-tracking-socket';
+import { openCarrierPresenceSocket } from '@/lib/carrier-presence-socket';
 import { useAuthStore } from '@/lib/auth-store';
 import {
   CURRENT_CARRIER_ID, coordsFor, localizeCity, normalizeDriverList, normalizeOrderList,
@@ -51,6 +52,21 @@ const STATUS_HEX: Record<string, string> = {
   ON_TRIP: '#00C9A7', AVAILABLE: '#2563EB', OFF_DUTY: '#9CA3AF',
 };
 
+/** A GPS fix newer than this = "live"; older = last-known/stale. */
+const FRESH_MS = 90_000;
+const isFresh = (iso?: string | null) => !!iso && Date.now() - new Date(iso).getTime() < FRESH_MS;
+const lastSeen = (iso?: string | null): string | null => {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return '<1m';
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+};
+
 function orderCoords(o: Order, which: 'origin' | 'destination'): { lat: number; lng: number } {
   const r = o as unknown as Record<string, number | null | undefined>;
   const lat = r[`${which}Lat`];
@@ -85,6 +101,18 @@ export default function TrackingPage() {
   const { data: ordersRaw, error: ordersErr } = useSWR<unknown>('/orders?mine=true&limit=100', fetcher);
 
   const [view, setView] = useState<'MAP' | 'LIST'>('MAP');
+
+  // Live driver online/offline presence (socket `driver:presence` on the
+  // carrier's company room), merged over the REST snapshot.
+  const [presence, setPresence] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('naqla_carrier_token') ?? undefined : undefined;
+    const s = openCarrierPresenceSocket({
+      token,
+      onPresence: (p) => setPresence((cur) => ({ ...cur, [p.driverId]: p.online })),
+    });
+    return () => s.close();
+  }, []);
 
   // ── Drivers ──────────────────────────────────────────────────────
   const drivers = useMemo<FleetDriver[]>(() => normalizeDriverList<FleetDriver>(driversRaw), [driversRaw]);
@@ -226,6 +254,7 @@ export default function TrackingPage() {
           error={!!driversErr}
           drivers={drivers}
           taskCount={driverTaskCount}
+          presence={presence}
           selectedDriverId={selectedDriverId}
           onSelect={selectDriver}
           expanded={view === 'LIST'}
@@ -330,9 +359,10 @@ function StatusAvatar({ name, status }: { name: string; status: string }) {
 
 // ─── Drivers (agents) panel ───────────────────────────────────────────
 function DriversPanel({
-  t, error, drivers, taskCount, selectedDriverId, onSelect, expanded,
+  t, error, drivers, taskCount, presence, selectedDriverId, onSelect, expanded,
 }: {
   t: TFn; error: boolean; drivers: FleetDriver[]; taskCount: Map<string, number>;
+  presence: Record<string, boolean>;
   selectedDriverId: string | null; onSelect: (id: string) => void; expanded: boolean;
 }) {
   const [tab, setTab] = useState<'ON_TRIP' | 'AVAILABLE' | 'OFF_DUTY'>('ON_TRIP');
@@ -392,6 +422,22 @@ function DriversPanel({
                     <span className="num truncate" style={{ direction: 'ltr', unicodeBidi: 'plaintext' }}>{d.code}</span>
                   )}
                 </div>
+                {(() => {
+                  const online = presence[d.id] ?? false;
+                  const fresh = isFresh(d.lastLocationAt);
+                  const color = online ? (fresh ? '#15803D' : '#B45309') : '#9CA3AF';
+                  const label = online
+                    ? (fresh ? t('tracking.presence.live') : t('tracking.presence.connected'))
+                    : t('tracking.presence.offline');
+                  const seen = lastSeen(d.lastLocationAt);
+                  return (
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[11px]">
+                      <span className={`inline-block h-2 w-2 rounded-full ${online && fresh ? 'animate-pulse' : ''}`} style={{ background: color }} />
+                      <span style={{ color }}>{label}</span>
+                      {seen && <span className="num text-muted-foreground" style={{ direction: 'ltr', unicodeBidi: 'plaintext' }}>· {seen}</span>}
+                    </div>
+                  );
+                })()}
                 {!located && (
                   <div className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-500">
                     <MapPin className="h-3 w-3" /> {t('tracking.drivers.noLocation')}

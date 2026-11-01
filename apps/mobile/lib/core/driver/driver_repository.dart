@@ -56,10 +56,15 @@ class DriverMe {
   final String status;
 
   factory DriverMe.fromJson(Map<String, dynamic> j) {
-    final user = j['user'];
-    final f = user is Map ? (user['firstName']?.toString() ?? '') : '';
-    final l = user is Map ? (user['lastName']?.toString() ?? '') : '';
-    final n = [f, l].where((p) => p.isNotEmpty).join(' ').trim();
+    // `GET /driver/me` returns a flattened `name`; older shapes nested it under
+    // `user` — accept both.
+    var n = (j['name'] ?? '').toString().trim();
+    if (n.isEmpty) {
+      final user = j['user'];
+      final f = user is Map ? (user['firstName']?.toString() ?? '') : '';
+      final l = user is Map ? (user['lastName']?.toString() ?? '') : '';
+      n = [f, l].where((p) => p.isNotEmpty).join(' ').trim();
+    }
     return DriverMe(
       name: n.isNotEmpty ? n : 'السائق',
       status: (j['status'] ?? 'OFF_DUTY').toString(),
@@ -89,12 +94,31 @@ class DriverRepository {
 
   Future<DriverMe> me() async {
     try {
-      final res = await _dio.get<Map<String, dynamic>>('/driver/me');
+      final res = await _dio.get<dynamic>('/driver/me');
       _ensureOk(res);
-      return DriverMe.fromJson(res.data ?? const {});
+      return DriverMe.fromJson(_unwrap(res.data));
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }
+  }
+
+  /// Toggle the driver's own duty status (`AVAILABLE` / `OFF_DUTY`) via
+  /// `PATCH /driver/duty`. Rejected by the server while ON_TRIP.
+  Future<void> setDuty(String status) async {
+    try {
+      final res = await _dio.patch<dynamic>('/driver/duty', data: {'status': status});
+      _ensureOk(res);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  Map<String, dynamic> _unwrap(dynamic data) {
+    if (data is Map) {
+      final inner = data['data'];
+      return Map<String, dynamic>.from(inner is Map ? inner : data);
+    }
+    return const {};
   }
 
   void _ensureOk(Response res) {

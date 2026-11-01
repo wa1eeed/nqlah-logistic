@@ -12,7 +12,6 @@ import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 import '../../design_system/confirm_dialog.dart';
 import '../../design_system/status_chip.dart';
-import 'driver_location_beacon.dart';
 
 /// Employed-driver trip execution (handoff 1j), wired to `GET /orders/:id`.
 /// Big targets, no prices/customer identity. The primary action advances the
@@ -51,8 +50,8 @@ class DriverTripExecutionScreen extends ConsumerWidget {
             ),
             data: (o) => _content(context, ref, c, o),
           ),
-          // Reports the driver's throttled GPS for this order while open (invisible).
-          DriverLocationBeacon(orderId: orderId),
+          // GPS reporting is hoisted to the driver shell (DriverActiveOrderBeacon)
+          // so it keeps running in the background for the whole active order.
         ],
       ),
     );

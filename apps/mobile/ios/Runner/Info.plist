@@ -52,11 +52,14 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>location</string>
 	</array>
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>نستخدم موقعك لعرض تتبّع الشحنة الحيّ أثناء الرحلة.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>نُبقي تتبّع موقعك أثناء تنفيذ طلب الاستلام أو التسليم حتى لو كان التطبيق في الخلفية، لعرض موضع الشحنة الحيّ للعميل والمزوّد.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

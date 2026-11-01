@@ -4,6 +4,13 @@
     <!-- Live tracking: the driver app reports GPS (throttled) while on a trip. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Background tracking during an active order (pickup/delivery): a
+         foreground-service location keeps GPS flowing when the app is
+         backgrounded / screen-off (geolocator runs the service). -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <application
         android:label="nqlah_mobile"
         android:name="${applicationName}"

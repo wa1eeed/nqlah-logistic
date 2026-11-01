@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -61,13 +61,41 @@ class _DriverLocationBeaconState extends ConsumerState<DriverLocationBeacon> {
         );
         _send(first);
       } catch (_) {/* no immediate fix — the stream will provide one */}
-      _sub = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
+      _sub = Geolocator.getPositionStream(locationSettings: _locationSettings())
+          .listen(_onPosition, onError: (_) {});
+    } catch (_) {/* location unavailable — the truck keeps its last-known spot */}
+  }
+
+  /// Keep streaming while the app is backgrounded / screen-off during an active
+  /// trip: Android runs a foreground service (persistent notification), iOS
+  /// uses background location updates. Needs "always" location permission + the
+  /// native config (AndroidManifest permissions, iOS UIBackgroundModes).
+  LocationSettings _locationSettings() {
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return AndroidSettings(
           accuracy: LocationAccuracy.high,
           distanceFilter: _distanceFilterM,
-        ),
-      ).listen(_onPosition, onError: (_) {});
-    } catch (_) {/* location unavailable — the truck keeps its last-known spot */}
+          foregroundNotificationConfig: const ForegroundNotificationConfig(
+            notificationTitle: 'نقلة — تتبّع الرحلة',
+            notificationText: 'جارٍ مشاركة موقعك أثناء تنفيذ الطلب',
+            enableWakeLock: true,
+          ),
+        );
+      case TargetPlatform.iOS:
+        return AppleSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: _distanceFilterM,
+          allowBackgroundLocationUpdates: true,
+          pauseLocationUpdatesAutomatically: false,
+          showBackgroundLocationIndicator: true,
+        );
+      default:
+        return const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: _distanceFilterM,
+        );
+    }
   }
 
   void _onPosition(Position p) {
