@@ -7,23 +7,12 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
-/** Per-order live-tracking state for the server-side GPS ping stream. */
-interface OrderTrack {
-  progress: number;
-  /** Consolidated orders: one progress per leg (index 0..count-1). */
-  legs?: number[];
-  consolidated?: boolean;
-  subscribers: number;
-  timer?: NodeJS.Timeout;
-  /** Set once a real driver GPS fix arrives — suppresses the simulated ping. */
-  live?: boolean;
-}
-
-const PING_MS = 4000;
-const PING_STEP = 0.02;
-const PING_CAP = 0.97;
-
-const clamp = (n: number) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0.1));
+/**
+ * A driver GPS fix is considered "live" (actively tracking) only if it arrived
+ * within this window. Older than this, the truck's last-known position is shown
+ * as stale. Matches the driver app's beacon cadence (≈30s + 50m) with headroom.
+ */
+export const LOCATION_FRESH_MS = 90_000;
 
 @WebSocketGateway({
   cors: {
@@ -34,10 +23,13 @@ const clamp = (n: number) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0.
 export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server!: Server;
   private readonly logger = new Logger(RealtimeGateway.name);
-  /** orderId → live tracking state (ping stream is ref-counted by subscribers). */
-  private readonly tracks = new Map<string, OrderTrack>();
 
   constructor(private jwt: JwtService, private prisma: PrismaService) {}
+
+  /** The socket.io room that holds all of a driver's live connections. */
+  private driverRoom(driverId: string) {
+    return `drv:${driverId}`;
+  }
 
   handleConnection(client: Socket) {
     const token =
@@ -58,9 +50,11 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       client.data.orders = new Set<string>();
       client.join(`user:${payload.sub}`);
       if (payload.companyId) client.join(`company:${payload.companyId}`);
-      // Platform admins join a global room: they receive every tenant's
-      // `data:changed` invalidation and all driver-location fixes (admin map).
+      // Platform admins join a global room: every tenant's `data:changed`
+      // invalidation, driver-location fixes and presence changes (admin map).
       if (payload.role === 'ADMIN' || payload.role === 'SUPER_ADMIN') client.join('admin');
+      // Register driver presence (online) — resolves the driver profile async.
+      void this.registerPresence(client);
       this.logger.log(`socket connected: ${payload.sub} (${payload.role})`);
     } catch {
       client.disconnect();
@@ -68,60 +62,92 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   handleDisconnect(client: Socket) {
-    const orders = client.data?.orders as Set<string> | undefined;
-    if (orders) for (const orderId of orders) this.releaseTrack(orderId);
+    const driverId = client.data?.driverId as string | undefined;
+    const companyId = client.data?.driverCompanyId as string | null | undefined;
+    if (driverId) {
+      // By now the socket has left its rooms. If none of the driver's sockets
+      // remain (across ALL instances, via the Redis adapter) → offline.
+      void (async () => {
+        try {
+          const n = (await this.server.in(this.driverRoom(driverId)).fetchSockets()).length;
+          if (n === 0) this.emitPresence(driverId, companyId ?? null, false);
+        } catch {/* adapter hiccup — presence self-heals on the next change */}
+      })();
+    }
     this.logger.log(`socket disconnected: ${client.data?.['userId'] ?? 'unknown'}`);
   }
 
-  @SubscribeMessage('order:subscribe')
-  async subscribeOrder(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { orderId: string; startProgress?: number },
-  ) {
-    if (!data?.orderId) return;
-    const { orderId } = data;
-    client.join(`order:${orderId}`);
-    (client.data.orders as Set<string>)?.add(orderId);
+  /**
+   * Mark the connecting user online if they are a driver, and broadcast it.
+   * Presence lives in socket.io rooms (not local memory), so with the Redis
+   * adapter it is correct across every API instance and self-heals when a
+   * process dies (dead sockets drop out of the room automatically).
+   */
+  private async registerPresence(client: Socket) {
+    const userId = client.data?.userId as string | undefined;
+    if (!userId) return;
+    const profile = await this.prisma.driverProfile
+      .findUnique({ where: { userId }, select: { id: true, companyId: true } })
+      .catch(() => null);
+    if (!profile) return; // not a driver — no tracking presence
+    client.data.driverId = profile.id;
+    client.data.driverCompanyId = profile.companyId;
+    client.join(this.driverRoom(profile.id));
+    try {
+      // This is the driver's first live socket anywhere → online edge.
+      const n = (await this.server.in(this.driverRoom(profile.id)).fetchSockets()).length;
+      if (n === 1) this.emitPresence(profile.id, profile.companyId, true);
+    } catch {/* adapter hiccup */}
+  }
 
-    let track = this.tracks.get(orderId);
-    const isNew = !track;
-    if (!track) {
-      track = { progress: clamp(data.startProgress ?? 0.1), subscribers: 0 };
-      this.tracks.set(orderId, track);
-    }
-    track.subscribers += 1;
-
-    // Start the GPS ping stream once per order, only while it is IN_TRANSIT.
-    // Consolidated orders track one progress per leg, seeded from leg status.
-    if (isNew || !track.timer) {
-      const order = await this.prisma.order.findUnique({
-        where: { id: orderId },
-        select: {
-          status: true, orderType: true, truckCount: true,
-          orderTrucks: { select: { sequence: true, status: true } },
-        },
-      });
-      if (isNew && order?.orderType === 'CONSOLIDATED') {
-        const count = order.truckCount ?? order.orderTrucks.length;
-        const bySeq = new Map(order.orderTrucks.map((l) => [l.sequence, l.status]));
-        track.consolidated = true;
-        track.legs = Array.from({ length: count }, (_, i) => {
-          const st = bySeq.get(i + 1);
-          if (st === 'DELIVERED') return 1;       // arrived
-          if (st === 'IN_TRANSIT') return 0.15;   // on the road
-          if (st === 'ASSIGNED') return 0.06;     // dispatched, just starting
-          return 0;                               // undistributed → still at origin
-        });
-      }
-      // A real GPS stream, once seen, takes precedence over the simulation.
-      if (!track.timer && !track.live && order?.status === 'IN_TRANSIT') this.startPingStream(orderId);
+  /** True while the driver holds at least one live socket connection anywhere. */
+  async isDriverOnline(driverId: string): Promise<boolean> {
+    try {
+      return (await this.server.in(this.driverRoom(driverId)).fetchSockets()).length > 0;
+    } catch {
+      return false;
     }
   }
 
-  /// Real driver GPS fix. Authorizes the sender against the order's assigned
-  /// drivers, persists it (LocationHistory + the driver's current location),
-  /// and broadcasts the real coordinates — superseding the simulated ping.
-  /// The driver app throttles these (≈30–60s or ≥50m) to conserve map/API cost.
+  /** The driver ids currently online across all instances (for REST snapshots). */
+  async onlineDriverIds(): Promise<string[]> {
+    try {
+      const sockets = await this.server.fetchSockets();
+      const ids = sockets.map((s) => (s.data as { driverId?: string })?.driverId).filter(Boolean) as string[];
+      return [...new Set(ids)];
+    } catch {
+      return [];
+    }
+  }
+
+  private emitPresence(driverId: string, companyId: string | null | undefined, online: boolean) {
+    const payload = { driverId, online, at: Date.now() };
+    this.server.to('admin').emit('driver:presence', payload);
+    if (companyId) this.server.to(`company:${companyId}`).emit('driver:presence', payload);
+  }
+
+  @SubscribeMessage('order:subscribe')
+  subscribeOrder(@ConnectedSocket() client: Socket, @MessageBody() data: { orderId: string }) {
+    if (!data?.orderId) return;
+    client.join(`order:${data.orderId}`);
+    (client.data.orders as Set<string>)?.add(data.orderId);
+  }
+
+  @SubscribeMessage('order:unsubscribe')
+  unsubscribeOrder(@ConnectedSocket() client: Socket, @MessageBody() data: { orderId: string }) {
+    if (!data?.orderId) return;
+    client.leave(`order:${data.orderId}`);
+    (client.data.orders as Set<string>)?.delete(data.orderId);
+  }
+
+  /**
+   * Real driver GPS fix from the phone. Authorizes the sender against the
+   * order's assigned drivers, persists it (LocationHistory + the driver's
+   * current location), and broadcasts the REAL coordinates to the order room
+   * and the admin map. There is no simulation: the truck only ever moves to a
+   * position the driver's device actually reported. The driver app throttles
+   * these (≈30s / ≥50m) to conserve map/API cost.
+   */
   @SubscribeMessage('driver:location')
   async driverLocation(
     @ConnectedSocket() client: Socket,
@@ -153,85 +179,19 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         .catch(() => undefined),
     ]);
 
-    // Real GPS supersedes the simulated ping stream for this order.
-    const track = this.tracks.get(data.orderId);
-    if (track) {
-      track.live = true;
-      if (track.timer) { clearInterval(track.timer); track.timer = undefined; }
-    }
-    this.server.to(`order:${data.orderId}`).emit('tracking:location_update', {
+    const fix = {
       orderId: data.orderId,
+      driverId: profile.id,
       lat: data.lat,
       lng: data.lng,
       speedKmh: data.speedKmh ?? null,
       at: at.getTime(),
       live: true,
-    });
-    // Mirror the fix to the admin room so the platform-wide live map updates
-    // without being subscribed to each order. Keyed by driver (+ its provider).
-    this.server.to('admin').emit('tracking:driver_location', {
-      driverId: profile.id,
-      companyId: profile.companyId,
-      orderId: data.orderId,
-      lat: data.lat,
-      lng: data.lng,
-      speedKmh: data.speedKmh ?? null,
-      at: at.getTime(),
-    });
-  }
-
-  @SubscribeMessage('order:unsubscribe')
-  unsubscribeOrder(@ConnectedSocket() client: Socket, @MessageBody() data: { orderId: string }) {
-    if (!data?.orderId) return;
-    client.leave(`order:${data.orderId}`);
-    (client.data.orders as Set<string>)?.delete(data.orderId);
-    this.releaseTrack(data.orderId);
-  }
-
-  /** Emit discrete GPS fixes to an order's room, advancing progress each tick. */
-  private startPingStream(orderId: string) {
-    const track = this.tracks.get(orderId);
-    if (!track || track.timer) return;
-    const emit = () => {
-      const t = this.tracks.get(orderId);
-      if (!t) return;
-      const base = { orderId, speedKmh: Math.max(0, Math.round(80 + (Math.random() - 0.5) * 16)), at: Date.now() };
-      if (t.consolidated && t.legs) {
-        this.server.to(`order:${orderId}`).emit('tracking:location_update', {
-          ...base,
-          legs: t.legs.map((p, i) => ({ index: i + 1, progress: p })),
-        });
-      } else {
-        this.server.to(`order:${orderId}`).emit('tracking:location_update', { ...base, progress: t.progress });
-      }
     };
-    emit(); // immediate first fix on subscribe
-    track.timer = setInterval(() => {
-      const t = this.tracks.get(orderId);
-      if (!t) return;
-      if (t.consolidated && t.legs) {
-        // Advance only legs that are en route (0 < p < cap). Undistributed legs
-        // stay at the origin (0); delivered legs stay at the destination (1).
-        t.legs = t.legs.map((p) => (p > 0 && p < PING_CAP ? Math.min(PING_CAP, p + PING_STEP) : p));
-        emit();
-        const moving = t.legs.some((p) => p > 0 && p < PING_CAP);
-        if (!moving && t.timer) { clearInterval(t.timer); t.timer = undefined; }
-      } else {
-        t.progress = Math.min(PING_CAP, t.progress + PING_STEP);
-        emit();
-        if (t.progress >= PING_CAP && t.timer) { clearInterval(t.timer); t.timer = undefined; }
-      }
-    }, PING_MS);
-  }
-
-  private releaseTrack(orderId: string) {
-    const track = this.tracks.get(orderId);
-    if (!track) return;
-    track.subscribers = Math.max(0, track.subscribers - 1);
-    if (track.subscribers === 0) {
-      if (track.timer) clearInterval(track.timer);
-      this.tracks.delete(orderId);
-    }
+    // Everyone watching this order (customer + carrier) gets the real fix…
+    this.server.to(`order:${data.orderId}`).emit('tracking:location_update', fix);
+    // …and the admin live map, keyed by driver (+ provider).
+    this.server.to('admin').emit('tracking:driver_location', { ...fix, companyId: profile.companyId });
   }
 
   emitOrderStatus(orderId: string, payload: unknown) {

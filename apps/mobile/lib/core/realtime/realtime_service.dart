@@ -85,6 +85,11 @@ class RealtimeService {
     socket.connect();
   }
 
+  /// Open (and keep) the realtime connection. Called app-wide for a signed-in
+  /// driver so the server registers them **online** (presence) for the whole
+  /// time the app is open — not just while a tracking screen is mounted.
+  Future<void> connect() => _ensureConnected();
+
   Future<void> subscribeOrder(String orderId) async {
     _orders.add(orderId);
     await _ensureConnected();

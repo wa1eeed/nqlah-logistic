@@ -162,6 +162,18 @@ function TrackingDetail({ order }: { order: any }) {
   const carrier = companyById(order.carrierId);
   const initials = carrier?.nameAr.split(' ').slice(0, 2).map((w) => w[0]).join('') ?? '';
 
+  // "Live / last seen" for the assigned driver, from the real last GPS fix
+  // (simplest correct signal — no per-second socket needed for the customer).
+  const { data: detail } = useSWR<{ orderDrivers?: { driver?: { lastLocationAt?: string | null } }[] }>(
+    `/orders/${order.id}`, fetcher);
+  const driverLastAt = detail?.orderDrivers?.[0]?.driver?.lastLocationAt ?? null;
+  const driverFresh = !!driverLastAt && Date.now() - new Date(driverLastAt).getTime() < 90_000;
+  const driverLastSeen = (() => {
+    if (!driverLastAt) return null;
+    const m = Math.floor((Date.now() - new Date(driverLastAt).getTime()) / 60000);
+    return m < 1 ? '<1m' : m < 60 ? `${m}m` : `${Math.floor(m / 60)}h`;
+  })();
+
   return (
     <>
       <Card>
@@ -245,10 +257,17 @@ function TrackingDetail({ order }: { order: any }) {
                   )}
                 </span>
               )}
-              <Badge variant="success" className="flex items-center gap-1">
-                <span className="inline-block h-1.5 w-1.5 bg-success rounded-full animate-pulse" />
-                {t('tracking.live')}
-              </Badge>
+              {driverFresh ? (
+                <Badge variant="success" className="flex items-center gap-1">
+                  <span className="inline-block h-1.5 w-1.5 bg-success rounded-full animate-pulse" />
+                  {t('tracking.live')}
+                </Badge>
+              ) : driverLastSeen ? (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                  {t('tracking.lastSeen')} <span className="num" style={{ direction: 'ltr', unicodeBidi: 'plaintext' }}>{driverLastSeen}</span>
+                </Badge>
+              ) : null}
             </div>
           </div>
         </CardHeader>

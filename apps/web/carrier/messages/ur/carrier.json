@@ -349,6 +349,11 @@
    "busy": "Busy (on trip)",
    "available": "دستیاب",
    "offline": "Offline"
+  },
+  "presence": {
+   "live": "لائیو",
+   "connected": "منسلک",
+   "offline": "آف لائن"
   }
  }
 }

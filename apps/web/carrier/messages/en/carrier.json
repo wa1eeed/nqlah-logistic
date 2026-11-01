@@ -349,6 +349,11 @@
    "busy": "Busy (on trip)",
    "available": "Available",
    "offline": "Offline"
+  },
+  "presence": {
+   "live": "Live",
+   "connected": "Connected",
+   "offline": "Offline"
   }
  }
 }

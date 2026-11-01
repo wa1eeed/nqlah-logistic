@@ -3,11 +3,12 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import { money, round2, toNum } from '../../common/money/money';
 import { nextPublicId, PublicIdPrefix } from '../../common/public-id';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import type { CompanyStatus, DisputeStatus, Prisma } from '../../generated/prisma';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private realtime: RealtimeGateway) {}
 
   async dashboardStats() {
     const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
@@ -97,6 +98,7 @@ export class AdminService {
    * scoped), this spans all companies and tags each driver with its provider.
    */
   async driverLocations() {
+    const onlineIds = new Set(await this.realtime.onlineDriverIds());
     const drivers = await this.prisma.driverProfile.findMany({
       where: { currentLat: { not: null }, currentLng: { not: null } },
       take: 1000,
@@ -122,6 +124,8 @@ export class AdminService {
         fullName: name || 'سائق',
         phone: d.user?.phone ?? null,
         status: d.status,
+        // Real presence: true while the driver app holds a live socket connection.
+        online: onlineIds.has(d.id),
         currentLat: d.currentLat,
         currentLng: d.currentLng,
         lastLocationAt: d.lastLocationAt,

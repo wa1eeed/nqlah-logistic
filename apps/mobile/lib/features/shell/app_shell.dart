@@ -21,6 +21,8 @@ import '../provider/provider_home_screen.dart';
 import '../provider/provider_loads_screen.dart';
 import '../provider/owner_driver_home_screen.dart';
 import '../driver/driver_my_trips_screen.dart';
+import '../driver/driver_active_order_beacon.dart';
+import '../driver/driver_presence.dart';
 import '../comms/notifications_screen.dart';
 import '../comms/conversations_screen.dart';
 import '../account/account_screen.dart';
@@ -84,11 +86,17 @@ class _AppShellState extends ConsumerState<AppShell> {
       });
     }
     final index = _index.clamp(0, tabs.length - 1);
+    // Drivers (employed or owner-driver) keep a socket open app-wide so the
+    // server marks them online (presence) the whole time the app is open.
+    final isDriver = _identity == NqIdentity.employedDriver ||
+        (_identity == NqIdentity.provider && _ownerDriver);
     return Scaffold(
       backgroundColor: c.bg,
       body: SafeArea(
         child: Column(
           children: [
+            if (isDriver) const DriverPresence(),
+            if (isDriver) const DriverActiveOrderBeacon(),
             _devBar(c),
             Expanded(child: _body(c, tabs[index], index)),
           ],

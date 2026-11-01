@@ -629,7 +629,8 @@
    "title": "No active shipments right now",
    "desc": "Live tracking will appear here as soon as any truck sets off",
    "action": "Create a new order"
-  }
+  },
+  "lastSeen": "آخری ظہور"
  },
  "map": {
   "loading": "Loading the map...",
