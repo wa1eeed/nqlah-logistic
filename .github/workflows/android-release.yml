@@ -1,0 +1,84 @@
+name: Android Release
+
+# Manual trigger (Actions tab → Run workflow). Builds a release App Bundle and
+# reports its version to the admin dashboard so Settings → "إعدادات التطبيق"
+# shows the current Android version automatically.
+#
+# NOTE: the release build is currently signed with Flutter's debug key (see
+# apps/mobile/android/app/build.gradle.kts). Publishing to Google Play needs a
+# real upload keystore + a Play service account — add those (and a
+# `fastlane supply` / Gradle Play Publisher step) when the Play listing exists.
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Which dashboard version to update"
+        type: choice
+        options:
+          - androidTestFlight
+          - androidLive
+        default: androidTestFlight
+
+concurrency:
+  group: android-release
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter deps
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      # Marketing version from pubspec; build number is the monotonic run number.
+      - name: Resolve version
+        id: ver
+        working-directory: apps/mobile
+        run: |
+          NAME=$(grep -E '^version:' pubspec.yaml | sed -E 's/^version:[[:space:]]*([^+[:space:]]+).*/\1/')
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "label=$NAME (${{ github.run_number }})" >> "$GITHUB_OUTPUT"
+
+      - name: Build release AAB
+        working-directory: apps/mobile
+        run: flutter build appbundle --release --build-name=${{ steps.ver.outputs.name }} --build-number=${{ github.run_number }}
+
+      # Auto-report to the admin dashboard. No-op when the secrets aren't set,
+      # so the build still succeeds; the token is passed via env, never echoed.
+      - name: Report version to admin dashboard
+        env:
+          APP_VERSION_API_BASE: ${{ secrets.APP_VERSION_API_BASE }}
+          APP_VERSION_DEPLOY_TOKEN: ${{ secrets.APP_VERSION_DEPLOY_TOKEN }}
+          CHANNEL: ${{ github.event.inputs.channel }}
+          LABEL: ${{ steps.ver.outputs.label }}
+        run: |
+          if [ -z "$APP_VERSION_API_BASE" ] || [ -z "$APP_VERSION_DEPLOY_TOKEN" ]; then
+            echo "Skipping dashboard version report — APP_VERSION_API_BASE / APP_VERSION_DEPLOY_TOKEN not set."
+            exit 0
+          fi
+          curl -fsS -X PUT "$APP_VERSION_API_BASE/settings/app/versions" \
+            -H "Content-Type: application/json" \
+            -H "x-deploy-token: $APP_VERSION_DEPLOY_TOKEN" \
+            -d "{\"$CHANNEL\": \"$LABEL\"}"
+          echo "Reported $CHANNEL = $LABEL to the admin dashboard."
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nqlah-android-aab
+          path: apps/mobile/build/app/outputs/bundle/release/*.aab
+          if-no-files-found: error
