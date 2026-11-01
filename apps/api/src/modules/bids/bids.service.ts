@@ -229,7 +229,15 @@ export class BidsService {
     if (order.clientId !== actor.companyId && actor.role !== 'ADMIN' && actor.role !== 'SUPER_ADMIN') {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'لا تملك صلاحية' });
     }
-    return this.prisma.bid.update({ where: { id }, data: { status: 'REJECTED' } });
+    const rejected = await this.prisma.bid.update({ where: { id }, data: { status: 'REJECTED' } });
+    // Let the carrier know their offer wasn't selected.
+    void this.notifications.notifyCompany(rejected.carrierId, {
+      type: 'BID_REJECTED',
+      titleAr: 'لم يتم قبول عرضك',
+      bodyAr: `${order.orderNumber} — تم اختيار عرض آخر`,
+      data: { orderId, kind: 'bid' },
+    });
+    return rejected;
   }
 
   async withdraw(orderId: string, id: string, actor: AuthUser) {

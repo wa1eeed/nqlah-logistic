@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import { Prisma, type NotificationType } from '../../generated/prisma';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import {
   NOTIFICATION_CONNECTOR,
   type NotificationConnector,
@@ -12,6 +13,7 @@ export class NotificationsService {
   constructor(
     private prisma: PrismaService,
     @Inject(NOTIFICATION_CONNECTOR) private push: NotificationConnector,
+    private realtime: RealtimeGateway,
   ) {}
 
   /// Register (upsert) a device push token for the user.
@@ -90,9 +92,37 @@ export class NotificationsService {
         data: data ? (data as Prisma.InputJsonValue) : Prisma.JsonNull,
       },
     });
-    // Also deliver as a device push (best-effort; never blocks creation).
+    // Also deliver as a device push (best-effort; never blocks creation)…
     void this.pushToUser(payload.userId, payload.titleAr, payload.bodyAr, data);
+    // …and push a live `notification:new` to the user's open apps/dashboards so
+    // the in-app bell updates instantly (no polling).
+    try {
+      this.realtime.emitNotification(payload.userId, {
+        id: notification.id,
+        type: payload.type,
+        titleAr: payload.titleAr,
+        bodyAr: payload.bodyAr,
+        data: data ?? null,
+        at: Date.now(),
+      });
+    } catch {/* realtime hiccup never blocks */}
     return notification;
+  }
+
+  /// Deliver a notification to one specific user (in-app + push + live bell).
+  async notifyUser(
+    userId: string | null | undefined,
+    payload: {
+      type: NotificationType;
+      titleAr: string;
+      bodyAr: string;
+      titleEn?: string;
+      bodyEn?: string;
+      data?: Record<string, unknown>;
+    },
+  ) {
+    if (!userId) return;
+    await this.create({ userId, ...payload });
   }
 
   /// Fan a notification out to every active user of a company (in-app + push).

@@ -418,8 +418,8 @@ export class OrdersService {
     }
     const commissionRate = 0.08;
     const commission = +(dto.agreedPrice * commissionRate).toFixed(2);
-    return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.order.update({
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.order.update({
         where: { id },
         data: {
           carrierId: dto.carrierId,
@@ -430,9 +430,17 @@ export class OrdersService {
         },
       });
       // Open the collection per the order's method (escrow hold / prepaid / COD).
-      await this.collection.initiate(tx, updated);
-      return updated;
+      await this.collection.initiate(tx, u);
+      return u;
     });
+    // Tell the chosen carrier they've been assigned the order.
+    void this.notifications.notifyCompany(dto.carrierId, {
+      type: 'ORDER_ASSIGNED',
+      titleAr: 'تم إسناد طلب لك',
+      bodyAr: `${order.orderNumber} — ${order.originCity} ← ${order.destinationCity}`,
+      data: { orderId: id, kind: 'order' },
+    });
+    return updated;
   }
 
   async confirm(id: string, actor: AuthUser) {
@@ -443,7 +451,14 @@ export class OrdersService {
     if (order.status !== 'ASSIGNED') {
       throw new BadRequestException({ code: 'INVALID_TRANSITION', message: 'لا يمكن التأكيد' });
     }
-    return this.prisma.order.update({ where: { id }, data: { status: 'CONFIRMED' } });
+    const confirmed = await this.prisma.order.update({ where: { id }, data: { status: 'CONFIRMED' } });
+    void this.notifications.notifyCompany(order.clientId, {
+      type: 'ORDER_CONFIRMED',
+      titleAr: 'أكّد الناقل طلبك',
+      bodyAr: `${order.orderNumber} — يجري التجهيز للاستلام`,
+      data: { orderId: id, kind: 'order' },
+    });
+    return confirmed;
   }
 
   async cancel(id: string, dto: CancelOrderDto, actor: AuthUser) {
@@ -453,7 +468,7 @@ export class OrdersService {
     if (['COMPLETED', 'CANCELLED'].includes(order.status)) {
       throw new BadRequestException({ code: 'INVALID_TRANSITION', message: 'لا يمكن إلغاء الطلب' });
     }
-    return this.prisma.$transaction(async (tx) => {
+    const cancelled = await this.prisma.$transaction(async (tx) => {
       // Refund any prepaid collection before cancelling.
       const payment = await tx.payment.findFirst({ where: { orderId: id } });
       if (payment) await this.collection.refund(tx, payment.id);
@@ -462,6 +477,16 @@ export class OrdersService {
         data: { status: 'CANCELLED', cancelReason: dto.reason },
       });
     });
+    // Tell the assigned carrier (and its drivers) the order is off.
+    if (order.carrierId) {
+      void this.notifications.notifyCompany(order.carrierId, {
+        type: 'SYSTEM',
+        titleAr: 'أُلغي الطلب',
+        bodyAr: `${order.orderNumber} — أُلغي من قِبل العميل`,
+        data: { orderId: id, kind: 'order' },
+      });
+    }
+    return cancelled;
   }
 
   /**
@@ -509,6 +534,15 @@ export class OrdersService {
     });
     if (res.count === 0) {
       throw new BadRequestException({ code: 'PAYMENT_NOT_READY', message: 'لم تُجهَّز الدفعة بعد' });
+    }
+    // Let the carrier know a transfer proof is waiting for review.
+    if (order.carrierId) {
+      void this.notifications.notifyCompany(order.carrierId, {
+        type: 'SYSTEM',
+        titleAr: 'تم إرفاق إثبات تحويل',
+        bodyAr: `${order.orderNumber} — راجع إثبات الدفع المرفق`,
+        data: { orderId: id, kind: 'payment' },
+      });
     }
     return { ok: true };
   }
@@ -576,7 +610,7 @@ export class OrdersService {
     if (driver.companyId !== actor.companyId && !this.isAdmin(actor)) {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'السائق لا ينتمي لشركتك' });
     }
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.orderDriver.upsert({
         where: { orderId_driverId: { orderId, driverId: dto.driverId } },
         create: { orderId, driverId: dto.driverId },
@@ -588,6 +622,14 @@ export class OrdersService {
       });
       return { ok: true, driverId: dto.driverId };
     });
+    // Tell the driver directly — they now have a trip to execute.
+    void this.notifications.notifyUser(driver.userId, {
+      type: 'ORDER_ASSIGNED',
+      titleAr: 'تم إسنادك لرحلة جديدة',
+      bodyAr: `${order.orderNumber} — ${order.originCity} ← ${order.destinationCity}`,
+      data: { orderId, kind: 'trip' },
+    });
+    return result;
   }
 
   async remove(id: string, actor: AuthUser) {
