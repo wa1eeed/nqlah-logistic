@@ -32,9 +32,8 @@ class LocaleController extends StateNotifier<AppLang> {
 
 final localeControllerProvider =
     StateNotifierProvider<LocaleController, AppLang>((ref) {
-  return LocaleController(const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  ));
+  // secure_storage 11.x encrypts on Android by default (no options needed).
+  return LocaleController(const FlutterSecureStorage());
 });
 
 /// The translation lookup for the active language. Widgets do

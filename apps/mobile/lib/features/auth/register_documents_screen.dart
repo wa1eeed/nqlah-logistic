@@ -55,14 +55,10 @@ class _RegisterDocumentsScreenState
   Future<void> _pick(_Doc doc) async {
     if (_docs[doc.key]?.uploading == true) return;
     try {
-      final res = await FilePicker.pickFiles(withData: true, type: FileType.any);
-      if (res == null || res.files.isEmpty) return;
-      final f = res.files.first;
-      final bytes = f.bytes;
-      if (bytes == null) {
-        setState(() => _error = 'تعذّر قراءة الملف.');
-        return;
-      }
+      final res = await FilePicker.pickFiles(type: FileType.any);
+      if (res.isEmpty) return;
+      final f = res.first;
+      final bytes = await f.readAsBytes();
       setState(() => _docs[doc.key] = _Uploaded(uploading: true, name: f.name));
       final media = await ref.read(uploadsRepositoryProvider).upload(
             bytes: bytes,

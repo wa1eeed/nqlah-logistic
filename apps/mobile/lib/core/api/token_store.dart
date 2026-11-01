@@ -30,7 +30,7 @@ class TokenStore {
 }
 
 final tokenStoreProvider = Provider<TokenStore>((ref) {
-  return TokenStore(const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  ));
+  // flutter_secure_storage 11.x encrypts on Android by default (the old
+  // `encryptedSharedPreferences` flag was removed), so no options are needed.
+  return TokenStore(const FlutterSecureStorage());
 });
