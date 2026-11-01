@@ -10,7 +10,8 @@ import type { StorageConnector } from './storage.connector';
 @Injectable()
 export class MinioStorageConnector implements StorageConnector, OnModuleInit {
   private readonly logger = new Logger(MinioStorageConnector.name);
-  private client!: MinioClient;
+  private client!: MinioClient; // internal host — server-side object ops
+  private signClient!: MinioClient; // public host — presigned URLs for clients
   private bucket = process.env.MINIO_BUCKET ?? 'naqla-files';
 
   async onModuleInit() {
@@ -21,11 +22,46 @@ export class MinioStorageConnector implements StorageConnector, OnModuleInit {
       accessKey: process.env.MINIO_ROOT_USER ?? 'minioadmin',
       secretKey: process.env.MINIO_ROOT_PASSWORD ?? 'minioadmin',
     });
+
+    // Presigned PUT/GET URLs are handed to a phone or browser, which cannot
+    // reach the internal MINIO_ENDPOINT (e.g. the docker host "minio:9000").
+    // They must be SIGNED against the public host (MINIO_PUBLIC_URL) so the
+    // URL is both reachable and signature-valid when it hits MinIO through the
+    // reverse proxy. Falls back to the internal client when no public URL is
+    // set (local dev, where localhost:9000 is reachable anyway).
+    this.signClient = this.buildSignClient() ?? this.client;
+
     try {
       const exists = await this.client.bucketExists(this.bucket);
       if (!exists) await this.client.makeBucket(this.bucket);
     } catch {
       /* bucket may already exist, or storage not ready yet */
+    }
+  }
+
+  /** A MinIO client whose endpoint is the public storage host (from
+   *  MINIO_PUBLIC_URL), used only to mint presigned URLs. Returns null when the
+   *  public URL is missing or unparseable (then presigning uses the internal
+   *  client, as before). */
+  private buildSignClient(): MinioClient | null {
+    const publicUrl = process.env.MINIO_PUBLIC_URL;
+    if (!publicUrl) return null;
+    try {
+      const u = new URL(publicUrl);
+      const useSSL = u.protocol === 'https:';
+      return new MinioClient({
+        endPoint: u.hostname,
+        port: u.port ? Number(u.port) : useSSL ? 443 : 80,
+        useSSL,
+        accessKey: process.env.MINIO_ROOT_USER ?? 'minioadmin',
+        secretKey: process.env.MINIO_ROOT_PASSWORD ?? 'minioadmin',
+      });
+    } catch {
+      this.logger.warn(
+        `MINIO_PUBLIC_URL is set but not a valid URL ("${publicUrl}"); ` +
+          'presigned URLs will use the internal endpoint and may be unreachable from clients.',
+      );
+      return null;
     }
   }
 
@@ -46,11 +82,11 @@ export class MinioStorageConnector implements StorageConnector, OnModuleInit {
   }
 
   presignedPut(key: string, expirySeconds: number): Promise<string> {
-    return this.client.presignedPutObject(this.bucket, key, expirySeconds);
+    return this.signClient.presignedPutObject(this.bucket, key, expirySeconds);
   }
 
   presignedGet(key: string, expirySeconds: number): Promise<string> {
-    return this.client.presignedGetObject(this.bucket, key, expirySeconds);
+    return this.signClient.presignedGetObject(this.bucket, key, expirySeconds);
   }
 
   publicBaseUrl(): string | null {
