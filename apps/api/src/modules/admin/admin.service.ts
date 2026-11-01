@@ -98,6 +98,7 @@ export class AdminService {
    * scoped), this spans all companies and tags each driver with its provider.
    */
   async driverLocations() {
+    const onlineIds = new Set(await this.realtime.onlineDriverIds());
     const drivers = await this.prisma.driverProfile.findMany({
       where: { currentLat: { not: null }, currentLng: { not: null } },
       take: 1000,
@@ -124,7 +125,7 @@ export class AdminService {
         phone: d.user?.phone ?? null,
         status: d.status,
         // Real presence: true while the driver app holds a live socket connection.
-        online: this.realtime.isDriverOnline(d.id),
+        online: onlineIds.has(d.id),
         currentLat: d.currentLat,
         currentLng: d.currentLng,
         lastLocationAt: d.lastLocationAt,

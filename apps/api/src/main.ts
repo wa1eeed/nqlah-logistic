@@ -1,4 +1,5 @@
 import { NestFactory, Reflector } from '@nestjs/core';
+import { RedisIoAdapter } from './common/redis/redis-io.adapter';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
@@ -45,6 +46,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const port = Number(process.env.PORT ?? 4000);
   const isProd = process.env.NODE_ENV === 'production';
+
+  // Socket.IO over Redis pub/sub so the realtime layer (live updates, driver
+  // presence, tracking) works across multiple API instances behind a load
+  // balancer. Falls back to in-memory for a single instance.
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
 
   // ─── Helmet — explicit security headers ─────────────────────────
   app.use(

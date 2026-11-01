@@ -24,14 +24,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @WebSocketServer() server!: Server;
   private readonly logger = new Logger(RealtimeGateway.name);
 
-  /**
-   * Driver presence: driverId → set of connected socket ids. A driver is
-   * "online" while they hold at least one live socket connection. This is the
-   * source of truth for online/offline — real connection state, not a guess.
-   */
-  private readonly presence = new Map<string, Set<string>>();
-
   constructor(private jwt: JwtService, private prisma: PrismaService) {}
+
+  /** The socket.io room that holds all of a driver's live connections. */
+  private driverRoom(driverId: string) {
+    return `drv:${driverId}`;
+  }
 
   handleConnection(client: Socket) {
     const token =
@@ -65,20 +63,26 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   handleDisconnect(client: Socket) {
     const driverId = client.data?.driverId as string | undefined;
+    const companyId = client.data?.driverCompanyId as string | null | undefined;
     if (driverId) {
-      const set = this.presence.get(driverId);
-      if (set) {
-        set.delete(client.id);
-        if (set.size === 0) {
-          this.presence.delete(driverId);
-          this.emitPresence(driverId, client.data?.driverCompanyId as string | null, false);
-        }
-      }
+      // By now the socket has left its rooms. If none of the driver's sockets
+      // remain (across ALL instances, via the Redis adapter) → offline.
+      void (async () => {
+        try {
+          const n = (await this.server.in(this.driverRoom(driverId)).fetchSockets()).length;
+          if (n === 0) this.emitPresence(driverId, companyId ?? null, false);
+        } catch {/* adapter hiccup — presence self-heals on the next change */}
+      })();
     }
     this.logger.log(`socket disconnected: ${client.data?.['userId'] ?? 'unknown'}`);
   }
 
-  /** Mark the connecting user online if they are a driver, and broadcast it. */
+  /**
+   * Mark the connecting user online if they are a driver, and broadcast it.
+   * Presence lives in socket.io rooms (not local memory), so with the Redis
+   * adapter it is correct across every API instance and self-heals when a
+   * process dies (dead sockets drop out of the room automatically).
+   */
   private async registerPresence(client: Socket) {
     const userId = client.data?.userId as string | undefined;
     if (!userId) return;
@@ -88,25 +92,32 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     if (!profile) return; // not a driver — no tracking presence
     client.data.driverId = profile.id;
     client.data.driverCompanyId = profile.companyId;
-    let set = this.presence.get(profile.id);
-    const wasOffline = !set || set.size === 0;
-    if (!set) {
-      set = new Set<string>();
-      this.presence.set(profile.id, set);
+    client.join(this.driverRoom(profile.id));
+    try {
+      // This is the driver's first live socket anywhere → online edge.
+      const n = (await this.server.in(this.driverRoom(profile.id)).fetchSockets()).length;
+      if (n === 1) this.emitPresence(profile.id, profile.companyId, true);
+    } catch {/* adapter hiccup */}
+  }
+
+  /** True while the driver holds at least one live socket connection anywhere. */
+  async isDriverOnline(driverId: string): Promise<boolean> {
+    try {
+      return (await this.server.in(this.driverRoom(driverId)).fetchSockets()).length > 0;
+    } catch {
+      return false;
     }
-    set.add(client.id);
-    if (wasOffline) this.emitPresence(profile.id, profile.companyId, true);
   }
 
-  /** True while the driver holds at least one live socket connection. */
-  isDriverOnline(driverId: string): boolean {
-    const set = this.presence.get(driverId);
-    return !!set && set.size > 0;
-  }
-
-  /** The set of driver ids currently online (for REST snapshots). */
-  onlineDriverIds(): string[] {
-    return [...this.presence.keys()];
+  /** The driver ids currently online across all instances (for REST snapshots). */
+  async onlineDriverIds(): Promise<string[]> {
+    try {
+      const sockets = await this.server.fetchSockets();
+      const ids = sockets.map((s) => (s.data as { driverId?: string })?.driverId).filter(Boolean) as string[];
+      return [...new Set(ids)];
+    } catch {
+      return [];
+    }
   }
 
   private emitPresence(driverId: string, companyId: string | null | undefined, online: boolean) {
