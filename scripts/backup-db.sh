@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # -----------------------------------------------------------------------------
-# scripts/backup-db.sh — Daily Postgres → MinIO backup with 30-day retention.
+# scripts/backup-db.sh — Daily Postgres → Cloudflare R2 backup, 30-day retention.
 #
 # Usage:
 #   ./scripts/backup-db.sh                       (uses env from current shell)
@@ -11,15 +11,17 @@
 #
 # Requirements on the host:
 #   • pg_dump  (postgresql-client matching the DB major version)
-#   • mc       (MinIO client, `brew install minio/stable/mc` on macOS)
+#   • mc       (MinIO client — also speaks to R2's S3 API)
 #   • gzip
 #
 # Reads:
-#   DATABASE_URL          — connection string for pg_dump
-#   MINIO_ENDPOINT/PORT   — MinIO host/port for `mc alias set`
-#   MINIO_ROOT_USER/PASS  — MinIO credentials
-#   MINIO_BUCKET          — destination bucket (must exist)
-#   NODE_ENV              — used to namespace backups (dev/staging/prod)
+#   DATABASE_URL       — connection string for pg_dump
+#   R2_ENDPOINT        — R2 S3 endpoint, e.g. https://<acct>.r2.cloudflarestorage.com
+#   R2_ACCESS_KEY      — R2 access key
+#   R2_SECRET_KEY      — R2 secret key
+#   R2_BACKUP_BUCKET   — a PRIVATE R2 bucket for DB dumps (NOT the public assets
+#                        bucket; e.g. nqlah-backups). Never give it a public domain.
+#   NODE_ENV           — used to namespace backups (dev/staging/prod)
 # -----------------------------------------------------------------------------
 
 set -euo pipefail
@@ -34,11 +36,10 @@ fi
 
 # ─── Validate required env ───────────────────────────────────────────────────
 : "${DATABASE_URL:?DATABASE_URL is required}"
-: "${MINIO_ENDPOINT:?MINIO_ENDPOINT is required}"
-: "${MINIO_PORT:?MINIO_PORT is required}"
-: "${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}"
-: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}"
-: "${MINIO_BUCKET:?MINIO_BUCKET is required}"
+: "${R2_ENDPOINT:?R2_ENDPOINT is required}"
+: "${R2_ACCESS_KEY:?R2_ACCESS_KEY is required}"
+: "${R2_SECRET_KEY:?R2_SECRET_KEY is required}"
+: "${R2_BACKUP_BUCKET:?R2_BACKUP_BUCKET is required (a PRIVATE bucket, not the assets bucket)}"
 
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 TIMESTAMP="$(date -u +%Y%m%d-%H%M%S)"
@@ -52,17 +53,14 @@ pg_dump --no-owner --no-privileges --clean --if-exists "${DATABASE_URL}" | gzip 
 SIZE_BYTES=$(stat -f%z "${TMPFILE}" 2>/dev/null || stat -c%s "${TMPFILE}")
 echo "[$(date -u +%FT%TZ)] Dump completed: ${SIZE_BYTES} bytes"
 
-# ─── Configure MinIO client (idempotent) ─────────────────────────────────────
-SCHEME="http"
-if [ "${MINIO_USE_SSL:-false}" = "true" ]; then SCHEME="https"; fi
-mc alias set naqla-backup "${SCHEME}://${MINIO_ENDPOINT}:${MINIO_PORT}" \
-  "${MINIO_ROOT_USER}" "${MINIO_ROOT_PASSWORD}" > /dev/null
+# ─── Configure the S3 client against R2 (idempotent) ─────────────────────────
+mc alias set naqla-backup "${R2_ENDPOINT}" "${R2_ACCESS_KEY}" "${R2_SECRET_KEY}" > /dev/null
 
-# Ensure bucket exists (no-op if already there)
-mc mb --ignore-existing "naqla-backup/${MINIO_BUCKET}" > /dev/null
+# Ensure the private backup bucket exists (no-op if already there)
+mc mb --ignore-existing "naqla-backup/${R2_BACKUP_BUCKET}" > /dev/null || true
 
 # ─── Upload ──────────────────────────────────────────────────────────────────
-DEST="naqla-backup/${MINIO_BUCKET}/backups/${BACKUP_NAME}"
+DEST="naqla-backup/${R2_BACKUP_BUCKET}/${ENV_NAME}/${BACKUP_NAME}"
 echo "[$(date -u +%FT%TZ)] Uploading to ${DEST}..."
 mc cp "${TMPFILE}" "${DEST}"
 echo "[$(date -u +%FT%TZ)] Upload successful"
@@ -70,6 +68,6 @@ echo "[$(date -u +%FT%TZ)] Upload successful"
 # ─── Retention: delete backups older than RETENTION_DAYS days ────────────────
 echo "[$(date -u +%FT%TZ)] Pruning backups older than ${RETENTION_DAYS} days..."
 mc rm --recursive --force --older-than "${RETENTION_DAYS}d" \
-  "naqla-backup/${MINIO_BUCKET}/backups/" 2>/dev/null || true
+  "naqla-backup/${R2_BACKUP_BUCKET}/${ENV_NAME}/" 2>/dev/null || true
 
 echo "[$(date -u +%FT%TZ)] ✅ Backup complete: ${BACKUP_NAME}"

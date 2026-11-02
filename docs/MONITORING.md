@@ -61,7 +61,7 @@
 > | [ ] Carrier | `https://carrier.naqla.sa/login` | Slack + Email |
 > | [ ] DB connectivity | `https://api.naqla.sa/health/db` | PagerDuty |
 > | [ ] Redis connectivity | `https://api.naqla.sa/health/redis` | PagerDuty |
-> | [ ] MinIO connectivity | `https://api.naqla.sa/health/storage` | PagerDuty |
+> | [ ] Storage connectivity (R2) | `https://api.naqla.sa/health/storage` | PagerDuty |
 >
 > ### Status Page
 > - [ ] Public status page على `status.naqla.sa`
@@ -133,7 +133,7 @@
 >
 > ### Infrastructure Metrics
 > - [ ] CPU / Memory per container
-> - [ ] Disk usage (Postgres + MinIO)
+> - [ ] Disk usage (Postgres) + R2 storage/egress usage
 > - [ ] Network I/O
 >
 > ### Dashboards
@@ -186,10 +186,10 @@
 
 ### المخطّط
 - [ ] `GET /health/live` — liveness (process is running)
-- [ ] `GET /health/ready` — readiness (DB + Redis + MinIO reachable)
+- [ ] `GET /health/ready` — readiness (DB + Redis + storage (R2) reachable)
 - [ ] `GET /health/db` — database query test
 - [ ] `GET /health/redis` — redis ping
-- [ ] `GET /health/storage` — MinIO bucket check
+- [ ] `GET /health/storage` — R2 bucket check
 - [ ] Kubernetes-compatible (إذا انتقلنا لـ k8s)
 
 ---
@@ -202,7 +202,7 @@
 > - [ ] API بطيء / down
 > - [ ] DB connection pool exhausted
 > - [ ] Redis OOM
-> - [ ] MinIO out of disk
+> - [ ] Object storage (R2) unavailable / quota
 > - [ ] High error rate
 > - [ ] SSL certificate expiry
 > - [ ] Failed deployment rollback

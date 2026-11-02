@@ -35,7 +35,7 @@
 Backend:     Node.js + NestJS + TypeScript
 Database:    PostgreSQL + Prisma ORM
 Cache:       Redis
-Storage:     MinIO (S3-compatible)
+Storage:     Cloudflare R2 (S3-compatible, deployed) · MinIO (local dev)
 Frontend:    Next.js 14 + TypeScript + Tailwind CSS
 Realtime:    Socket.io
 API:         REST + WebSocket
@@ -1040,13 +1040,14 @@ JWT_REFRESH_SECRET=...   # يختلف عن SECRET في prod
 JWT_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 
-# ─── MinIO ───────────────────────────────────────────
+# ─── Storage: MinIO (local dev only; deployed envs use Cloudflare R2 — see docs/architecture/storage.md) ───
+STORAGE_PROVIDER=minio
 MINIO_ENDPOINT=...
 MINIO_PORT=9000
-MINIO_USE_SSL=false      # true في production
+MINIO_USE_SSL=false
 MINIO_ROOT_USER=...
 MINIO_ROOT_PASSWORD=...
-MINIO_BUCKET=naqla-dev   # naqla-staging / naqla-prod
+MINIO_BUCKET=naqla-dev
 MINIO_PUBLIC_URL=http://localhost:9000
 
 # ─── App ─────────────────────────────────────────────
@@ -1197,7 +1198,7 @@ VPS:          187.124.218.110 (Ubuntu 24.04)
 Deploy:       Coolify (Docker Compose)
 DB:           Coolify managed PostgreSQL (per-environment)
 Redis:        Coolify managed Redis (per-environment)
-Storage:      MinIO on VPS
+Storage:      Cloudflare R2 (S3-compatible)
 
 الهاتف:       +966 570009449
 ```

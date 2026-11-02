@@ -415,7 +415,7 @@ commission invoices. See [`INVOICES.md`](INVOICES.md) for the model & ZATCA snap
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/uploads/presign` 🔒 | الحصول على presigned URL لـ MinIO |
+| `POST` | `/uploads/presign` 🔒 | الحصول على presigned URL لتخزين S3 (Cloudflare R2 في البيئات المنشورة) |
 
 #### Presign body
 ```jsonc
@@ -430,8 +430,8 @@ POST /api/uploads/presign
 **Response**:
 ```jsonc
 {
-  "uploadUrl": "https://minio.../upload?...",
-  "fileUrl": "https://minio.../naqla-uploads/...",
+  "uploadUrl": "https://<ACCOUNT_ID>.r2.cloudflarestorage.com/nqlah-prod/...?X-Amz-Signature=...",
+  "fileUrl": "https://storage.nqlah.nx.sa/...",
   "expiresIn": 600
 }
 ```
@@ -504,7 +504,7 @@ POST /api/uploads/presign
 |---|---|---|
 | `GET` | `/settings/branding` 🌐 | عام — يُستهلَك من كل واجهة لتطبيق الـ logo والاسم |
 | `PUT` | `/admin/settings/branding` 👮 | تحديث `platform_logo`, `platform_name_ar`, `platform_name_en` |
-| `POST` | `/admin/settings/branding/logo` 👮 | رفع شعار → MinIO → يُحدِّث `platform_logo` بـ URL |
+| `POST` | `/admin/settings/branding/logo` 👮 | رفع شعار → R2 → يُحدِّث `platform_logo` بـ URL |
 
 **Cities Catalog**
 

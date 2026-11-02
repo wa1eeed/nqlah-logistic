@@ -193,7 +193,7 @@
 > - [ ] **Geographic breakdown**
 > - [ ] **Roadmap snapshot** — what's next
 >
-> التنفيذ: استخدام `puppeteer` لتحويل HTML report إلى PDF + saved مهيكل في MinIO.
+> التنفيذ: استخدام `puppeteer` لتحويل HTML report إلى PDF + saved مهيكل في R2.
 
 ---
 

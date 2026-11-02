@@ -71,7 +71,7 @@ docker ps
 |---|---|---|
 | Development | `.env.development` | تطوير محلي، mock providers، secrets قصيرة OK |
 | Staging | `.env.staging` | محاكاة الإنتاج، HTTPS، Sentry مفعّل |
-| Production | `.env.production` | إنتاج فعلي، live providers، MinIO SSL إلزامي |
+| Production | `.env.production` | إنتاج فعلي، live providers، `STORAGE_PROVIDER=r2` (Cloudflare R2) |
 
 ### للتشغيل المحلي
 
@@ -90,7 +90,7 @@ ConfigModule يحمل `.env.${NODE_ENV}` أولاً ثم `.env` كـ fallback. �
 كل ملف `.env.*.example` يحوي القيم الموصى بها لتلك البيئة:
 - **dev:** `SMS_PROVIDER=console`, `PAYMENT_PROVIDER=mock`, JWT secrets قصيرة (32+ char)
 - **staging:** HTTPS-only، Sentry DSN، secrets طويلة (64+ char)، providers `console` للاختبار
-- **prod:** كل التشديدات — `PAYMENT_PROVIDER=moyasar`, `SMS_PROVIDER=unifonic`, `MINIO_USE_SSL=true`, ولا أي قيمة `mock`
+- **prod:** كل التشديدات — `PAYMENT_PROVIDER=moyasar`, `SMS_PROVIDER=unifonic`, `STORAGE_PROVIDER=r2` (Cloudflare R2)، ولا أي قيمة `mock`
 
 ### Env Validation
 
