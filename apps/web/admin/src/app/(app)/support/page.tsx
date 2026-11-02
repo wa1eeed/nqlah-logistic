@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { EmptyMedallion } from '@/components/empty-state';
 import { useTranslations } from 'next-intl';
 import {
   Clock, Filter, Inbox, LifeBuoy, MessageSquare, Search,
@@ -196,7 +197,7 @@ export default function AdminSupportPage() {
           ) : (
             <Card>
               <CardContent className="py-16 text-center text-sm text-muted-foreground">
-                <Inbox className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                <EmptyMedallion icon={Inbox} className="mx-auto mb-4" />
                 {t('supportAdmin.selectTicket')}
               </CardContent>
             </Card>

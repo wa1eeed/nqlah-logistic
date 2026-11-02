@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { EmptyMedallion } from '@/components/empty-state';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -1102,7 +1103,7 @@ function TabSkeleton() {
 function EmptyCard({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
   return (
     <Card><CardContent className="py-16 text-center text-muted-foreground">
-      <Icon className="h-10 w-10 mx-auto mb-3 opacity-40" />
+      <EmptyMedallion icon={Icon} className="mx-auto mb-4" />
       <p className="text-sm">{text}</p>
     </CardContent></Card>
   );
