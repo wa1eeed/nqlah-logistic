@@ -99,8 +99,13 @@ export class AdminService {
    */
   async driverLocations() {
     const onlineIds = new Set(await this.realtime.onlineDriverIds());
+    // Show every active driver who is on duty (AVAILABLE or on a trip) —
+    // including those who haven't emitted a GPS fix yet (they appear in the
+    // side list; the map only plots the ones that have a position). Previously
+    // this hard-filtered on a non-null location, so available/idle drivers were
+    // invisible on the admin tracking board.
     const drivers = await this.prisma.driverProfile.findMany({
-      where: { currentLat: { not: null }, currentLng: { not: null } },
+      where: { isActive: true },
       take: 1000,
       include: {
         user: { select: { firstName: true, lastName: true, phone: true } },
