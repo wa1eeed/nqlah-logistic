@@ -18,15 +18,19 @@ const REQUIRED_VARS = [
   'REDIS_URL',
   'JWT_SECRET',
   'JWT_REFRESH_SECRET',
-  'MINIO_ENDPOINT',
-  'MINIO_ROOT_USER',
-  'MINIO_ROOT_PASSWORD',
-  'MINIO_BUCKET',
   'NODE_ENV',
   'PORT',
   'FRONTEND_URL',
   'CORS_ORIGINS',
 ] as const;
+
+// Storage is pluggable (STORAGE_PROVIDER, default "r2"). Only the active
+// provider's credentials are required: R2 for deployed environments, MinIO for
+// local development.
+const STORAGE_VARS: Record<string, string[]> = {
+  r2: ['R2_ENDPOINT', 'R2_ACCESS_KEY', 'R2_SECRET_KEY', 'R2_BUCKET'],
+  minio: ['MINIO_ENDPOINT', 'MINIO_ROOT_USER', 'MINIO_ROOT_PASSWORD', 'MINIO_BUCKET'],
+};
 
 const VALID_NODE_ENVS = ['development', 'staging', 'production', 'test'] as const;
 const VALID_PAYMENT_PROVIDERS = ['mock', 'moyasar', 'tap'] as const;
@@ -41,6 +45,14 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
   for (const key of REQUIRED_VARS) {
     if (!config[key] || String(config[key]).trim() === '') {
       errors.push(`Missing required env var: ${key}`);
+    }
+  }
+
+  // Active storage provider's credentials (default r2).
+  const storageProvider = String(config.STORAGE_PROVIDER ?? 'r2').toLowerCase();
+  for (const key of STORAGE_VARS[storageProvider] ?? STORAGE_VARS.r2) {
+    if (!config[key] || String(config[key]).trim() === '') {
+      errors.push(`Missing required env var: ${key} (STORAGE_PROVIDER="${storageProvider}")`);
     }
   }
 
@@ -106,8 +118,8 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     if (corsOrigins.includes('http://')) {
       errors.push('CORS_ORIGINS must use https:// only in production');
     }
-    if (String(config.MINIO_USE_SSL ?? '').toLowerCase() !== 'true') {
-      errors.push('MINIO_USE_SSL must be "true" in production');
+    if (storageProvider === 'r2' && !String(config.R2_ENDPOINT ?? '').startsWith('https://')) {
+      errors.push('R2_ENDPOINT must be an https:// URL in production');
     }
     if (!config.SENTRY_DSN) {
       errors.push('SENTRY_DSN is required in production (observability)');

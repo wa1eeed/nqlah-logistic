@@ -235,6 +235,10 @@ MINIO_PUBLIC_URL=http://localhost:9000
 
 ## 11. ترحيل البيانات من MinIO إلى R2 (rclone)
 
+> **قبل الإطلاق (منصّة جديدة بلا بيانات حقيقية): لا حاجة للترحيل.** اضبط متغيّرات
+> R2 + `STORAGE_PROVIDER=r2` وأعد النشر فقط — يبدأ R2 من فراغ. هذا القسم مطلوب
+> لاحقًا فقط عند وجود بيانات إنتاج يُراد المحافظة عليها.
+
 يُشغَّل على السيرفر حيث MinIO متاح (`minio:9000`). المفاتيح تبقى كما هي فمراجع
 قاعدة البيانات تظل صالحة.
 
@@ -287,7 +291,24 @@ rm -f /tmp/rclone-migrate.conf   # الملف يحوي أسرارًا
 
 ---
 
-## 14. حالة التنفيذ (Implementation status)
+## 14. إلغاء MinIO المستضاف ذاتيًا (اختياري، بعد تأكيد R2)
+
+بعد الانتقال الكامل إلى R2 والتأكّد (رفع/قراءة + ظهور الأصول العامة)، يمكن
+الاستغناء عن حاوية MinIO وبياناتها لتخفيف البنية. **لا يُنفَّذ قبل التأكّد**، وحذف
+الـ volume **نهائي**.
+
+1. من Coolify: إن كان MinIO خدمة مستقلة → **Stop** ثم **Delete**.
+2. من شِل الـ VPS (تنظيف/تأكيد يدوي):
+   ```bash
+   docker ps -a --format '{{.Names}}' | grep -i minio
+   docker volume ls --format '{{.Name}}' | grep -i minio
+   docker rm -f $(docker ps -aq --filter name=minio)
+   docker volume rm $(docker volume ls -q --filter name=minio)
+   ```
+3. احذف متغيّرات `MINIO_*` من خدمة الـ API، وأي Route/Proxy كان يشير لـ MinIO.
+4. **أبقِ كود الموصّل** (`minio-storage.connector.ts`) — يظل خيارًا للتطوير المحلي.
+
+## 15. حالة التنفيذ (Implementation status)
 
 | العنصر | الحالة |
 |---|---|

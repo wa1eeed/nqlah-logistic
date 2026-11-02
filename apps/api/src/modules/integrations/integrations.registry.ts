@@ -139,15 +139,11 @@ export const INTEGRATIONS: IntegrationSpec[] = [
     icon: 'database',
     category: 'storage',
     providerEnvKey: 'STORAGE_PROVIDER',
-    defaultProvider: 'minio',
+    defaultProvider: 'r2',
+    // MinIO is kept as a code-level connector for local development
+    // (STORAGE_PROVIDER=minio) but is intentionally NOT listed here, so the
+    // admin only manages the production storage provider (R2).
     providers: [
-      { id: 'minio', labelAr: 'MinIO / S3', labelEn: 'MinIO / S3', implemented: true,
-        fields: [
-          { key: 'MINIO_ENDPOINT', labelAr: 'العنوان', labelEn: 'Endpoint', secret: false, envKey: 'MINIO_ENDPOINT' },
-          { key: 'MINIO_BUCKET', labelAr: 'الحاوية', labelEn: 'Bucket', secret: false, envKey: 'MINIO_BUCKET' },
-          { key: 'MINIO_ROOT_USER', labelAr: 'مفتاح الوصول', labelEn: 'Access Key', secret: true, envKey: 'MINIO_ROOT_USER' },
-          { key: 'MINIO_ROOT_PASSWORD', labelAr: 'المفتاح السري', labelEn: 'Secret Key', secret: true, envKey: 'MINIO_ROOT_PASSWORD' },
-        ] },
       { id: 'r2', labelAr: 'Cloudflare R2', labelEn: 'Cloudflare R2', implemented: true,
         fields: [
           { key: 'R2_ENDPOINT', labelAr: 'العنوان (S3 endpoint)', labelEn: 'S3 Endpoint', secret: false, envKey: 'R2_ENDPOINT' },
