@@ -47,7 +47,7 @@ export function StatsCard({ label, value, hint, icon: Icon, tone = 'default', de
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="group rounded-2xl border border-border/70 bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-20px_hsl(174_45%_16%/0.22)]"
+      className="group rounded-2xl border border-border/50 bg-card p-5 shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)]"
     >
       <div className="flex items-center justify-between">
         <div className={cn('grid h-11 w-11 place-items-center rounded-xl', TONE[tone])}>
