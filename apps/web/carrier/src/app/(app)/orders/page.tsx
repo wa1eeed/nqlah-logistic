@@ -243,7 +243,7 @@ function OrderList({ orders, isLoading, t }: { orders: Order[]; isLoading: boole
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-xs font-medium">{o.orderNumber}</span>
                 <div className="flex items-center gap-1.5">
-                  <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'} className="text-[10px] font-normal">
+                  <Badge variant="outline" className={`text-[10px] font-normal ${o.mode === 'DIRECT' ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
                     {t(o.mode === 'DIRECT' ? 'list.modeDirect' : 'list.modeOpen')}
                   </Badge>
                   <StatusBadge status={o.status} />
@@ -299,7 +299,7 @@ function OrderList({ orders, isLoading, t }: { orders: Order[]; isLoading: boole
                     <TableCell className="text-sm text-muted-foreground">{formatDate(o.pickupDate)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'} className="text-[10px] font-normal">
+                        <Badge variant="outline" className={`text-[10px] font-normal ${o.mode === 'DIRECT' ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
                           {t(o.mode === 'DIRECT' ? 'list.modeDirect' : 'list.modeOpen')}
                         </Badge>
                         <StatusBadge status={o.status} />
