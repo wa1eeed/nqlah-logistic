@@ -38,13 +38,19 @@ class UploadsRepository {
     required String filename,
     required String contentType,
     String folder = 'chat',
+    String? purpose,
+    String? docType,
     ProgressCallback? onProgress,
   }) async {
     try {
+      // Preferred: let the server build the key from the actor + purpose
+      // (e.g. purpose:'kyc'). Falls back to the legacy folder otherwise.
       final pre = await _dio.post<dynamic>('/uploads/presign', data: {
         'filename': filename,
         'contentType': contentType,
-        'folder': folder,
+        'purpose': ?purpose,
+        'docType': ?docType,
+        if (purpose == null) 'folder': folder,
         'sizeBytes': bytes.length,
       });
       final data = pre.data is Map && (pre.data as Map)['data'] is Map

@@ -66,7 +66,8 @@ class CustomerAccountScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _group(c, [
             _row(c, NqIcons.users, s('account.users')),
-            _row(c, NqIcons.fileText, s('account.docs')),
+            _row(c, NqIcons.fileText, s('account.docs'),
+                onTap: () => context.push('/kyc')),
             _row(c, NqIcons.bell, s('account.notifications'),
                 onTap: () => context.push('/notifications')),
             _row(c, NqIcons.globe, s('account.language'),
