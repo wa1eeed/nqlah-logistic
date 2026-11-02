@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { Audit } from '../../common/audit/audit.decorator';
 import { MarketplaceService } from './marketplace.service';
 import { MarketplaceQueryDto, PublishAvailabilityDto } from './dto/availability.dto';
@@ -12,9 +13,11 @@ export class MarketplaceController {
   constructor(private marketplace: MarketplaceService) {}
 
   /// Customer-facing available-trucks marketplace (handoff 6a). Busy trucks are
-  /// excluded automatically.
+  /// excluded automatically. Public so unregistered visitors can browse — it
+  /// exposes only truck specs + company name/logo/city, never carrier contact.
+  @Public()
   @Get('marketplace/trucks')
-  list(@Query() q: MarketplaceQueryDto, @CurrentUser() actor: AuthUser) {
+  list(@Query() q: MarketplaceQueryDto, @CurrentUser() actor?: AuthUser) {
     return this.marketplace.listAvailable(q.city, actor);
   }
 

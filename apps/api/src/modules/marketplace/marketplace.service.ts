@@ -70,7 +70,7 @@ export class MarketplaceService {
   /// The customer-facing marketplace: active listings whose truck is idle
   /// (AVAILABLE, active, and not on an active order). Carrier contact is not
   /// exposed here — it is revealed only after a direct request is accepted.
-  async listAvailable(city: string | undefined, _actor: AuthUser) {
+  async listAvailable(city: string | undefined, _actor?: AuthUser) {
     const rows = await this.prisma.truckAvailability.findMany({
       where: {
         active: true,
