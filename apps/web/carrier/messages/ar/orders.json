@@ -105,7 +105,9 @@
     "colRoute": "المسار",
     "colPickup": "الاستلام",
     "colStatus": "الحالة",
-    "colNetFare": "صافي الأجرة"
+    "colNetFare": "صافي الأجرة",
+    "modeOpen": "السوق",
+    "modeDirect": "مباشر"
   },
   "detail": {
     "notFoundTitle": "الطلب غير موجود",

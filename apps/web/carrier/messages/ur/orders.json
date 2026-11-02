@@ -105,7 +105,9 @@
     "colRoute": "Route",
     "colPickup": "Pickup",
     "colStatus": "Status",
-    "colNetFare": "Net Fare"
+    "colNetFare": "Net Fare",
+    "modeOpen": "مارکیٹ",
+    "modeDirect": "ڈائریکٹ"
   },
   "detail": {
     "notFoundTitle": "Order not found",
