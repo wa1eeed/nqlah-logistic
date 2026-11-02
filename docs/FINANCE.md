@@ -131,7 +131,37 @@ profile as a **Tax & VAT** card.
 
 ---
 
-## 5. Tax invoices
+## 5. مسارات التحصيل (Collection methods)
+
+يحمل كل طلب حقل **`Order.collectionMethod`** (schema.prisma، الافتراضي `ESCROW`)،
+تُنفّذه `CollectionService`
+(`apps/api/src/modules/payments/collection/collection.service.ts`). الطريقة
+**لا ترتبط بنوع الرحلة** (داخل/بين المدن) — تُختار من العميل عند الإنشاء وتحكمها
+سياسة باقته.
+
+| الطريقة | ماذا يحدث | متى يُحصّل |
+|---|---|---|
+| **`ESCROW`** (الافتراضي) | حجز منطقي، لا تتحرك أموال مقدمًا | يُفرج للمزوّد عند **إكمال** الرحلة (`settle`) |
+| **`PREPAID_WALLET`** | خصم من **محفظة العميل** فورًا (`debitClient`) | عند **الإسناد** (`initiate`) |
+| **`PREPAID_GATEWAY`** | **دفع إلكتروني مباشر** عبر بوابة الدفع فورًا | عند **الإسناد** (`initiate`) |
+| **`COD`** (الدفع عند التسليم) | المزوّد يحصّل نقدًا من المستلم؛ يُسجَّل الإثبات عبر `POST /orders/:id/cod-proof` | عند **التسوية** يُخصم من المزوّد نصيب المنصّة = `commissionAmount + commissionVatAmount` |
+
+**كيف تُختار وتُفرض** — `orders.service.resolveSourcing()` →
+`CollectionService.resolveMethod(dto.collectionMethod, policy)`:
+- إذا `policy.enforceCollectionMethod` → تُفرض `defaultCollectionMethod` للمجموعة
+  (يُتجاهل اختيار العميل).
+- وإلا: اختيار العميل → افتراضي المجموعة → `ESCROW`.
+- تُمنع المدفوعة مسبقًا إذا `!policy.allowPrepaid`، و`COD` إذا `!policy.allowCOD`
+  (الافتراضي يسمح بكليهما). حقول السياسة على `PolicyGroup` (انظر
+  [`POLICIES.md`](POLICIES.md)).
+
+**دورة الحياة:** `initiate()` تُستدعى عند الإسناد / النشر المباشر لطلب بسعر متفق
+/ قبول عرض؛ `settle()` عند الإكمال؛ `refund()` عند الإلغاء.
+`clientTotalDue` هو المبلغ المُحصَّل من العميل (انظر §4).
+
+---
+
+## 6. Tax invoices
 
 See [`INVOICES.md`](INVOICES.md). On order completion the platform issues
 VAT-compliant invoices from the stored financials: a **carrier service invoice**
@@ -139,7 +169,7 @@ VAT-compliant invoices from the stored financials: a **carrier service invoice**
 
 ---
 
-## 6. Changelog anchors
+## 7. Changelog anchors
 
 - v0.9.75 — Workflow & Policy Engine: commission config on the profile (phase 1).
 - v0.9.76 — dynamic commission (`CLIENT`/`CARRIER`/`BOTH`) + VAT math + carrier VAT
