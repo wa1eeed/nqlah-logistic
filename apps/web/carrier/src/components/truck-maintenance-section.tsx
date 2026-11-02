@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import useSWR from 'swr';
 import { useTranslations } from 'next-intl';
 import { Loader2, Plus, Wrench } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useModuleAccess } from '@/lib/use-has-module';
+import { ProLockBadge } from '@/components/locked-feature';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +42,9 @@ export function TruckMaintenanceSection({ truckId }: { truckId: string }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({ type: 'OIL_CHANGE' });
+  // Fleet maintenance is a paid plan module — locked (with a Pro upsell) when
+  // the carrier's plan doesn't include it.
+  const maint = useModuleAccess('fleetMaintenance');
 
   const fmtDate = (s?: string | null) =>
     s ? new Date(s).toLocaleDateString('ar-SA', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
@@ -66,6 +72,25 @@ export function TruckMaintenanceSection({ truckId }: { truckId: string }) {
   }
 
   const records = data?.records ?? [];
+
+  // Locked state: the plan doesn't include fleet maintenance → show a Pro
+  // upsell instead of the maintenance UI.
+  if (!maint.loading && !maint.allowed) {
+    return (
+      <Card>
+        <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
+          <CardTitle className="flex items-center gap-2"><Wrench className="size-4" /> {t('maint.title')}</CardTitle>
+          <ProLockBadge />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">{t('maint.lockedDesc')}</p>
+          <Button asChild variant="outline">
+            <Link href="/subscription">{t('maint.upgrade')}</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

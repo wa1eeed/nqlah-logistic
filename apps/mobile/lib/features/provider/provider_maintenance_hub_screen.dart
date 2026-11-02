@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/fleet/fleet_repository.dart';
+import '../../core/subscription/subscription_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -19,6 +20,9 @@ class ProviderMaintenanceHubScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.nq;
     final async = ref.watch(fleetTrucksProvider);
+    // Fleet maintenance is a paid plan module — show a Pro upsell when the
+    // provider's plan doesn't include it.
+    final hasMaint = ref.watch(hasModuleProvider('fleetMaintenance'));
     return Scaffold(
       backgroundColor: c.bg,
       appBar: AppBar(
@@ -31,7 +35,9 @@ class ProviderMaintenanceHubScreen extends ConsumerWidget {
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       ),
-      body: async.when(
+      body: !hasMaint
+          ? _locked(context, c)
+          : async.when(
         loading: () => Center(
           child: SizedBox(
             width: 28,
@@ -57,6 +63,40 @@ class ProviderMaintenanceHubScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// Pro-locked state: the current plan doesn't include fleet maintenance.
+  Widget _locked(BuildContext context, NqColors c) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              NqIcon(NqIcons.lockSimple, size: 44, color: c.tx3),
+              const SizedBox(height: 16),
+              Text('إدارة الصيانة',
+                  style: NqType.h2.copyWith(color: c.tx), textAlign: TextAlign.center),
+              const SizedBox(height: 8),
+              Text('إدارة الصيانة الدورية للأسطول متاحة في الباقات الأعلى. رقِّ باقتك لتفعيلها.',
+                  style: NqType.body.copyWith(color: c.tx2, height: 1.5),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 22),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => context.push('/subscription'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+                  decoration: BoxDecoration(
+                    color: c.mint,
+                    borderRadius: BorderRadius.circular(NqRadius.pill),
+                  ),
+                  child: Text('ترقية الباقة',
+                      style: NqType.labelStrong.copyWith(color: c.onMint)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 
   Widget _empty(NqColors c) => Center(
         child: Column(
