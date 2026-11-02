@@ -1,9 +1,10 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Audit } from '../../common/audit/audit.decorator';
-import { UploadsService } from './uploads.service';
+import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
+import { UploadsService, type UploadPurpose } from './uploads.service';
 
 /// Uploads are direct client → object store via a pre-signed PUT URL (no bytes
 /// pass through our server). Accepts images, short video/audio clips, PDFs and
@@ -25,9 +26,16 @@ function isAllowedMime(mime: string): boolean {
   );
 }
 
+const UPLOAD_PURPOSES = ['kyc', 'companyLogo', 'avatar', 'branding'] as const;
+
 class PresignDto {
   @IsString() filename!: string;
   @IsString() contentType!: string;
+  /** Preferred: the server builds the key from the actor + purpose. */
+  @IsOptional() @IsIn(UPLOAD_PURPOSES) purpose?: UploadPurpose;
+  /** For `kyc`: the document type (CR, VAT, …) — becomes a key segment. */
+  @IsOptional() @IsString() docType?: string;
+  /** Legacy: a client folder, used only when `purpose` is absent. */
   @IsOptional() @IsString() folder?: string;
   @IsOptional() @IsInt() @Min(1) @Max(CHAT_MEDIA_MAX_BYTES) sizeBytes?: number;
 }
@@ -46,7 +54,7 @@ export class UploadsController {
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Audit({ action: 'upload.presign', resourceType: 'Upload' })
   @Post('presign')
-  presign(@Body() dto: PresignDto) {
+  presign(@Body() dto: PresignDto, @CurrentUser() actor: AuthUser) {
     if (!isAllowedMime(dto.contentType)) {
       throw new BadRequestException({
         code: 'FILE_TYPE_DISALLOWED',
@@ -59,11 +67,14 @@ export class UploadsController {
         message: `حجم الملف يتجاوز الحد الأقصى ${CHAT_MEDIA_MAX_BYTES / 1024 / 1024} MB`,
       });
     }
-    return this.uploads.presignedUpload(
-      dto.filename,
-      dto.contentType,
-      dto.folder ?? 'general',
-      dto.sizeBytes,
-    );
+    return this.uploads.presignedUpload({
+      filename: dto.filename,
+      contentType: dto.contentType,
+      sizeBytes: dto.sizeBytes,
+      purpose: dto.purpose,
+      docType: dto.docType,
+      folder: dto.folder,
+      actor: { userId: actor?.id, companyId: actor?.companyId, role: actor?.role },
+    });
   }
 }
