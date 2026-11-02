@@ -21,9 +21,9 @@ platform :ios do
     # Creates a throwaway keychain on CI (so the new cert has somewhere to live).
     setup_ci
 
-    # Resolve pubspec now, while fastlane's CWD is still apps/mobile/ios — later
-    # build_app changes the working directory, which broke the relative read.
-    pubspec_path = File.expand_path("../pubspec.yaml")
+    # pubspec path relative to THIS Fastfile (apps/mobile/ios/fastlane/), so it
+    # is correct regardless of fastlane's working directory.
+    pubspec_path = File.expand_path("../../pubspec.yaml", __dir__)
 
     api_key = app_store_connect_api_key(
       key_id: ENV.fetch("ASC_KEY_ID"),
