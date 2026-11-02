@@ -19,10 +19,10 @@ export interface StatsCardProps {
 }
 
 const TONE: Record<NonNullable<StatsCardProps['tone']>, string> = {
-  default: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]',
-  success: 'bg-success/12 text-success',
-  warning: 'bg-warning/12 text-warning',
-  danger:  'bg-destructive/12 text-destructive',
+  default: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))] ring-1 ring-[hsl(var(--mint))]/15',
+  success: 'bg-success/15 text-success ring-1 ring-success/15',
+  warning: 'bg-warning/15 text-warning ring-1 ring-warning/15',
+  danger:  'bg-destructive/15 text-destructive ring-1 ring-destructive/15',
 };
 
 function AnimatedCounter({ value }: { value: number }) {

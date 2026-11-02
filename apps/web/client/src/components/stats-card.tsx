@@ -17,10 +17,10 @@ export interface StatsCardProps {
 }
 
 const TONE: Record<NonNullable<StatsCardProps['tone']>, string> = {
-  default: 'bg-[hsl(var(--mint))]/12 text-[hsl(var(--mint))]',
-  success: 'bg-success/12 text-success',
-  warning: 'bg-warning/12 text-warning',
-  danger:  'bg-destructive/12 text-destructive',
+  default: 'bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))] ring-1 ring-[hsl(var(--mint))]/15',
+  success: 'bg-success/15 text-success ring-1 ring-success/15',
+  warning: 'bg-warning/15 text-warning ring-1 ring-warning/15',
+  danger:  'bg-destructive/15 text-destructive ring-1 ring-destructive/15',
 };
 
 function AnimatedCounter({ value }: { value: number }) {
@@ -47,7 +47,7 @@ export function StatsCard({ label, value, hint, icon: Icon, tone = 'default', de
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="group rounded-2xl border border-border/70 bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-20px_hsl(174_45%_16%/0.22)]"
+      className="group rounded-2xl border border-border/50 bg-card p-5 shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)]"
     >
       <div className="flex items-center justify-between">
         <div className={cn('grid h-11 w-11 place-items-center rounded-xl', TONE[tone])}>
