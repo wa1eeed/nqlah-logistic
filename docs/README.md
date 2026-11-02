@@ -34,6 +34,9 @@ polish pass before release.
   fleet, per-trip freelancer invoices, and the profitability page.
 - [`TRACKING.md`](TRACKING.md) — live shipment tracking: real OSRM road routes,
   the mock realtime (WebSocket-style) channel, and the events timeline.
+- [`architecture/storage.md`](architecture/storage.md) — object storage: R2 per
+  environment, folder/prefix layout, server-built `purpose` keys, naming,
+  privacy, CDN for public assets, and the MinIO→R2 migration plan.
 - [`API.md`](API.md) — API surface.
 
 ## Operations
