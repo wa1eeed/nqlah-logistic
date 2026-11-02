@@ -32,7 +32,7 @@ const PICKUP_STATUSES = ['CONFIRMED'];     // heading to origin to pick up
 const DELIVERY_STATUSES = ['IN_TRANSIT'];  // carrying cargo to destination
 const ON_THE_WAY_STATUSES = [...PICKUP_STATUSES, ...DELIVERY_STATUSES];
 
-type TabKey = 'ALL' | 'ACTIVE' | 'ON_THE_WAY' | 'DELIVERED' | 'COMPLETED' | 'DIRECT';
+type TabKey = 'ALL' | 'ACTIVE' | 'ON_THE_WAY' | 'DELIVERED' | 'COMPLETED';
 
 export default function CarrierOrdersPage() {
   const t = useTranslations('orders');
@@ -92,31 +92,39 @@ export default function CarrierOrdersPage() {
   // rows shown inside each tab.
   const poolMine = useMemo(() => mine.filter(matchesFilters), [mine, search, city]);
   const poolDirect = useMemo(() => direct.filter(matchesFilters), [direct, search, city]);
+  // One list: pending direct requests + the carrier's accepted work. Each row
+  // carries a mode tag (مباشر / السوق) instead of a separate «private» tab.
+  const poolAll = useMemo(() => {
+    const seen = new Set<string>();
+    return [...poolDirect, ...poolMine].filter((o) => {
+      if (seen.has(o.id)) return false;
+      seen.add(o.id);
+      return true;
+    });
+  }, [poolMine, poolDirect]);
 
   const byStatus = (list: Order[], statuses: string[]) => list.filter((o) => statuses.includes(o.status));
 
   const rows = useMemo(() => {
     switch (tab) {
-      case 'ALL':        return poolMine;
+      case 'ALL':        return poolAll;
       case 'ACTIVE':     return byStatus(poolMine, ACTIVE_STATUSES);
       case 'ON_THE_WAY': return byStatus(poolMine, ON_THE_WAY_STATUSES);
       case 'DELIVERED':  return byStatus(poolMine, ['DELIVERED']);
       case 'COMPLETED':  return byStatus(poolMine, ['COMPLETED']);
-      case 'DIRECT':     return poolDirect;
-      default:           return poolMine;
+      default:           return poolAll;
     }
-  }, [tab, poolMine, poolDirect]);
+  }, [tab, poolMine, poolAll]);
 
   const pickupLeg = useMemo(() => byStatus(poolMine, PICKUP_STATUSES), [poolMine]);
   const deliveryLeg = useMemo(() => byStatus(poolMine, DELIVERY_STATUSES), [poolMine]);
 
   const TABS: { key: TabKey; label: string; count: number }[] = [
-    { key: 'ALL',        label: t('list.tabs.all'),       count: poolMine.length },
+    { key: 'ALL',        label: t('list.tabs.all'),       count: poolAll.length },
     { key: 'ACTIVE',     label: t('list.tabs.active'),     count: byStatus(poolMine, ACTIVE_STATUSES).length },
     { key: 'ON_THE_WAY', label: t('list.tabs.onTheWay'),   count: byStatus(poolMine, ON_THE_WAY_STATUSES).length },
     { key: 'DELIVERED',  label: t('list.tabs.delivered'),  count: byStatus(poolMine, ['DELIVERED']).length },
     { key: 'COMPLETED',  label: t('list.tabs.completed'),  count: byStatus(poolMine, ['COMPLETED']).length },
-    { key: 'DIRECT',     label: t('list.tabs.direct'),     count: poolDirect.length },
   ];
 
   const isGrouped = tab === 'ON_THE_WAY';
@@ -158,9 +166,9 @@ export default function CarrierOrdersPage() {
           <CardContent className="p-0">
             {rows.length === 0 && !isLoading ? (
               <EmptyState
-                icon={tab === 'DIRECT' ? PackageCheck : Package}
+                icon={Package}
                 title={t('list.emptyTitle')}
-                description={tab === 'DIRECT' ? t('list.emptyDirectDesc') : t('list.emptyDesc')}
+                description={t('list.emptyDesc')}
               />
             ) : isGrouped ? (
               <div className="divide-y">
@@ -234,7 +242,12 @@ function OrderList({ orders, isLoading, t }: { orders: Order[]; isLoading: boole
             <Link key={o.id} href={`/orders/${o.id}`} className="block p-4 transition-colors active:bg-muted/60">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-xs font-medium">{o.orderNumber}</span>
-                <StatusBadge status={o.status} />
+                <div className="flex items-center gap-1.5">
+                  <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'} className="text-[10px] font-normal">
+                    {t(o.mode === 'DIRECT' ? 'list.modeDirect' : 'list.modeOpen')}
+                  </Badge>
+                  <StatusBadge status={o.status} />
+                </div>
               </div>
               <div className="mt-1.5 text-sm font-medium">{localizeCity(o.originCity)} ← {localizeCity(o.destinationCity)}</div>
               <div className="text-xs text-muted-foreground truncate">{o.cargoDescription}</div>
@@ -284,7 +297,14 @@ function OrderList({ orders, isLoading, t }: { orders: Order[]; isLoading: boole
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDate(o.pickupDate)}</TableCell>
-                    <TableCell><StatusBadge status={o.status} /></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant={o.mode === 'DIRECT' ? 'warning' : 'secondary'} className="text-[10px] font-normal">
+                          {t(o.mode === 'DIRECT' ? 'list.modeDirect' : 'list.modeOpen')}
+                        </Badge>
+                        <StatusBadge status={o.status} />
+                      </div>
+                    </TableCell>
                     <TableCell className="text-end"><Currency amount={o.carrierAmount} /></TableCell>
                   </TableRow>
                 ))}
