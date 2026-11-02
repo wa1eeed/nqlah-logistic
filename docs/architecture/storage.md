@@ -184,13 +184,15 @@ companies/cmp_abc123/kyc/CR/2026-11-02T0130Z-7f3a9c2e.pdf
 ### R2 (البيئات الثلاث)
 ```bash
 STORAGE_PROVIDER=r2
-R2_ACCOUNT_ID=<cloudflare-account-id>
-R2_ACCESS_KEY_ID=<r2-access-key>          # token مقيّد على bucket البيئة
-R2_SECRET_ACCESS_KEY=<r2-secret>
+R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com  # نقطة S3 العامة
+R2_ACCESS_KEY=<r2-access-key>              # token مقيّد على bucket البيئة
+R2_SECRET_KEY=<r2-secret>
 R2_BUCKET=nqlah-prod                       # أو nqlah-staging / nqlah-dev
-R2_REGION=auto
+R2_REGION=auto                             # R2 يتجاهل المنطقة؛ الموقّع يحتاجها
 R2_PUBLIC_URL=https://storage.nqlah.nx.sa  # النطاق العام لأصول branding
 ```
+> يمكن ضبط هذه القيم أيضًا من **مركز التكامل (Integration Hub)** في لوحة الأدمن
+> (التخزين → Cloudflare R2) بدل متغيّرات البيئة.
 
 ### MinIO (التطوير المحلي البديل)
 ```bash
@@ -238,7 +240,7 @@ MINIO_PUBLIC_URL=http://localhost:9000
 | العنصر | الحالة |
 |---|---|
 | توقيع الروابط على المضيف العام | ✅ مُنفَّذ (MinIO) — PR #221 |
-| موصّل R2 + اختيار `STORAGE_PROVIDER=r2` | ⏳ مخطّط |
+| موصّل R2 + اختيار `STORAGE_PROVIDER=r2` | ✅ مُنفَّذ (الموصّل + التسجيل في Integration Hub) |
 | بناء المفتاح من `purpose` في السيرفر | ⏳ مخطّط (حاليًا العميل يرسل `folder`) |
 | buckets منفصلة لكل بيئة في R2 | ⏳ مخطّط |
 | نطاق عام + CDN لأصول `branding/` | ⏳ مخطّط |
