@@ -1,44 +1,28 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppTopbar } from '@/components/app-topbar';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [authed, setAuthed] = useState<boolean | null>(null);
 
+  // Render the shell immediately (each page shows its own loading skeleton),
+  // and only redirect when the token is missing — so an authenticated user
+  // never sees a "redirecting" spinner flash before their content. Running the
+  // check in an effect keeps SSR and first client render identical (no
+  // hydration mismatch); the unauthenticated case is a brief redirect.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const token = localStorage.getItem('naqla_client_token');
-    // Demo mode: the dev login sets DEV_BYPASS_TOKEN and GET requests fall back
-    // to mock data when the backend is offline, so the bypass token is a valid
-    // "signed in" state here. Only a missing token redirects to /login.
-    if (!token) {
-      // Clear stale state proactively so re-login uses a clean slate.
+    if (!localStorage.getItem('naqla_client_token')) {
       try {
         localStorage.removeItem('naqla_client_token');
         localStorage.removeItem('naqla_client_refresh');
         localStorage.removeItem('naqla-client-auth');
       } catch { /* ignore */ }
       router.replace('/login');
-      setAuthed(false);
-      return;
     }
-    setAuthed(true);
   }, [router]);
-
-  if (authed !== true) {
-    return (
-      <div className="min-h-screen grid place-items-center text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm">جار التحويل...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen bg-muted/30">

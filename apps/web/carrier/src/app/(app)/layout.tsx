@@ -1,42 +1,27 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppTopbar } from '@/components/app-topbar';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [authed, setAuthed] = useState<boolean | null>(null);
 
+  // Render the shell immediately (pages show their own loading skeletons) and
+  // only redirect when the token is missing — so an authenticated user never
+  // sees a "redirecting" spinner flash. The effect keeps SSR and first client
+  // render identical (no hydration mismatch).
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const token = localStorage.getItem('naqla_carrier_token');
-    // Demo mode: dev login sets DEV_BYPASS_TOKEN and GETs fall back to mock data
-    // when the backend is offline, so the bypass token is a valid signed-in state.
-    if (!token) {
+    if (!localStorage.getItem('naqla_carrier_token')) {
       try {
         localStorage.removeItem('naqla_carrier_token');
         localStorage.removeItem('naqla_carrier_refresh');
         localStorage.removeItem('naqla-carrier-auth');
       } catch { /* ignore */ }
       router.replace('/login');
-      setAuthed(false);
-      return;
     }
-    setAuthed(true);
   }, [router]);
-
-  if (authed !== true) {
-    return (
-      <div className="min-h-screen grid place-items-center text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm">جار التحويل...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen bg-muted/30">
