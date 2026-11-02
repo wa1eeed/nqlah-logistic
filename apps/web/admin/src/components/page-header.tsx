@@ -23,8 +23,8 @@ export function PageHeader({ title, subtitle, eyebrow, actions }: PageHeaderProp
         {eyebrow && (
           <span className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--mint))]">{eyebrow}</span>
         )}
-        <h1 className="text-2xl font-bold tracking-tight md:text-[1.75rem]">{title}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+        <h1 className="text-h1 tracking-tight">{title}</h1>
+        {subtitle && <p className="text-label text-muted-foreground">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
     </motion.div>
