@@ -20,7 +20,7 @@ async function uploadBranding(file: File): Promise<string> {
   const presign = (await api.post('/uploads/presign', {
     filename: file.name,
     contentType: file.type,
-    folder: 'branding',
+    purpose: 'branding',
     sizeBytes: file.size,
   })).data.data as { uploadUrl: string; publicUrl: string | null; key: string };
   await fetch(presign.uploadUrl, {

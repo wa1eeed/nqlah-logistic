@@ -25,13 +25,24 @@
 
 ## 2. المزوّدون والبيئات
 
-| البيئة | المزوّد | الـ bucket | ملاحظات |
+| البيئة | المزوّد | bucket خاص | bucket عام (الشعارات) |
 |---|---|---|---|
-| **production** | Cloudflare R2 | `nqlah-prod` | متانة عالية + خروج مجاني + CDN |
-| **staging** | Cloudflare R2 | `nqlah-staging` | مطابق للإنتاج لاختبار نفس المسار |
-| **development** | Cloudflare R2 | `nqlah-dev` | (بديل محلي: MinIO للعمل دون اتصال) |
+| **production** | Cloudflare R2 | `nqlah-prod` | `nqlah-prod-public` |
+| **staging** | Cloudflare R2 | `nqlah-staging` | `nqlah-staging-public` |
+| **development** | Cloudflare R2 (أو MinIO محلي) | `nqlah-dev` | `nqlah-dev` (نفسه محليًا) |
 
-**معيار إلزامي: bucket مستقل لكل بيئة** (لا مجرّد بادئة مجلد داخل bucket واحد).
+**bucketان لكل بيئة** — وهذا **ضروري للأمان**: الوصول العام في R2 يكون على مستوى
+الـ bucket كامل (لا مجلد)، فلا يمكن كشف الشعارات علنًا وإبقاء مستندات KYC سرّية
+داخل نفس الـ bucket. لذلك:
+- **bucket خاص** (`nqlah-<env>`): مستندات التحقّق + المحادثة + الصور — **بدون أي
+  وصول عام**، يُقرأ عبر presigned فقط.
+- **bucket عام** (`nqlah-<env>-public`): الشعارات/branding فقط — يُفعّل له نطاق
+  عام (r2.dev أو نطاق مخصّص). لا يحوي أي بيانات حسّاسة.
+
+رفع `branding` يذهب للـ bucket العام (`R2_PUBLIC_BUCKET`)؛ وكل ما عداه للـ bucket
+الخاص (`R2_BUCKET`).
+
+**معيار إلزامي: buckets مستقلة لكل بيئة** (لا مجرّد بادئة مجلد داخل bucket واحد).
 السبب:
 
 - **عزل أمني**: لكل bucket **API token خاص** بصلاحيات مقيّدة عليه وحده، فيستحيل
@@ -53,7 +64,8 @@
 يُجمَّع التخزين **حسب الكيان + الغرض**، مع فصل العام عن الخاص:
 
 ```
-branding/                                      ← أصول المنصّة: الشعارات (فاتح/داكن)، صور عامة   [عام]
+branding/                                      ← شعارات المنصّة (فاتح/داكن)                     [عام — bucket عام]
+onboarding/                                    ← صور شاشات onboarding                           [عام — bucket عام]
 companies/<companyId>/kyc/<docType>/<obj>      ← مستندات تحقّق المنشأة (CR, VAT, رخصة النقل…)   [خاص]
 companies/<companyId>/logo/<obj>               ← شعار المزوّد الخاص (إن وجد)                    [خاص/عام]
 users/<userId>/avatar/<obj>                    ← صورة المستخدم الشخصية                          [خاص]
@@ -62,8 +74,10 @@ orders/<orderId>/cod/<obj>                     ← إثبات الدفع عند 
 chat/<orderId>/<messageId>-<obj>               ← مرفقات المحادثة                                [خاص]
 ```
 
-- **عام (public)**: تحت `branding/` فقط — يُخدَم عبر النطاق العام/CDN دون توقيع.
-- **خاص (private)**: كل ما عداه — لا يُقرأ إلا عبر `presigned GET` مؤقّت.
+- **عام (public)**: `branding/` فقط، ويُخزَّن في **الـ bucket العام** المنفصل
+  (`R2_PUBLIC_BUCKET`) — يُخدَم عبر النطاق العام/CDN دون توقيع.
+- **خاص (private)**: كل ما عداه في **الـ bucket الخاص** (`R2_BUCKET`) — لا يُقرأ
+  إلا عبر `presigned GET` مؤقّت، ولا يُفعّل عليه أي وصول عام.
 - **التتبّع**: المفتاح نفسه يحمل `companyId`/`userId`/`orderId`، فيمكن سرد كل
   ملفات كيان ببادئة واحدة (`companies/<id>/`)، ومعرفة صاحب الملف من المفتاح فورًا.
 
@@ -117,7 +131,8 @@ companies/cmp_abc123/kyc/CR/2026-11-02T0130Z-7f3a9c2e.pdf
 | `pod` | `orders/<orderId>/pod/` | خاص | السائق (للطلب المكلّف به) |
 | `cod` | `orders/<orderId>/cod/` | خاص | السائق |
 | `chat` | `chat/<orderId>/` | خاص | أطراف الطلب |
-| `branding` | `branding/` | عام | الأدمن فقط |
+| `branding` | `branding/` (الـ bucket العام) | عام | الأدمن فقط |
+| `onboarding` | `onboarding/` (الـ bucket العام) | عام | الأدمن فقط |
 
 القواعد:
 - يتحقّق السيرفر أن المستخدم يملك حق الرفع للكيان المعني (مثلاً `orderId` يخصّ
@@ -187,9 +202,10 @@ STORAGE_PROVIDER=r2
 R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com  # نقطة S3 العامة
 R2_ACCESS_KEY=<r2-access-key>              # token مقيّد على bucket البيئة
 R2_SECRET_KEY=<r2-secret>
-R2_BUCKET=nqlah-prod                       # أو nqlah-staging / nqlah-dev
+R2_BUCKET=nqlah-prod                       # الحاوية الخاصة (KYC/محادثة/صور)
+R2_PUBLIC_BUCKET=nqlah-prod-public         # حاوية الشعارات العامة (منفصلة)
 R2_REGION=auto                             # R2 يتجاهل المنطقة؛ الموقّع يحتاجها
-R2_PUBLIC_URL=https://storage.nqlah.nx.sa  # النطاق العام لأصول branding
+R2_PUBLIC_URL=https://storage.nqlah.nx.sa  # النطاق العام للحاوية العامة (branding)
 ```
 > يمكن ضبط هذه القيم أيضًا من **مركز التكامل (Integration Hub)** في لوحة الأدمن
 > (التخزين → Cloudflare R2) بدل متغيّرات البيئة.
@@ -217,17 +233,19 @@ MINIO_PUBLIC_URL=http://localhost:9000
 
 1. **تفعيل R2**: dash.cloudflare.com → **R2** → **Enable** (يتطلب تفعيل الفوترة
    حتى للطبقة المجانية: 10GB + عمليات مجانية شهريًا). انسخ **Account ID**.
-2. **إنشاء الـ buckets**: `nqlah-prod`, `nqlah-staging`, `nqlah-dev`.
-3. **توكن API لكل bucket** (عزل): R2 → **Manage R2 API Tokens** → **Create** →
-   صلاحية `Object Read & Write` مقيّدة على bucket البيئة. احفظ فورًا (تظهر مرة
-   واحدة): **Access Key ID** (`R2_ACCESS_KEY`)، **Secret Access Key**
-   (`R2_SECRET_KEY`)، و**S3 endpoint**
+2. **إنشاء الـ buckets** — لكل بيئة **اثنان**: خاص + عام للشعارات. للإنتاج:
+   `nqlah-prod` (خاص) و `nqlah-prod-public` (عام). وبالمثل لـ staging/dev.
+3. **توكن API** (عزل): R2 → **Manage R2 API Tokens** → **Create** → صلاحية
+   `Object Read & Write` مقيّدة على **buckets البيئة** (الخاص + العام). احفظ
+   فورًا (تظهر مرة واحدة): **Access Key ID** (`R2_ACCESS_KEY`)، **Secret Access
+   Key** (`R2_SECRET_KEY`)، و**S3 endpoint**
    (`https://<ACCOUNT_ID>.r2.cloudflarestorage.com` → `R2_ENDPOINT`).
-4. **نطاق عام للشعارات** (الإنتاج): bucket `nqlah-prod` → Settings → Public
-   access → **Custom Domains** → اربط `storage.nqlah.nx.sa` (يتطلب أن يكون
-   النطاق مُدارًا في Cloudflare DNS) → `R2_PUBLIC_URL`.
+4. **وصول عام للـ bucket العام فقط** (`nqlah-<env>-public`): Settings → Public
+   access → إمّا **r2.dev** (رابط `pub-*.r2.dev` فوري بلا DNS) أو **Custom
+   Domain** (`storage.nqlah.nx.sa`، يتطلب DNS على Cloudflare) → يصبح
+   `R2_PUBLIC_URL`. ⚠️ **لا تُفعّل أي وصول عام على الـ bucket الخاص إطلاقًا.**
 5. **CORS** (ضروري لرفع المتصفّح من لوحات الويب؛ رفع الجوال native لا يحتاجه):
-   bucket → Settings → **CORS Policy**:
+   على **كلا الـ bucketين** → Settings → **CORS Policy**:
    ```json
    [{"AllowedOrigins":["https://admin.nqlah.nx.sa","https://carrier.nqlah.nx.sa","https://client.nqlah.nx.sa"],"AllowedMethods":["PUT","GET"],"AllowedHeaders":["*"],"MaxAgeSeconds":3600}]
    ```
@@ -317,9 +335,10 @@ rm -f /tmp/rclone-migrate.conf   # الملف يحوي أسرارًا
 |---|---|
 | توقيع الروابط على المضيف العام | ✅ مُنفَّذ (MinIO) — PR #221 |
 | موصّل R2 + اختيار `STORAGE_PROVIDER=r2` | ✅ مُنفَّذ (الموصّل + التسجيل في Integration Hub) — PR #226 |
-| بناء المفتاح من `purpose` في السيرفر | ✅ مُنفَّذ (kyc/companyLogo/avatar/branding) — PR #227. (chat/pod/cod على `folder` حتى فحص ملكية الطلب) |
+| بناء المفتاح من `purpose` في السيرفر | ✅ مُنفَّذ (kyc/companyLogo/avatar/branding/onboarding). (chat/pod/cod على `folder` حتى فحص ملكية الطلب) |
+| فصل الأصول العامة في bucket عام مستقل | ✅ مُنفَّذ (R2_PUBLIC_BUCKET؛ branding/onboarding → الحاوية العامة) |
 | رفع KYC بعد الدخول من «حسابي» | ✅ مُنفَّذ — PR #227 |
 | buckets منفصلة لكل بيئة في R2 | ⏳ قيد التنفيذ (staging مُجهَّز؛ prod/dev لاحقًا) |
-| نطاق عام + CDN لأصول `branding/` | ⏳ مخطّط |
+| نطاق عام (r2.dev أو مخصّص) على الـ bucket العام | ⏳ يُضبط في Cloudflare → `R2_PUBLIC_URL` |
 
 يُحدَّث هذا الجدول مع كل تنفيذ.

@@ -26,7 +26,7 @@ function isAllowedMime(mime: string): boolean {
   );
 }
 
-const UPLOAD_PURPOSES = ['kyc', 'companyLogo', 'avatar', 'branding'] as const;
+const UPLOAD_PURPOSES = ['kyc', 'companyLogo', 'avatar', 'branding', 'onboarding'] as const;
 
 class PresignDto {
   @IsString() filename!: string;
