@@ -14,6 +14,11 @@ export interface StorageConnector {
   /** A short-lived pre-signed PUT URL for direct client → store uploads. */
   presignedPut(key: string, expirySeconds: number): Promise<string>;
 
+  /** Pre-signed PUT for PUBLIC assets (e.g. branding/logos). Targets the public
+   *  bucket when the provider separates public from private storage; otherwise
+   *  the same bucket as {@link presignedPut}. */
+  presignedPutPublic(key: string, expirySeconds: number): Promise<string>;
+
   /** A short-lived pre-signed GET URL for direct store → client downloads. */
   presignedGet(key: string, expirySeconds: number): Promise<string>;
 

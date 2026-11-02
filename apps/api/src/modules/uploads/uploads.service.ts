@@ -12,7 +12,16 @@ export type UploadActor = { userId?: string; companyId?: string | null; role?: s
 /// the actor's own ids — never a client-supplied folder. See
 /// docs/architecture/storage.md. (chat/pod/cod stay on the legacy `folder`
 /// path until per-order ownership checks are added.)
-export type UploadPurpose = 'kyc' | 'companyLogo' | 'avatar' | 'branding';
+export type UploadPurpose =
+  | 'kyc'
+  | 'companyLogo'
+  | 'avatar'
+  | 'branding'
+  | 'onboarding';
+
+// Purposes whose objects are PUBLIC (served from the public bucket via a stable
+// public URL) rather than private/presigned.
+const PUBLIC_PURPOSES: ReadonlySet<UploadPurpose> = new Set(['branding', 'onboarding']);
 
 export interface PresignInput {
   filename: string;
@@ -61,6 +70,9 @@ export class UploadsService {
       case 'branding':
         if (!this.isAdmin(actor)) throw this.forbidden();
         return 'branding';
+      case 'onboarding':
+        if (!this.isAdmin(actor)) throw this.forbidden();
+        return 'onboarding';
       default:
         throw this.forbidden();
     }
@@ -76,11 +88,17 @@ export class UploadsService {
   }
 
   /** A pre-signed PUT URL (client → store) plus the object key to store on the
-   *  resource once the upload completes. */
+   *  resource once the upload completes. Public assets (branding) are signed
+   *  against the public bucket; everything else against the private bucket. */
   async presignedUpload(input: PresignInput) {
     const key = this.buildKey(this.resolvePrefix(input), input.filename);
-    const uploadUrl = await this.storage.presignedPut(key, 60 * 5);
-    const base = this.storage.publicBaseUrl();
+    const isPublic = !!input.purpose && PUBLIC_PURPOSES.has(input.purpose);
+    const uploadUrl = isPublic
+      ? await this.storage.presignedPutPublic(key, 60 * 5)
+      : await this.storage.presignedPut(key, 60 * 5);
+    // Only public assets get a stable public URL; private files are read via
+    // short-lived presigned GETs, never a public base URL.
+    const base = isPublic ? this.storage.publicBaseUrl() : null;
     return {
       uploadUrl,
       key,

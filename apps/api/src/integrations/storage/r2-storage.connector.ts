@@ -16,6 +16,10 @@ export class R2StorageConnector implements StorageConnector, OnModuleInit {
   private readonly logger = new Logger(R2StorageConnector.name);
   private client!: MinioClient;
   private bucket = process.env.R2_BUCKET ?? 'nqlah-dev';
+  // Public assets (branding) live in a SEPARATE public bucket so the private
+  // bucket (KYC, chat, …) never needs public access. Falls back to the private
+  // bucket only if no public bucket is configured (e.g. local dev).
+  private publicBucket = process.env.R2_PUBLIC_BUCKET ?? process.env.R2_BUCKET ?? 'nqlah-dev';
 
   onModuleInit() {
     const endpoint = process.env.R2_ENDPOINT ?? '';
@@ -63,6 +67,10 @@ export class R2StorageConnector implements StorageConnector, OnModuleInit {
 
   presignedPut(key: string, expirySeconds: number): Promise<string> {
     return this.client.presignedPutObject(this.bucket, key, expirySeconds);
+  }
+
+  presignedPutPublic(key: string, expirySeconds: number): Promise<string> {
+    return this.client.presignedPutObject(this.publicBucket, key, expirySeconds);
   }
 
   presignedGet(key: string, expirySeconds: number): Promise<string> {

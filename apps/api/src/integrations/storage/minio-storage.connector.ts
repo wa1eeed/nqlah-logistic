@@ -85,6 +85,11 @@ export class MinioStorageConnector implements StorageConnector, OnModuleInit {
     return this.signClient.presignedPutObject(this.bucket, key, expirySeconds);
   }
 
+  // Local dev uses a single bucket; public assets share it.
+  presignedPutPublic(key: string, expirySeconds: number): Promise<string> {
+    return this.signClient.presignedPutObject(this.bucket, key, expirySeconds);
+  }
+
   presignedGet(key: string, expirySeconds: number): Promise<string> {
     return this.signClient.presignedGetObject(this.bucket, key, expirySeconds);
   }

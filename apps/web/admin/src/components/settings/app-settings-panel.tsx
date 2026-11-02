@@ -38,9 +38,9 @@ const MAX_BYTES = 3 * 1024 * 1024; // 3MB
 /** Upload an onboarding image through the presigned-PUT flow; returns public URL. */
 async function uploadImage(file: File): Promise<string> {
   const presign = (await api.post('/uploads/presign', {
+    purpose: 'onboarding',
     filename: file.name,
     contentType: file.type,
-    folder: 'app-onboarding',
     sizeBytes: file.size,
   })).data.data as { uploadUrl: string; publicUrl: string | null };
   await fetch(presign.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
