@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { EmptyMedallion } from '@/components/empty-state';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
@@ -135,7 +136,7 @@ export default function CarrierSupportPage() {
           <CardContent className="p-0">
             {myTickets.length === 0 ? (
               <div className="py-16 text-center text-muted-foreground">
-                <LifeBuoy className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                <EmptyMedallion icon={LifeBuoy} className="mx-auto mb-4" />
                 {t('support.emptyTickets')}
               </div>
             ) : (

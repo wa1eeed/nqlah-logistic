@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { EmptyMedallion } from '@/components/empty-state';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import {
@@ -160,7 +161,7 @@ export default function AddressesPage() {
       ) : !list || list.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
-            <MapPin className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
+            <EmptyMedallion icon={MapPin} className="mx-auto mb-4" />
             <h3 className="font-semibold">{t('addresses.emptyTitle')}</h3>
             <p className="mt-1 text-sm text-muted-foreground">{t('addresses.emptyDesc')}</p>
             <Button onClick={openAdd} className="mt-4">

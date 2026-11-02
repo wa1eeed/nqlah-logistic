@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { EmptyMedallion } from '@/components/empty-state';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import useSWR from 'swr';
@@ -121,7 +122,7 @@ export default function KycQueuePage() {
         <CardContent className="space-y-3">
           {pending.length === 0 ? (
             <div className="py-16 text-center text-muted-foreground">
-              <FileCheck2 className="h-12 w-12 mx-auto mb-3 opacity-40" />
+              <EmptyMedallion icon={FileCheck2} className="mx-auto mb-4" />
               {t('kyc.empty')}
             </div>
           ) : (
