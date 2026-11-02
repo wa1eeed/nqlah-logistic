@@ -18,11 +18,12 @@ Location: `apps/api/src/integrations/<domain>/`.
 - **Port:** `integrations/storage/storage.connector.ts` → `StorageConnector`
   (`put`, `getStream`, `presignedPut`, `presignedGet`, `publicBaseUrl`) bound to
   the `STORAGE_CONNECTOR` DI token.
-- **Adapter:** `minio-storage.connector.ts` (MinIO / S3-compatible).
-- **Module:** `storage.module.ts` (`@Global`) selects the adapter via
-  `STORAGE_PROVIDER` (`minio` now; `r2` is a drop-in — R2 is S3-compatible, so
-  it's the same adapter pointed at the R2 endpoint, or a dedicated
-  `R2StorageConnector`).
+- **Adapter:** `minio-storage.connector.ts` — one S3-compatible adapter (the
+  `minio` client) used for both MinIO and R2.
+- **Module:** `storage.module.ts` (`@Global`) selects the target via
+  `STORAGE_PROVIDER`: **`r2`** for deployed environments (staging/prod), pointed
+  at the R2 S3 endpoint, and **`minio`** for local development. Full model:
+  `docs/architecture/storage.md`.
 
 ### Cost-efficient file handling (no bytes through our server)
 
@@ -47,7 +48,7 @@ egress). Uploads accept images, short video/audio clips, PDFs and common docs,
 
 | Domain | Port | Adapters |
 |---|---|---|
-| Storage | `StorageConnector` ✅ | MinIO ✅ · Cloudflare R2 (drop-in) |
+| Storage | `StorageConnector` ✅ | Cloudflare R2 ✅ (deployed) · MinIO ✅ (local dev) |
 | Push notifications | `NotificationConnector` ✅ | console ✅ (dev) · FCM/APNs ✅ (HTTP v1) |
 | Email | `EmailConnector` ✅ | console ✅ (dev) · Resend ✅ (resend.com) |
 | SMS / OTP | `SmsConnector` ✅ | console ✅ (dev) · a Saudi gateway (drop-in) |

@@ -24,8 +24,8 @@
         │                │              │             │
         ▼                ▼              ▼             ▼
    ┌────────┐      ┌─────────┐    ┌──────────┐  ┌──────────┐
-   │Postgres│      │  Redis  │    │  MinIO   │  │ External │
-   │ :5432  │      │  :6379  │    │  :9000   │  │ Providers│
+   │Postgres│      │  Redis  │    │    R2    │  │ External │
+   │ :5432  │      │  :6379  │    │  S3 API  │  │ Providers│
    │        │      │         │    │          │  │ Resend   │
    │ Prisma │      │ Cache + │    │ KYC docs │  │ SMS APIs │
    └────────┘      │ Throttle│    │ Images   │  └──────────┘
@@ -107,7 +107,7 @@ naqla-platform/
 | **Notifications** | `modules/notifications` | إرسال multi-channel، قوالب |
 | **Admin** | `modules/admin` | dashboards، KYC queue، disputes، settings |
 | **Tracking** | `modules/tracking` | location updates، history |
-| **Uploads** | `modules/uploads` | presigned URLs لـ MinIO |
+| **Uploads** | `modules/uploads` | presigned URLs لتخزين S3 (R2 منشور / MinIO محلي) |
 | **Realtime** | `modules/realtime` | Socket.io gateway للأحداث اللحظية |
 
 ### 3.2 Web Apps
@@ -125,7 +125,7 @@ naqla-platform/
 |---|---|---|---|
 | **PostgreSQL** | `postgres:16-alpine` | 5432 | DB الرئيسي |
 | **Redis** | `redis:7-alpine` | 6379 | Cache + sessions + rate-limit (LRU 256MB) |
-| **MinIO** | `minio/minio:latest` | 9000 / 9001 | S3-compatible storage |
+| **MinIO** | `minio/minio:latest` | 9000 / 9001 | تخزين S3 للتطوير المحلي فقط (البيئات المنشورة تستخدم Cloudflare R2 — راجع [`architecture/storage.md`](architecture/storage.md)) |
 
 ---
 
@@ -813,15 +813,15 @@ update() { ... }
 
 | المستوى | الفحص |
 |---|---|
-| **Required** | DATABASE_URL, REDIS_URL, JWT_SECRET, JWT_REFRESH_SECRET, MINIO_*, NODE_ENV, PORT, FRONTEND_URL, CORS_ORIGINS |
+| **Required** | DATABASE_URL, REDIS_URL, JWT_SECRET, JWT_REFRESH_SECRET, اعتمادات التخزين النشط (`R2_*` منشور / `MINIO_*` محلي حسب `STORAGE_PROVIDER`), NODE_ENV, PORT, FRONTEND_URL, CORS_ORIGINS |
 | **Format** | NODE_ENV ∈ {dev/staging/prod/test}, PORT integer 1..65535، JWT length ≥ env-specific min |
 | **Provider whitelists** | `PAYMENT_PROVIDER ∈ {mock,moyasar,tap}` ، `SMS_PROVIDER ∈ {console,unifonic,msegat}` |
-| **Production-only** | لا mock providers، CORS HTTPS-only، MINIO_USE_SSL=true، SENTRY_DSN إلزامي، JWT_SECRET ≠ REFRESH |
+| **Production-only** | لا mock providers، CORS HTTPS-only، `R2_ENDPOINT` عبر https، SENTRY_DSN إلزامي، JWT_SECRET ≠ REFRESH |
 
 ### Backup Strategy
 
 `scripts/backup-db.sh` — pipeline واحد:
-- `pg_dump` → `gzip -9` → MinIO upload (bucket per env)
+- `pg_dump` → `gzip -9` → Cloudflare R2 upload (private backup bucket, namespaced per env)
 - retention 30 يوم تلقائي
 - جدولة عبر cron @ 02:00 UTC
 

@@ -56,8 +56,8 @@
 | `PAYMENT_PROVIDER` | `mock` | `mock` | `moyasar` (إلزامي) |
 | `SMS_PROVIDER` | `console` | `console` | `unifonic` (إلزامي) |
 | `JWT_SECRET` | ≥ 32 chars | ≥ 64 chars (مولَّد بـ openssl) | ≥ 64 chars + يختلف عن staging |
-| `MINIO_USE_SSL` | `false` | `false` | `true` (إلزامي) |
-| `MINIO_BUCKET` | `naqla-dev` | `naqla-staging` | `naqla-prod` |
+| `STORAGE_PROVIDER` | `minio` (local Docker) | `r2` | `r2` |
+| `R2_BUCKET` | `nqlah-dev` | `nqlah-staging` | `nqlah-prod` |
 | `CORS_ORIGINS` | `http://localhost:*` | `https://*.nqlah.nx.sa` | `https://*.nqlah.nx.sa` (HTTPS only) |
 | `SENTRY_DSN` | اختياري | اختياري | إلزامي |
 | `JWT_EXPIRES_IN` | `15m` | `15m` | `15m` |
@@ -71,7 +71,7 @@
 - ✅ JWT secrets ≥ min length (يختلف per env)
 - ✅ في production: JWT_SECRET ≠ JWT_REFRESH_SECRET
 - ✅ providers ∈ القيم المعروفة
-- ✅ في production: لا `mock` providers، CORS HTTPS-only، MINIO_USE_SSL=true، SENTRY_DSN موجود
+- ✅ في production: لا `mock` providers، CORS HTTPS-only، `R2_ENDPOINT` عبر https، SENTRY_DSN موجود
 
 عند الفشل، رسالة الخطأ تجمع كل المشاكل معاً (بدل ما تفشل عند أول مشكلة):
 
@@ -80,7 +80,7 @@
   • Missing required env var: REDIS_URL
   • JWT_SECRET must be ≥ 64 chars in production
   • PAYMENT_PROVIDER cannot be "mock" in production
-  • MINIO_USE_SSL must be "true" in production
+  • R2_ENDPOINT must be an https:// URL in production
 ```
 
 ### 1.4 إعداد بيئة جديدة (deploy checklist)
@@ -89,7 +89,7 @@
 2. استبدل كل قيم `PLACEHOLDER` بقيم حقيقية
 3. ولّد JWT secrets: `openssl rand -hex 64` (×2 — مختلفان تماماً)
 4. تأكد أن `DATABASE_URL` يشير لـ DB منفصلة (لا `naqla_dev` في staging أبداً)
-5. تأكد من `MINIO_BUCKET` المناسب (`naqla-staging` / `naqla-prod`)
+5. تأكد من `R2_BUCKET` المناسب (`nqlah-staging` / `nqlah-prod`)
 6. اضبط `CORS_ORIGINS` بدقّة (subdomains الفعلية فقط، لا wildcards)
 7. اضبط `SEED_ADMIN_EMAIL` و `SEED_ADMIN_PASSWORD` (في Coolify) — كلمة مرور قوية،
    خاصّةً في production. هي مصدر بيانات دخول الأدمن.
@@ -157,9 +157,9 @@
 | `443` | HTTPS (Nginx / Coolify proxy) | ✅ |
 | `5432` | PostgreSQL | ❌ (داخلي فقط) |
 | `6379` | Redis | ❌ (داخلي فقط) |
-| `9000` | MinIO API | ❌ (داخلي فقط) |
-| `9001` | MinIO Console | ❌ (VPN فقط) |
 | `4000` | API (internal) | ❌ (عبر proxy) |
+
+> 💾 التخزين في البيئات المنشورة هو **Cloudflare R2** (خدمة خارجية مُدارة عبر S3 API) — لا منافذ تخزين داخلية. التفاصيل: [`architecture/storage.md`](architecture/storage.md).
 
 ### 2.3 النطاقات (Domains)
 
@@ -172,7 +172,7 @@
 | `app.nqlah.nx.sa` | Client app | Staging/Prod | Let's Encrypt |
 | `carrier.nqlah.nx.sa` | Carrier app | Staging/Prod | Let's Encrypt |
 | `api.nqlah.nx.sa` | REST API | Staging/Prod | Let's Encrypt |
-| `storage.nqlah.nx.sa` | MinIO public objects | Staging/Prod | Let's Encrypt |
+| `storage.nqlah.nx.sa` | Cloudflare R2 public objects (custom domain) | Staging/Prod | Cloudflare |
 
 > 📌 جميع النطاقات تُدار عبر Coolify مع auto-renewal لـ Let's Encrypt.
 > عند الانتقال لدومين رسمي، يكفي تغيير `APP_DOMAIN` في `.env.production` فقط.
@@ -203,19 +203,21 @@
 | `FRONTEND_CARRIER_URL` | `http://localhost:3003` | `https://carrier.nqlah.nx.sa` | `https://carrier.nqlah.nx.sa` |
 | `FRONTEND_ADMIN_URL` | `http://localhost:3001` | `https://admin.nqlah.nx.sa` | `https://admin.nqlah.nx.sa` |
 | `CORS_ORIGINS` | `http://localhost:300{0-3}` | `https://*.nqlah.nx.sa` (4 subdomains) | `https://*.nqlah.nx.sa` |
-| `MINIO_ENDPOINT` | `localhost` | `minio` (Docker service) | `minio` |
-| `MINIO_PORT` | `9000` | `9000` | `9000` |
-| `MINIO_USE_SSL` | `false` | `false` | `true` (**إلزامي**) |
-| `MINIO_ROOT_USER` | `minioadmin` | من Coolify | من Coolify (مختلف) |
-| `MINIO_ROOT_PASSWORD` | `minioadmin` | من Coolify | من Coolify (مختلف) |
-| `MINIO_BUCKET` | `naqla-dev` | `naqla-staging` | `naqla-prod` |
-| `MINIO_PUBLIC_URL` | `http://localhost:9000` | `https://storage.nqlah.nx.sa` | `https://storage.nqlah.nx.sa` |
+| `STORAGE_PROVIDER` | `minio` (local Docker) | `r2` | `r2` |
+| `R2_ENDPOINT` | — | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` |
+| `R2_ACCESS_KEY` | — | من Cloudflare | من Cloudflare (مختلف) |
+| `R2_SECRET_KEY` | — | من Cloudflare | من Cloudflare (مختلف) |
+| `R2_BUCKET` | `nqlah-dev` | `nqlah-staging` | `nqlah-prod` |
+| `R2_PUBLIC_URL` | — | `https://storage.nqlah.nx.sa` | `https://storage.nqlah.nx.sa` |
+| `R2_REGION` | — | `auto` | `auto` |
 | `PAYMENT_PROVIDER` | `mock` | `mock` | `moyasar` |
 | `SMS_PROVIDER` | `console` | `console` | `unifonic` |
 | `BCRYPT_ROUNDS` | `12` | `12` | `12` |
 | `THROTTLE_TTL` | `60000` | `60000` | `60000` |
 | `THROTTLE_LIMIT` | `100` | `100` | `100` |
 | `SENTRY_DSN` | _(فارغ)_ | _(فارغ/اختياري)_ | **إلزامي** |
+
+> 💾 التخزين قابل للتبديل عبر `STORAGE_PROVIDER`: البيئات المنشورة (staging/prod) تستخدم **Cloudflare R2** (متغيّرات `R2_*`)، والتطوير المحلي يستخدم **MinIO** من `docker-compose.yml` (متغيّرات `MINIO_*`). النموذج الكامل: [`architecture/storage.md`](architecture/storage.md).
 
 ### 3.2 Frontend Apps (Next.js — build-time)
 
@@ -394,7 +396,7 @@ Coolify يعرض الحالة مباشرة. فشل 3 محاولات متتالي
 |---|---|---|---|
 | **PostgreSQL** | Coolify managed DB | `sj3y576uqy2ulecbzwydm37l:5432` | DB منفصل (يُنشأ لاحقاً) |
 | **Redis** | Coolify managed Redis | `q13sf1ivsl14rsphz4155tnh:6379` | Redis منفصل |
-| **MinIO** | Docker service | `minio:9000` (داخلي) | `minio:9000` (داخلي) |
+| **Object storage** | Cloudflare R2 (خارجي مُدار) | S3 API عبر `R2_ENDPOINT` | S3 API عبر `R2_ENDPOINT` |
 
 ### 5.2 Staging Resources (5 تطبيقات)
 
@@ -497,7 +499,7 @@ docker exec naqla-postgres pg_dump -U naqla naqla_prod > backup_$(date +%Y%m%d_%
 
 ### Backup Script اليومي (`scripts/backup-db.sh`)
 
-أضِفت في v0.5.0 — يدمج `pg_dump` + `gzip` + رفع لـ MinIO في pipeline واحد:
+أضِفت في v0.5.0 — يدمج `pg_dump` + `gzip` + رفع إلى Cloudflare R2 في pipeline واحد:
 
 ```bash
 # تشغيل يدوي
@@ -516,10 +518,10 @@ NODE_ENV=production ./scripts/backup-db.sh
 **ما يفعله:**
 1. يحمّل `.env.${NODE_ENV}` (defaults إلى `development`)
 2. `pg_dump --no-owner --no-privileges --clean --if-exists` → `gzip -9`
-3. يرفع إلى `naqla-backup/${MINIO_BUCKET}/backups/naqla-${env}-${timestamp}.sql.gz`
+3. يرفع إلى `${R2_BACKUP_BUCKET}/${env}/naqla-${env}-${timestamp}.sql.gz` (bucket R2 **خاص** منفصل عن bucket الأصول — لا يُعطى نطاقًا عامًا)
 4. يحذف backups أقدم من `BACKUP_RETENTION_DAYS` (افتراضي 30 يوم)
 
-**متطلبات الـ host:** `pg_dump` (postgresql-client بنفس النسخة الكبيرة للـ DB)، `mc` (MinIO client)، `gzip`.
+**متطلبات الـ host:** `pg_dump` (postgresql-client بنفس النسخة الكبيرة للـ DB)، `mc` (يتعامل مع R2 عبر S3)، `gzip`. ومتغيّرات: `R2_ENDPOINT`، `R2_ACCESS_KEY`، `R2_SECRET_KEY`، `R2_BACKUP_BUCKET`.
 
 ---
 

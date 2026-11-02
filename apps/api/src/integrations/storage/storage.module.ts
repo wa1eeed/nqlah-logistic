@@ -23,16 +23,18 @@ import { IntegrationsService } from '../../modules/integrations/integrations.ser
       ) => {
         const { provider } = await integrations.resolveActive('storage');
         switch (provider) {
+          case 'minio':
+            // Local-development only (self-hosted S3). Not offered in the admin.
+            new Logger('Storage').log('Storage provider: MinIO (local dev).');
+            return minio;
           case 'r2':
             new Logger('Storage').log('Storage provider: Cloudflare R2.');
             return r2;
-          case 'minio':
-            return minio;
           default:
-            new Logger('Storage').warn(
-              `Storage provider "${provider}" not recognized — using MinIO.`,
+            new Logger('Storage').log(
+              `Storage provider "${provider}" unrecognized — defaulting to Cloudflare R2.`,
             );
-            return minio;
+            return r2;
         }
       },
       inject: [IntegrationsService, MinioStorageConnector, R2StorageConnector],

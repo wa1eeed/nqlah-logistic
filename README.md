@@ -27,7 +27,7 @@
 - **[Prisma](https://www.prisma.io/)** v5 — ORM + Migrations + Type-safe queries
 - **[PostgreSQL](https://www.postgresql.org/)** 16 — Primary database
 - **[Redis](https://redis.io/)** 7 — Cache + sessions + rate-limit
-- **[MinIO](https://min.io/)** — S3-compatible object storage (KYC docs، صور)
+- **[Cloudflare R2](https://developers.cloudflare.com/r2/)** — S3-compatible object storage للبيئات المنشورة (KYC docs، صور) · **[MinIO](https://min.io/)** للتطوير المحلي عبر Docker
 - **[Socket.io](https://socket.io/)** — Realtime tracking + notifications
 - **JWT + OTP** — Authentication
 - **Swagger / OpenAPI** — API documentation
@@ -172,7 +172,7 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 | **Admin** | https://admin.nqlah.nx.sa | 🟡 قيد التحقق |
 | **Client** | https://app.nqlah.nx.sa | 🟡 قيد التحقق |
 | **Carrier** | https://carrier.nqlah.nx.sa | 🟡 قيد التحقق |
-| **Storage** | https://storage.nqlah.nx.sa | ✅ MinIO |
+| **Storage** | https://storage.nqlah.nx.sa | ✅ Cloudflare R2 |
 
 ---
 
@@ -210,7 +210,7 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 - ✅ **Promotions / Promo codes** — حملات ترويجية
 - ✅ **Team Members** (v0.4.0) — 5 أدوار (Owner/Admin/Staff/Dispatch/Finance) + permissions matrix + 4 endpoints + Backend Guard
 - ✅ **Settings refactor** (v0.4.0) — `/settings` بدلاً من `/company` بـ 4 تبويبات (Company/Team/Settings/KYC)
-- ✅ **Three Environments** (v0.5.0) — dev/staging/prod مع env validation + backup script يومي → MinIO
+- ✅ **Three Environments** (v0.5.0) — dev/staging/prod مع env validation + backup script يومي → Cloudflare R2
 - ✅ **White Label Branding** (v0.5.0) — رفع شعار + تعديل اسم المنصة بلغتين من `/admin/settings`
 - ✅ **Admin Catalogs** (v0.5.0) — إدارة المدن (15 مدينة) + أنواع البضائع (10) + قوالب SMS من اللوحة
 - ✅ **Team Invitation Activation** (v0.5.0) — صفحة `/join?token=` لتفعيل أعضاء الفريق الجدد
