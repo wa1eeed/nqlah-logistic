@@ -114,8 +114,9 @@ class _RegisterDocumentsScreenState
       step: d.docsStep,
       totalSteps: d.totalSteps,
       title: 'مستندات التحقّق',
-      subtitle: 'نراجعها خلال 24 ساعة عمل',
-      nextLabel: _busy ? 'جارٍ الإرسال…' : 'إرسال للمراجعة',
+      subtitle:
+          'اختيارية الآن — يمكنك المتابعة بدون رفع وإكمالها لاحقًا من «حسابي». نراجعها خلال 24 ساعة عمل.',
+      nextLabel: _busy ? 'جارٍ الإرسال…' : 'متابعة',
       nextEnabled: !_busy,
       onNext: _busy ? null : _submit,
       children: [
@@ -144,7 +145,7 @@ class _RegisterDocumentsScreenState
       meta = u?.name;
     } else {
       state = NqUploadState.requiredEmpty;
-      meta = 'مطلوب';
+      meta = 'اختياري';
     }
     return NqUploadRow(
       title: doc.title,
