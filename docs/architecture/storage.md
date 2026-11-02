@@ -211,22 +211,74 @@ MINIO_PUBLIC_URL=http://localhost:9000
 
 ---
 
-## 10. خطة الترحيل من MinIO إلى R2
+## 10. التجهيز في Cloudflare (Provisioning)
 
-1. **إنشاء الموارد**: 3 buckets في R2 (`nqlah-dev/staging/prod`) + API token
-   مقيّد لكل bucket، وربط نطاق عام (`storage.nqlah.nx.sa`) ببكت الإنتاج لأصول
-   `branding/`.
-2. **نسخ الملفات الحالية**: من MinIO إلى R2 بأداة متوافقة مع S3
-   (`rclone` أو `aws s3 sync` مع نقطتي نهاية) — حفاظًا على المفاتيح كما هي.
-3. **تبديل الإعدادات**: ضبط `STORAGE_PROVIDER=r2` + متغيّرات R2 في كل بيئة،
-   ثم إعادة النشر.
-4. **تحقّق**: رفع/قراءة تجريبي لكل غرض (kyc/avatar/chat/branding) من جهاز حقيقي.
-5. **تراجع (rollback)**: الإبقاء على MinIO وبياناته حتى التأكّد، فالعودة = تبديل
-   `STORAGE_PROVIDER` عكسيًا.
+تُنفَّذ مرة واحدة من لوحة Cloudflare:
+
+1. **تفعيل R2**: dash.cloudflare.com → **R2** → **Enable** (يتطلب تفعيل الفوترة
+   حتى للطبقة المجانية: 10GB + عمليات مجانية شهريًا). انسخ **Account ID**.
+2. **إنشاء الـ buckets**: `nqlah-prod`, `nqlah-staging`, `nqlah-dev`.
+3. **توكن API لكل bucket** (عزل): R2 → **Manage R2 API Tokens** → **Create** →
+   صلاحية `Object Read & Write` مقيّدة على bucket البيئة. احفظ فورًا (تظهر مرة
+   واحدة): **Access Key ID** (`R2_ACCESS_KEY`)، **Secret Access Key**
+   (`R2_SECRET_KEY`)، و**S3 endpoint**
+   (`https://<ACCOUNT_ID>.r2.cloudflarestorage.com` → `R2_ENDPOINT`).
+4. **نطاق عام للشعارات** (الإنتاج): bucket `nqlah-prod` → Settings → Public
+   access → **Custom Domains** → اربط `storage.nqlah.nx.sa` (يتطلب أن يكون
+   النطاق مُدارًا في Cloudflare DNS) → `R2_PUBLIC_URL`.
+5. **CORS** (ضروري لرفع المتصفّح من لوحات الويب؛ رفع الجوال native لا يحتاجه):
+   bucket → Settings → **CORS Policy**:
+   ```json
+   [{"AllowedOrigins":["https://admin.nqlah.nx.sa","https://carrier.nqlah.nx.sa","https://client.nqlah.nx.sa"],"AllowedMethods":["PUT","GET"],"AllowedHeaders":["*"],"MaxAgeSeconds":3600}]
+   ```
+6. **ضبط المتغيّرات** (§9) في Coolify لكل بيئة (أو من مركز التكامل) ثم إعادة النشر.
+
+## 11. ترحيل البيانات من MinIO إلى R2 (rclone)
+
+يُشغَّل على السيرفر حيث MinIO متاح (`minio:9000`). المفاتيح تبقى كما هي فمراجع
+قاعدة البيانات تظل صالحة.
+
+```bash
+cat > /tmp/rclone-migrate.conf <<'EOF'
+[minio]
+type = s3
+provider = Minio
+access_key_id = <MINIO_ROOT_USER>
+secret_access_key = <MINIO_ROOT_PASSWORD>
+endpoint = http://minio:9000
+region = us-east-1
+
+[r2]
+type = s3
+provider = Cloudflare
+access_key_id = <R2_ACCESS_KEY>
+secret_access_key = <R2_SECRET_KEY>
+endpoint = https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+region = auto
+EOF
+chmod 600 /tmp/rclone-migrate.conf
+
+# انسخ (بدّل باسم MINIO_BUCKET و bucket R2 للبيئة)
+rclone --config /tmp/rclone-migrate.conf copy minio:naqla-staging r2:nqlah-staging --progress --transfers 16 --checksum
+
+# تحقّق من التطابق
+rclone --config /tmp/rclone-migrate.conf check minio:naqla-staging r2:nqlah-staging --one-way
+
+rm -f /tmp/rclone-migrate.conf   # الملف يحوي أسرارًا
+```
+
+ثم: بدّل `STORAGE_PROVIDER=r2` + متغيّرات R2 وأعد النشر.
+
+## 12. التحقّق والتراجع
+
+- **تحقّق**: رفع/قراءة تجريبي لكل غرض (kyc/companyLogo/avatar/branding) من جهاز
+  حقيقي، وتأكّد من ظهور الشعارات عبر `R2_PUBLIC_URL`.
+- **تراجع (rollback)**: أبقِ MinIO وبياناته حتى التأكّد؛ العودة = تبديل
+  `STORAGE_PROVIDER` عكسيًا وإعادة النشر (لا حذف لبيانات MinIO قبل الاطمئنان).
 
 ---
 
-## 11. النسخ الاحتياطي والمتانة
+## 13. النسخ الاحتياطي والمتانة
 
 - **R2**: متانة عالية مُدارة (نسخ متعدّدة) — ومع ذلك يُفضّل تفعيل **versioning**
   على bucket الإنتاج، ولقطة دورية (snapshot) للبيانات الحسّاسة.
@@ -235,14 +287,15 @@ MINIO_PUBLIC_URL=http://localhost:9000
 
 ---
 
-## 12. حالة التنفيذ (Implementation status)
+## 14. حالة التنفيذ (Implementation status)
 
 | العنصر | الحالة |
 |---|---|
 | توقيع الروابط على المضيف العام | ✅ مُنفَّذ (MinIO) — PR #221 |
-| موصّل R2 + اختيار `STORAGE_PROVIDER=r2` | ✅ مُنفَّذ (الموصّل + التسجيل في Integration Hub) |
-| بناء المفتاح من `purpose` في السيرفر | ⏳ مخطّط (حاليًا العميل يرسل `folder`) |
-| buckets منفصلة لكل بيئة في R2 | ⏳ مخطّط |
+| موصّل R2 + اختيار `STORAGE_PROVIDER=r2` | ✅ مُنفَّذ (الموصّل + التسجيل في Integration Hub) — PR #226 |
+| بناء المفتاح من `purpose` في السيرفر | ✅ مُنفَّذ (kyc/companyLogo/avatar/branding) — PR #227. (chat/pod/cod على `folder` حتى فحص ملكية الطلب) |
+| رفع KYC بعد الدخول من «حسابي» | ✅ مُنفَّذ — PR #227 |
+| buckets منفصلة لكل بيئة في R2 | ⏳ قيد التنفيذ (staging مُجهَّز؛ prod/dev لاحقًا) |
 | نطاق عام + CDN لأصول `branding/` | ⏳ مخطّط |
 
 يُحدَّث هذا الجدول مع كل تنفيذ.
