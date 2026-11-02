@@ -159,6 +159,14 @@ final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
 });
 
 /// The signed-in provider's current subscription (null when none).
+/// Whether the company's current plan includes a paid add-on module (opt-in
+/// gate, mirrors the API `hasModule`). Absent plan / no subscription → false
+/// (locked), so the UI shows a Pro upsell.
+final hasModuleProvider = Provider.family<bool, String>((ref, key) {
+  final sub = ref.watch(mySubscriptionProvider).valueOrNull;
+  return sub?.plan?.modules.any((m) => m.key == key) ?? false;
+});
+
 final mySubscriptionProvider = FutureProvider<SubscriptionModel?>((ref) {
   return ref.watch(subscriptionRepositoryProvider).mine();
 });
