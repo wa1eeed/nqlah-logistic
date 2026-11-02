@@ -26,16 +26,14 @@ import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
 import { EscrowCountdown } from '@/components/escrow-countdown';
 import {
-  ORDERS, TRUCKS, DRIVERS, CURRENT_CARRIER_ID, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
+  ORDERS, TRUCKS, DRIVERS, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
   formatDate, formatDateTime, localizeCity, timelineFor, normalizeOrder, type Order,
 } from '@naqla/shared-utils';
 import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
-import { OwnershipBadge } from '@/components/fleet-bits';
 import { ConsolidatedPanel } from '@/components/consolidated-panel';
 import { StopsPanel } from '@/components/stops-panel';
 import { useFleetStore } from '@/stores/fleet-store';
 import { useConsolidatedStore } from '@/stores/consolidated-store';
-import { useFreelancerStore } from '@/stores/freelancer-store';
 
 const TITLE_KEYS = [
   'CREATED', 'PUBLISHED', 'BID_ACCEPTED', 'CONFIRMED', 'PICKED_UP', 'IN_TRANSIT',
@@ -62,16 +60,16 @@ export default function CarrierOrderDetail() {
   const [location, setLocation] = useState('');
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [assignDriverOpen, setAssignDriverOpen] = useState(false);
-  const [pickTruck, setPickTruck] = useState('');
-  const [tripFee, setTripFee] = useState('');
+  const [pickDriver, setPickDriver] = useState('');
+  const [assigning, setAssigning] = useState(false);
 
   const fleetAssign = useFleetStore((s) => s.assign);
   const singleAssign = useConsolidatedStore((s) => s.singleAssign);
-  const assignOrderTruck = useConsolidatedStore((s) => s.assignOrderTruck);
-  const addFreelancerInvoice = useFreelancerStore((s) => s.addInvoice);
-  const invoiceForOrderTruck = useFreelancerStore((s) => s.invoiceForOrderTruck);
-  const driverForTruck = (truckId: string) =>
-    (truckId in fleetAssign ? fleetAssign[truckId] : TRUCKS.find((t) => t.id === truckId)?.assignedDriverId) ?? '';
+  // Real available drivers for this carrier — fetched only while the dialog is
+  // open. `id` is the driverProfile id expected by POST /orders/:id/assign-driver.
+  const { data: availableDrivers } = useSWR<
+    Array<{ id: string; rating?: number; user?: { firstName?: string; lastName?: string; phone?: string } }>
+  >(assignDriverOpen ? '/fleet/drivers/available' : null, fetcher);
 
   if (!order) {
     return (
@@ -115,45 +113,24 @@ export default function CarrierOrderDetail() {
     ? DRIVERS.find((d) => d.id === override.driverId)
     : (assignedTruck ? DRIVERS.find((d) => d.id === (fleetAssign[assignedTruck.id] ?? assignedTruck.assignedDriverId)) : null);
 
-  // Revenue the carrier earns on this order (client side) — used to show the
-  // provider's margin when assigning a freelancer, and to issue the invoice.
-  const orderRevenue =
-    (order as { carrierAmount?: number | null }).carrierAmount ?? order.agreedPrice ?? null;
-  const pickedTruck = TRUCKS.find((t) => t.id === pickTruck);
-  const isFreelancerPick = pickedTruck?.ownership === 'FREELANCER';
-  const feeNum = Number(tripFee);
-  const feeValid = Number.isFinite(feeNum) && feeNum > 0;
-  const assignBlocked = !pickTruck || (isFreelancerPick && !feeValid);
+  const assignBlocked = !pickDriver || assigning;
 
-  const doAssignOrderTruck = async () => {
-    if (assignBlocked || !pickedTruck) return;
-    const driverId = driverForTruck(pickTruck);
-    assignOrderTruck(order.id, pickTruck, driverId);
-    if (isFreelancerPick) {
-      // Issue (or refresh) the per-trip invoice owed to the freelancer — via the
-      // API, with a localStorage fallback so the demo still records it offline.
-      const payload = {
-        orderId: order.orderNumber ?? order.id,
-        orderNumber: order.orderNumber ?? order.id,
-        truckId: pickTruck,
-        driverId: driverId || undefined,
-        amount: feeNum,
-        orderRevenue: orderRevenue ?? undefined,
-      };
-      try {
-        await api.post('/freelancer-invoices', payload);
-      } catch {
-        if (!invoiceForOrderTruck(order.id, pickTruck)) {
-          addFreelancerInvoice((order as { carrierId?: string }).carrierId ?? CURRENT_CARRIER_ID, payload);
-        }
-      }
-      notify.success(t('detail.toast.assignedFreelancer'), t('detail.toast.freelancerInvoice', { amount: feeNum.toLocaleString('en-US') }));
-    } else {
-      notify.success(t('detail.toast.assignedTruck'), `${pickedTruck.code ?? ''}`);
+  // Assign a real driver to this order via the API (creates the OrderDriver
+  // row that live tracking + the admin/provider tracking boards depend on).
+  const doAssignDriver = async () => {
+    if (assignBlocked) return;
+    setAssigning(true);
+    try {
+      await api.post(`/orders/${order.id}/assign-driver`, { driverId: pickDriver });
+      await refetchOrder();
+      notify.success(t('detail.toast.assignedTruck'));
+      setAssignDriverOpen(false);
+      setPickDriver('');
+    } catch {
+      notify.error(t('detail.toast.assignFailed'));
+    } finally {
+      setAssigning(false);
     }
-    setAssignDriverOpen(false);
-    setPickTruck('');
-    setTripFee('');
   };
 
   return (
@@ -219,7 +196,7 @@ export default function CarrierOrderDetail() {
                       <Button onClick={() => setConfirmPickupOpen(true)} className="flex-1 sm:flex-none">
                         <CheckCircle2 className="h-4 w-4" /> {t('detail.confirmPickup')}
                       </Button>
-                      <Button variant="outline" onClick={() => { setPickTruck(assignedTruck?.id ?? ''); setAssignDriverOpen(true); }} className="flex-1 sm:flex-none">
+                      <Button variant="outline" onClick={() => { setPickDriver(''); setAssignDriverOpen(true); }} className="flex-1 sm:flex-none">
                         <Truck className="h-4 w-4" /> {t('detail.assignTruck')}
                       </Button>
                       <Button variant="outline" onClick={() => setDisputeOpen(true)} className="text-destructive border-destructive/30">
@@ -384,7 +361,7 @@ export default function CarrierOrderDetail() {
                       <Truck className="h-3.5 w-3.5" /> {t('detail.truckAndDriver')}
                     </div>
                     {showActions && (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setPickTruck(assignedTruck?.id ?? ''); setAssignDriverOpen(true); }}>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setPickDriver(''); setAssignDriverOpen(true); }}>
                         {t('detail.change')}
                       </Button>
                     )}
@@ -607,73 +584,45 @@ export default function CarrierOrderDetail() {
       </Dialog>
 
       {/* Assign driver */}
-      <Dialog open={assignDriverOpen} onOpenChange={(o) => { setAssignDriverOpen(o); if (!o) { setPickTruck(''); setTripFee(''); } }}>
+      <Dialog open={assignDriverOpen} onOpenChange={(o) => { setAssignDriverOpen(o); if (!o) setPickDriver(''); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t('detail.assignDialog.title')}</DialogTitle>
             <DialogDescription>{t('detail.assignDialog.desc')}</DialogDescription>
           </DialogHeader>
-          <div className="py-2 space-y-2 max-h-64 overflow-y-auto">
-            {TRUCKS.map((tr) => {
-              const drv = DRIVERS.find((d) => d.id === driverForTruck(tr.id));
-              const parsed = parsePlateString(tr.plateNumber);
+          <div className="py-2 space-y-2 max-h-72 overflow-y-auto">
+            {!availableDrivers && (
+              <p className="py-6 text-center text-sm text-muted-foreground">{t('detail.loading')}</p>
+            )}
+            {availableDrivers?.length === 0 && (
+              <p className="py-6 text-center text-sm text-muted-foreground">{t('detail.assignDialog.noDrivers')}</p>
+            )}
+            {availableDrivers?.map((d) => {
+              const name = [d.user?.firstName, d.user?.lastName].filter(Boolean).join(' ').trim() || t('detail.assignDialog.noDriver');
               return (
                 <button
-                  key={tr.id}
+                  key={d.id}
                   type="button"
-                  onClick={() => setPickTruck(tr.id)}
+                  onClick={() => setPickDriver(d.id)}
                   className={`w-full flex items-center gap-3 rounded-lg border p-2.5 text-start transition-colors
-                    ${pickTruck === tr.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                    ${pickDriver === d.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
                 >
-                  <div className="w-[96px] shrink-0">
-                    <SaudiLicensePlate letters={parsed.letters} numbers={parsed.numbers} plateType="transport" size="fill" />
-                  </div>
+                  <Avatar className="h-9 w-9 shrink-0">
+                    <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                  </Avatar>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="num text-sm font-medium">{tr.code}</span>
-                      <OwnershipBadge ownership={tr.ownership} />
-                    </div>
-                    <div className="truncate text-xs text-muted-foreground">{drv ? drv.fullName : t('detail.assignDialog.noDriver')}</div>
+                    <div className="truncate text-sm font-medium">{name}</div>
+                    {d.user?.phone && <div className="num truncate text-xs text-muted-foreground" dir="ltr">{d.user.phone}</div>}
                   </div>
-                  {pickTruck === tr.id && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
+                  {pickDriver === d.id && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
                 </button>
               );
             })}
           </div>
 
-          {isFreelancerPick && (
-            <div className="space-y-2 rounded-lg border border-[hsl(var(--mint))]/30 bg-[hsl(var(--mint))]/5 p-3">
-              <Label htmlFor="tripFee" className="text-sm font-medium">{t('detail.assignDialog.freelancerFee')}</Label>
-              <div className="relative">
-                <Input
-                  id="tripFee"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  value={tripFee}
-                  onChange={(e) => setTripFee(e.target.value)}
-                  placeholder="0"
-                  className="num pe-12"
-                />
-                <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-xs text-muted-foreground">{t('units.sar')}</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t('detail.assignDialog.freelancerNote')}
-                {orderRevenue !== null && feeValid && (
-                  <>
-                    {' '}{t('detail.assignDialog.expectedProfit')}{' '}
-                    <span className="num font-medium text-foreground" dir="ltr">
-                      {(orderRevenue - feeNum).toLocaleString('en-US')}
-                    </span>{' '}{t('units.sar')}
-                  </>
-                )}
-              </p>
-            </div>
-          )}
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setAssignDriverOpen(false); setPickTruck(''); setTripFee(''); }}>{t('detail.cancel')}</Button>
-            <Button disabled={assignBlocked} onClick={doAssignOrderTruck}>
+            <Button variant="outline" onClick={() => { setAssignDriverOpen(false); setPickDriver(''); }}>{t('detail.cancel')}</Button>
+            <Button disabled={assignBlocked} onClick={doAssignDriver}>
               <CheckCircle2 className="h-4 w-4" /> {t('detail.assignDialog.assign')}
             </Button>
           </DialogFooter>
