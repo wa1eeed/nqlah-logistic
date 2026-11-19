@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/feature_flags.dart';
 import '../../core/fleet/fleet_repository.dart';
 import '../../core/finance/finance_repository.dart';
 import '../../core/orders/order_models.dart';
@@ -74,7 +75,7 @@ class OwnerDriverHomeScreen extends ConsumerWidget {
           const SizedBox(height: 14),
           Expanded(
             child: driving
-                ? _driving(context, c, active, work)
+                ? _driving(context, ref, c, active, work)
                 : _provider(context, ref, c, user?.id, awaiting, work),
           ),
           if (driving && active.isNotEmpty)
@@ -362,7 +363,7 @@ class OwnerDriverHomeScreen extends ConsumerWidget {
       );
 
   // ---- Driving context (2e) ----
-  Widget _driving(BuildContext context, NqColors c,
+  Widget _driving(BuildContext context, WidgetRef ref, NqColors c,
       List<OrderSummary> active, List<OrderSummary> work) {
     final today = DateTime.now();
     final todays = work.where((o) {
@@ -377,7 +378,7 @@ class OwnerDriverHomeScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
         if (active.isNotEmpty)
-          _activeTripCard(context, c, active.first)
+          _activeTripCard(context, ref, c, active.first)
         else
           _emptyCard(c, NqIcons.truck, 'لا رحلة نشطة حاليًا'),
         const SizedBox(height: 18),
@@ -419,7 +420,7 @@ class OwnerDriverHomeScreen extends ConsumerWidget {
       );
 
   Widget _activeTripCard(
-          BuildContext context, NqColors c, OrderSummary o) =>
+          BuildContext context, WidgetRef ref, NqColors c, OrderSummary o) =>
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -455,14 +456,16 @@ class OwnerDriverHomeScreen extends ConsumerWidget {
             ]),
             const SizedBox(height: 14),
             Row(children: [
-              Expanded(
-                  child: NqButton(
-                      label: 'العميل',
-                      icon: NqIcons.chats,
-                      variant: NqButtonVariant.secondary,
-                      onPressed: () => context.push('/chat/${o.id}',
-                          extra: o.clientName))),
-              const SizedBox(width: 12),
+              if (ref.watch(featureFlagProvider('inAppChat'))) ...[
+                Expanded(
+                    child: NqButton(
+                        label: 'العميل',
+                        icon: NqIcons.chats,
+                        variant: NqButtonVariant.secondary,
+                        onPressed: () => context.push('/chat/${o.id}',
+                            extra: o.clientName))),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                   child: NqButton(
                       label: 'فتح الخرائط',

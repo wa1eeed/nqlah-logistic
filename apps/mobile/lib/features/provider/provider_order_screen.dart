@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_exception.dart';
+import '../../core/config/feature_flags.dart';
 import '../../core/orders/order_models.dart';
 import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
@@ -428,14 +429,16 @@ class ProviderOrderScreen extends ConsumerWidget {
                         : NqButtonVariant.primary,
                     onPressed: onTrack ?? () {}),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: NqButton(
-                    label: 'محادثة العميل',
-                    icon: NqIcons.chats,
-                    variant: NqButtonVariant.secondary,
-                    onPressed: onChat ?? () {}),
-              ),
+              if (ref.watch(featureFlagProvider('inAppChat'))) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: NqButton(
+                      label: 'محادثة العميل',
+                      icon: NqIcons.chats,
+                      variant: NqButtonVariant.secondary,
+                      onPressed: onChat ?? () {}),
+                ),
+              ],
             ],
           ),
         ],

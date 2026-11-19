@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/chat/conversations_repository.dart';
+import '../../core/config/feature_flags.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../design_system/empty_state.dart';
@@ -19,6 +20,7 @@ class ConversationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.nq;
+    final chatEnabled = ref.watch(featureFlagProvider('inAppChat'));
     final async = ref.watch(conversationsProvider);
     return Scaffold(
       backgroundColor: c.bg,
@@ -28,6 +30,15 @@ class ConversationsScreen extends ConsumerWidget {
           children: [
             _appBar(context, c),
             const SizedBox(height: 8),
+            if (!chatEnabled)
+              const Expanded(
+                child: NqEmptyState(
+                  icon: NqIcons.chats,
+                  title: 'المحادثة غير مفعّلة',
+                  message: 'ميزة المحادثة غير متاحة حاليًا.',
+                ),
+              )
+            else
             Expanded(
               child: async.when(
                 loading: () =>

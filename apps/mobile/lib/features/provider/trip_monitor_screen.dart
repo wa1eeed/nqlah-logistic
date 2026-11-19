@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/feature_flags.dart';
 import '../../core/orders/order_models.dart';
 import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
@@ -178,7 +179,9 @@ class TripMonitorScreen extends ConsumerWidget {
               role: truckLabel(o.requiredTruckType),
               phone: o.driverPhone,
               callFilled: true,
-              onChat: () => context.push('/chat/$orderId'),
+              onChat: ref.watch(featureFlagProvider('inAppChat'))
+                  ? () => context.push('/chat/$orderId')
+                  : null,
             )
           else
             _noDriver(c),
@@ -187,10 +190,12 @@ class TripMonitorScreen extends ConsumerWidget {
             Expanded(
                 child: _outlineBtn(c, 'تحديث الموقع', NqIcons.broadcast,
                     () => ref.invalidate(orderDetailModelProvider(orderId)))),
-            const SizedBox(width: 12),
-            Expanded(
-                child: _outlineBtn(c, 'إبلاغ العميل', NqIcons.chats,
-                    () => context.push('/chat/$orderId'))),
+            if (ref.watch(featureFlagProvider('inAppChat'))) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                  child: _outlineBtn(c, 'إبلاغ العميل', NqIcons.chats,
+                      () => context.push('/chat/$orderId'))),
+            ],
           ]),
           const SizedBox(height: 12),
           Row(children: [
