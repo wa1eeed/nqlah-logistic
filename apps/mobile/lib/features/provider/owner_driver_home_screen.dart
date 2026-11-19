@@ -9,6 +9,7 @@ import '../../core/finance/finance_repository.dart';
 import '../../core/orders/order_models.dart';
 import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
+import '../../core/widgets/riyal_text.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
@@ -311,7 +312,7 @@ class OwnerDriverHomeScreen extends ConsumerWidget {
                       NqType.numeric(26, FontWeight.w700).copyWith(color: c.tx)),
             ),
             const SizedBox(height: 2),
-            Text('أرباح هذا الشهر · ⃁',
+            RiyalText('أرباح هذا الشهر · ⃁',
                 style: NqType.caption.copyWith(color: c.tx2)),
           ]),
         ),

@@ -6,6 +6,7 @@ import '../../core/api/api_exception.dart';
 import '../../core/platform/format.dart';
 import '../../core/subscription/subscription_repository.dart';
 import '../../core/theme/tokens.dart';
+import '../../core/widgets/riyal_text.dart';
 import '../../core/theme/typography.dart';
 import '../../design_system/empty_state.dart';
 import '../../core/widgets/ltr.dart';
@@ -94,7 +95,7 @@ class ProviderSubscriptionScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(' $kRiyalSymbol / $cycle',
+                RiyalText(' $kRiyalSymbol / $cycle',
                     style: NqType.caption.copyWith(color: NqFixed.heroText.withValues(alpha: 0.8))),
                 Ltr(_money(sub.priceSnapshot),
                     style: NqType.numeric(30, FontWeight.w800)

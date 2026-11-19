@@ -7,6 +7,7 @@ import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
+import '../../core/widgets/riyal_text.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 import '../../design_system/party_card.dart';
@@ -315,7 +316,7 @@ class ProviderOrderScreen extends ConsumerWidget {
           child: Row(
             children: [
               Flexible(
-                child: Text(value,
+                child: RiyalText(value,
                     style: NqType.bodyStrong.copyWith(color: c.tx),
                     textAlign: TextAlign.left),
               ),

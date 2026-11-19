@@ -8,6 +8,7 @@ import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/toggle.dart';
 import 'wizard_scaffold.dart';
+import '../../core/widgets/riyal_text.dart';
 
 /// Register step 2/4 — provider plan picker (handoff 1m). Interactive: truck
 /// stepper (5–50, +39 each over 5) and add-on toggles, with a live monthly
@@ -68,7 +69,7 @@ class _PlanPickerScreenState extends ConsumerState<PlanPickerScreen> {
           Row(children: [
             Ltr('$_total', style: NqType.price(size: 18).copyWith(color: c.tx)),
             const SizedBox(width: 3),
-            Text('⃁/شهر', style: NqType.caption.copyWith(color: c.tx2)),
+            RiyalText('⃁/شهر', style: NqType.caption.copyWith(color: c.tx2)),
           ]),
         ],
       ),
@@ -95,7 +96,7 @@ class _PlanPickerScreenState extends ConsumerState<PlanPickerScreen> {
           Row(children: [
             Ltr('199', style: NqType.price(size: 18).copyWith(color: c.tx)),
             const SizedBox(width: 3),
-            Text('⃁/شهر', style: NqType.caption.copyWith(color: c.tx2)),
+            RiyalText('⃁/شهر', style: NqType.caption.copyWith(color: c.tx2)),
           ]),
           const Spacer(),
           Column(
@@ -162,7 +163,7 @@ class _PlanPickerScreenState extends ConsumerState<PlanPickerScreen> {
                       Text('احترافي',
                           style: NqType.h1.copyWith(color: NqFixed.heroText)),
                       const SizedBox(height: 2),
-                      Text('من 299 ⃁ · 5 شاحنات مشمولة',
+                      RiyalText('من 299 ⃁ · 5 شاحنات مشمولة',
                           style: NqType.caption
                               .copyWith(color: NqFixed.heroTextSecondary)),
                     ],
@@ -215,7 +216,7 @@ class _PlanPickerScreenState extends ConsumerState<PlanPickerScreen> {
 
   Widget _sectionLabel(String title, String note) => Row(
         children: [
-          Text(note,
+          RiyalText(note,
               style: NqType.caption.copyWith(color: NqFixed.heroTextSecondary)),
           const Spacer(),
           Text(title, style: NqType.h3.copyWith(color: NqFixed.heroText)),
