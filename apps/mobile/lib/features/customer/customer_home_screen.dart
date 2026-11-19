@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/feature_flags.dart';
 import '../../core/orders/order_models.dart';
 import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
@@ -9,6 +10,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../design_system/promo_banner.dart';
 import '../../design_system/status_chip.dart';
 import '../../design_system/waybill_card.dart';
 
@@ -70,6 +72,7 @@ class CustomerHomeScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 38 + 20),
+        if (ref.watch(featureFlagProvider('promoBanner'))) const PromoBanner(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
