@@ -89,8 +89,10 @@ class NqOfferCard extends StatelessWidget {
                       onPressed: loading ? null : (onAccept ?? () {}),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  _chatButton(c),
+                  if (onChat != null) ...[
+                    const SizedBox(width: 10),
+                    _chatButton(c),
+                  ],
                 ],
               ),
             ],

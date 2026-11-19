@@ -13,6 +13,7 @@ import '../../core/platform/format.dart';
 import '../../design_system/chip.dart';
 import '../../design_system/empty_state.dart';
 import '../../design_system/confirm_dialog.dart';
+import '../../core/config/feature_flags.dart';
 import '../../design_system/offer_card.dart';
 
 /// Customer offers (handoff 4f): the most recent order that is collecting
@@ -126,6 +127,7 @@ class _CustomerOffersScreenState extends ConsumerState<CustomerOffersScreen> {
           ..sort((a, b) => (a.amount ?? 0).compareTo(b.amount ?? 0)))
         .first
         .id;
+    final inAppChat = ref.watch(featureFlagProvider('inAppChat'));
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       children: [
@@ -146,7 +148,9 @@ class _CustomerOffersScreenState extends ConsumerState<CustomerOffersScreen> {
             best: b.id == cheapestId,
             loading: _acceptingBidId == b.id,
             onAccept: () => _accept(order, b),
-            onChat: () => context.push('/chat/${order.id}', extra: b.carrierName),
+            onChat: inAppChat
+                ? () => context.push('/chat/${order.id}', extra: b.carrierName)
+                : null,
           ),
           const SizedBox(height: 16),
         ],

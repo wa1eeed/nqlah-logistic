@@ -56,9 +56,10 @@ class NqPartyCard extends StatelessWidget {
             children: [
               if (showCall) ...[
                 _actionBtn(c, NqIcons.phone, filled: callFilled, onTap: onCall),
-                const SizedBox(width: 8),
+                if (onChat != null) const SizedBox(width: 8),
               ],
-              _actionBtn(c, NqIcons.chatCenteredDots, onTap: onChat),
+              if (onChat != null)
+                _actionBtn(c, NqIcons.chatCenteredDots, onTap: onChat),
               const Spacer(),
               Expanded(
                 flex: 6,
