@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 
 import 'auth/auth_controller.dart';
 import 'auth/registration_controller.dart';
+import 'onboarding/first_run_controller.dart';
+import '../features/onboarding/welcome_screen.dart';
+import '../features/onboarding/onboarding_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/otp_screen.dart';
 import '../features/auth/register_credentials_screen.dart';
@@ -50,6 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   // Bridge Riverpod auth-state changes to GoRouter's refresh.
   final refresh = ValueNotifier<int>(0);
   ref.listen(authControllerProvider, (_, _) => refresh.value++);
+  ref.listen(firstRunProvider, (_, _) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
@@ -63,6 +67,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Hold position while the session is still being restored on launch.
       if (!auth.isResolved) return null;
       final loc = state.matchedLocation;
+      // First run (once): language choice → onboarding, before anything else.
+      final firstRun = ref.read(firstRunProvider);
+      if (firstRun == null) return null; // still loading from storage
+      final onFirstRun = loc == '/welcome' || loc == '/onboarding';
+      if (firstRun == false) {
+        return onFirstRun ? null : '/welcome';
+      }
+      if (onFirstRun) return '/app'; // already completed — don't show it again
       final onAuthPage =
           loc == '/login' || loc == '/login-otp' || loc.startsWith('/register');
       // Read-only routes a guest may browse without an account. Everything else
@@ -77,6 +89,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+    GoRoute(
+      path: '/welcome',
+      builder: (context, _) => const WelcomeScreen(),
+    ),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, _) => const OnboardingScreen(),
+    ),
     GoRoute(
       path: '/login',
       builder: (context, state) => LoginScreen(

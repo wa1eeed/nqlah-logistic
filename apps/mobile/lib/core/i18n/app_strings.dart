@@ -90,6 +90,21 @@ const Map<String, Map<AppLang, String>> _catalog = {
   // ── Language picker ────────────────────────────────────────────────
   'lang.choose': {AppLang.ar: 'اختر اللغة', AppLang.en: 'Choose language', AppLang.ur: 'زبان منتخب کریں'},
 
+  // ── First run: welcome / language ──────────────────────────────────
+  'welcome.title': {AppLang.ar: 'اختر لغتك', AppLang.en: 'Choose your language', AppLang.ur: 'اپنی زبان منتخب کریں'},
+  'welcome.subtitle': {AppLang.ar: 'يمكنك تغييرها لاحقًا من حسابك', AppLang.en: 'You can change it later from your account', AppLang.ur: 'آپ اسے بعد میں اپنے اکاؤنٹ سے تبدیل کر سکتے ہیں'},
+
+  // ── First run: onboarding slides ───────────────────────────────────
+  'onboarding.skip': {AppLang.ar: 'تخطّي', AppLang.en: 'Skip', AppLang.ur: 'چھوڑیں'},
+  'onboarding.next': {AppLang.ar: 'التالي', AppLang.en: 'Next', AppLang.ur: 'اگلا'},
+  'onboarding.start': {AppLang.ar: 'ابدأ الآن', AppLang.en: 'Get started', AppLang.ur: 'شروع کریں'},
+  'onboarding.s1.title': {AppLang.ar: 'تصفّح السوق بحرّية', AppLang.en: 'Browse the marketplace freely', AppLang.ur: 'مارکیٹ آزادانہ دیکھیں'},
+  'onboarding.s1.body': {AppLang.ar: 'استعرض الحمولات والناقلين المتاحين قبل أي التزام.', AppLang.en: 'Explore available loads and carriers before you commit.', AppLang.ur: 'کمٹمنٹ سے پہلے دستیاب لوڈز اور کیریئرز دیکھیں۔'},
+  'onboarding.s2.title': {AppLang.ar: 'أسعار وعروض شفّافة', AppLang.en: 'Clear pricing & offers', AppLang.ur: 'شفاف قیمتیں اور آفرز'},
+  'onboarding.s2.body': {AppLang.ar: 'قارن عروض المزوّدين واختر الأنسب لرحلتك.', AppLang.en: 'Compare carrier offers and pick what fits your trip.', AppLang.ur: 'کیریئرز کی آفرز کا موازنہ کریں اور اپنے سفر کے لیے منتخب کریں۔'},
+  'onboarding.s3.title': {AppLang.ar: 'سجّل فقط عند الحجز', AppLang.en: 'Sign in only to book', AppLang.ur: 'صرف بکنگ پر سائن اِن'},
+  'onboarding.s3.body': {AppLang.ar: 'تصفّح دون حساب؛ ويُطلب الدخول فقط لإتمام طلب أو إضافة حمولة.', AppLang.en: 'Browse without an account; sign in only to place an order or add a load.', AppLang.ur: 'بغیر اکاؤنٹ دیکھیں؛ آرڈر یا لوڈ مکمل کرنے کے لیے ہی سائن اِن کریں۔'},
+
   // ── Login / onboarding ─────────────────────────────────────────────
   'login.welcome': {AppLang.ar: 'أهلًا بك', AppLang.en: 'Welcome', AppLang.ur: 'خوش آمدید'},
   'login.subtitle': {AppLang.ar: 'حساب واحد للعملاء والمزوّدين والسائقين', AppLang.en: 'One account for clients, carriers and drivers', AppLang.ur: 'کلائنٹس، کیریئرز اور ڈرائیورز کے لیے ایک اکاؤنٹ'},
