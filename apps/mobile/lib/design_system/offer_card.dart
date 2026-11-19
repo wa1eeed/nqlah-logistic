@@ -5,6 +5,7 @@ import '../core/theme/typography.dart';
 import '../core/widgets/ltr.dart';
 import '../core/widgets/nq_icon.dart';
 import 'button.dart';
+import '../core/widgets/currency_symbol.dart';
 
 /// An offer card in the compare list (handoff 4f). Provider public profile +
 /// price + masked phone (pre-acceptance) + accept / chat actions. The best
@@ -155,7 +156,7 @@ class NqOfferCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Ltr(price, style: NqType.price(size: 22).copyWith(color: c.tx)),
-          Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
+          CurrencySymbol(style: NqType.caption.copyWith(color: c.tx2)),
         ],
       );
 

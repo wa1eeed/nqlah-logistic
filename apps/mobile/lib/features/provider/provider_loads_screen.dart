@@ -18,6 +18,7 @@ import '../../design_system/chip.dart';
 import '../../design_system/confirm_dialog.dart';
 import '../../design_system/load_card.dart';
 import '../../design_system/segmented.dart';
+import '../../core/widgets/currency_symbol.dart';
 
 const _collectionLabels = {
   'COD': 'الدفع عند التسليم',
@@ -364,7 +365,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
             Ltr(price.toStringAsFixed(0),
                 style: NqType.price(size: 20).copyWith(color: c.tx)),
             const SizedBox(width: 3),
-            Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
+            CurrencySymbol(style: NqType.caption.copyWith(color: c.tx2)),
             const Spacer(),
             Text(o.isFixedPrice ? 'السعر الثابت للعميل' : 'ميزانية العميل',
                 style: NqType.label.copyWith(color: c.tx2)),
@@ -872,7 +873,7 @@ class _BidSheetState extends State<_BidSheet> {
               ),
               child: Row(
                 children: [
-                  Text('⃁', style: NqType.label.copyWith(color: c.tx2)),
+                  CurrencySymbol(style: NqType.label.copyWith(color: c.tx2)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextField(

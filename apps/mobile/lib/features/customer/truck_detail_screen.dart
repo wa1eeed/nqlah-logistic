@@ -10,6 +10,7 @@ import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 import '../../design_system/party_card.dart';
+import '../../core/widgets/currency_symbol.dart';
 
 /// Available-truck detail + direct request (Addendum-01 6b). Driven by a
 /// [TruckListing] from the marketplace; the CTA opens the create-order wizard
@@ -303,7 +304,7 @@ class TruckDetailScreen extends ConsumerWidget {
                 Ltr(_fmtNum(t.pricePerTrip!),
                     style: NqType.price(size: 19).copyWith(color: c.tx)),
                 const SizedBox(width: 3),
-                Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
+                CurrencySymbol(style: NqType.caption.copyWith(color: c.tx2)),
               ] else
                 Text('السعر بعد الطلب',
                     style: NqType.bodyStrong.copyWith(color: c.tx)),

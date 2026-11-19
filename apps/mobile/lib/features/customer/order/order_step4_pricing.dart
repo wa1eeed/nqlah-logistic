@@ -9,6 +9,7 @@ import '../../../design_system/chip.dart';
 import '../../../design_system/segmented.dart';
 import 'order_validation.dart';
 import 'order_wizard_scaffold.dart';
+import '../../../core/widgets/currency_symbol.dart';
 
 /// Create-order step 4/6 — pricing & visibility (handoff 4c).
 class OrderStep4Pricing extends ConsumerStatefulWidget {
@@ -255,7 +256,7 @@ class _OrderStep4PricingState extends ConsumerState<OrderStep4Pricing> {
           ),
           child: Row(
             children: [
-              Text('⃁', style: NqType.label.copyWith(color: c.tx2)),
+              CurrencySymbol(style: NqType.label.copyWith(color: c.tx2)),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(

@@ -8,6 +8,7 @@ import '../../design_system/button.dart';
 import '../../design_system/chip.dart';
 import '../../design_system/segmented.dart';
 import '../../design_system/status_chip.dart';
+import '../../core/widgets/currency_symbol.dart';
 
 /// Phase-0 design-system gallery: a living version of the
 /// `00-design-system-sheet.png` to verify tokens + core components render
@@ -45,7 +46,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
           Row(children: [
             Ltr('2,898.00', style: NqType.price(size: 24).copyWith(color: c.tx)),
             const SizedBox(width: 6),
-            Text('⃁', style: NqType.label.copyWith(color: c.tx2)),
+            CurrencySymbol(style: NqType.label.copyWith(color: c.tx2)),
           ]),
           Ltr('NQ-24-08812 · TGHU 771392-0', style: NqType.code().copyWith(color: c.tx)),
           const SizedBox(height: NqSpace.x6),

@@ -13,6 +13,7 @@ import '../../core/uploads/uploads_repository.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../core/widgets/currency_symbol.dart';
 
 /// Cash-on-delivery payment instructions for the client. Shows how to pay per
 /// the carrier's choice — cash to the driver, or a bank transfer to the
@@ -92,7 +93,7 @@ class _CodInstructionsCardState extends ConsumerState<CodInstructionsCard> {
                 Ltr(money(amount, decimals: 0),
                     style: NqType.price(size: 18).copyWith(color: c.tx)),
                 const SizedBox(width: 3),
-                Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
+                CurrencySymbol(style: NqType.caption.copyWith(color: c.tx2)),
               ]),
           ]),
           const SizedBox(height: 12),
