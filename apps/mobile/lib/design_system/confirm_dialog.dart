@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/tokens.dart';
 import '../core/theme/typography.dart';
 import '../core/widgets/nq_icon.dart';
+import '../core/widgets/riyal_text.dart';
 
 /// Shared confirmation dialog for every consequential in-app action. It asks the
 /// user before proceeding and **explains what will happen**, for a premium,
@@ -51,7 +52,7 @@ Future<bool> nqConfirm(
           ],
         ],
       ),
-      content: Text(message,
+      content: RiyalText(message,
           style: NqType.body.copyWith(color: c.tx2, height: 1.6),
           textAlign: TextAlign.right),
       actionsAlignment: MainAxisAlignment.spaceBetween,

@@ -10,6 +10,7 @@ import '../../core/platform/format.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
+import '../../core/widgets/riyal_text.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/availability_card.dart' show MetaItem;
 import '../../design_system/empty_state.dart';
@@ -202,7 +203,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
                         color: c.sf2,
                         borderRadius: BorderRadius.circular(NqRadius.input),
                       ),
-                      child: Text(
+                      child: RiyalText(
                           'عرضك الحالي: ${mine.amount?.toStringAsFixed(0) ?? '—'} ⃁',
                           style: NqType.label.copyWith(color: c.tx2),
                           textAlign: TextAlign.center),
@@ -230,7 +231,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
                     color: c.sf2,
                     borderRadius: BorderRadius.circular(NqRadius.input),
                   ),
-                  child: Text(
+                  child: RiyalText(
                       'سبق أن قبلت هذا الطلب بمبلغ ${mine.amount?.toStringAsFixed(0) ?? '—'} ⃁.',
                       style: NqType.label.copyWith(color: c.tx2),
                       textAlign: TextAlign.center),
@@ -576,7 +577,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
 
   void _alreadyBid(BidRef mine) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
+        content: RiyalText(
             'سبق أن قدّمت عرضًا بمبلغ ${mine.amount?.toStringAsFixed(0) ?? '—'} ⃁.')));
   }
 

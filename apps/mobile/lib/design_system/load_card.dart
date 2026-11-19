@@ -8,6 +8,7 @@ import 'availability_card.dart' show MetaItem;
 import 'button.dart';
 import 'pressable.dart';
 import '../core/widgets/currency_symbol.dart';
+import '../core/widgets/riyal_text.dart';
 
 /// A marketplace load card (handoff 1f). Fixed-price variant: pricing tag,
 /// route strip, 2×2 meta grid, perforation, price + accept. Tender variant:
@@ -156,7 +157,7 @@ class NqLoadCard extends StatelessWidget {
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               alignment: AlignmentDirectional.centerEnd,
-                              child: Text(myBidText!,
+                              child: RiyalText(myBidText!,
                                   style: NqType.caption
                                       .copyWith(color: c.mintTx, fontWeight: FontWeight.w600),
                                   maxLines: 1),

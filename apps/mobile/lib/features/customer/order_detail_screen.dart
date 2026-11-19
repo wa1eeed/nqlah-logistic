@@ -8,6 +8,7 @@ import '../../core/orders/orders_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
+import '../../core/widgets/riyal_text.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/confirm_dialog.dart';
 import '../../design_system/party_card.dart';
@@ -445,10 +446,11 @@ class OrderDetailScreen extends ConsumerWidget {
             )
           : Row(
               children: [
-                Ltr(
+                RiyalText(
                     o.clientBudget != null
                         ? '${o.clientBudget!.toStringAsFixed(0)} ⃁'
                         : 'مفتوح للعروض',
+                    ltr: true,
                     style: NqType.numeric(16, FontWeight.w700).copyWith(color: c.tx)),
                 const Spacer(),
                 Text(o.clientBudget != null ? 'الميزانية التقديرية' : 'السعر',
