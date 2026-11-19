@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import useSWR from 'swr';
 import {
-  Apple, ArrowDown, ArrowUp, Image as ImageIcon, Loader2, Plus, Smartphone, Trash2, Upload,
+  Apple, ArrowDown, ArrowUp, Flag, Image as ImageIcon, Loader2, Plus, Smartphone, Trash2, Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,6 +67,7 @@ export function AppSettingsPanel() {
 
   return (
     <div className="space-y-6">
+      <FeatureFlagsCard />
       <VersionOverviewCard config={data} mutate={mutate} />
       <SplashCard config={data} mutate={mutate} />
       <OnboardingCard config={data} mutate={mutate} />
@@ -76,6 +77,84 @@ export function AppSettingsPanel() {
 }
 
 type SectionProps = { config: AppConfig; mutate: () => Promise<unknown> };
+
+// ─── Feature flags ────────────────────────────────────────────────────
+interface FeatureFlagDef {
+  key: string;
+  labelAr: string; labelEn: string;
+  descAr: string; descEn: string;
+  default: boolean;
+}
+interface FeatureFlagsData { defs: FeatureFlagDef[]; values: Record<string, boolean> }
+
+/**
+ * Server-driven feature flags. Toggling a flag PUTs /settings/app `{ flags }`
+ * and takes effect for every client on their next GET /settings/app — no app
+ * store update. Labels/defaults come from the API registry (GET
+ * /settings/feature-flags).
+ */
+function FeatureFlagsCard() {
+  const locale = useLocale();
+  const ar = locale !== 'en';
+  const { data, mutate, isLoading } = useSWR<FeatureFlagsData>('/settings/feature-flags', fetcher);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  async function toggle(key: string, value: boolean) {
+    setSaving(key);
+    try {
+      await api.put('/settings/app', { flags: { [key]: value } });
+      await mutate();
+      notify.success(ar ? 'تم تحديث العلم' : 'Flag updated');
+    } catch (err) {
+      notify.error(err, ar ? 'تعذّر الحفظ' : 'Save failed');
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Flag className="h-4 w-4" />
+          {ar ? 'أعلام الميزات' : 'Feature flags'}
+        </CardTitle>
+        <CardDescription>
+          {ar
+            ? 'فعّل أو عطّل ميزات التطبيق فورًا لجميع المستخدمين دون تحديث من المتجر.'
+            : 'Turn app features on or off for everyone instantly — no app-store update.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading || !data ? (
+          <div className="flex justify-center py-6 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
+        ) : (
+          <div className="divide-y divide-border/50">
+            {data.defs.map((def) => (
+              <div key={def.key} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">{ar ? def.labelAr : def.labelEn}</span>
+                    <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px] text-muted-foreground">{def.key}</code>
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{ar ? def.descAr : def.descEn}</p>
+                </div>
+                <Switch
+                  checked={data.values[def.key] ?? def.default}
+                  disabled={saving === def.key}
+                  onCheckedChange={(c) => toggle(def.key, c)}
+                  aria-label={ar ? def.labelAr : def.labelEn}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 // ─── Version overview ─────────────────────────────────────────────────
 function VersionOverviewCard({ config, mutate }: SectionProps) {
