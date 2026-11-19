@@ -32,9 +32,16 @@ export class R2StorageConnector implements StorageConnector, OnModuleInit {
       useSSL = u.protocol === 'https:';
       port = u.port ? Number(u.port) : useSSL ? 443 : 80;
     } catch {
+      // Unconfigured — this only happens when R2 is NOT the active provider
+      // (e.g. local dev on MinIO), since env validation requires R2_ENDPOINT
+      // whenever STORAGE_PROVIDER="r2". Don't construct the S3 client with an
+      // empty endpoint: the MinIO client throws on that and would crash boot
+      // even though this connector is inactive. Leave it unset; it is never
+      // called unless R2 is the active provider (and then it is configured).
       this.logger.warn(
-        `R2_ENDPOINT is missing or invalid ("${endpoint}") — the R2 connector will fail until it is configured.`,
+        `R2_ENDPOINT is missing or invalid ("${endpoint}") — the R2 connector is inactive and will error if used.`,
       );
+      return;
     }
     this.client = new MinioClient({
       endPoint, // R2 S3 API host (bucket addressed path-style)
