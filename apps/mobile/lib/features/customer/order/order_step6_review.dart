@@ -9,6 +9,7 @@ import '../../../core/theme/typography.dart';
 import '../../../core/widgets/ltr.dart';
 import '../../../core/widgets/nq_icon.dart';
 import 'order_wizard_scaffold.dart';
+import '../../../core/widgets/currency_symbol.dart';
 
 /// Create-order step 6/6 — review & publish (handoff 4e). Builds the single
 /// order from the draft and POSTs + publishes it.
@@ -190,7 +191,7 @@ class _OrderStep6ReviewState extends ConsumerState<OrderStep6Review> {
               Ltr(d.clientBudget!.toStringAsFixed(0),
                   style: NqType.price(size: 20).copyWith(color: c.tx)),
               const SizedBox(width: 3),
-              Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
+              CurrencySymbol(style: NqType.caption.copyWith(color: c.tx2)),
             ])
           else
             Text('عروض المزوّدين',

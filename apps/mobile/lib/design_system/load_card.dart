@@ -7,6 +7,7 @@ import '../core/widgets/nq_icon.dart';
 import 'availability_card.dart' show MetaItem;
 import 'button.dart';
 import 'pressable.dart';
+import '../core/widgets/currency_symbol.dart';
 
 /// A marketplace load card (handoff 1f). Fixed-price variant: pricing tag,
 /// route strip, 2×2 meta grid, perforation, price + accept. Tender variant:
@@ -105,7 +106,7 @@ class NqLoadCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 3),
-                        Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
+                        CurrencySymbol(style: NqType.caption.copyWith(color: c.tx2)),
                       ]),
                     ),
                   ],

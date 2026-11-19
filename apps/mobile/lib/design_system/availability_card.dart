@@ -6,6 +6,7 @@ import '../core/widgets/ltr.dart';
 import '../core/widgets/nq_icon.dart';
 import 'pressable.dart';
 import 'waybill_card.dart' show RoutePoint;
+import '../core/widgets/currency_symbol.dart';
 
 class MetaItem {
   const MetaItem(this.icon, this.text, {this.ltr = false});
@@ -218,7 +219,7 @@ class NqAvailabilityCard extends StatelessWidget {
               Row(children: [
                 Ltr(price!, style: NqType.price(size: 17).copyWith(color: c.tx)),
                 const SizedBox(width: 3),
-                Text('⃁', style: NqType.caption.copyWith(color: c.tx2)),
+                CurrencySymbol(style: NqType.caption.copyWith(color: c.tx2)),
               ]),
             ],
           )
