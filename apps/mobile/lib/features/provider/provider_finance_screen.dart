@@ -12,6 +12,7 @@ import '../../core/widgets/currency_symbol.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/segmented.dart';
+import '../../design_system/empty_state.dart';
 
 /// Provider finance (handoff 3h) — receivables, wired to `GET /invoices`.
 class ProviderFinanceScreen extends ConsumerStatefulWidget {
@@ -205,14 +206,9 @@ class _ProviderFinanceScreenState extends ConsumerState<ProviderFinanceScreen> {
 
   Widget _list(NqColors c, List<InvoiceModel> items) {
     if (items.isEmpty) {
-      return _centered(Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NqIcon(NqIcons.wallet, size: 40, color: c.tx3),
-          const SizedBox(height: 12),
-          Text(_seg == 0 ? 'لا مستحقات' : 'لا مدفوعات',
-              style: NqType.h3.copyWith(color: c.tx2)),
-        ],
+      return _centered(NqEmptyState(
+        icon: NqIcons.wallet,
+        title: _seg == 0 ? 'لا مستحقات' : 'لا مدفوعات',
       ));
     }
     return ListView.separated(

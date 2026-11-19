@@ -8,6 +8,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/availability_card.dart';
+import '../../design_system/empty_state.dart';
 import '../../design_system/button.dart';
 import '../../design_system/chip.dart';
 import '../../design_system/waybill_card.dart' show RoutePoint;
@@ -452,20 +453,11 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState();
   @override
   Widget build(BuildContext context) {
-    final c = context.nq;
-    return _CenterFill(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NqIcon(NqIcons.truck, size: 40, color: c.tx3),
-          const SizedBox(height: 12),
-          Text('لا توجد شاحنات متاحة لهذا المسار',
-              style: NqType.bodyStrong.copyWith(color: c.tx)),
-          const SizedBox(height: 4),
-          Text('اسحب للتحديث · تظهر هنا الشاحنات الخاملة المنشورة',
-              style: NqType.caption.copyWith(color: c.tx2),
-              textAlign: TextAlign.center),
-        ],
+    return const _CenterFill(
+      child: NqEmptyState(
+        icon: NqIcons.truck,
+        title: 'لا توجد شاحنات متاحة لهذا المسار',
+        message: 'اسحب للتحديث · تظهر هنا الشاحنات الخاملة المنشورة',
       ),
     );
   }

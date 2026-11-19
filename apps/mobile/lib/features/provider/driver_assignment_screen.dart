@@ -10,6 +10,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../design_system/empty_state.dart';
 import '../../design_system/confirm_dialog.dart';
 
 /// Driver assignment (handoff 1h). Single-select an available driver for an
@@ -126,18 +127,10 @@ class _DriverAssignmentScreenState
   Widget _driversList(NqColors c, List<DriverModel> drivers) {
     final items = _filtered(drivers);
     if (items.isEmpty) {
-      return _pad(Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NqIcon(NqIcons.steeringWheel, size: 40, color: c.tx3),
-          const SizedBox(height: 12),
-          Text(_query.isNotEmpty ? 'لا سائق مطابق' : 'لا يوجد سائقون متاحون',
-              style: NqType.h3.copyWith(color: c.tx2)),
-          const SizedBox(height: 6),
-          Text('أضِف سائقًا أو حرّر سائقًا من رحلة حالية',
-              style: NqType.body.copyWith(color: c.tx3),
-              textAlign: TextAlign.center),
-        ],
+      return _pad(NqEmptyState(
+        icon: NqIcons.steeringWheel,
+        title: _query.isNotEmpty ? 'لا سائق مطابق' : 'لا يوجد سائقون متاحون',
+        message: 'أضِف سائقًا أو حرّر سائقًا من رحلة حالية',
       ));
     }
     return Column(

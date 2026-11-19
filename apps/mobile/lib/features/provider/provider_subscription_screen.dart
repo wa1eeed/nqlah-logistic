@@ -7,6 +7,7 @@ import '../../core/platform/format.dart';
 import '../../core/subscription/subscription_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
+import '../../design_system/empty_state.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 
@@ -158,21 +159,11 @@ class ProviderSubscriptionScreen extends ConsumerWidget {
     ];
   }
 
-  Widget _noSubscription(BuildContext context, NqColors c) => Padding(
-        padding: const EdgeInsets.only(top: 60),
-        child: Column(
-          children: [
-            NqIcon(NqIcons.sealCheck, size: 44, color: c.tx3),
-            const SizedBox(height: 14),
-            Text('لا يوجد اشتراك فعّال',
-                style: NqType.h2.copyWith(color: c.tx), textAlign: TextAlign.center),
-            const SizedBox(height: 6),
-            Text('اختر باقة لتفعيل عضويتك والوصول إلى وحدات المزوّد.',
-                style: NqType.body.copyWith(color: c.tx2), textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            _primaryButton(c, 'اختيار باقة', () => context.push('/register/plan')),
-          ],
-        ),
+  Widget _noSubscription(BuildContext context, NqColors c) => NqEmptyState(
+        icon: NqIcons.sealCheck,
+        title: 'لا يوجد اشتراك فعّال',
+        message: 'اختر باقة لتفعيل عضويتك والوصول إلى وحدات المزوّد.',
+        action: _primaryButton(c, 'اختيار باقة', () => context.push('/register/plan')),
       );
 
   Future<void> _confirmCancel(BuildContext context, WidgetRef ref, NqColors c) async {

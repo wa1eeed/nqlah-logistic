@@ -7,6 +7,7 @@ import '../../core/fleet/fleet_repository.dart';
 import '../../core/subscription/subscription_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
+import '../../design_system/empty_state.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 
@@ -98,19 +99,10 @@ class ProviderMaintenanceHubScreen extends ConsumerWidget {
         ),
       );
 
-  Widget _empty(NqColors c) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            NqIcon(NqIcons.wrench, size: 40, color: c.tx3),
-            const SizedBox(height: 12),
-            Text('لا توجد شاحنات بعد',
-                style: NqType.h2.copyWith(color: c.tx)),
-            const SizedBox(height: 6),
-            Text('أضف شاحنة إلى أسطولك لإدارة صيانتها.',
-                style: NqType.body.copyWith(color: c.tx2), textAlign: TextAlign.center),
-          ],
-        ),
+  Widget _empty(NqColors c) => const NqEmptyState(
+        icon: NqIcons.wrench,
+        title: 'لا توجد شاحنات بعد',
+        message: 'أضف شاحنة إلى أسطولك لإدارة صيانتها.',
       );
 
   Widget _truckRow(BuildContext context, NqColors c, TruckModel t) {

@@ -12,6 +12,7 @@ import '../../core/widgets/currency_symbol.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/segmented.dart';
+import '../../design_system/empty_state.dart';
 
 /// Customer finance (handoff 4h) — what the customer owes providers, wired to
 /// `GET /invoices`. Direct-pay: report a payment, provider confirms.
@@ -116,16 +117,9 @@ class _CustomerFinanceScreenState extends ConsumerState<CustomerFinanceScreen> {
           ...children,
           SizedBox(
             height: 240,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  NqIcon(NqIcons.wallet, size: 40, color: c.tx3),
-                  const SizedBox(height: 12),
-                  Text(_seg == 0 ? 'لا فواتير مستحقة' : 'لا فواتير مدفوعة',
-                      style: NqType.h3.copyWith(color: c.tx2)),
-                ],
-              ),
+            child: NqEmptyState(
+              icon: NqIcons.wallet,
+              title: _seg == 0 ? 'لا فواتير مستحقة' : 'لا فواتير مدفوعة',
             ),
           ),
         ],

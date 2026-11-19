@@ -9,6 +9,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/segmented.dart';
+import '../../design_system/empty_state.dart';
 import '../../design_system/shipment_card.dart';
 import '../../design_system/status_chip.dart';
 
@@ -269,23 +270,15 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.nq;
     final (icon, title) = switch (bucket) {
       ShipmentBucket.active => (NqIcons.truck, 'لا توجد شحنات نشطة'),
       ShipmentBucket.drafts => (NqIcons.notePencil, 'لا توجد مسودات'),
       ShipmentBucket.completed => (NqIcons.sealCheck, 'لا توجد شحنات مكتملة'),
     };
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        NqIcon(icon, size: 40, color: c.tx3),
-        const SizedBox(height: 12),
-        Text(hasQuery ? 'لا نتائج مطابقة' : title,
-            style: NqType.h3.copyWith(color: c.tx2)),
-        const SizedBox(height: 6),
-        Text(hasQuery ? 'جرّب كلمة بحث أخرى' : 'ستظهر شحناتك هنا',
-            style: NqType.body.copyWith(color: c.tx3)),
-      ],
+    return NqEmptyState(
+      icon: icon,
+      title: hasQuery ? 'لا نتائج مطابقة' : title,
+      message: hasQuery ? 'جرّب كلمة بحث أخرى' : 'ستظهر شحناتك هنا',
     );
   }
 }

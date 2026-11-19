@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/chat/conversations_repository.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
+import '../../design_system/empty_state.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 
@@ -148,16 +149,9 @@ class ConversationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _emptyState(NqColors c) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            NqIcon(NqIcons.chats, size: 32, color: c.tx3),
-            const SizedBox(height: 12),
-            Text('لا توجد محادثات',
-                style: NqType.body.copyWith(color: c.tx2)),
-          ],
-        ),
+  Widget _emptyState(NqColors c) => const NqEmptyState(
+        icon: NqIcons.chats,
+        title: 'لا توجد محادثات',
       );
 
   Widget _errorState(NqColors c, WidgetRef ref) => Center(

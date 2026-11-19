@@ -9,6 +9,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
+import '../../design_system/empty_state.dart';
 import '../../design_system/segmented.dart';
 
 /// Employed-driver home — my trips (handoff 5a), wired to `GET /driver/jobs` +
@@ -123,17 +124,11 @@ class _DriverMyTripsScreenState extends ConsumerState<DriverMyTripsScreen> {
   Widget _list(NqColors c, List<DriverJob> jobs) {
     final items = _bucket(jobs, _seg);
     if (items.isEmpty) {
-      return _centered(Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NqIcon(NqIcons.path, size: 40, color: c.tx3),
-          const SizedBox(height: 12),
-          Text(
-              _seg == 0
-                  ? 'لا تكاليف جديدة'
-                  : (_seg == 1 ? 'لا رحلات قادمة' : 'لا رحلات مكتملة'),
-              style: NqType.h3.copyWith(color: c.tx2)),
-        ],
+      return _centered(NqEmptyState(
+        icon: NqIcons.path,
+        title: _seg == 0
+            ? 'لا تكاليف جديدة'
+            : (_seg == 1 ? 'لا رحلات قادمة' : 'لا رحلات مكتملة'),
       ));
     }
     return ListView.separated(
