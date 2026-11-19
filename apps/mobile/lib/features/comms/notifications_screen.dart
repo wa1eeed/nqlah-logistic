@@ -8,6 +8,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/chip.dart';
+import '../../design_system/empty_state.dart';
 
 /// In-app notifications (handoff 5b) — role-agnostic, wired to
 /// `GET /notifications`. Tapping a notification marks it read and, when it
@@ -236,16 +237,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     );
   }
 
-  Widget _emptyState(NqColors c) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            NqIcon(NqIcons.bell, size: 32, color: c.tx3),
-            const SizedBox(height: 12),
-            Text('لا توجد إشعارات',
-                style: NqType.body.copyWith(color: c.tx2)),
-          ],
-        ),
+  Widget _emptyState(NqColors c) => const NqEmptyState(
+        icon: NqIcons.bell,
+        title: 'لا توجد إشعارات',
       );
 
   Widget _errorState(NqColors c) => Center(

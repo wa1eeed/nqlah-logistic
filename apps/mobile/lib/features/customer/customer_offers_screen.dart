@@ -11,6 +11,7 @@ import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../core/platform/format.dart';
 import '../../design_system/chip.dart';
+import '../../design_system/empty_state.dart';
 import '../../design_system/confirm_dialog.dart';
 import '../../design_system/offer_card.dart';
 
@@ -114,16 +115,10 @@ class _CustomerOffersScreenState extends ConsumerState<CustomerOffersScreen> {
       return (a.amount ?? 0).compareTo(b.amount ?? 0);
     });
     if (bids.isEmpty) {
-      return _centered(Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NqIcon(NqIcons.handCoins, size: 40, color: c.tx3),
-          const SizedBox(height: 12),
-          Text('لا توجد عروض بعد', style: NqType.h3.copyWith(color: c.tx2)),
-          const SizedBox(height: 6),
-          Text('سيصلك إشعار عند وصول أول عرض',
-              style: NqType.body.copyWith(color: c.tx3)),
-        ],
+      return _centered(const NqEmptyState(
+        icon: NqIcons.handCoins,
+        title: 'لا توجد عروض بعد',
+        message: 'سيصلك إشعار عند وصول أول عرض',
       ));
     }
     // Cheapest is "best" regardless of the current sort.
@@ -235,23 +230,11 @@ class _CustomerOffersScreenState extends ConsumerState<CustomerOffersScreen> {
         child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
       );
 
-  Widget _emptyState(NqColors c) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NqIcon(NqIcons.handCoins, size: 44, color: c.tx3),
-          const SizedBox(height: 12),
-          Text('لا توجد عروض حالياً', style: NqType.h2.copyWith(color: c.tx2)),
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-                'ستظهر هنا عروض المزوّدين على طلباتك المنشورة في المناقصات.',
-                style: NqType.body.copyWith(color: c.tx3),
-                textAlign: TextAlign.center),
-          ),
-        ],
+  Widget _emptyState(NqColors c) => const NqEmptyState(
+        icon: NqIcons.handCoins,
+        title: 'لا توجد عروض حالياً',
+        message: 'ستظهر هنا عروض المزوّدين على طلباتك المنشورة في المناقصات.',
       );
-
   Widget _errorState(NqColors c, String msg, VoidCallback onRetry) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(

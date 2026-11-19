@@ -10,6 +10,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/segmented.dart';
+import '../../design_system/empty_state.dart';
 import 'fleet_detail_sheet.dart';
 import 'truck_availability_sheet.dart';
 
@@ -176,18 +177,10 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
       onRefresh: () async => ref.invalidate(myAvailabilityProvider),
       color: c.mintTx,
       child: items.isEmpty
-          ? _centered(Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                NqIcon(NqIcons.broadcast, size: 40, color: c.tx3),
-                const SizedBox(height: 12),
-                Text('لا توفّر منشور',
-                    style: NqType.h3.copyWith(color: c.tx2)),
-                const SizedBox(height: 6),
-                Text('انشر شاحنة من قائمة الشاحنات لتظهر في سوق العملاء',
-                    style: NqType.body.copyWith(color: c.tx3),
-                    textAlign: TextAlign.center),
-              ],
+          ? _centered(const NqEmptyState(
+              icon: NqIcons.broadcast,
+              title: 'لا توفّر منشور',
+              message: 'انشر شاحنة من قائمة الشاحنات لتظهر في سوق العملاء',
             ))
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -513,13 +506,9 @@ class _ProviderFleetScreenState extends ConsumerState<ProviderFleetScreen> {
         child: CircularProgressIndicator(strokeWidth: 2.5, color: c.mintTx),
       );
 
-  Widget _empty(NqColors c, String msg) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NqIcon(NqIcons.truck, size: 40, color: c.tx3),
-          const SizedBox(height: 12),
-          Text(msg, style: NqType.h3.copyWith(color: c.tx2)),
-        ],
+  Widget _empty(NqColors c, String msg) => NqEmptyState(
+        icon: NqIcons.truck,
+        title: msg,
       );
 
   Widget _errorState(NqColors c, String msg, VoidCallback onRetry) => Padding(

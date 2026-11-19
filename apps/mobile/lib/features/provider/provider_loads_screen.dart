@@ -12,6 +12,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/availability_card.dart' show MetaItem;
+import '../../design_system/empty_state.dart';
 import '../../design_system/button.dart';
 import '../../design_system/chip.dart';
 import '../../design_system/confirm_dialog.dart';
@@ -471,17 +472,10 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
 
   Widget _list(NqColors c, List<OrderSummary> loads, String? companyId) {
     if (loads.isEmpty) {
-      return _centered(Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          NqIcon(NqIcons.magnifyingGlass, size: 40, color: c.tx3),
-          const SizedBox(height: 12),
-          Text(_query.isNotEmpty ? 'لا نتائج مطابقة' : 'لا توجد أحمال متاحة',
-              style: NqType.h3.copyWith(color: c.tx2)),
-          const SizedBox(height: 6),
-          Text('اسحب للأسفل للتحديث',
-              style: NqType.body.copyWith(color: c.tx3)),
-        ],
+      return _centered(NqEmptyState(
+        icon: NqIcons.magnifyingGlass,
+        title: _query.isNotEmpty ? 'لا نتائج مطابقة' : 'لا توجد أحمال متاحة',
+        message: 'اسحب للأسفل للتحديث',
       ));
     }
     return ListView.separated(
