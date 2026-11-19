@@ -13,6 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { StatsCard } from '@/components/stats-card';
+import { PromoBanner } from '@/components/promo-banner';
+import { useFeatureFlag } from '@/lib/use-feature-flag';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
 import { Skeleton, SkeletonStatCards, SkeletonRows } from '@/components/ui/skeleton';
@@ -43,6 +45,7 @@ const item      = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 
 export default function ClientDashboard() {
   const t = useTranslations('client');
+  const promoBanner = useFeatureFlag('promoBanner');
   const { data: ordersData, isLoading } = useSWR<unknown>('/orders', fetcher);
   const all: Order[] = useMemo(() => {
     const normalized = normalizeOrderList(ordersData);
@@ -111,6 +114,9 @@ export default function ClientDashboard() {
           </Button>
         </Link>
       </motion.div>
+
+      {/* ── Promo banner (server-driven feature flag) ── */}
+      {promoBanner && <motion.div variants={item}><PromoBanner /></motion.div>}
 
       {/* ── Stats ── */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
