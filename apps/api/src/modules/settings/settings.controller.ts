@@ -105,6 +105,15 @@ export class SettingsController {
     return this.appSettings.getConfig();
   }
 
+  /** Admin-only — the feature-flag registry (definitions) + current values,
+   *  for the admin flags panel. Clients read effective values from GET /app. */
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Get('feature-flags')
+  getFeatureFlags() {
+    return this.appSettings.getFeatureFlags();
+  }
+
   /** Admin-only — edit the full app config (any subset of sections). */
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')

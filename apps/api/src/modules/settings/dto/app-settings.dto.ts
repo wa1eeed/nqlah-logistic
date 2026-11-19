@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import {
-  IsArray, IsBoolean, IsIn, IsOptional, IsString, Matches, MaxLength, ValidateNested,
+  IsArray, IsBoolean, IsIn, IsObject, IsOptional, IsString, Matches, MaxLength, ValidateNested,
 } from 'class-validator';
 
 /**
@@ -73,6 +73,9 @@ export class UpdatePolicyDto {
 
 /** Admin-only full edit payload (any subset of sections). */
 export class UpdateAppSettingsDto {
+  /** Feature-flag overrides ({ key: boolean }). Unknown keys / non-booleans are
+   *  dropped server-side against the flag registry. */
+  @IsOptional() @IsObject() flags?: Record<string, boolean>;
   @IsOptional() @ValidateNested() @Type(() => SplashDto) splash?: SplashDto;
   @IsOptional() @ValidateNested() @Type(() => OnboardingDto) onboarding?: OnboardingDto;
   @IsOptional() @ValidateNested() @Type(() => VersionsDto) versions?: VersionsDto;

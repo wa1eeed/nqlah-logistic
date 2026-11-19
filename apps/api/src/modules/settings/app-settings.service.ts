@@ -3,9 +3,15 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import type {
   UpdateAppSettingsDto, UpdateVersionsDto,
 } from './dto/app-settings.dto';
+import {
+  FEATURE_FLAGS, resolveFlags, sanitizeFlagOverrides,
+  type FeatureFlags, type FeatureFlagDef,
+} from './feature-flags';
 
 /** Assembled config shape returned by GET /settings/app. */
 export interface AppSettingsConfig {
+  /** Effective feature-flag values (registry defaults + admin overrides). */
+  flags: FeatureFlags;
   splash: {
     backgroundColor: string;
     useLogo: boolean;
@@ -43,15 +49,17 @@ export interface AppSettingsConfig {
 const K_SPLASH = 'app.splash';
 const K_ONBOARDING = 'app.onboarding';
 const K_UPDATE = 'app.update';
+const K_FLAGS = 'app.flags';
 const K_VER_IOS_LIVE = 'app.version.iosLive';
 const K_VER_IOS_TF = 'app.version.iosTestFlight';
 const K_VER_AND_LIVE = 'app.version.androidLive';
 const K_VER_AND_TF = 'app.version.androidTestFlight';
 
 const VERSION_KEYS = [K_VER_IOS_LIVE, K_VER_IOS_TF, K_VER_AND_LIVE, K_VER_AND_TF];
-const ALL_KEYS = [K_SPLASH, K_ONBOARDING, K_UPDATE, ...VERSION_KEYS];
+const ALL_KEYS = [K_SPLASH, K_ONBOARDING, K_UPDATE, K_FLAGS, ...VERSION_KEYS];
 
 const DEFAULTS: AppSettingsConfig = {
+  flags: resolveFlags(undefined),
   splash: {
     backgroundColor: '#0A2A28',
     useLogo: true,
@@ -88,6 +96,7 @@ export class AppSettingsService {
     );
 
     return {
+      flags: resolveFlags(parseJson<Record<string, unknown>>(map[K_FLAGS], {})),
       splash: parseJson(map[K_SPLASH], DEFAULTS.splash),
       // parseJson merges top-level keys; re-normalise slides to an array.
       onboarding: {
@@ -103,6 +112,13 @@ export class AppSettingsService {
       },
       update: parseJson(map[K_UPDATE], DEFAULTS.update),
     };
+  }
+
+  /** Feature-flag registry (definitions) + current effective values, for the
+   *  admin flags panel. */
+  async getFeatureFlags(): Promise<{ defs: readonly FeatureFlagDef[]; values: FeatureFlags }> {
+    const config = await this.getConfig();
+    return { defs: FEATURE_FLAGS, values: config.flags };
   }
 
   /** Upsert one Setting row (category "app"). */
@@ -121,6 +137,12 @@ export class AppSettingsService {
   async updateConfig(dto: UpdateAppSettingsDto): Promise<AppSettingsConfig> {
     const current = await this.getConfig();
 
+    if (dto.flags) {
+      const row = await this.prisma.setting.findUnique({ where: { key: K_FLAGS } });
+      const stored = parseJson<Record<string, unknown>>(row?.value, {});
+      const merged = { ...sanitizeFlagOverrides(stored), ...sanitizeFlagOverrides(dto.flags) };
+      await this.put(K_FLAGS, JSON.stringify(merged));
+    }
     if (dto.splash) {
       await this.put(K_SPLASH, JSON.stringify({ ...current.splash, ...dto.splash }));
     }
