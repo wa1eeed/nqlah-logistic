@@ -433,7 +433,7 @@ canTransition(from, to, actor)     → boolean
 | **Rate Limiting** | Global 100/min + `@Throttle` per-endpoint (login/register/OTP/uploads) |
 | **Password** | `IsStrongPassword` — 8+ chars + upper + lower + digit + symbol — bcrypt 12 |
 | **File Uploads** | Magic-byte validation (JPG/PNG/PDF/XLSX) + 10MB cap + filename sanitization |
-| **CORS** | Allowlist صارمة (لا wildcard) — `localhost` للتطوير + `naqla.sa` و `*.naqla.sa` للإنتاج |
+| **CORS** | Allowlist صارمة (لا wildcard) — `localhost` للتطوير + `nqlah.online` و `*.nqlah.online` للإنتاج |
 | **Helmet** | HSTS، CSP، X-Frame-Options=DENY، nosniff، Referrer-Policy، COOP/CORP |
 | **Validation** | `whitelist + forbidNonWhitelisted + transform` على كل DTO |
 | **Audit Log** | Decorator `@Audit` + Interceptor تلقائي، redaction للـ secrets |
@@ -798,8 +798,8 @@ update() { ... }
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Development  →  .env.development  →  localhost:4000        │
-│  Staging      →  .env.staging      →  api.staging.naqla.sa  │
-│  Production   →  .env.production   →  api.naqla.sa          │
+│  Staging      →  .env.staging      →  api.staging.nqlah.online  │
+│  Production   →  .env.production   →  api.nqlah.online          │
 └─────────────────────────────────────────────────────────────┘
                           │
                           ▼

@@ -12,7 +12,7 @@ built** — structure, decisions, and per-phase status.
 
 ## Backend integration (`core/api/`, `core/auth/`)
 The app talks to the NestJS API (`/api` prefix). Base URL defaults to staging
-(`https://nqlah.nx.sa/api`) and is overridable per run:
+(`https://nqlah.online/api`) and is overridable per run:
 ```
 flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api
 ```

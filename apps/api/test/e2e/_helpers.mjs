@@ -9,9 +9,9 @@ export const BASE = process.env.E2E_BASE ?? 'http://localhost:4000/api';
 
 /** Seeded demo accounts (see apps/api/prisma/seed.ts). */
 export const ACCOUNTS = {
-  admin: { email: 'admin@naqla.sa', password: 'Admin@1234' },
-  client: { phoneOrEmail: 'client@naqla.sa', password: 'Client@1234' },
-  carrier: { phoneOrEmail: 'carrier@naqla.sa', password: 'Carrier@1234' },
+  admin: { email: 'admin@nqlah.online', password: 'Admin@1234' },
+  client: { phoneOrEmail: 'client@nqlah.online', password: 'Client@1234' },
+  carrier: { phoneOrEmail: 'carrier@nqlah.online', password: 'Carrier@1234' },
 };
 
 /** A tiny HTTP helper returning { status, data }. */

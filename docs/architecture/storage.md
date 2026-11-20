@@ -27,9 +27,14 @@
 
 | البيئة | المزوّد | bucket خاص | bucket عام (الشعارات) |
 |---|---|---|---|
-| **production** | Cloudflare R2 | `nqlah-prod` | `nqlah-prod-public` |
-| **staging** | Cloudflare R2 | `nqlah-staging` | `nqlah-staging-public` |
-| **development** | Cloudflare R2 (أو MinIO محلي) | `nqlah-dev` | `nqlah-dev` (نفسه محليًا) |
+| **production** | **MinIO** (الحالي) — الترحيل إلى Cloudflare R2 مؤجّل لما بعد الإطلاق | `naqla-staging` | نفسه |
+| **staging** | Cloudflare R2 (مُخطّط عند بناء staging) | `nqlah-staging` | `nqlah-staging-public` |
+| **development** | MinIO محلي عبر Docker | `nqlah-dev` | `nqlah-dev` (نفسه محليًا) |
+
+> **ملاحظة الإطلاق:** للإطلاق السريع، الإنتاج يعمل على **MinIO** (`STORAGE_PROVIDER=minio`,
+> bucket `naqla-staging` — يحمل الملفات الحالية). الانتقال إلى **Cloudflare R2** (bucketان
+> منفصلان خاص/عام + نطاق `storage.nqlah.online`) مهمة مستقلّة لما بعد الإطلاق؛ الأقسام
+> أدناه تصف بنية R2 المستهدفة.
 
 **bucketان لكل بيئة** — وهذا **ضروري للأمان**: الوصول العام في R2 يكون على مستوى
 الـ bucket كامل (لا مجلد)، فلا يمكن كشف الشعارات علنًا وإبقاء مستندات KYC سرّية
@@ -184,7 +189,7 @@ companies/cmp_abc123/kyc/CR/2026-11-02T0130Z-7f3a9c2e.pdf
 ## 8. الخدمة العامة والـ CDN (الشعارات)
 
 - شعارات المنصّة تحت `branding/` وتُخدَم عبر **نطاق مخصّص** مربوط بالـ bucket
-  (`storage.nqlah.nx.sa`) خلف **CDN كلاودفلير**، مع ترويسات كاش طويلة
+  (`storage.nqlah.online`) خلف **CDN كلاودفلير**، مع ترويسات كاش طويلة
   (`Cache-Control: public, max-age=31536000, immutable` — يُدعم ذلك باسم ملف
   جديد عند كل تغيير شعار، busting تلقائي).
 - **شعار افتراضي مُضمَّن** في التطبيق والويب (fallback) لأول تحميل أو عند انقطاع
@@ -205,7 +210,7 @@ R2_SECRET_KEY=<r2-secret>
 R2_BUCKET=nqlah-prod                       # الحاوية الخاصة (KYC/محادثة/صور)
 R2_PUBLIC_BUCKET=nqlah-prod-public         # حاوية الشعارات العامة (منفصلة)
 R2_REGION=auto                             # R2 يتجاهل المنطقة؛ الموقّع يحتاجها
-R2_PUBLIC_URL=https://storage.nqlah.nx.sa  # النطاق العام للحاوية العامة (branding)
+R2_PUBLIC_URL=https://storage.nqlah.online  # النطاق العام للحاوية العامة (branding)
 ```
 > يمكن ضبط هذه القيم أيضًا من **مركز التكامل (Integration Hub)** في لوحة الأدمن
 > (التخزين → Cloudflare R2) بدل متغيّرات البيئة.
@@ -242,12 +247,12 @@ MINIO_PUBLIC_URL=http://localhost:9000
    (`https://<ACCOUNT_ID>.r2.cloudflarestorage.com` → `R2_ENDPOINT`).
 4. **وصول عام للـ bucket العام فقط** (`nqlah-<env>-public`): Settings → Public
    access → إمّا **r2.dev** (رابط `pub-*.r2.dev` فوري بلا DNS) أو **Custom
-   Domain** (`storage.nqlah.nx.sa`، يتطلب DNS على Cloudflare) → يصبح
+   Domain** (`storage.nqlah.online`، يتطلب DNS على Cloudflare) → يصبح
    `R2_PUBLIC_URL`. ⚠️ **لا تُفعّل أي وصول عام على الـ bucket الخاص إطلاقًا.**
 5. **CORS** (ضروري لرفع المتصفّح من لوحات الويب؛ رفع الجوال native لا يحتاجه):
    على **كلا الـ bucketين** → Settings → **CORS Policy**:
    ```json
-   [{"AllowedOrigins":["https://admin.nqlah.nx.sa","https://carrier.nqlah.nx.sa","https://client.nqlah.nx.sa"],"AllowedMethods":["PUT","GET"],"AllowedHeaders":["*"],"MaxAgeSeconds":3600}]
+   [{"AllowedOrigins":["https://admin.nqlah.online","https://carrier.nqlah.online","https://client.nqlah.online"],"AllowedMethods":["PUT","GET"],"AllowedHeaders":["*"],"MaxAgeSeconds":3600}]
    ```
 6. **ضبط المتغيّرات** (§9) في Coolify لكل بيئة (أو من مركز التكامل) ثم إعادة النشر.
 

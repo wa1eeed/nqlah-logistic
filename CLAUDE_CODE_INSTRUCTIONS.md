@@ -1053,7 +1053,7 @@ MINIO_PUBLIC_URL=http://localhost:9000
 # ─── App ─────────────────────────────────────────────
 NODE_ENV=development
 PORT=4000
-APP_DOMAIN=localhost     # nqlah.nx.sa في staging
+APP_DOMAIN=localhost     # nqlah.online في staging
 APP_URL=http://localhost:4000
 FRONTEND_URL=http://localhost:3000
 FRONTEND_CLIENT_URL=http://localhost:3002
@@ -1187,12 +1187,12 @@ GET /api/orders?page=1&limit=20&sort=createdAt&order=desc&search=...&status=...
 
 ```
 اسم المنصة:   نقلة لوجيستك
-Domain:       nqlah.nx.sa
-API:          api.nqlah.nx.sa
-Admin:        admin.nqlah.nx.sa
-Client:       app.nqlah.nx.sa
-Carrier:      carrier.nqlah.nx.sa
-Storage:      storage.nqlah.nx.sa
+Domain:       nqlah.online
+API:          api.nqlah.online
+Admin:        admin.nqlah.online
+Client:       app.nqlah.online
+Carrier:      carrier.nqlah.online
+Storage:      storage.nqlah.online
 
 VPS:          187.124.218.110 (Ubuntu 24.04)
 Deploy:       Coolify (Docker Compose)
@@ -1211,20 +1211,20 @@ Storage:      Cloudflare R2 (S3-compatible)
 
 | Resource | Domain | Port |
 |---|---|---|
-| `naqla-api-staging` | `api.nqlah.nx.sa` | 4000 |
-| `naqla-landing-staging` | `nqlah.nx.sa` | 3000 |
-| `naqla-admin-staging` | `admin.nqlah.nx.sa` | 3001 |
-| `naqla-client-staging` | `app.nqlah.nx.sa` | 3002 |
-| `naqla-carrier-staging` | `carrier.nqlah.nx.sa` | 3003 |
+| `naqla-api-staging` | `api.nqlah.online` | 4000 |
+| `naqla-landing-staging` | `nqlah.online` | 3000 |
+| `naqla-admin-staging` | `admin.nqlah.online` | 3001 |
+| `naqla-client-staging` | `app.nqlah.online` | 3002 |
+| `naqla-carrier-staging` | `carrier.nqlah.online` | 3003 |
 
 **Build Variables (مشتركة لكل Next.js apps):**
 ```
-NEXT_PUBLIC_API_URL=https://api.nqlah.nx.sa
-NEXT_PUBLIC_WS_URL=wss://api.nqlah.nx.sa
-NEXT_PUBLIC_LANDING_URL=https://nqlah.nx.sa
-NEXT_PUBLIC_CLIENT_URL=https://app.nqlah.nx.sa
-NEXT_PUBLIC_CARRIER_URL=https://carrier.nqlah.nx.sa
-NEXT_PUBLIC_MINIO_URL=https://storage.nqlah.nx.sa
+NEXT_PUBLIC_API_URL=https://api.nqlah.online
+NEXT_PUBLIC_WS_URL=wss://api.nqlah.online
+NEXT_PUBLIC_LANDING_URL=https://nqlah.online
+NEXT_PUBLIC_CLIENT_URL=https://app.nqlah.online
+NEXT_PUBLIC_CARRIER_URL=https://carrier.nqlah.online
+NEXT_PUBLIC_MINIO_URL=https://storage.nqlah.online
 ```
 
 **Migration (في API container terminal):**
@@ -1237,7 +1237,7 @@ node -e "const{execSync}=require('child_process');execSync('npx prisma@5.22.0 mi
 node dist/prisma/seed.js
 ```
 
-**API Health:** https://api.nqlah.nx.sa/health ✅ (يعمل منذ v0.9.8)
+**API Health:** https://api.nqlah.online/health ✅ (يعمل منذ v0.9.8)
 
 ---
 

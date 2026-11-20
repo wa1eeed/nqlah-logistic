@@ -110,7 +110,7 @@ export default function AdminSeoPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('seo.general.canonical')}</Label>
-                  <Input dir="ltr" value={seo.canonicalUrl} onChange={(e) => update({ canonicalUrl: e.target.value })} placeholder="https://naqla.sa" />
+                  <Input dir="ltr" value={seo.canonicalUrl} onChange={(e) => update({ canonicalUrl: e.target.value })} placeholder="https://nqlah.online" />
                 </div>
                 <div className="space-y-2">
                   <Label>{t('seo.general.locale')}</Label>
@@ -141,7 +141,7 @@ export default function AdminSeoPage() {
             <CardContent className="space-y-4 max-w-3xl">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1"><ImageIcon className="h-3.5 w-3.5" /> {t('seo.social.ogImage')}</Label>
-                <Input dir="ltr" value={seo.ogImage} onChange={(e) => update({ ogImage: e.target.value })} placeholder="https://naqla.sa/og-image.png" />
+                <Input dir="ltr" value={seo.ogImage} onChange={(e) => update({ ogImage: e.target.value })} placeholder="https://nqlah.online/og-image.png" />
                 <p className="text-xs text-muted-foreground">{t('seo.social.ogImageHint')}</p>
               </div>
 

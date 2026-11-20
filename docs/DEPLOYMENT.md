@@ -9,11 +9,11 @@
 | البيئة | الغرض | الـ Host | NODE_ENV | الحالة |
 |---|---|---|---|---|
 | **Development** | تطوير محلي على جهاز المطوّر | `localhost` | `development` | ✅ جاهز |
-| **Production** | الخدمة الحيّة للمستخدمين | `nqlah.nx.sa` (VPS: `187.124.218.110`) | `production` | ✅ **الإنتاج الحالي** (إطلاق سريع) |
+| **Production** | الخدمة الحيّة للمستخدمين | `nqlah.online` (VPS: `187.124.218.110`) | `production` | ✅ **الإنتاج الحالي** (إطلاق سريع) |
 | **Staging** | اختبار قبل الإنتاج على Coolify | يُنشأ لاحقًا (host مستقل) | `staging` | 🚧 يُبنى بعد الإطلاق |
 
 > ### 🚀 استراتيجية الإطلاق (2026-11-20)
-> **إطلاق سريع:** البيئة المنشورة حاليًا على `nqlah.nx.sa` (كانت تُسمّى staging) تصبح **Production** كما هي — نضبط `NODE_ENV=production` في Coolify. بعد الإطلاق نبني **Staging** جديدة مستقلة (host + قاعدة + تخزين منفصلة) ونعتمد آلية: تطوير → staging → اختبار → ترحيل للـproduction.
+> **إطلاق سريع:** البيئة المنشورة حاليًا على `nqlah.online` (كانت تُسمّى staging) تصبح **Production** كما هي — نضبط `NODE_ENV=production` في Coolify. بعد الإطلاق نبني **Staging** جديدة مستقلة (host + قاعدة + تخزين منفصلة) ونعتمد آلية: تطوير → staging → اختبار → ترحيل للـproduction.
 >
 > **قبل اعتماد البيئة الحالية كإنتاج:**
 > - **Coolify:** أعِد تسمية التطبيق/البيئة إلى production واضبط `NODE_ENV=production`.
@@ -39,7 +39,7 @@
 - **المايقريشنز** تُعدّل **بنية** الجداول فقط دون المساس بصفوف البيانات؛ و Prisma يتتبّع المطبّق لكل قاعدة فيطبّق كل migration مرة واحدة لكل بيئة. بياناتك محفوظة عبر التحديثات.
 - **التهيئة** (`ensure-admin` / `ensure-platform-identity` / `ensure-plans`) **غير مُدمِّرة**: تُنشئ خطّ الأساس عند أول نشر فقط، وتُبقي أي تخصيص لاحق من اللوحة كما هو في كل نشر بعده.
 - **يُضبط لمرة واحدة لكل بيئة (مستقلّاً):** الرقم الضريبي للمنصة (من اللوحة)، كلمة مرور الأدمن (`SEED_ADMIN_PASSWORD`). والبيانات التجريبية (`seed.ts`) **للتطوير/staging فقط**، لا تُشغَّل على production أبداً.
-- ⚠️ **تنظيف الإنتاج الحالي (مهم — لأنه رُقّي من staging):** البيئة الحالية كانت staging وتحوي حسابات seed تجريبية (`admin@naqla.sa`، حسابات عميل/ناقل تجريبية). قبل الإطلاق العام: غيّر `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` لقيم حقيقية، واحذف/عطّل الحسابات التجريبية، وتأكّد أن لا بيانات تجريبية تظهر للمستخدمين.
+- ⚠️ **تنظيف الإنتاج الحالي (مهم — لأنه رُقّي من staging):** البيئة الحالية كانت staging وتحوي حسابات seed تجريبية (`admin@nqlah.online`، حسابات عميل/ناقل تجريبية). قبل الإطلاق العام: غيّر `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` لقيم حقيقية، واحذف/عطّل الحسابات التجريبية، وتأكّد أن لا بيانات تجريبية تظهر للمستخدمين.
 
 **الخلاصة:** ترحيل التحديثات **لا يُعيد ضبط** الباقات/السياسات/أي بيانات — كل بيئة تحتفظ ببياناتها، وتُضبط كلٌّ منها مرة واحدة ثم تُدار من لوحتها.
 
@@ -61,13 +61,13 @@
 |---|---|---|---|
 | `DATABASE_URL` | `localhost:5432/naqla_dev` | Coolify PostgreSQL / `postgres` | Coolify PostgreSQL / `naqla_prod` |
 | `REDIS_URL` | `localhost:6379` (Docker) | Coolify Redis | Coolify Redis (منفصل) |
-| `APP_DOMAIN` | `localhost` | `nqlah.nx.sa` | `nqlah.nx.sa` |
+| `APP_DOMAIN` | `localhost` | `nqlah.online` | `nqlah.online` |
 | `PAYMENT_PROVIDER` | `mock` | `mock` | `moyasar` (إلزامي) |
 | `SMS_PROVIDER` | `console` | `console` | `unifonic` (إلزامي) |
 | `JWT_SECRET` | ≥ 32 chars | ≥ 64 chars (مولَّد بـ openssl) | ≥ 64 chars + يختلف عن staging |
 | `STORAGE_PROVIDER` | `minio` (local Docker) | `r2` | `r2` |
 | `R2_BUCKET` | `nqlah-dev` | `nqlah-staging` | `nqlah-prod` |
-| `CORS_ORIGINS` | `http://localhost:*` | `https://*.nqlah.nx.sa` | `https://*.nqlah.nx.sa` (HTTPS only) |
+| `CORS_ORIGINS` | `http://localhost:*` | `https://*.nqlah.online` | `https://*.nqlah.online` (HTTPS only) |
 | `SENTRY_DSN` | اختياري | اختياري | إلزامي |
 | `JWT_EXPIRES_IN` | `15m` | `15m` | `15m` |
 
@@ -132,7 +132,7 @@
     ```bash
     # من جذر المستودع على جهازك. أدمن الـstaging/prod غالباً ليس أدمن الـseed،
     # فمرّر بياناته (نفس SEED_ADMIN_EMAIL/PASSWORD في Coolify):
-    E2E_BASE=https://api.nqlah.nx.sa/api \
+    E2E_BASE=https://api.nqlah.online/api \
       E2E_ADMIN_EMAIL=waleed@nx.sa E2E_ADMIN_PASSWORD='…' \
       pnpm check:deployed
     ```
@@ -168,20 +168,23 @@
 | `6379` | Redis | ❌ (داخلي فقط) |
 | `4000` | API (internal) | ❌ (عبر proxy) |
 
-> 💾 التخزين في البيئات المنشورة هو **Cloudflare R2** (خدمة خارجية مُدارة عبر S3 API) — لا منافذ تخزين داخلية. التفاصيل: [`architecture/storage.md`](architecture/storage.md).
+> ⚠️ **حالة الإطلاق (التخزين):** الإنتاج الحالي يعمل على **MinIO** (`STORAGE_PROVIDER=minio`,
+> bucket `naqla-staging`) لإطلاق سريع. كل ذكر لـ **Cloudflare R2** أدناه (الجداول والمتغيّرات
+> `R2_*` ونطاق `storage.nqlah.online`) يصف **البنية المستهدفة** التي يُرحَّل إليها **بعد الإطلاق**
+> كمهمة مستقلّة — ليست مُفعّلة الآن. التفاصيل: [`architecture/storage.md`](architecture/storage.md).
 
 ### 2.3 النطاقات (Domains)
 
-**الدومين الحالي (Staging + Production):** `nqlah.nx.sa`
+**الدومين الحالي (Staging + Production):** `nqlah.online`
 
 | Subdomain | الواجهة | البيئة | TLS |
 |---|---|---|---|
-| `nqlah.nx.sa` | Landing | Staging/Prod | Let's Encrypt (Coolify) |
-| `admin.nqlah.nx.sa` | Admin dashboard | Staging/Prod | Let's Encrypt |
-| `app.nqlah.nx.sa` | Client app | Staging/Prod | Let's Encrypt |
-| `carrier.nqlah.nx.sa` | Carrier app | Staging/Prod | Let's Encrypt |
-| `api.nqlah.nx.sa` | REST API | Staging/Prod | Let's Encrypt |
-| `storage.nqlah.nx.sa` | Cloudflare R2 public objects (custom domain) | Staging/Prod | Cloudflare |
+| `nqlah.online` | Landing | Staging/Prod | Let's Encrypt (Coolify) |
+| `admin.nqlah.online` | Admin dashboard | Staging/Prod | Let's Encrypt |
+| `app.nqlah.online` | Client app | Staging/Prod | Let's Encrypt |
+| `carrier.nqlah.online` | Carrier app | Staging/Prod | Let's Encrypt |
+| `api.nqlah.online` | REST API | Staging/Prod | Let's Encrypt |
+| `storage.nqlah.online` | Cloudflare R2 public objects (custom domain) | Staging/Prod | Cloudflare |
 
 > 📌 جميع النطاقات تُدار عبر Coolify مع auto-renewal لـ Let's Encrypt.
 > عند الانتقال لدومين رسمي، يكفي تغيير `APP_DOMAIN` في `.env.production` فقط.
@@ -205,19 +208,19 @@
 | `JWT_REFRESH_EXPIRES_IN` | `7d` | `7d` | `7d` |
 | `NODE_ENV` | `development` | `staging` | `production` |
 | `PORT` | `4000` | `4000` | `4000` |
-| `APP_DOMAIN` | `localhost` | `nqlah.nx.sa` | `nqlah.nx.sa` |
-| `APP_URL` | `http://localhost:4000` | `https://api.nqlah.nx.sa` | `https://api.nqlah.nx.sa` |
-| `FRONTEND_URL` | `http://localhost:3000` | `https://nqlah.nx.sa` | `https://nqlah.nx.sa` |
-| `FRONTEND_CLIENT_URL` | `http://localhost:3002` | `https://app.nqlah.nx.sa` | `https://app.nqlah.nx.sa` |
-| `FRONTEND_CARRIER_URL` | `http://localhost:3003` | `https://carrier.nqlah.nx.sa` | `https://carrier.nqlah.nx.sa` |
-| `FRONTEND_ADMIN_URL` | `http://localhost:3001` | `https://admin.nqlah.nx.sa` | `https://admin.nqlah.nx.sa` |
-| `CORS_ORIGINS` | `http://localhost:300{0-3}` | `https://*.nqlah.nx.sa` (4 subdomains) | `https://*.nqlah.nx.sa` |
+| `APP_DOMAIN` | `localhost` | `nqlah.online` | `nqlah.online` |
+| `APP_URL` | `http://localhost:4000` | `https://api.nqlah.online` | `https://api.nqlah.online` |
+| `FRONTEND_URL` | `http://localhost:3000` | `https://nqlah.online` | `https://nqlah.online` |
+| `FRONTEND_CLIENT_URL` | `http://localhost:3002` | `https://app.nqlah.online` | `https://app.nqlah.online` |
+| `FRONTEND_CARRIER_URL` | `http://localhost:3003` | `https://carrier.nqlah.online` | `https://carrier.nqlah.online` |
+| `FRONTEND_ADMIN_URL` | `http://localhost:3001` | `https://admin.nqlah.online` | `https://admin.nqlah.online` |
+| `CORS_ORIGINS` | `http://localhost:300{0-3}` | `https://*.nqlah.online` (4 subdomains) | `https://*.nqlah.online` |
 | `STORAGE_PROVIDER` | `minio` (local Docker) | `r2` | `r2` |
 | `R2_ENDPOINT` | — | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` |
 | `R2_ACCESS_KEY` | — | من Cloudflare | من Cloudflare (مختلف) |
 | `R2_SECRET_KEY` | — | من Cloudflare | من Cloudflare (مختلف) |
 | `R2_BUCKET` | `nqlah-dev` | `nqlah-staging` | `nqlah-prod` |
-| `R2_PUBLIC_URL` | — | `https://storage.nqlah.nx.sa` | `https://storage.nqlah.nx.sa` |
+| `R2_PUBLIC_URL` | — | `https://storage.nqlah.online` | `https://storage.nqlah.online` |
 | `R2_REGION` | — | `auto` | `auto` |
 | `PAYMENT_PROVIDER` | `mock` | `mock` | `moyasar` |
 | `SMS_PROVIDER` | `console` | `console` | `unifonic` |
@@ -234,12 +237,12 @@
 
 | المتغيّر | Development | Staging | Production |
 |---|---|---|---|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:4000` | `https://api.nqlah.nx.sa` | `https://api.nqlah.nx.sa` |
-| `NEXT_PUBLIC_WS_URL` | `ws://localhost:4000` | `wss://api.nqlah.nx.sa` | `wss://api.nqlah.nx.sa` |
-| `NEXT_PUBLIC_MINIO_URL` | `http://localhost:9000` | `https://storage.nqlah.nx.sa` | `https://storage.nqlah.nx.sa` |
-| `NEXT_PUBLIC_LANDING_URL` | `http://localhost:3000` | `https://nqlah.nx.sa` | `https://nqlah.nx.sa` |
-| `NEXT_PUBLIC_CLIENT_URL` | `http://localhost:3002` | `https://app.nqlah.nx.sa` | `https://app.nqlah.nx.sa` |
-| `NEXT_PUBLIC_CARRIER_URL` | `http://localhost:3003` | `https://carrier.nqlah.nx.sa` | `https://carrier.nqlah.nx.sa` |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:4000` | `https://api.nqlah.online` | `https://api.nqlah.online` |
+| `NEXT_PUBLIC_WS_URL` | `ws://localhost:4000` | `wss://api.nqlah.online` | `wss://api.nqlah.online` |
+| `NEXT_PUBLIC_MINIO_URL` | `http://localhost:9000` | `https://storage.nqlah.online` | `https://storage.nqlah.online` |
+| `NEXT_PUBLIC_LANDING_URL` | `http://localhost:3000` | `https://nqlah.online` | `https://nqlah.online` |
+| `NEXT_PUBLIC_CLIENT_URL` | `http://localhost:3002` | `https://app.nqlah.online` | `https://app.nqlah.online` |
+| `NEXT_PUBLIC_CARRIER_URL` | `http://localhost:3003` | `https://carrier.nqlah.online` | `https://carrier.nqlah.online` |
 
 > ⚠️ **تحذير:** `NEXT_PUBLIC_*` تُضمَّن في الـ JavaScript bundle — لا تضع فيها أسراراً أبداً.
 
@@ -374,8 +377,8 @@ docker build -f apps/web/landing/Dockerfile    -t naqla-landing:latest   .
 > ⚠️ **مهم:** يجب تمرير `NEXT_PUBLIC_*` كـ build-args لأنها تُضمَّن في وقت البناء:
 > ```bash
 > docker build -f apps/web/client/Dockerfile \
->   --build-arg NEXT_PUBLIC_API_URL=https://api.nqlah.nx.sa \
->   --build-arg NEXT_PUBLIC_CLIENT_URL=https://app.nqlah.nx.sa \
+>   --build-arg NEXT_PUBLIC_API_URL=https://api.nqlah.online \
+>   --build-arg NEXT_PUBLIC_CLIENT_URL=https://app.nqlah.online \
 >   -t naqla-client:latest .
 > ```
 > في Coolify: أضف هذه المتغيرات في قسم "Build Variables" (ليس "Environment Variables").
@@ -411,23 +414,23 @@ Coolify يعرض الحالة مباشرة. فشل 3 محاولات متتالي
 
 | الـ Resource Name | الـ Dockerfile | الدومين | الـ Port |
 |---|---|---|---|
-| `naqla-api-staging` | `apps/api/Dockerfile` | `api.nqlah.nx.sa` | `4000` |
-| `naqla-landing-staging` | `apps/web/landing/Dockerfile` | `nqlah.nx.sa` | `3000` |
-| `naqla-admin-staging` | `apps/web/admin/Dockerfile` | `admin.nqlah.nx.sa` | `3001` |
-| `naqla-client-staging` | `apps/web/client/Dockerfile` | `app.nqlah.nx.sa` | `3002` |
-| `naqla-carrier-staging` | `apps/web/carrier/Dockerfile` | `carrier.nqlah.nx.sa` | `3003` |
+| `naqla-api-staging` | `apps/api/Dockerfile` | `api.nqlah.online` | `4000` |
+| `naqla-landing-staging` | `apps/web/landing/Dockerfile` | `nqlah.online` | `3000` |
+| `naqla-admin-staging` | `apps/web/admin/Dockerfile` | `admin.nqlah.online` | `3001` |
+| `naqla-client-staging` | `apps/web/client/Dockerfile` | `app.nqlah.online` | `3002` |
+| `naqla-carrier-staging` | `apps/web/carrier/Dockerfile` | `carrier.nqlah.online` | `3003` |
 
 ### 5.3 Build Variables للـ Next.js Apps
 
 هذه المتغيرات تُضاف في **Build Variables** (ليس Environment Variables) لكل Next.js app لأنها تُضمَّن في وقت البناء:
 
 ```env
-NEXT_PUBLIC_API_URL=https://api.nqlah.nx.sa
-NEXT_PUBLIC_WS_URL=wss://api.nqlah.nx.sa
-NEXT_PUBLIC_LANDING_URL=https://nqlah.nx.sa
-NEXT_PUBLIC_CLIENT_URL=https://app.nqlah.nx.sa
-NEXT_PUBLIC_CARRIER_URL=https://carrier.nqlah.nx.sa
-NEXT_PUBLIC_MINIO_URL=https://storage.nqlah.nx.sa
+NEXT_PUBLIC_API_URL=https://api.nqlah.online
+NEXT_PUBLIC_WS_URL=wss://api.nqlah.online
+NEXT_PUBLIC_LANDING_URL=https://nqlah.online
+NEXT_PUBLIC_CLIENT_URL=https://app.nqlah.online
+NEXT_PUBLIC_CARRIER_URL=https://carrier.nqlah.online
+NEXT_PUBLIC_MINIO_URL=https://storage.nqlah.online
 ```
 
 ### 5.4 خطوات التشغيل (أوّل deploy)
@@ -462,12 +465,12 @@ npm run db:deploy:seed
 
 | الواجهة | الرابط |
 |---|---|
-| **API Health** | https://api.nqlah.nx.sa/health |
-| **Landing** | https://nqlah.nx.sa |
-| **Admin** | https://admin.nqlah.nx.sa |
-| **Client** | https://app.nqlah.nx.sa |
-| **Carrier** | https://carrier.nqlah.nx.sa |
-| **Storage** | https://storage.nqlah.nx.sa |
+| **API Health** | https://api.nqlah.online/health |
+| **Landing** | https://nqlah.online |
+| **Admin** | https://admin.nqlah.online |
+| **Client** | https://app.nqlah.online |
+| **Carrier** | https://carrier.nqlah.online |
+| **Storage** | https://storage.nqlah.online |
 
 ---
 

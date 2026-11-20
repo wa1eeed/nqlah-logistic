@@ -100,7 +100,7 @@ end
 # is read from pubspec. No-op (just a log line) when the dashboard env vars
 # aren't set, and never fails the lane — the upload already succeeded here.
 def report_version_to_dashboard(channel:, build:, pubspec_path:)
-  base  = ENV["APP_VERSION_API_BASE"].to_s   # e.g. https://api.nqlah.nx.sa/api
+  base  = ENV["APP_VERSION_API_BASE"].to_s   # e.g. https://api.nqlah.online/api
   token = ENV["APP_VERSION_DEPLOY_TOKEN"].to_s
   if base.empty? || token.empty?
     UI.important("Skipping dashboard version report — set APP_VERSION_API_BASE and APP_VERSION_DEPLOY_TOKEN to enable it.")

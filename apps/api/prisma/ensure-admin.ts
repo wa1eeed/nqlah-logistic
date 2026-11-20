@@ -17,7 +17,7 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 const ADMIN_PHONE = '+966500000001';
-const email = process.env.SEED_ADMIN_EMAIL ?? 'admin@naqla.sa';
+const email = process.env.SEED_ADMIN_EMAIL ?? 'admin@nqlah.online';
 const password = process.env.SEED_ADMIN_PASSWORD ?? 'Admin@1234';
 
 async function main() {

@@ -15,7 +15,7 @@ import { AuditLogService } from './common/audit/audit-log.service';
 //
 // Strict origin check. Localhost ports are always allowed for development;
 // production hosts are read from CORS_ORIGINS env var (comma-separated)
-// and the *.naqla.sa pattern is matched explicitly. No wildcard `*` ever.
+// and the *.nqlah.online pattern is matched explicitly. No wildcard `*` ever.
 const DEV_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
@@ -33,7 +33,7 @@ function isAllowedOrigin(origin: string | undefined, extra: string[]): boolean {
     const url = new URL(origin);
     const host = url.hostname;
     if (PROD_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) {
-      // Only allow https in production for naqla.sa
+      // Only allow https in production for nqlah.online
       return process.env.NODE_ENV === 'production' ? url.protocol === 'https:' : true;
     }
   } catch {

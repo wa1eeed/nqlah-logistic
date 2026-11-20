@@ -54,17 +54,17 @@
 >
 > | Monitor | URL | الإجراء عند الفشل |
 > |---|---|---|
-> | [ ] API Health | `https://api.naqla.sa/health` | Slack + Email + SMS |
-> | [ ] Landing | `https://naqla.sa` | Slack + Email |
-> | [ ] Admin | `https://admin.naqla.sa/login` | Slack + Email |
-> | [ ] Client | `https://app.naqla.sa/login` | Slack + Email |
-> | [ ] Carrier | `https://carrier.naqla.sa/login` | Slack + Email |
-> | [ ] DB connectivity | `https://api.naqla.sa/health/db` | PagerDuty |
-> | [ ] Redis connectivity | `https://api.naqla.sa/health/redis` | PagerDuty |
-> | [ ] Storage connectivity (R2) | `https://api.naqla.sa/health/storage` | PagerDuty |
+> | [ ] API Health | `https://api.nqlah.online/health` | Slack + Email + SMS |
+> | [ ] Landing | `https://nqlah.online` | Slack + Email |
+> | [ ] Admin | `https://admin.nqlah.online/login` | Slack + Email |
+> | [ ] Client | `https://app.nqlah.online/login` | Slack + Email |
+> | [ ] Carrier | `https://carrier.nqlah.online/login` | Slack + Email |
+> | [ ] DB connectivity | `https://api.nqlah.online/health/db` | PagerDuty |
+> | [ ] Redis connectivity | `https://api.nqlah.online/health/redis` | PagerDuty |
+> | [ ] Storage connectivity (R2) | `https://api.nqlah.online/health/storage` | PagerDuty |
 >
 > ### Status Page
-> - [ ] Public status page على `status.naqla.sa`
+> - [ ] Public status page على `status.nqlah.online`
 > - [ ] Components: API, Web Apps, Database, Storage, Notifications
 > - [ ] Incident communication
 

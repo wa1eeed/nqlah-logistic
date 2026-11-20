@@ -22,7 +22,7 @@ the real HTTP + DB path.
    pnpm --filter @naqla/api start   # or: node apps/api/dist/src/main.js
    ```
 2. A seeded database with the demo accounts (`pnpm --filter @naqla/api exec prisma db seed`):
-   `admin@naqla.sa` / `client@naqla.sa` / `carrier@naqla.sa` (passwords in
+   `admin@nqlah.online` / `client@nqlah.online` / `carrier@nqlah.online` (passwords in
    [`apps/api/prisma/seed.ts`](../../prisma/seed.ts)).
 3. For `per-leg-bidding.e2e.mjs` (and the runner), **`DATABASE_URL`** must be set —
    it seeds a second carrier's bid + truck directly via Prisma. Load the API env first:
@@ -46,7 +46,7 @@ node apps/api/test/e2e/run-all.mjs
 Override the base URL with `E2E_BASE` (e.g. a staging API):
 
 ```bash
-E2E_BASE=https://api.nqlah.nx.sa/api node apps/api/test/e2e/policies.e2e.mjs
+E2E_BASE=https://api.nqlah.online/api node apps/api/test/e2e/policies.e2e.mjs
 ```
 
 Each script exits `0` on success, non-zero on any failed check.
