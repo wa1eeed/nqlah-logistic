@@ -23,7 +23,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { PageHeader } from '@/components/page-header';
-import { SaudiLicensePlate, SaudiPlate, parsePlateString } from '@/components/saudi-plate';
+import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
@@ -31,7 +31,7 @@ import { EscrowCountdown } from '@/components/escrow-countdown';
 import { playSoundIfEnabled } from '@/lib/sound';
 import { notify } from '@/lib/notify';
 import {
-  BIDS, DRIVERS, TRUCKS, bidsForOrder, companyById, coordsFor, distanceKm,
+  BIDS, bidsForOrder, companyById, coordsFor, distanceKm,
   estimatedDurationLabel, primaryRoadFor, formatDate, formatDateTime, formatRelative,
   lastRound, proposalForOrder, timelineFor,
   cancellationPolicy, escrowBreakdown, COMMISSION_RATE, pickupWindowLabel, estimateDeliveryDate,
@@ -979,17 +979,21 @@ function CarrierInfoCard({ order }: { order: Order }) {
   const apiBids = (order as Order & { bids?: ApiBid[] }).bids;
   const acceptedBid = apiBids?.find((b) => b.status === 'ACCEPTED') ?? BIDS.find((b) => b.orderId === order.id && b.status === 'ACCEPTED');
 
-  // Truck and driver data still come from mocks (no dedicated API endpoint on order detail)
-  const assignedTruck =
-    TRUCKS.find((t) => t.carrierId === carrier.id && t.status === 'ON_TRIP') ??
-    TRUCKS.find((t) => t.carrierId === carrier.id);
-  const driver = assignedTruck?.assignedDriverId
-    ? DRIVERS.find((d) => d.id === assignedTruck.assignedDriverId)
-    : DRIVERS.find((d) => d.carrierId === carrier.id);
-
+  // Real assigned driver from the order payload — never mock. The order detail
+  // doesn't carry the truck record, so the truck panel stays a "pending"
+  // placeholder rather than showing a fabricated plate.
+  type ApiOrderDriver = { id: string; driver: { status?: string; user: { firstName: string; lastName: string; phone: string } } };
+  const orderDrivers = (order as Order & { orderDrivers?: ApiOrderDriver[] }).orderDrivers ?? [];
+  const od = orderDrivers[0];
+  const driver = od
+    ? {
+        fullName: `${od.driver.user.firstName} ${od.driver.user.lastName}`.trim(),
+        phone: od.driver.user.phone,
+        onTrip: od.driver.status === 'ON_TRIP',
+      }
+    : null;
   const initials = (carrier.nameAr ?? '').split(' ').slice(0, 2).map((w) => w[0] ?? '').join('');
   const driverInitials = (driver?.fullName ?? '').split(' ').slice(0, 2).map((w) => w[0] ?? '').join('');
-  const plate = assignedTruck ? parsePlateString(assignedTruck.plateNumber) : null;
 
   return (
     <Card className="border-success/30 bg-success/[0.03]">
@@ -1063,34 +1067,7 @@ function CarrierInfoCard({ order }: { order: Order }) {
               <Truck className="h-3.5 w-3.5" />
               {t('detail.carrier.assignedTruck')}
             </div>
-            {assignedTruck && plate ? (
-              <>
-                <SaudiPlate
-                  letters={plate.letters}
-                  numbers={plate.numbers}
-                  type="public"
-                  size="sm"
-                />
-                <dl className="mt-3 space-y-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">{t('detail.carrier.type')}</dt>
-                    <dd className="font-medium">{assignedTruck.truckType && TRUCK_LABELS[assignedTruck.truckType] ? t(TRUCK_LABELS[assignedTruck.truckType]) : assignedTruck.truckType}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">{t('detail.carrier.capacity')}</dt>
-                    <dd className="font-medium num">
-                      {(assignedTruck.capacityKg / 1000).toFixed(0)} {t('detail.tonUnit')}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">{t('detail.carrier.model')}</dt>
-                    <dd className="font-medium num">{assignedTruck.modelYear}</dd>
-                  </div>
-                </dl>
-              </>
-            ) : (
-              <div className="text-xs text-muted-foreground py-2">{t('detail.carrier.truckSoon')}</div>
-            )}
+            <div className="text-xs text-muted-foreground py-2">{t('detail.carrier.truckSoon')}</div>
           </div>
 
           {/* Driver */}
@@ -1107,17 +1084,14 @@ function CarrierInfoCard({ order }: { order: Order }) {
                   </Avatar>
                   <div className="min-w-0">
                     <div className="font-semibold text-sm truncate">{driver.fullName}</div>
-                    <div className="text-xs text-muted-foreground">{driver.licenseClass}</div>
                   </div>
                 </div>
                 <dl className="mt-3 space-y-1.5 text-xs">
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">{t('detail.carrier.mobile')}</dt>
-                    <dd className="font-medium num" dir="ltr">{driver.phone}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">{t('detail.carrier.completedTrips')}</dt>
-                    <dd className="font-medium num">{driver.totalTrips.toLocaleString('en-US')}</dd>
+                    <dd className="font-medium num" dir="ltr">
+                      <a href={`tel:${driver.phone}`} className="hover:text-primary">{driver.phone}</a>
+                    </dd>
                   </div>
                 </dl>
               </>
@@ -1590,8 +1564,8 @@ function ConsolidatedReadonly({ order }: {
       </div>
       <div className="space-y-2">
         {legs.map((leg) => {
-          const plateStr = leg.plateNumber ?? TRUCKS.find((t) => t.id === leg.truckId)?.plateNumber;
-          const driverName = leg.driverName ?? DRIVERS.find((d) => d.id === leg.driverId)?.fullName;
+          const plateStr = leg.plateNumber;
+          const driverName = leg.driverName;
           const plate = plateStr ? parsePlateString(plateStr) : null;
           return (
             <div key={leg.index} className="flex items-center gap-3 rounded-md border bg-card p-2.5">
