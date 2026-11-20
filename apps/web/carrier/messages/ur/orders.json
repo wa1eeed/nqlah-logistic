@@ -140,6 +140,8 @@
     "clientEmail": "Email",
     "shipmentDetails": "Shipment Details",
     "truckAndDriver": "Truck & Driver",
+    "noDriverAssigned": "ابھی کوئی ڈرائیور تفویض نہیں",
+    "assignDriverCta": "ڈرائیور تفویض کریں",
     "change": "Change",
     "driverLicense": "License {class}",
     "description": "Description",

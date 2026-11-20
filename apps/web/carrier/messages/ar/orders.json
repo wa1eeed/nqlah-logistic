@@ -140,6 +140,8 @@
     "clientEmail": "البريد",
     "shipmentDetails": "تفاصيل الشحنة",
     "truckAndDriver": "الشاحنة والسائق",
+    "noDriverAssigned": "بانتظار إسناد سائق",
+    "assignDriverCta": "إسناد سائق",
     "change": "تغيير",
     "driverLicense": "رخصة {class}",
     "description": "الوصف",

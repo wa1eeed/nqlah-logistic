@@ -26,14 +26,11 @@ import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
 import { EscrowCountdown } from '@/components/escrow-countdown';
 import {
-  TRUCKS, DRIVERS, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
+  companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
   formatDate, formatDateTime, localizeCity, timelineFor, normalizeOrder, type Order,
 } from '@naqla/shared-utils';
-import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 import { ConsolidatedPanel } from '@/components/consolidated-panel';
 import { StopsPanel } from '@/components/stops-panel';
-import { useFleetStore } from '@/stores/fleet-store';
-import { useConsolidatedStore } from '@/stores/consolidated-store';
 
 const TITLE_KEYS = [
   'CREATED', 'PUBLISHED', 'BID_ACCEPTED', 'CONFIRMED', 'PICKED_UP', 'IN_TRANSIT',
@@ -64,8 +61,6 @@ export default function CarrierOrderDetail() {
   const [pickDriver, setPickDriver] = useState('');
   const [assigning, setAssigning] = useState(false);
 
-  const fleetAssign = useFleetStore((s) => s.assign);
-  const singleAssign = useConsolidatedStore((s) => s.singleAssign);
   // Real available drivers for this carrier — fetched only while the dialog is
   // open. `id` is the driverProfile id expected by POST /orders/:id/assign-driver.
   const { data: availableDrivers } = useSWR<
@@ -109,19 +104,10 @@ export default function CarrierOrderDetail() {
     ?? (order as { deliveryDate?: string }).deliveryDate
     ?? null;
   const showShipmentCard = ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED'].includes(order.status);
-  // Assigned truck for this order: the carrier's explicit choice (stored),
-  // otherwise an auto-pick from the fleet (demo).
-  const autoTruck =
-    TRUCKS.find((t) => t.carrierId === order.carrierId && t.status === 'ON_TRIP') ??
-    TRUCKS.find((t) => t.carrierId === order.carrierId) ??
-    TRUCKS.find((t) => t.status === 'ON_TRIP') ??
-    TRUCKS[0];
-  const override = singleAssign[order.id];
-  const assignedTruck = override ? (TRUCKS.find((t) => t.id === override.truckId) ?? autoTruck) : autoTruck;
-  const assignedPlate = assignedTruck ? parsePlateString(assignedTruck.plateNumber) : null;
-  const assignedDriver = override
-    ? DRIVERS.find((d) => d.id === override.driverId)
-    : (assignedTruck ? DRIVERS.find((d) => d.id === (fleetAssign[assignedTruck.id] ?? assignedTruck.assignedDriverId)) : null);
+  // Real assigned driver(s) from the order payload — never mock. Empty = not
+  // yet assigned (the carrier assigns via the dialog, which refetches).
+  type ApiOrderDriver = { id: string; driver: { status?: string; user: { firstName: string; lastName: string; phone: string } } };
+  const orderDrivers = (order as unknown as { orderDrivers?: ApiOrderDriver[] }).orderDrivers ?? [];
 
   const assignBlocked = !pickDriver || assigning;
 
@@ -364,41 +350,34 @@ export default function CarrierOrderDetail() {
           <Card>
             <CardHeader><CardTitle>{t('detail.shipmentDetails')}</CardTitle></CardHeader>
             <CardContent>
-              {order.orderType !== 'CONSOLIDATED' && showShipmentCard && assignedPlate && (
+              {order.orderType !== 'CONSOLIDATED' && showShipmentCard && (
                 <div className="mb-4 rounded-lg border bg-muted/30 p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-                      <Truck className="h-3.5 w-3.5" /> {t('detail.truckAndDriver')}
+                      <Users className="h-3.5 w-3.5" /> {t('detail.truckAndDriver')}
                     </div>
                     {showActions && (
                       <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setPickDriver(''); setAssignDriverOpen(true); }}>
-                        {t('detail.change')}
+                        {orderDrivers.length === 0 ? t('detail.assignDriverCta') : t('detail.change')}
                       </Button>
                     )}
                   </div>
-                  <div className="flex flex-col items-center gap-1.5">
-                    <SaudiLicensePlate
-                      letters={assignedPlate.letters}
-                      numbers={assignedPlate.numbers}
-                      plateType="transport"
-                      plateFormat="standard"
-                      size="stage"
-                    />
-                    {assignedTruck && <div className="num text-xs text-muted-foreground">{assignedTruck.code}</div>}
-                  </div>
-                  {assignedDriver && (
-                    <div className="flex items-center gap-3 rounded-md border bg-background p-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]">
-                        <Users className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold">{assignedDriver.fullName}</div>
-                        <div className="text-xs text-muted-foreground"><span className="num">{assignedDriver.code}</span> · {t('detail.driverLicense', { class: assignedDriver.licenseClass })}</div>
+                  {orderDrivers.length === 0 ? (
+                    <div className="text-xs text-muted-foreground py-1">{t('detail.noDriverAssigned')}</div>
+                  ) : (
+                    orderDrivers.map((od) => (
+                      <div key={od.id} className="flex items-center gap-3 rounded-md border bg-background p-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]">
+                          <Users className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-semibold">{od.driver.user.firstName} {od.driver.user.lastName}</div>
+                        </div>
+                        <a href={`tel:${od.driver.user.phone}`} dir="ltr" className="num inline-flex items-center gap-1 text-xs font-medium text-[hsl(var(--mint))]">
+                          <Phone className="h-3.5 w-3.5" /> {od.driver.user.phone}
+                        </a>
                       </div>
-                      <a href={`tel:${assignedDriver.phone}`} dir="ltr" className="num inline-flex items-center gap-1 text-xs font-medium text-[hsl(var(--mint))]">
-                        <Phone className="h-3.5 w-3.5" /> {assignedDriver.phone}
-                      </a>
-                    </div>
+                    ))
                   )}
                 </div>
               )}

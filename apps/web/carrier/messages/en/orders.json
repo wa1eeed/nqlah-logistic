@@ -140,6 +140,8 @@
     "clientEmail": "Email",
     "shipmentDetails": "Shipment Details",
     "truckAndDriver": "Truck & Driver",
+    "noDriverAssigned": "No driver assigned yet",
+    "assignDriverCta": "Assign driver",
     "change": "Change",
     "driverLicense": "License {class}",
     "description": "Description",
