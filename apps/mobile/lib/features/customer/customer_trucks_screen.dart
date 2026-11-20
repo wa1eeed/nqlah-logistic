@@ -18,7 +18,11 @@ import '../../design_system/waybill_card.dart' show RoutePoint;
 /// (filter button, route selector, chips, sort row) matches the 6a design; the
 /// card list is wired to `GET /marketplace/trucks`.
 class CustomerTrucksScreen extends ConsumerStatefulWidget {
-  const CustomerTrucksScreen({super.key});
+  const CustomerTrucksScreen({super.key, this.showBack = false});
+
+  /// When pushed as its own route (e.g. a carrier browsing the full market),
+  /// show a back control; as a shell tab it stays false.
+  final bool showBack;
 
   @override
   ConsumerState<CustomerTrucksScreen> createState() =>
@@ -142,6 +146,17 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (widget.showBack) ...[
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.of(context).maybePop(),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 13),
+                  child: NqIcon(NqIcons.arrowRight, size: 22, color: c.tx),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             _filterButton(c),
             const Spacer(),
             Column(

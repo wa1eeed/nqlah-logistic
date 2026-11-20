@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/auth/auth_controller.dart';
@@ -387,13 +388,20 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(
               children: [
-                Text(
-                    async.valueOrNull != null
-                        ? '${_loads(async.valueOrNull!, companyId).length} حمولة'
-                        : '',
-                    style: NqType.label.copyWith(color: c.tx2)),
+                _browseTrucksBtn(c),
                 const Spacer(),
-                Text('الأحمال المتاحة', style: NqType.h1.copyWith(color: c.tx)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('الأحمال المتاحة',
+                        style: NqType.h1.copyWith(color: c.tx)),
+                    if (async.valueOrNull != null)
+                      Text(
+                        '${_loads(async.valueOrNull!, companyId).length} حمولة في السوق',
+                        style: NqType.caption.copyWith(color: c.tx2),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -729,6 +737,30 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
       ),
     );
   }
+
+  /// Entry into the other side of the market — the carrier browses available
+  /// trucks (same public trucks marketplace the clients and guests see).
+  Widget _browseTrucksBtn(NqColors c) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => context.push('/market/trucks'),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: c.mintBg,
+            borderRadius: BorderRadius.circular(NqRadius.pill),
+            border: Border.all(color: c.mint.withValues(alpha: 0.15)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              NqIcon(NqIcons.truck, size: 16, color: c.mintTx),
+              const SizedBox(width: 6),
+              Text('تصفّح الشاحنات',
+                  style: NqType.labelStrong.copyWith(color: c.mintTx)),
+            ],
+          ),
+        ),
+      );
 
   Widget _searchField(NqColors c) => Container(
         height: 48,
