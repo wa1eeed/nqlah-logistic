@@ -162,7 +162,10 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 
 ---
 
-## ☁️ الروابط (Staging — nqlah.nx.sa)
+## ☁️ الروابط (Production — nqlah.nx.sa)
+
+> البيئة المنشورة على `nqlah.nx.sa` هي **الإنتاج** (إطلاق سريع؛ كانت تُسمّى staging). بيئة staging الجديدة تُبنى لاحقًا — انظر [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 
 | الواجهة | الرابط | الحالة |
 |---|---|---|
