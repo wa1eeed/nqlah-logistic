@@ -104,17 +104,17 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _profileCard(c, name, _roleLabel(s, user?.role ?? ''), user?.phone),
           const SizedBox(height: 16),
-          // Provider (carrier) management: membership + fleet maintenance.
+          // Provider (carrier) management as a labelled card hub so the key
+          // sections read as sections, not buried rows.
           if (isCarrier) ...[
-            _group(c, [
-              _row(c, NqIcons.sealCheck, s('account.membership'),
-                  onTap: () => context.push('/subscription')),
-              _row(c, NqIcons.wrench, s('account.maintenance'),
-                  onTap: () => context.push('/maintenance-hub')),
-              _row(c, NqIcons.handCoins, s('account.cod'),
-                  onTap: () => context.push('/payout-settings')),
-              _row(c, NqIcons.fileText, s('account.docs'),
-                  last: true, onTap: () => context.push('/kyc')),
+            _hubGrid(c, [
+              (NqIcons.sealCheck, s('account.membership'),
+                  () => context.push('/subscription')),
+              (NqIcons.wrench, s('account.maintenance'),
+                  () => context.push('/maintenance-hub')),
+              (NqIcons.handCoins, s('account.cod'),
+                  () => context.push('/payout-settings')),
+              (NqIcons.fileText, s('account.docs'), () => context.push('/kyc')),
             ]),
             const SizedBox(height: 16),
           ],
@@ -150,6 +150,60 @@ class AccountScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// A 2-column grid of labelled shortcut cards — the account "hub".
+  Widget _hubGrid(NqColors c, List<(String, String, VoidCallback)> items) {
+    final rows = <Widget>[];
+    for (var i = 0; i < items.length; i += 2) {
+      final a = items[i];
+      rows.add(Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _hubCard(c, a.$1, a.$2, a.$3)),
+          const SizedBox(width: 12),
+          if (i + 1 < items.length)
+            Expanded(
+                child: _hubCard(
+                    c, items[i + 1].$1, items[i + 1].$2, items[i + 1].$3))
+          else
+            const Expanded(child: SizedBox()),
+        ],
+      ));
+      if (i + 2 < items.length) rows.add(const SizedBox(height: 12));
+    }
+    return Column(children: rows);
+  }
+
+  Widget _hubCard(NqColors c, String icon, String label, VoidCallback onTap) =>
+      GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: c.sf,
+            borderRadius: BorderRadius.circular(NqRadius.card),
+            border: Border.all(color: c.bd),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color: c.mintBg, borderRadius: BorderRadius.circular(12)),
+                child: NqIcon(icon, size: 22, color: c.mintTx),
+              ),
+              const SizedBox(height: 10),
+              Text(label,
+                  style: NqType.bodyStrong.copyWith(color: c.tx),
+                  textAlign: TextAlign.right),
+            ],
+          ),
+        ),
+      );
 
   Widget _profileCard(NqColors c, String name, String role, String? phone) =>
       Container(

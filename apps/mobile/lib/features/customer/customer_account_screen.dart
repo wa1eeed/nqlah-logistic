@@ -75,12 +75,20 @@ class CustomerAccountScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _profileCard(c, user),
           const SizedBox(height: 16),
+          // Hub: the important destinations as labelled cards (not a thin list)
+          // so they read as sections, not buried rows.
+          _hubGrid(c, [
+            (NqIcons.fileText, s('account.docs'), () => context.push('/kyc')),
+            (NqIcons.handCoins, s('account.finance'),
+                () => context.push('/finance')),
+            (NqIcons.bell, s('account.notifications'),
+                () => context.push('/notifications')),
+            (NqIcons.question, s('account.help'),
+                () => ExternalLinks.contactSupportWhatsApp()),
+          ]),
+          const SizedBox(height: 16),
           _group(c, [
             _row(c, NqIcons.users, s('account.users')),
-            _row(c, NqIcons.fileText, s('account.docs'),
-                onTap: () => context.push('/kyc')),
-            _row(c, NqIcons.bell, s('account.notifications'),
-                onTap: () => context.push('/notifications')),
             _row(c, NqIcons.globe, s('account.language'),
                 value: lang.nativeName,
                 onTap: () => showLanguagePicker(context, ref)),
@@ -89,8 +97,9 @@ class CustomerAccountScreen extends ConsumerWidget {
           ]),
           const SizedBox(height: 16),
           _group(c, [
-            _row(c, NqIcons.question, s('account.help'),
-                onTap: () => ExternalLinks.contactSupportWhatsApp()),
+            _row(c, NqIcons.trash, s('account.deleteAccount'),
+                danger: true,
+                onTap: () => context.push('/account/delete')),
             _row(c, NqIcons.signOut, s('account.signOut'),
                 danger: true,
                 chevron: false,
@@ -102,6 +111,58 @@ class CustomerAccountScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// A 2-column grid of labelled shortcut cards — the account "hub".
+  Widget _hubGrid(NqColors c, List<(String, String, VoidCallback)> items) {
+    final rows = <Widget>[];
+    for (var i = 0; i < items.length; i += 2) {
+      final a = items[i];
+      rows.add(Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _hubCard(c, a.$1, a.$2, a.$3)),
+          const SizedBox(width: 12),
+          if (i + 1 < items.length)
+            Expanded(child: _hubCard(c, items[i + 1].$1, items[i + 1].$2, items[i + 1].$3))
+          else
+            const Expanded(child: SizedBox()),
+        ],
+      ));
+      if (i + 2 < items.length) rows.add(const SizedBox(height: 12));
+    }
+    return Column(children: rows);
+  }
+
+  Widget _hubCard(NqColors c, String icon, String label, VoidCallback onTap) =>
+      GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: c.sf,
+            borderRadius: BorderRadius.circular(NqRadius.card),
+            border: Border.all(color: c.bd),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color: c.mintBg, borderRadius: BorderRadius.circular(12)),
+                child: NqIcon(icon, size: 22, color: c.mintTx),
+              ),
+              const SizedBox(height: 10),
+              Text(label,
+                  style: NqType.bodyStrong.copyWith(color: c.tx),
+                  textAlign: TextAlign.right),
+            ],
+          ),
+        ),
+      );
 
   Widget _profileCard(NqColors c, AuthUser? user) {
     final company = (user?.companyNameAr?.isNotEmpty ?? false)
