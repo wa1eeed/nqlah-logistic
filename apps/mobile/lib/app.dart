@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/auth/auth_controller.dart';
 import 'core/auth/auth_models.dart';
+import 'core/config/maintenance.dart';
 import 'core/i18n/app_strings.dart';
 import 'core/i18n/locale_controller.dart';
 import 'core/notifications/notifications_repository.dart';
@@ -11,6 +12,7 @@ import 'core/notifications/push_service.dart';
 import 'core/router.dart';
 import 'core/session/identity.dart';
 import 'core/theme/app_theme.dart';
+import 'features/maintenance/maintenance_screen.dart';
 
 /// Lets foreground push messages surface an in-app banner from outside the
 /// widget tree.
@@ -69,9 +71,19 @@ class NqApp extends ConsumerWidget {
       ],
       routerConfig: ref.watch(routerProvider),
       // Arabic + Urdu render RTL, English LTR — follows the active language.
+      // When the platform is in maintenance mode, overlay the maintenance screen
+      // over every route (polled from GET /settings/app).
       builder: (context, child) => Directionality(
         textDirection: lang.direction,
-        child: child!,
+        child: Consumer(
+          builder: (context, ref, _) {
+            final maintenance = ref.watch(maintenanceProvider);
+            if (maintenance.enabled) {
+              return MaintenanceScreen(state: maintenance);
+            }
+            return child!;
+          },
+        ),
       ),
     );
   }
