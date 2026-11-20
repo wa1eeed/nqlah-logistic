@@ -15,7 +15,22 @@ the R2 object-storage migration (two-bucket model) + the local API build fix
 (language → onboarding → explore-first guest app, #249); the mobile design pass
 (empty-state medallions #248, Riyal rendering #250/#251); and the full
 **server-driven feature-flags** system (#252–#258, see
-[`docs/FEATURE_FLAGS.md`](docs/FEATURE_FLAGS.md)).
+[`docs/FEATURE_FLAGS.md`](docs/FEATURE_FLAGS.md)); **platform maintenance mode**
+(#260–#264, see [`docs/MAINTENANCE.md`](docs/MAINTENANCE.md)); the **integrated
+market** — guest/client/carrier/owner-driver all browse both loads and trucks,
+tappable load detail, carrier browse-only gating (#265/#266); the **soft-update
+version gate + Shorebird code-push init** (#267, see
+[`docs/OTA_UPDATES.md`](docs/OTA_UPDATES.md)); and the dev role-previewer
+identity-gating fix (#269).
+
+> **Launch strategy (owner, 2026-11-20):** fast launch by promoting the **current
+> staging to production** as-is; a fresh staging is stood up afterwards and the
+> current one becomes permanent production. Before go-live, swap any dev-only
+> secrets on that environment for real production values (seed admin
+> `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`, object-storage keys, JWT secrets).
+>
+> **Open review branches:** #268 (iOS Shorebird CI — validate on a watched
+> TestFlight run before cutting the v1.0 build so it's patchable).
 
 ### Remaining work
 
@@ -70,7 +85,9 @@ the R2 object-storage migration (two-bucket model) + the local API build fix
     web apps (carrier/client/admin already done).
 
 **F. Known bug.**
-18. Admin **login page i18n** is broken (`auth.login.*` keys missing).
+18. ✅ **Admin login page i18n** — resolved. The `auth.login.*` keys are present in
+    all three locales (ar/en/ur) and render correctly; verified live on `/login` in
+    Arabic (incl. the RTL brand panel) and English (2026-11-20). The old note was stale.
 
 ---
 
