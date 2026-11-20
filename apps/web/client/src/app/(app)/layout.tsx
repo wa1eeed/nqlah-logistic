@@ -3,9 +3,12 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppTopbar } from '@/components/app-topbar';
+import { MaintenanceScreen } from '@/components/maintenance-screen';
+import { useMaintenance } from '@/lib/use-maintenance';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const maintenance = useMaintenance();
 
   // Render the shell immediately (each page shows its own loading skeleton),
   // and only redirect when the token is missing — so an authenticated user
@@ -23,6 +26,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.replace('/login');
     }
   }, [router]);
+
+  if (maintenance.enabled) return <MaintenanceScreen state={maintenance} />;
 
   return (
     <div className="flex min-h-screen bg-muted/30">
