@@ -155,7 +155,7 @@ class OwnerDriverHomeScreen extends ConsumerWidget {
   // ---- Provider context (1i) ----
   Widget _provider(BuildContext context, WidgetRef ref, NqColors c,
       String? userId, List<OrderSummary> awaiting, List<OrderSummary> work) {
-    final loads = ref.watch(marketplaceLoadsProvider).valueOrNull ?? const [];
+    final loads = ref.watch(openLoadsProvider).valueOrNull ?? const [];
     final payments = ref.watch(paymentsProvider).valueOrNull ?? const [];
     final now = DateTime.now();
     final monthEarnings = payments
