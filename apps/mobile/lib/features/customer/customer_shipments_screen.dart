@@ -157,7 +157,7 @@ class _CustomerShipmentsScreenState
         return _line(c, NqIcons.steeringWheel, c.tx2,
             o.carrierName ?? 'تم إسناد المزوّد');
       case NqStatus.inTransit:
-        return _line(c, NqIcons.broadcast, c.mintTx, 'الشحنة في الطريق');
+        return _line(c, NqIcons.broadcast, c.mintTx, 'في الطريق إلى التسليم');
       case NqStatus.delivered:
         return _line(c, NqIcons.package, c.ok, 'تم التسليم · بانتظار الإغلاق');
       case NqStatus.completed:
