@@ -26,6 +26,7 @@ class CustomerHomeScreen extends ConsumerWidget {
     this.onViewShipments,
     this.onOffers,
     this.onOpenOrder,
+    this.onProfile,
   });
 
   final VoidCallback? onNewOrder;
@@ -33,6 +34,7 @@ class CustomerHomeScreen extends ConsumerWidget {
   final VoidCallback? onBell;
   final VoidCallback? onViewShipments;
   final VoidCallback? onOffers;
+  final VoidCallback? onProfile;
   final void Function(String orderId)? onOpenOrder;
 
   @override
@@ -174,15 +176,19 @@ class CustomerHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _avatar(NqColors c, String initial) => Container(
-        width: 44,
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: NqFixed.heroFill2,
-          borderRadius: BorderRadius.circular(NqRadius.input),
+  Widget _avatar(NqColors c, String initial) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onProfile,
+        child: Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: NqFixed.heroFill2,
+            borderRadius: BorderRadius.circular(NqRadius.input),
+          ),
+          child: Text(initial, style: NqType.h3.copyWith(color: NqFixed.heroText)),
         ),
-        child: Text(initial, style: NqType.h3.copyWith(color: NqFixed.heroText)),
       );
 
   Widget _headerBtn(NqColors c, String icon,
