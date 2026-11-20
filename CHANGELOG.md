@@ -6,6 +6,30 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.83 — Server-driven feature flags (2026-11-20)
+
+Features can now be toggled platform-wide from the admin console with no
+app-store update and no redeploy — every client reads them from the public app
+config at startup. Documented in [`docs/FEATURE_FLAGS.md`](docs/FEATURE_FLAGS.md).
+
+- **Registry + API.** Flags are declared once in
+  `apps/api/src/modules/settings/feature-flags.ts` (key + bilingual
+  label/description + default) and ride on the existing app-settings config
+  (stored under the `app.flags` `Setting` row — no schema change). `GET
+  /settings/app` (public) returns effective values; `PUT /settings/app` (admin)
+  merges overrides; `GET /settings/feature-flags` (admin) returns the registry +
+  values. Unknown/non-boolean overrides are dropped against the registry.
+- **Admin panel.** Settings → App Settings → *Feature flags* renders each flag as
+  a labelled toggle (`app-settings-panel.tsx`, `FeatureFlagsCard`).
+- **Clients.** Mobile `featureFlagProvider` / `featureFlagsProvider`
+  (`core/config/feature_flags.dart`) and web `useFeatureFlag`
+  (`apps/web/client/src/lib/use-feature-flag.ts`), both with built-in defaults
+  mirroring the registry.
+- **Examples.** `promoBanner` (additive — shows a dismissible home banner on
+  mobile + web client) and `inAppChat` (gating — hides every mobile chat entry
+  point, inbox included, when off). Starter flags: `inAppChat`, `liveTracking`,
+  `promoBanner`, `guestBrowsing`.
+
 ### v0.9.82 — Self-applying deploys: migrations run on container startup (2026-10-26)
 
 The API container now runs `apps/api/docker-entrypoint.sh` before the server:
