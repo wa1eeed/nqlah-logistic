@@ -81,6 +81,7 @@ const Map<String, Map<AppLang, String>> _catalog = {
   'account.signOut': {AppLang.ar: 'تسجيل الخروج', AppLang.en: 'Sign out', AppLang.ur: 'سائن آؤٹ'},
   'account.signOutTitle': {AppLang.ar: 'تسجيل الخروج', AppLang.en: 'Sign out', AppLang.ur: 'سائن آؤٹ'},
   'account.signOutBody': {AppLang.ar: 'هل تريد تسجيل الخروج من حسابك؟', AppLang.en: 'Sign out of your account?', AppLang.ur: 'کیا آپ اپنے اکاؤنٹ سے سائن آؤٹ کرنا چاہتے ہیں؟'},
+  'account.deleteAccount': {AppLang.ar: 'حذف الحساب', AppLang.en: 'Delete account', AppLang.ur: 'اکاؤنٹ حذف کریں'},
   'account.exit': {AppLang.ar: 'خروج', AppLang.en: 'Sign out', AppLang.ur: 'باہر'},
   'account.defaultName': {AppLang.ar: 'حسابي', AppLang.en: 'My account', AppLang.ur: 'میرا اکاؤنٹ'},
   'role.driver': {AppLang.ar: 'سائق', AppLang.en: 'Driver', AppLang.ur: 'ڈرائیور'},

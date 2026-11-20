@@ -124,6 +124,9 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _group(c, [
             _row(c, NqIcons.question, s('account.help'), onTap: _contactSupport),
+            _row(c, NqIcons.trash, s('account.deleteAccount'),
+                danger: true,
+                onTap: () => context.push('/account/delete')),
             _row(c, NqIcons.signOut, s('account.signOut'),
                 danger: true,
                 chevron: false,

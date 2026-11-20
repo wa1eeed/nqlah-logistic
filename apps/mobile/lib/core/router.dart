@@ -38,6 +38,7 @@ import '../features/provider/provider_order_screen.dart';
 import '../features/provider/provider_subscription_screen.dart';
 import '../features/provider/provider_payout_settings_screen.dart';
 import '../features/provider/provider_maintenance_hub_screen.dart';
+import '../features/account/account_deletion_screen.dart';
 import '../features/account/account_screen.dart';
 import '../features/account/kyc_documents_screen.dart';
 import '../features/provider/trip_monitor_screen.dart';
@@ -268,6 +269,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/account',
       builder: (context, state) => const AccountScreen(),
+    ),
+    GoRoute(
+      path: '/account/delete',
+      builder: (context, state) => const AccountDeletionScreen(),
     ),
     GoRoute(
       path: '/kyc',
