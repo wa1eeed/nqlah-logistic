@@ -38,15 +38,15 @@ jobs:
           mkdir -p build/ios/SourcePackages
           flutter pub get
 
-      # Generate the Flutter project config (Generated.xcconfig etc.) only.
-      # A full `flutter build ios --no-codesign` fails on Xcode 26 at the final
-      # .app assembly, asking for a Development Team even with --no-codesign.
-      # fastlane's `beta` lane does the authoritative build (fetches SPM deps,
-      # compiles Dart and archives with match signing), so we only need the
-      # project configured here. `--config-only` configures it and never builds.
-      - name: Flutter iOS build (prepare project)
+      # Pre-build the Flutter framework (no signing) so fastlane's `beta` lane
+      # archives an already-compiled app. On Xcode 26 the final no-codesign .app
+      # assembly can report a signing error AFTER "Xcode build done" — the
+      # App.framework is already produced by then, which is all the archive
+      # needs, so this step is best-effort (`|| true`); a real Dart error still
+      # surfaces in the fastlane archive that follows.
+      - name: Flutter iOS build (no codesign)
         working-directory: apps/mobile
-        run: flutter build ios --release --no-codesign --config-only
+        run: flutter build ios --release --no-codesign || true
 
       - uses: ruby/setup-ruby@v1
         with:
