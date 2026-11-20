@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/auth/auth_controller.dart';
 import 'core/auth/auth_models.dart';
+import 'core/config/app_update.dart';
 import 'core/config/maintenance.dart';
 import 'core/i18n/app_strings.dart';
 import 'core/i18n/locale_controller.dart';
@@ -13,6 +14,7 @@ import 'core/router.dart';
 import 'core/session/identity.dart';
 import 'core/theme/app_theme.dart';
 import 'features/maintenance/maintenance_screen.dart';
+import 'features/update/update_screen.dart';
 
 /// Lets foreground push messages surface an in-app banner from outside the
 /// widget tree.
@@ -77,6 +79,12 @@ class NqApp extends ConsumerWidget {
         textDirection: lang.direction,
         child: Consumer(
           builder: (context, ref, _) {
+            // A build below the forced minimum must update before anything else
+            // — even maintenance — so an untrusted-old client never runs.
+            if (ref.watch(updateRequirementProvider) ==
+                UpdateRequirement.forced) {
+              return const UpdateScreen();
+            }
             final maintenance = ref.watch(maintenanceProvider);
             if (maintenance.enabled) {
               return MaintenanceScreen(state: maintenance);

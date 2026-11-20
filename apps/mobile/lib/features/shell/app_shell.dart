@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'guest_cta.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/i18n/locale_controller.dart';
+import '../../core/config/app_update.dart';
 import '../../core/session/identity.dart';
+import '../update/update_screen.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
@@ -58,6 +60,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   late bool _ownerDriver = widget.ownerDriver;
   OwnerDriverContext _odContext = OwnerDriverContext.provider;
   int _index = 0;
+  // Show the non-forced "update available" sheet at most once per app run.
+  bool _softUpdatePrompted = false;
 
   List<NqTab> get _tabs => tabsFor(_identity,
       s: ref.read(stringsProvider),
@@ -77,6 +81,16 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget build(BuildContext context) {
     final c = context.nq;
     ref.watch(localeControllerProvider); // rebuild tab labels on language change
+    // A non-forced update offers a one-time, skippable prompt once the policy
+    // resolves (forced updates are handled by the app-wide overlay).
+    ref.listen(updateRequirementProvider, (_, next) {
+      if (next == UpdateRequirement.soft && !_softUpdatePrompted) {
+        _softUpdatePrompted = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) showSoftUpdateSheet(context, ref);
+        });
+      }
+    });
     final tabs = _tabs;
     // Honor an external tab request (e.g. the wizard linking to the Trucks tab).
     final requested = ref.watch(requestedShellTabProvider);
