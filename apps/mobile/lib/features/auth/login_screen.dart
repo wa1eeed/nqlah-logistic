@@ -41,6 +41,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _password = TextEditingController();
   bool _busy = false;
   String? _error;
+  // Default sign-in is phone + OTP code; password (email or phone) is the
+  // secondary method, revealed on demand.
+  bool _otpMode = true;
 
   @override
   void dispose() {
@@ -137,45 +140,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    NqTextField(
-                      label: s('login.phone'),
-                      phone: true,
-                      controller: _identifier,
-                    ),
-                    const SizedBox(height: 18),
-                    NqTextField(
-                      label: s('login.password'),
-                      obscure: true,
-                      controller: _password,
-                      error: _error,
-                    ),
-                    const SizedBox(height: 10),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: GestureDetector(
-                        onTap: widget.onForgot,
-                        child: Text(s('login.forgot'),
-                            style: NqType.labelStrong.copyWith(color: c.mintTx)),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    NqButton(
-                      label: s('login.signIn'),
-                      loading: _busy,
-                      onPressed: _busy ? null : _submit,
-                    ),
-                    const SizedBox(height: 12),
-                    NqButton(
-                      label: s('login.otpLogin'),
-                      variant: NqButtonVariant.secondary,
-                      icon: 'chat-centered-dots',
-                      onPressed: _busy ? null : _otpLogin,
-                    ),
-                  ],
-                ),
+                child: _otpMode
+                    ? _otpForm(c, s)
+                    : _passwordForm(c, s),
               ),
               const SizedBox(height: 24),
               Center(
@@ -202,6 +169,91 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
   }
+
+  void _switchMode(bool otp) {
+    setState(() {
+      _otpMode = otp;
+      _error = null;
+      _password.clear();
+    });
+  }
+
+  /// Default method: phone number → OTP code.
+  Widget _otpForm(NqColors c, S s) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          NqTextField(
+            label: s('login.phone'),
+            phone: true,
+            controller: _identifier,
+            error: _error,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              NqIcon(NqIcons.info, size: 14, color: c.tx3),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(s('login.otpHint'),
+                    style: NqType.caption.copyWith(color: c.tx3),
+                    textAlign: TextAlign.right),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          NqButton(
+            label: s('login.sendCode'),
+            loading: _busy,
+            onPressed: _busy ? null : _otpLogin,
+          ),
+          const SizedBox(height: 12),
+          NqButton(
+            label: s('login.usePassword'),
+            variant: NqButtonVariant.secondary,
+            onPressed: _busy ? null : () => _switchMode(false),
+          ),
+        ],
+      );
+
+  /// Secondary method: email or phone + password.
+  Widget _passwordForm(NqColors c, S s) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          NqTextField(
+            label: s('login.emailOrPhone'),
+            controller: _identifier,
+          ),
+          const SizedBox(height: 18),
+          NqTextField(
+            label: s('login.password'),
+            obscure: true,
+            controller: _password,
+            error: _error,
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: GestureDetector(
+              onTap: widget.onForgot,
+              child: Text(s('login.forgot'),
+                  style: NqType.labelStrong.copyWith(color: c.mintTx)),
+            ),
+          ),
+          const SizedBox(height: 20),
+          NqButton(
+            label: s('login.signIn'),
+            loading: _busy,
+            onPressed: _busy ? null : _submit,
+          ),
+          const SizedBox(height: 12),
+          NqButton(
+            label: s('login.useOtp'),
+            variant: NqButtonVariant.secondary,
+            icon: 'chat-centered-dots',
+            onPressed: _busy ? null : () => _switchMode(true),
+          ),
+        ],
+      );
 
   /// Language chooser on the onboarding/login screen — shows the active
   /// language and opens the picker so a user whose device is in another
