@@ -51,8 +51,18 @@ class ProviderHomeScreen extends ConsumerWidget {
     }).length;
     final name = (user?.fullName.isNotEmpty ?? false) ? user!.fullName : 'مزوّد';
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(providerWorkProvider);
+        ref.invalidate(marketplaceLoadsProvider);
+        await Future.wait([
+          ref.read(providerWorkProvider.future),
+          ref.read(marketplaceLoadsProvider.future),
+        ]);
+      },
+      child: ListView(
       padding: EdgeInsets.zero,
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
         _hero(context, c, name, awaiting.length, inTransit, newLoads),
         if (awaiting.isNotEmpty)
@@ -84,6 +94,7 @@ class ProviderHomeScreen extends ConsumerWidget {
           ),
         ),
       ],
+      ),
     );
   }
 
