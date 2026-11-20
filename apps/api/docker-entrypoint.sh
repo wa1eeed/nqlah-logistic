@@ -17,6 +17,8 @@ if [ "${SKIP_DB_BOOTSTRAP:-0}" != "1" ]; then
   node dist/prisma/ensure-admin.js            || echo "⚠ ensure-admin failed — continuing"
   node dist/prisma/ensure-platform-identity.js || echo "⚠ ensure-platform-identity failed — continuing"
   node dist/prisma/ensure-plans.js            || echo "⚠ ensure-plans failed — continuing"
+  # Demo/review accounts: dormant unless SEED_DEMO_ACCOUNTS=true (self-gated).
+  node dist/prisma/ensure-demo-accounts.js    || echo "⚠ ensure-demo-accounts failed — continuing"
 else
   echo "▶ [entrypoint] SKIP_DB_BOOTSTRAP=1 — skipping the database step"
 fi
