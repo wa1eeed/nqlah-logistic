@@ -108,7 +108,7 @@ async function main() {
       licenseType: 'حمولة ثقيلة', ownership: 'OWNED', status: 'AVAILABLE',
     },
   });
-  await prisma.truck.upsert({
+  const truck1 = await prisma.truck.upsert({
     where: { plateNumber: 'أ ب ح 1234' },
     update: { status: 'AVAILABLE' },
     create: {
@@ -118,13 +118,33 @@ async function main() {
       currentDriverId: driverProfile.id,
     },
   });
-  await prisma.truck.upsert({
+  const truck2 = await prisma.truck.upsert({
     where: { plateNumber: 'د هـ و 5678' },
     update: { status: 'AVAILABLE' },
     create: {
       plateNumber: 'د هـ و 5678', type: 'BOX_TRUCK', capacity: 8,
       make: 'Isuzu', model: 'FVR', year: 2024, hasGPS: true,
       ownership: 'OWNED', status: 'AVAILABLE', companyId: carrierCo.id,
+    },
+  });
+  // Publish them to the trucks marketplace so the customer-facing market isn't
+  // empty (and the city filter has data to match).
+  await prisma.truckAvailability.upsert({
+    where: { truckId: truck1.id },
+    update: { active: true, originCity: 'الدمام', originRegion: 'الشرقية', destCity: 'الرياض', destRegion: 'الرياض' },
+    create: {
+      truckId: truck1.id, companyId: carrierCo.id, active: true,
+      originCity: 'الدمام', originRegion: 'الشرقية', destCity: 'الرياض', destRegion: 'الرياض',
+      pricePerTrip: 3200, notes: 'متاحة للتحميل الفوري',
+    },
+  });
+  await prisma.truckAvailability.upsert({
+    where: { truckId: truck2.id },
+    update: { active: true, originCity: 'الرياض', originRegion: 'الرياض', destCity: 'جدة', destRegion: 'مكة المكرمة' },
+    create: {
+      truckId: truck2.id, companyId: carrierCo.id, active: true,
+      originCity: 'الرياض', originRegion: 'الرياض', destCity: 'جدة', destRegion: 'مكة المكرمة',
+      pricePerTrip: 2600,
     },
   });
 
@@ -164,7 +184,7 @@ async function main() {
       licenseType: 'حمولة ثقيلة', ownership: 'OWNED', status: 'AVAILABLE',
     },
   });
-  await prisma.truck.upsert({
+  const indivTruck = await prisma.truck.upsert({
     where: { plateNumber: 'س ع ف 2468' },
     update: { status: 'AVAILABLE' },
     create: {
@@ -172,6 +192,15 @@ async function main() {
       make: 'Scania', model: 'R500', year: 2022, hasGPS: true,
       ownership: 'OWNED', status: 'AVAILABLE', companyId: indivCo.id,
       currentDriverId: indivDriver.id,
+    },
+  });
+  await prisma.truckAvailability.upsert({
+    where: { truckId: indivTruck.id },
+    update: { active: true, originCity: 'جدة', originRegion: 'مكة المكرمة', destCity: 'المدينة المنورة', destRegion: 'المدينة المنورة' },
+    create: {
+      truckId: indivTruck.id, companyId: indivCo.id, active: true,
+      originCity: 'جدة', originRegion: 'مكة المكرمة', destCity: 'المدينة المنورة', destRegion: 'المدينة المنورة',
+      pricePerTrip: 1800, notes: 'ناقل فرد — متاح',
     },
   });
 
