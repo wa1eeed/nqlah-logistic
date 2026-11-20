@@ -153,9 +153,19 @@ platform :ios do
 
     # Builds the signed IPA with Shorebird's engine (uses the manual signing the
     # steps above configured). Sets lane_context[SharedValues::IPA_OUTPUT_PATH].
-    # Extra `flutter build ipa` args, if ever needed, go in `args:`.
+    #
+    # args (confirm the exact split against the installed CLI/plugin on the first
+    # watched run):
+    #   --no-confirm      — shorebird flag: no interactive prompt in CI.
+    #   -- --build-number — forwarded to `flutter build ipa`, so the store build
+    #                        number is the next TestFlight number (next_build)
+    #                        and is NOT silently taken from pubspec (avoids a
+    #                        "build number already used" collision). This is the
+    #                        authoritative source now; increment_build_number
+    #                        above only sets the Xcode project value.
     shorebird_release(
       platform: "ios",
+      args: "--no-confirm -- --build-number=#{next_build}",
     )
 
     upload_to_testflight(
