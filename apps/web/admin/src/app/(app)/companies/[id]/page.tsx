@@ -44,7 +44,7 @@ import { api, fetcher } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CompanySubscriptionCard } from '@/components/company-subscription-card';
 import {
-  COMPANIES, ORDERS, formatDate, teamMembersFor, permissionsFor,
+  formatDate, teamMembersFor, permissionsFor,
   normalizeCompany, normalizeOrderList, localizeCity, localizeRegion,
   type Company, type CompanyRole, type Order, type TeamMember,
 } from '@naqla/shared-utils';
@@ -84,9 +84,8 @@ export default function AdminCompanyDetail() {
 
   const { data: companyData, isLoading } = useSWR<unknown>(
     params.id ? `/companies/${params.id}` : null, fetcher);
-  const company =
-    normalizeCompany<Company>(companyData as Company | null | undefined)
-    ?? COMPANIES.find((c) => c.id === params.id);
+  // Real company only — no mock fallback.
+  const company = normalizeCompany<Company>(companyData as Company | null | undefined);
 
   const { data: statsData } = useSWR<CompanyStats>(
     params.id ? `/companies/${params.id}/stats` : null, fetcher);
@@ -101,8 +100,7 @@ export default function AdminCompanyDetail() {
     const g = arr.find((x) => (isCarrier ? x.carrierIds : x.clientIds)?.includes(company?.id ?? ''));
     return g?.name;
   })();
-  const apiOrders = normalizeOrderList(ordersData);
-  const sourceOrders: Order[] = apiOrders.length > 0 ? apiOrders : ORDERS;
+  const sourceOrders: Order[] = normalizeOrderList(ordersData);
   const orders = company
     ? sourceOrders.filter((o) => (isCarrier ? o.carrierId === company.id : o.clientId === company.id))
     : [];

@@ -13,21 +13,21 @@ import { StatsCard } from '@/components/stats-card';
 import { StatusBadge } from '@/components/status-badge';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
-import { DISPUTES, ORDERS, companyById, formatRelative, formatDate, type Dispute } from '@naqla/shared-utils';
+import { ORDERS, companyById, formatRelative, formatDate, type Dispute } from '@naqla/shared-utils';
 
 export default function AdminDisputesPage() {
   const t = useTranslations('compliance');
   const router = useRouter();
   const [tab, setTab] = useState('ALL');
 
-  // GET /admin/disputes — falls back to mock DISPUTES when API is unreachable.
-  const { data } = useSWR<unknown>('/admin/disputes', fetcher);
+  // GET /admin/disputes — real disputes only (no mock fallback).
+  const { data, isLoading } = useSWR<unknown>('/admin/disputes', fetcher);
   const all: Dispute[] = useMemo(() => {
     const arr =
       Array.isArray(data) ? data :
       Array.isArray((data as { items?: unknown[] })?.items) ? (data as { items: unknown[] }).items :
       [];
-    return (arr.length > 0 ? arr : DISPUTES) as Dispute[];
+    return arr as Dispute[];
   }, [data]);
 
   const rows = useMemo(
@@ -58,7 +58,13 @@ export default function AdminDisputesPage() {
         </TabsList>
       </Tabs>
 
-      {rows.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <Card key={i}><CardContent className="p-6"><div className="h-20 rounded bg-muted animate-pulse" /></CardContent></Card>
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
             <FileText className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
