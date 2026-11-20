@@ -17,7 +17,7 @@ import { FileText, Truck, Gavel, Wallet } from 'lucide-react';
 import useSWR from 'swr';
 import { useTranslations } from 'next-intl';
 import { fetcher } from '@/lib/api';
-import { ORDERS, companyById, formatDate, normalizeOrderList, localizeCity, type Order } from '@naqla/shared-utils';
+import { companyById, formatDate, normalizeOrderList, localizeCity, type Order } from '@naqla/shared-utils';
 
 export default function AdminOrdersPage() {
   const t = useTranslations('orders');
@@ -25,13 +25,11 @@ export default function AdminOrdersPage() {
   const [city, setCity] = useState('ALL');
   const [search, setSearch] = useState('');
 
-  // GET /admin/orders → all orders on the platform. Falls back to mock ORDERS
-  // when the API is unreachable (the api.ts interceptor handles that).
-  const { data } = useSWR<unknown>('/admin/orders', fetcher);
-  const all: Order[] = useMemo(() => {
-    const normalized = normalizeOrderList(data);
-    return normalized.length > 0 ? normalized : ORDERS;
-  }, [data]);
+  // GET /admin/orders → all orders on the platform.
+  const { data, isLoading } = useSWR<unknown>('/admin/orders', fetcher);
+  // Real orders only — never fall back to mock data in the admin console, so an
+  // empty platform shows a true empty state (not fabricated orders).
+  const all: Order[] = useMemo(() => normalizeOrderList(data), [data]);
 
   // City options are populated from the orders actually in view (origin or
   // destination), so the dropdown never offers a city with zero matches.
@@ -115,7 +113,13 @@ export default function AdminOrdersPage() {
         <CardContent className="p-0">
           {/* Mobile: app-like card list */}
           <div className="md:hidden divide-y">
-            {rows.length === 0 ? (
+            {isLoading ? (
+              <div className="p-4 space-y-3">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />
+                ))}
+              </div>
+            ) : rows.length === 0 ? (
               <div className="text-center text-muted-foreground py-10">{t('noOrders')}</div>
             ) : (
               rows.map((o) => (
@@ -160,7 +164,15 @@ export default function AdminOrdersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 ? (
+              {isLoading ? (
+                [0, 1, 2, 3, 4].map((i) => (
+                  <TableRow key={`sk-${i}`}>
+                    <TableCell colSpan={9} className="py-3">
+                      <div className="h-7 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center text-muted-foreground py-10">{t('noOrders')}</TableCell>
                 </TableRow>
