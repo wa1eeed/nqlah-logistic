@@ -72,10 +72,19 @@ export class UpdatePolicyDto {
 }
 
 /** Admin-only full edit payload (any subset of sections). */
+/** Platform maintenance mode (admin-controlled). */
+export class MaintenanceDto {
+  /** When true, the API blocks non-admin traffic and clients show the screen. */
+  @IsOptional() @IsBoolean() enabled?: boolean;
+  @IsOptional() @IsString() @MaxLength(500) messageAr?: string;
+  @IsOptional() @IsString() @MaxLength(500) messageEn?: string;
+}
+
 export class UpdateAppSettingsDto {
   /** Feature-flag overrides ({ key: boolean }). Unknown keys / non-booleans are
    *  dropped server-side against the flag registry. */
   @IsOptional() @IsObject() flags?: Record<string, boolean>;
+  @IsOptional() @ValidateNested() @Type(() => MaintenanceDto) maintenance?: MaintenanceDto;
   @IsOptional() @ValidateNested() @Type(() => SplashDto) splash?: SplashDto;
   @IsOptional() @ValidateNested() @Type(() => OnboardingDto) onboarding?: OnboardingDto;
   @IsOptional() @ValidateNested() @Type(() => VersionsDto) versions?: VersionsDto;

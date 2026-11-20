@@ -12,6 +12,13 @@ import {
 export interface AppSettingsConfig {
   /** Effective feature-flag values (registry defaults + admin overrides). */
   flags: FeatureFlags;
+  /** Platform maintenance mode — when enabled, the API blocks non-admin traffic
+   *  and clients show a maintenance screen. */
+  maintenance: {
+    enabled: boolean;
+    messageAr: string;
+    messageEn: string;
+  };
   splash: {
     backgroundColor: string;
     useLogo: boolean;
@@ -50,16 +57,18 @@ const K_SPLASH = 'app.splash';
 const K_ONBOARDING = 'app.onboarding';
 const K_UPDATE = 'app.update';
 const K_FLAGS = 'app.flags';
+const K_MAINTENANCE = 'app.maintenance';
 const K_VER_IOS_LIVE = 'app.version.iosLive';
 const K_VER_IOS_TF = 'app.version.iosTestFlight';
 const K_VER_AND_LIVE = 'app.version.androidLive';
 const K_VER_AND_TF = 'app.version.androidTestFlight';
 
 const VERSION_KEYS = [K_VER_IOS_LIVE, K_VER_IOS_TF, K_VER_AND_LIVE, K_VER_AND_TF];
-const ALL_KEYS = [K_SPLASH, K_ONBOARDING, K_UPDATE, K_FLAGS, ...VERSION_KEYS];
+const ALL_KEYS = [K_SPLASH, K_ONBOARDING, K_UPDATE, K_FLAGS, K_MAINTENANCE, ...VERSION_KEYS];
 
 const DEFAULTS: AppSettingsConfig = {
   flags: resolveFlags(undefined),
+  maintenance: { enabled: false, messageAr: '', messageEn: '' },
   splash: {
     backgroundColor: '#0A2A28',
     useLogo: true,
@@ -97,6 +106,7 @@ export class AppSettingsService {
 
     return {
       flags: resolveFlags(parseJson<Record<string, unknown>>(map[K_FLAGS], {})),
+      maintenance: parseJson(map[K_MAINTENANCE], DEFAULTS.maintenance),
       splash: parseJson(map[K_SPLASH], DEFAULTS.splash),
       // parseJson merges top-level keys; re-normalise slides to an array.
       onboarding: {
@@ -142,6 +152,9 @@ export class AppSettingsService {
       const stored = parseJson<Record<string, unknown>>(row?.value, {});
       const merged = { ...sanitizeFlagOverrides(stored), ...sanitizeFlagOverrides(dto.flags) };
       await this.put(K_FLAGS, JSON.stringify(merged));
+    }
+    if (dto.maintenance) {
+      await this.put(K_MAINTENANCE, JSON.stringify({ ...current.maintenance, ...dto.maintenance }));
     }
     if (dto.splash) {
       await this.put(K_SPLASH, JSON.stringify({ ...current.splash, ...dto.splash }));
