@@ -24,7 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
 import {
-  ORDERS, TRUCKS, DRIVERS, bidsForOrder, companyById, coordsFor, distanceKm, estimatedDurationLabel,
+  bidsForOrder, companyById, coordsFor, distanceKm, estimatedDurationLabel,
   primaryRoadFor, timelineFor, formatDate, formatDateTime,
   normalizeOrder, COMMISSION_RATE, ESCROW_AUTO_RELEASE_HOURS, escrowAutoReleaseAt,
   escrowBreakdown, escrowMsRemaining, localizeCity, type ConsolidatedLeg,
@@ -51,12 +51,23 @@ export default function AdminOrderDetail() {
   // (BIDDING → ASSIGNED → IN_TRANSIT → DELIVERED → COMPLETED) without
   // refreshing. 15s polling + on-focus refresh covers operational needs
   // without burning the API.
-  const { data: orderData } = useSWR<typeof ORDERS[number] | null>(
+  const { data: orderData, isLoading } = useSWR<unknown>(
     params?.id ? `/orders/${params.id}` : null,
     fetcher,
     { revalidateOnFocus: true, refreshInterval: 15000 },
   );
-  const order = normalizeOrder(orderData ?? null) ?? ORDERS.find((o) => o.id === params.id);
+  // Real order only — no mock fallback in the admin console.
+  const order = normalizeOrder((orderData as Parameters<typeof normalizeOrder>[0]) ?? null);
+
+  if (isLoading && !order) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center">
+          <div className="mx-auto h-10 w-10 rounded-full border-2 border-muted border-t-primary animate-spin" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!order) {
     return (
@@ -90,14 +101,6 @@ export default function AdminOrderDetail() {
     ?? null;
   const showShipmentCard = ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED'].includes(order.status);
   const showEscrow = order.status === 'DELIVERED' && (order.agreedPrice ?? 0) > 0;
-  // Assigned truck for this order (demo: prefer the order carrier's on-trip truck).
-  const assignedTruck =
-    TRUCKS.find((t) => t.carrierId === order.carrierId && t.status === 'ON_TRIP') ??
-    TRUCKS.find((t) => t.carrierId === order.carrierId) ??
-    TRUCKS.find((t) => t.status === 'ON_TRIP') ??
-    TRUCKS[0];
-  const assignedPlate = assignedTruck ? parsePlateString(assignedTruck.plateNumber) : null;
-  const assignedDriver = assignedTruck ? DRIVERS.find((d) => d.id === assignedTruck.assignedDriverId) : null;
   const deliveredAt = (timeline.find((t) => t.kind === 'DELIVERED')?.at) ?? new Date();
 
   return (
@@ -272,35 +275,6 @@ export default function AdminOrderDetail() {
                   assign a carrier per leg (phase 2), not only once shipped. */}
               {order.orderType === 'CONSOLIDATED' && (
                 <ConsolidatedReadonly order={order} />
-              )}
-              {showShipmentCard && order.orderType !== 'CONSOLIDATED' && assignedPlate && (
-                <div className="mb-4 rounded-lg border bg-muted/30 p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-                    <Truck className="h-3.5 w-3.5" /> {t('adminDetail.truckAndDriver')}
-                  </div>
-                  <div className="flex flex-col items-center gap-1.5">
-                    <SaudiLicensePlate
-                      letters={assignedPlate.letters}
-                      numbers={assignedPlate.numbers}
-                      plateType="transport"
-                      plateFormat="standard"
-                      size="stage"
-                    />
-                    {assignedTruck && <div className="num text-xs text-muted-foreground">{assignedTruck.code}</div>}
-                  </div>
-                  {assignedDriver && (
-                    <div className="flex items-center gap-3 rounded-md border bg-background p-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]">
-                        <User className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold">{assignedDriver.fullName}</div>
-                        <div className="text-xs text-muted-foreground"><span className="num">{assignedDriver.code}</span> · {t('adminDetail.license', { class: assignedDriver.licenseClass })}</div>
-                      </div>
-                      <a href={`tel:${assignedDriver.phone}`} dir="ltr" className="num text-xs font-medium text-[hsl(var(--mint))]">{assignedDriver.phone}</a>
-                    </div>
-                  )}
-                </div>
               )}
               <dl className="divide-y">
                 <Row label={t('adminDetail.descLabel')} value={order.cargoDescription} />
@@ -729,8 +703,8 @@ function ConsolidatedReadonly({ order }: {
       </div>
       <div className="space-y-2">
         {legs.map((leg) => {
-          const plateStr = leg.plateNumber ?? TRUCKS.find((t) => t.id === leg.truckId)?.plateNumber;
-          const driverName = leg.driverName ?? DRIVERS.find((d) => d.id === leg.driverId)?.fullName;
+          const plateStr = leg.plateNumber;
+          const driverName = leg.driverName;
           const plate = plateStr ? parsePlateString(plateStr) : null;
           return (
             <div key={leg.index} className="flex items-center gap-3 rounded-md border bg-background p-2.5">
