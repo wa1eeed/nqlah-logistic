@@ -62,6 +62,12 @@
 	<string>نستخدم موقعك لعرض تتبّع الشحنة الحيّ أثناء الرحلة.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>نُبقي تتبّع موقعك أثناء تنفيذ طلب الاستلام أو التسليم حتى لو كان التطبيق في الخلفية، لعرض موضع الشحنة الحيّ للعميل والمزوّد.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>نستخدم الكاميرا لتصوير مستندات التحقق وإثبات الاستلام والتسليم وإرفاق الصور في المحادثة.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>نصل إلى صورك لإرفاق المستندات والصور بطلباتك ومحادثاتك.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>نستخدم الميكروفون لتسجيل الرسائل الصوتية في المحادثة.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
