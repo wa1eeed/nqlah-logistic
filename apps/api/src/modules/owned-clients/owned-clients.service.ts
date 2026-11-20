@@ -87,7 +87,7 @@ export class OwnedClientsService {
           city: dto.city,
           region: dto.region,
           contactPhone: dto.contactPhone,
-          contactEmail: email ?? `noreply+${phone}@phone.${process.env.APP_DOMAIN ?? 'nqlah.nx.sa'}`,
+          contactEmail: email ?? `noreply+${phone}@phone.${process.env.APP_DOMAIN ?? 'nqlah.online'}`,
           ownerCarrierId: carrierId,
         },
       });
