@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import useSWR from 'swr';
 import {
-  Apple, ArrowDown, ArrowUp, Flag, Image as ImageIcon, Loader2, Plus, Smartphone, Trash2, Upload,
+  AlertTriangle, Apple, ArrowDown, ArrowUp, Flag, Image as ImageIcon, Loader2, Plus, Smartphone,
+  Trash2, Upload, Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +27,7 @@ interface OnboardingSlide {
   bodyAr: string; bodyEn: string;
 }
 interface AppConfig {
+  maintenance: { enabled: boolean; messageAr: string; messageEn: string };
   splash: { backgroundColor: string; useLogo: boolean; logoVariant: 'light' | 'dark'; taglineAr: string; taglineEn: string };
   onboarding: { enabled: boolean; showOnce: boolean; slides: OnboardingSlide[] };
   versions: { iosLive: string; iosTestFlight: string; androidLive: string; androidTestFlight: string };
@@ -67,6 +69,7 @@ export function AppSettingsPanel() {
 
   return (
     <div className="space-y-6">
+      <MaintenanceCard config={data} mutate={mutate} />
       <FeatureFlagsCard />
       <VersionOverviewCard config={data} mutate={mutate} />
       <SplashCard config={data} mutate={mutate} />
@@ -77,6 +80,103 @@ export function AppSettingsPanel() {
 }
 
 type SectionProps = { config: AppConfig; mutate: () => Promise<unknown> };
+
+// ─── Maintenance mode ─────────────────────────────────────────────────
+/**
+ * Platform maintenance switch. When on, the API answers 503 to every non-admin
+ * request and the apps show a maintenance screen — so the platform can be closed
+ * during maintenance/migrations. Enabling is confirmed first.
+ */
+function MaintenanceCard({ config, mutate }: SectionProps) {
+  const locale = useLocale();
+  const ar = locale !== 'en';
+  const confirm = useConfirm();
+  const [m, setM] = useState(config.maintenance);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { setM(config.maintenance); }, [config.maintenance]);
+
+  const on = config.maintenance.enabled;
+
+  const save = async () => {
+    // Confirm when turning the platform OFF (enabling maintenance).
+    if (m.enabled && !config.maintenance.enabled) {
+      const ok = await confirm({
+        title: ar ? 'تفعيل وضع الصيانة؟' : 'Enable maintenance mode?',
+        description: ar
+          ? 'سيُغلَق التطبيق والمنصة أمام جميع المستخدمين (عدا الأدمن) ويظهر لهم شاشة الصيانة فورًا.'
+          : 'The apps and platform will be closed to all users (except admins); they will see the maintenance screen immediately.',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setSaving(true);
+    try {
+      await api.put('/settings/app', { maintenance: m });
+      await mutate();
+      notify.success(ar ? 'تم حفظ إعدادات الصيانة' : 'Maintenance settings saved');
+    } catch (err) { notify.error(err, ar ? 'تعذّر الحفظ' : 'Save failed'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <Card className={on ? 'border-destructive/40' : undefined}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Wrench className="h-4 w-4" />
+          {ar ? 'وضع الصيانة' : 'Maintenance mode'}
+          {on && (
+            <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-semibold text-destructive">
+              {ar ? 'مُفعّل' : 'ON'}
+            </span>
+          )}
+        </CardTitle>
+        <CardDescription>
+          {ar
+            ? 'أغلِق المنصة والتطبيقات مؤقتًا أثناء الصيانة أو التحديثات. يبقى الأدمن قادرًا على الدخول.'
+            : 'Temporarily close the platform and apps during maintenance or updates. Admins keep access.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 max-w-2xl">
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <p className="text-xs">
+            {ar
+              ? 'عند التفعيل، تُرفَض كل الطلبات من غير الأدمن (503) فلا تُكتب بيانات جديدة أثناء التحديث.'
+              : 'While on, all non-admin requests are rejected (503), so no new data is written during the update.'}
+          </p>
+        </div>
+        <div className="flex items-center justify-between rounded-lg border p-3">
+          <div>
+            <Label htmlFor="maint-enabled" className="cursor-pointer">
+              {ar ? 'تفعيل وضع الصيانة' : 'Enable maintenance mode'}
+            </Label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {ar ? 'يُغلق المنصة والتطبيقات أمام المستخدمين.' : 'Closes the platform and apps to users.'}
+            </p>
+          </div>
+          <Switch id="maint-enabled" checked={m.enabled}
+            onCheckedChange={(c) => setM({ ...m, enabled: c })} />
+        </div>
+        <div className="space-y-2">
+          <Label>{ar ? 'رسالة الصيانة (عربي)' : 'Maintenance message (Arabic)'}</Label>
+          <Textarea rows={2} value={m.messageAr}
+            placeholder={ar ? 'نقوم بتحديث المنصة، نعود قريبًا.' : ''}
+            onChange={(e) => setM({ ...m, messageAr: e.target.value })} />
+        </div>
+        <div className="space-y-2">
+          <Label>{ar ? 'رسالة الصيانة (إنجليزي)' : 'Maintenance message (English)'}</Label>
+          <Textarea rows={2} dir="ltr" value={m.messageEn}
+            placeholder="We are updating the platform. Back shortly."
+            onChange={(e) => setM({ ...m, messageEn: e.target.value })} />
+        </div>
+        <Button onClick={save} disabled={saving} variant={m.enabled ? 'destructive' : 'default'}>
+          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+          {ar ? 'حفظ' : 'Save'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
 
 // ─── Feature flags ────────────────────────────────────────────────────
 interface FeatureFlagDef {
