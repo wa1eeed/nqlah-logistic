@@ -1,17 +1,11 @@
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { randomInt } from 'crypto';
+import { normalizeSaudiPhone } from '@naqla/shared-utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { SMS_CONNECTOR, type SmsConnector } from '../../integrations/sms/sms.connector';
 import { IntegrationsService } from '../../modules/integrations/integrations.service';
 import { AuthenticaOtpConnector } from '../../integrations/otp/authentica-otp.connector';
-
-/** Normalize a phone for comparison: keep a leading +, drop other non-digits. */
-function normalizePhone(p: string): string {
-  const s = (p || '').trim();
-  const plus = s.startsWith('+') ? '+' : '';
-  return plus + s.replace(/\D/g, '');
-}
 
 type OtpMode =
   | { kind: 'authentica-live'; client: AuthenticaOtpConnector }
@@ -65,7 +59,9 @@ export class OtpService {
       const num = (cfg.phone || '').trim();
       const code = (cfg.code || '').trim();
       if (!num || !code) return null;
-      if (normalizePhone(num) !== normalizePhone(phone)) return null;
+      // `phone` is already normalized by the caller; normalize the stored
+      // number the same way so the match is format-agnostic (05… vs +9665…).
+      if (normalizeSaudiPhone(num) !== normalizeSaudiPhone(phone)) return null;
       return { code };
     } catch {
       return null; // never let a malformed setting break real OTP

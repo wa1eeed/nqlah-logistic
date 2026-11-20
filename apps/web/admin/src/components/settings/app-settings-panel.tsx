@@ -668,12 +668,10 @@ function ReviewOtpCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Apple className="h-4 w-4" />
-          {ar ? 'وضع مراجعة المتجر (App Store / Play)' : 'Store review mode (App Store / Play)'}
-          {on && (
-            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
-              {ar ? 'مُفعّل' : 'ON'}
-            </span>
-          )}
+          {ar ? 'دخول OTP للتطبيق — وضع مراجعة المتجر' : 'App OTP login — store review mode'}
+          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${on ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'}`}>
+            {on ? (ar ? 'تجريبي للمراجعة' : 'REVIEW') : (ar ? 'حقيقي' : 'LIVE')}
+          </span>
         </CardTitle>
         <CardDescription>
           {ar
@@ -700,10 +698,12 @@ function ReviewOtpCard() {
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
                 <Label htmlFor="review-enabled" className="cursor-pointer">
-                  {ar ? 'تفعيل وضع المراجعة' : 'Enable review mode'}
+                  {ar ? 'تشغيل المسار التجريبي للمراجعة' : 'Switch to review (test) track'}
                 </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {ar ? 'يقبل الرمز الثابت لرقم المراجِع فقط.' : 'Accepts the fixed code for the reviewer number only.'}
+                  {ar
+                    ? 'تشغيل: رقم المراجِع فقط يدخل بالرمز الثابت (الباقي OTP حقيقي). إيقاف: الدخول الحقيقي لكل المستخدمين عبر Authentica.'
+                    : 'On: only the reviewer number uses the fixed code (everyone else stays on real OTP). Off: real OTP for all users via Authentica.'}
                 </p>
               </div>
               <Switch id="review-enabled" checked={r.enabled}
