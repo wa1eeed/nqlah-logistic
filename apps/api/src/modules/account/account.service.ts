@@ -125,4 +125,47 @@ export class AccountService {
     });
     return this.toStatus(user);
   }
+
+  /**
+   * Purge accounts whose grace period has elapsed: **anonymize** the user's
+   * personal data (real deletion of PII) and revoke their sessions/push tokens.
+   * The user row itself is kept but stripped — so legally-required, now
+   * anonymized financial records (invoices/orders) stay intact (FK integrity +
+   * ZATCA retention). Run daily by a scheduled job (see the purge endpoint).
+   * Idempotent: once purged, `deletionScheduledAt` is cleared so it won't repeat.
+   */
+  async purgeExpiredDeletions(now: Date = new Date()): Promise<{ purged: number }> {
+    const due = await this.prisma.user.findMany({
+      where: { deletionScheduledAt: { not: null, lte: now } },
+      select: { id: true },
+    });
+
+    for (const { id } of due) {
+      // Best-effort cleanup of auth/session + push rows (ignore if absent).
+      await this.prisma.refreshToken.deleteMany({ where: { userId: id } }).catch(() => undefined);
+      await this.prisma.pushToken.deleteMany({ where: { userId: id } }).catch(() => undefined);
+      await this.prisma.user.update({
+        where: { id },
+        data: {
+          // Scrub PII. Phone is unique + required, so it gets a per-id sentinel
+          // (frees the real number for re-use and removes the personal value).
+          firstName: 'حساب',
+          lastName: 'محذوف',
+          email: null,
+          phone: `deleted-${id}`,
+          passwordHash: null,
+          avatar: null,
+          nationalId: null,
+          isActive: false,
+          isPhoneVerified: false,
+          isEmailVerified: false,
+          // Clear the schedule so the row isn't picked up again; keep
+          // deletionRequestedAt as the "anonymized on request" marker.
+          deletionScheduledAt: null,
+        },
+      });
+    }
+
+    return { purged: due.length };
+  }
 }
