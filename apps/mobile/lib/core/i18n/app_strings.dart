@@ -121,6 +121,11 @@ const Map<String, Map<AppLang, String>> _catalog = {
   'login.errPhone': {AppLang.ar: 'أدخل رقم الجوال لإرسال رمز الدخول.', AppLang.en: 'Enter your mobile number to get a sign-in code.', AppLang.ur: 'سائن اِن کوڈ کے لیے موبائل نمبر درج کریں۔'},
   'login.errUnexpected': {AppLang.ar: 'حدث خطأ غير متوقع. حاول مجددًا.', AppLang.en: 'Something went wrong. Please try again.', AppLang.ur: 'کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔'},
   'login.errOtp': {AppLang.ar: 'تعذّر إرسال الرمز. حاول مجددًا.', AppLang.en: "Couldn't send the code. Try again.", AppLang.ur: 'کوڈ نہیں بھیجا جا سکا۔ دوبارہ کوشش کریں۔'},
+  'login.sendCode': {AppLang.ar: 'إرسال رمز التحقق', AppLang.en: 'Send verification code', AppLang.ur: 'تصدیقی کوڈ بھیجیں'},
+  'login.otpHint': {AppLang.ar: 'سنرسل رمز تحقق إلى جوالك لتسجيل الدخول.', AppLang.en: "We'll send a verification code to your phone to sign in.", AppLang.ur: 'سائن اِن کے لیے ہم آپ کے فون پر تصدیقی کوڈ بھیجیں گے۔'},
+  'login.usePassword': {AppLang.ar: 'الدخول بالبريد وكلمة المرور', AppLang.en: 'Sign in with email & password', AppLang.ur: 'ای میل اور پاس ورڈ سے سائن اِن'},
+  'login.useOtp': {AppLang.ar: 'الدخول برمز التحقق', AppLang.en: 'Sign in with a code', AppLang.ur: 'کوڈ سے سائن اِن'},
+  'login.emailOrPhone': {AppLang.ar: 'البريد الإلكتروني أو رقم الجوال', AppLang.en: 'Email or mobile number', AppLang.ur: 'ای میل یا موبائل نمبر'},
 
   // ── Common actions ─────────────────────────────────────────────────
   'common.cancel': {AppLang.ar: 'إلغاء', AppLang.en: 'Cancel', AppLang.ur: 'منسوخ'},
