@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/marketplace/marketplace_repository.dart';
-import '../../core/orders/order_draft_controller.dart' show truckOptions;
+import '../../core/orders/catalog_providers.dart' show truckOptionsProvider;
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
@@ -39,11 +39,14 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
       (_truckTypeFilter.isNotEmpty ? 1 : 0) + (_backhaulOnly ? 1 : 0);
 
   List<TruckListing> _applyFilters(List<TruckListing> list) {
+    // Match case-insensitively so a catalog id casing mismatch never silently
+    // filters everything out.
+    final wanted = _truckTypeFilter.map((e) => e.toUpperCase()).toSet();
     return list.where((t) {
       if (_backhaulOnly && !t.isDirected) return false;
-      if (_truckTypeFilter.isNotEmpty &&
+      if (wanted.isNotEmpty &&
           (t.truckType == null ||
-              !_truckTypeFilter.contains(t.truckType!.toUpperCase()))) {
+              !wanted.contains(t.truckType!.toUpperCase()))) {
         return false;
       }
       return true;
@@ -222,6 +225,7 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
 
   void _showFilterSheet() {
     final c = context.nq;
+    final truckOpts = ref.read(truckOptionsProvider);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -280,7 +284,7 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
                     runSpacing: 8,
                     alignment: WrapAlignment.end,
                     children: [
-                      for (final t in truckOptions)
+                      for (final t in truckOpts)
                         NqChip(
                           label: t.label,
                           selected: _truckTypeFilter.contains(t.value),
