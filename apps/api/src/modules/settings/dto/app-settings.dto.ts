@@ -80,6 +80,26 @@ export class MaintenanceDto {
   @IsOptional() @IsString() @MaxLength(500) messageEn?: string;
 }
 
+/**
+ * App Store / Play Store **review bypass** (admin-only, never in the public
+ * config). Lets a single designated test phone sign in with a fixed OTP so
+ * store reviewers can test the app — even while live OTP is active for everyone
+ * else. Scoped to one number; remove after approval.
+ */
+export class ReviewOtpDto {
+  /** Master switch — off by default; the bypass only applies while true. */
+  @IsBoolean() enabled!: boolean;
+
+  /** The one reviewer phone in E.164 (e.g. +966500000000). Empty disables. */
+  @IsOptional() @IsString() @MaxLength(20)
+  @Matches(/^(\+[1-9]\d{6,14})?$/, { message: 'رقم جوال غير صالح (صيغة E.164)' })
+  phone?: string;
+
+  /** The fixed code that number accepts (4–8 digits). */
+  @IsOptional() @IsString() @Matches(/^(\d{4,8})?$/, { message: 'الرمز يجب أن يكون 4 إلى 8 أرقام' })
+  code?: string;
+}
+
 export class UpdateAppSettingsDto {
   /** Feature-flag overrides ({ key: boolean }). Unknown keys / non-booleans are
    *  dropped server-side against the flag registry. */

@@ -75,6 +75,7 @@ export function AppSettingsPanel() {
       <SplashCard config={data} mutate={mutate} />
       <OnboardingCard config={data} mutate={mutate} />
       <UpdatePolicyCard config={data} mutate={mutate} />
+      <ReviewOtpCard />
     </div>
   );
 }
@@ -629,6 +630,101 @@ function UpdatePolicyCard({ config, mutate }: SectionProps) {
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           {t('settings.appSettings.update.save')}
         </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── App Store / Play review OTP bypass ───────────────────────────────
+// Admin-only; its own endpoint (never in the public GET /settings/app) so the
+// reviewer phone + fixed code are never exposed.
+interface ReviewOtp { enabled: boolean; phone: string; code: string }
+
+function ReviewOtpCard() {
+  const locale = useLocale();
+  const ar = locale !== 'en';
+  const { data, mutate, isLoading } = useSWR<ReviewOtp>('/settings/review-otp', fetcher);
+  const [r, setR] = useState<ReviewOtp>({ enabled: false, phone: '', code: '' });
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { if (data) setR(data); }, [data]);
+
+  const save = async () => {
+    if (r.enabled && (!r.phone.trim() || !r.code.trim())) {
+      notify.error(null, ar ? 'أدخل رقم الجوال والرمز لتفعيل وضع المراجعة' : 'Enter the phone and code to enable review mode');
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.put('/settings/review-otp', { enabled: r.enabled, phone: r.phone.trim(), code: r.code.trim() });
+      await mutate();
+      notify.success(ar ? 'تم حفظ وضع مراجعة المتجر' : 'Store-review mode saved');
+    } catch (err) { notify.error(err, ar ? 'تعذّر الحفظ' : 'Save failed'); }
+    finally { setSaving(false); }
+  };
+
+  const on = data?.enabled;
+  return (
+    <Card className={on ? 'border-amber-500/40' : undefined}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Apple className="h-4 w-4" />
+          {ar ? 'دخول OTP للتطبيق — وضع مراجعة المتجر' : 'App OTP login — store review mode'}
+          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${on ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'}`}>
+            {on ? (ar ? 'تجريبي للمراجعة' : 'REVIEW') : (ar ? 'حقيقي' : 'LIVE')}
+          </span>
+        </CardTitle>
+        <CardDescription>
+          {ar
+            ? 'رقم جوال واحد لمراجِع المتجر يسجّل الدخول برمز تحقق ثابت — حتى أثناء تفعيل OTP الحقيقي لبقية المستخدمين. للاختبار من أبل/جوجل فقط.'
+            : 'One reviewer phone signs in with a fixed OTP — even while real OTP is live for everyone else. For Apple/Google review only.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 max-w-2xl">
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {ar ? 'جارٍ التحميل…' : 'Loading…'}
+          </div>
+        ) : (
+          <>
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <p className="text-xs">
+                {ar
+                  ? 'تجاوز أمني مقصور على رقم واحد لغرض مراجعة المتجر فقط. عطّله فور قبول التطبيق، ولا تستخدم رقم مستخدم حقيقي.'
+                  : 'A security bypass limited to one number, for store review only. Disable it right after approval; never use a real user’s number.'}
+              </p>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label htmlFor="review-enabled" className="cursor-pointer">
+                  {ar ? 'تشغيل المسار التجريبي للمراجعة' : 'Switch to review (test) track'}
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {ar
+                    ? 'تشغيل: رقم المراجِع فقط يدخل بالرمز الثابت (الباقي OTP حقيقي). إيقاف: الدخول الحقيقي لكل المستخدمين عبر Authentica.'
+                    : 'On: only the reviewer number uses the fixed code (everyone else stays on real OTP). Off: real OTP for all users via Authentica.'}
+                </p>
+              </div>
+              <Switch id="review-enabled" checked={r.enabled}
+                onCheckedChange={(c) => setR({ ...r, enabled: c })} />
+            </div>
+            <div className="space-y-2">
+              <Label>{ar ? 'رقم جوال المراجِع (صيغة E.164)' : 'Reviewer phone (E.164)'}</Label>
+              <Input dir="ltr" className="max-w-[260px]" placeholder="+966500000000"
+                value={r.phone} onChange={(e) => setR({ ...r, phone: e.target.value.trim() })} />
+            </div>
+            <div className="space-y-2">
+              <Label>{ar ? 'الرمز الثابت (4–8 أرقام)' : 'Fixed code (4–8 digits)'}</Label>
+              <Input dir="ltr" inputMode="numeric" className="max-w-[160px]" placeholder="000000"
+                value={r.code} onChange={(e) => setR({ ...r, code: e.target.value.replace(/\D/g, '').slice(0, 8) })} />
+            </div>
+            <Button onClick={save} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {ar ? 'حفظ' : 'Save'}
+            </Button>
+          </>
+        )}
       </CardContent>
     </Card>
   );
