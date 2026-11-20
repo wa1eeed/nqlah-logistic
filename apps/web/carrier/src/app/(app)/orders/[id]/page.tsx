@@ -31,6 +31,7 @@ import {
 } from '@naqla/shared-utils';
 import { ConsolidatedPanel } from '@/components/consolidated-panel';
 import { StopsPanel } from '@/components/stops-panel';
+import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
 
 const TITLE_KEYS = [
   'CREATED', 'PUBLISHED', 'BID_ACCEPTED', 'CONFIRMED', 'PICKED_UP', 'IN_TRANSIT',
@@ -106,7 +107,8 @@ export default function CarrierOrderDetail() {
   const showShipmentCard = ['ASSIGNED', 'CONFIRMED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED'].includes(order.status);
   // Real assigned driver(s) from the order payload — never mock. Empty = not
   // yet assigned (the carrier assigns via the dialog, which refetches).
-  type ApiOrderDriver = { id: string; driver: { status?: string; user: { firstName: string; lastName: string; phone: string } } };
+  type ApiTruck = { plateNumber: string };
+  type ApiOrderDriver = { id: string; driver: { status?: string; user: { firstName: string; lastName: string; phone: string }; assignedTrucks?: ApiTruck[] } };
   const orderDrivers = (order as unknown as { orderDrivers?: ApiOrderDriver[] }).orderDrivers ?? [];
 
   const assignBlocked = !pickDriver || assigning;
@@ -365,19 +367,31 @@ export default function CarrierOrderDetail() {
                   {orderDrivers.length === 0 ? (
                     <div className="text-xs text-muted-foreground py-1">{t('detail.noDriverAssigned')}</div>
                   ) : (
-                    orderDrivers.map((od) => (
-                      <div key={od.id} className="flex items-center gap-3 rounded-md border bg-background p-3">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]">
-                          <Users className="h-4 w-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-semibold">{od.driver.user.firstName} {od.driver.user.lastName}</div>
+                    orderDrivers.map((od) => {
+                      const plate = od.driver.assignedTrucks?.[0]?.plateNumber
+                        ? parsePlateString(od.driver.assignedTrucks[0].plateNumber)
+                        : null;
+                      return (
+                      <div key={od.id} className="space-y-2">
+                        {plate && (
+                          <div className="flex flex-col items-center gap-1.5">
+                            <SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" plateFormat="standard" size="stage" />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3 rounded-md border bg-background p-3">
+                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--mint))]/15 text-[hsl(var(--mint))]">
+                            <Users className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-semibold">{od.driver.user.firstName} {od.driver.user.lastName}</div>
+                          </div>
+                          <a href={`tel:${od.driver.user.phone}`} dir="ltr" className="num inline-flex items-center gap-1 text-xs font-medium text-[hsl(var(--mint))]">
+                            <Phone className="h-3.5 w-3.5" /> {od.driver.user.phone}
+                          </a>
                         </div>
-                        <a href={`tel:${od.driver.user.phone}`} dir="ltr" className="num inline-flex items-center gap-1 text-xs font-medium text-[hsl(var(--mint))]">
-                          <Phone className="h-3.5 w-3.5" /> {od.driver.user.phone}
-                        </a>
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}

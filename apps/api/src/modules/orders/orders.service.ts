@@ -227,6 +227,12 @@ export class OrdersService {
             driver: {
               include: {
                 user: { select: { firstName: true, lastName: true, phone: true } },
+                // The truck this driver currently drives — so the order detail
+                // can show the real plate instead of a mock one.
+                assignedTrucks: {
+                  select: { plateNumber: true, type: true, make: true, model: true, year: true, capacity: true },
+                  take: 1,
+                },
               },
             },
           },
