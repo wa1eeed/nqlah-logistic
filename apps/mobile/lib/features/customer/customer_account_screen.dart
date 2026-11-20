@@ -88,7 +88,6 @@ class CustomerAccountScreen extends ConsumerWidget {
           ]),
           const SizedBox(height: 16),
           _group(c, [
-            _row(c, NqIcons.users, s('account.users')),
             _row(c, NqIcons.globe, s('account.language'),
                 value: lang.nativeName,
                 onTap: () => showLanguagePicker(context, ref)),

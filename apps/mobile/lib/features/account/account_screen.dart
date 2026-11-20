@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../shell/app_shell.dart' show requestedShellTabProvider;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_controller.dart';
@@ -125,8 +127,11 @@ class AccountScreen extends ConsumerWidget {
               _row(c, NqIcons.path, s('account.myTrips'),
                   onTap: () => context.go('/app'))
             else
-              _row(c, NqIcons.truck, s('account.fleet'),
-                  onTap: () => context.go('/app')),
+              _row(c, NqIcons.truck, s('account.fleet'), onTap: () {
+                // Land on the Fleet tab (provider tab 3), not Home.
+                ref.read(requestedShellTabProvider.notifier).state = 3;
+                context.go('/app');
+              }),
             _row(c, NqIcons.globe, s('account.language'),
                 value: lang.nativeName,
                 onTap: () => showLanguagePicker(context, ref)),
