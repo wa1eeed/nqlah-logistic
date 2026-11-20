@@ -13,6 +13,7 @@ class AuthUser {
     this.companyId,
     this.companyNameAr,
     this.crNumber,
+    this.isOwnerDriver = false,
   });
 
   final String id;
@@ -25,6 +26,9 @@ class AuthUser {
   // Populated from the embedded `company` relation (present on `GET /users/me`).
   final String? companyNameAr;
   final String? crNumber;
+  /// Carrier whose own user also drives (individual provider) — unlocks the
+  /// provider ⇄ driving switcher. From `GET /users/me`.
+  final bool isOwnerDriver;
 
   String get fullName =>
       [firstName, lastName].where((p) => p != null && p.isNotEmpty).join(' ').trim();
@@ -52,6 +56,7 @@ class AuthUser {
       companyId: json['companyId'] as String?,
       companyNameAr: company is Map ? company['nameAr']?.toString() : null,
       crNumber: company is Map ? company['crNumber']?.toString() : null,
+      isOwnerDriver: json['isOwnerDriver'] == true,
     );
   }
 }
