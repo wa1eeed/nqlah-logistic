@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-export const API_BASE = 'https://api.nqlah.nx.sa/api';
+export const API_BASE = 'https://api.nqlah.online/api';
 
 export const api = axios.create({ baseURL: API_BASE, timeout: 15000 });
 

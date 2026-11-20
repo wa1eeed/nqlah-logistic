@@ -23,7 +23,7 @@ const DEV_ORIGINS = [
   'http://localhost:3003',
 ];
 
-const PROD_HOSTS = (process.env.APP_DOMAIN ?? 'nqlah.nx.sa').split(',').map((s) => s.trim());
+const PROD_HOSTS = (process.env.APP_DOMAIN ?? 'nqlah.online').split(',').map((s) => s.trim());
 
 function isAllowedOrigin(origin: string | undefined, extra: string[]): boolean {
   if (!origin) return true; // same-origin / curl / mobile
@@ -66,7 +66,7 @@ async function bootstrap() {
               'script-src': ["'self'"],
               'img-src': ["'self'", 'data:', 'https:'],
               'style-src': ["'self'", "'unsafe-inline'"],
-              'connect-src': ["'self'", `https://*.${(process.env.APP_DOMAIN ?? 'nqlah.nx.sa').split(',')[0].trim()}`],
+              'connect-src': ["'self'", `https://*.${(process.env.APP_DOMAIN ?? 'nqlah.online').split(',')[0].trim()}`],
               'frame-ancestors': ["'none'"],
               'object-src': ["'none'"],
               'base-uri': ["'self'"],

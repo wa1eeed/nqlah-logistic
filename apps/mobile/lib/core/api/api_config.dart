@@ -8,13 +8,13 @@
 /// flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api  # iOS sim / web
 /// ```
 ///
-/// Defaults to the hosted production environment (`nqlah.nx.sa`).
+/// Defaults to the hosted production environment (`api.nqlah.online`).
 class ApiConfig {
   ApiConfig._();
 
   static const String baseUrl = String.fromEnvironment(
     'NQ_API_BASE',
-    defaultValue: 'https://nqlah.nx.sa/api',
+    defaultValue: 'https://api.nqlah.online/api',
   );
 
   static const Duration connectTimeout = Duration(seconds: 20);
