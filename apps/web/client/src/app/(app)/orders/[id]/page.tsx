@@ -31,7 +31,7 @@ import { EscrowCountdown } from '@/components/escrow-countdown';
 import { playSoundIfEnabled } from '@/lib/sound';
 import { notify } from '@/lib/notify';
 import {
-  BIDS, DRIVERS, ORDERS, TRUCKS, bidsForOrder, companyById, coordsFor, distanceKm,
+  BIDS, DRIVERS, TRUCKS, bidsForOrder, companyById, coordsFor, distanceKm,
   estimatedDurationLabel, primaryRoadFor, formatDate, formatDateTime, formatRelative,
   lastRound, proposalForOrder, timelineFor,
   cancellationPolicy, escrowBreakdown, COMMISSION_RATE, pickupWindowLabel, estimateDeliveryDate,
@@ -74,16 +74,16 @@ export default function ClientOrderDetail() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   // Real-API source of truth (with mock fallback via the api interceptor).
-  // We still hold `ORDERS.find(...)` as a final fallback for offline UI demos.
   // The API response uses Prisma field names (weight, requiredTruckType,
   // _count.bids) — `normalizeOrder` aliases them onto the mock shape the UI
   // was written against, so accessing `order.weightKg` / `order.truckType`
   // no longer crashes when the backend wins the race.
-  const { data: orderData, mutate: refetchOrder } = useSWR<Order>(
+  const { data: orderData, mutate: refetchOrder, isLoading } = useSWR<Order>(
     params?.id ? `/orders/${params.id}` : null,
     fetcher,
   );
-  const order = (normalizeOrder(orderData) ?? ORDERS.find((o) => o.id === params.id)) as Order | undefined;
+  // Real order only — no mock fallback (would show a fabricated order).
+  const order = normalizeOrder(orderData) as Order | undefined;
 
   // ─── Hooks — MUST be declared unconditionally, BEFORE any early return ────
   // Otherwise React throws "Rendered more hooks than during the previous
@@ -124,6 +124,15 @@ export default function ClientOrderDetail() {
   }, [bids, sort]);
 
   // ─── Early return — ONLY after all hooks have been called ────────────────
+  if (isLoading && !order) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center">
+          <div className="mx-auto h-10 w-10 rounded-full border-2 border-muted border-t-primary animate-spin" />
+        </CardContent>
+      </Card>
+    );
+  }
   if (!order) {
     return (
       <Card>

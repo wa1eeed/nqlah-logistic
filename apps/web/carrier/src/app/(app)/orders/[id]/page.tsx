@@ -26,7 +26,7 @@ import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
 import { EscrowCountdown } from '@/components/escrow-countdown';
 import {
-  ORDERS, TRUCKS, DRIVERS, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
+  TRUCKS, DRIVERS, companyById, coordsFor, distanceKm, estimatedDurationLabel, primaryRoadFor,
   formatDate, formatDateTime, localizeCity, timelineFor, normalizeOrder, type Order,
 } from '@naqla/shared-utils';
 import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
@@ -47,12 +47,13 @@ export default function CarrierOrderDetail() {
   );
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { data: orderData, mutate: refetchOrder } = useSWR<typeof ORDERS[number]>(
+  const { data: orderData, mutate: refetchOrder, isLoading } = useSWR<unknown>(
     params?.id ? `/orders/${params.id}` : null,
     fetcher,
   );
-  // Normalize API → mock shape so `order.weightKg` / `order.truckType` don't crash.
-  const order = normalizeOrder(orderData) ?? ORDERS.find((o) => o.id === params.id);
+  // Normalize API → mock shape so `order.weightKg` / `order.truckType` don't
+  // crash. Real order only — no mock fallback.
+  const order = normalizeOrder((orderData as Parameters<typeof normalizeOrder>[0]) ?? null);
   const [confirmPickupOpen, setConfirmPickupOpen] = useState(false);
   const [startTripOpen, setStartTripOpen] = useState(false);
   const [markDeliveredOpen, setMarkDeliveredOpen] = useState(false);
@@ -71,6 +72,15 @@ export default function CarrierOrderDetail() {
     Array<{ id: string; rating?: number; user?: { firstName?: string; lastName?: string; phone?: string } }>
   >(assignDriverOpen ? '/fleet/drivers/available' : null, fetcher);
 
+  if (isLoading && !order) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center">
+          <div className="mx-auto h-10 w-10 rounded-full border-2 border-muted border-t-primary animate-spin" />
+        </CardContent>
+      </Card>
+    );
+  }
   if (!order) {
     return (
       <Card>
