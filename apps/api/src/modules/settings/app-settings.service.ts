@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import type {
-  UpdateAppSettingsDto, UpdateVersionsDto,
+  UpdateAppSettingsDto, UpdateVersionsDto, ReviewOtpDto,
 } from './dto/app-settings.dto';
 import {
   FEATURE_FLAGS, resolveFlags, sanitizeFlagOverrides,
@@ -52,7 +52,15 @@ export interface AppSettingsConfig {
   };
 }
 
+/** App Store / Play Store review bypass (admin-only; NOT in the public config). */
+export interface ReviewOtp {
+  enabled: boolean;
+  phone: string;
+  code: string;
+}
+
 // ─── Setting keys (all under category "app") ──────────────────────────
+const K_REVIEW_OTP = 'app.reviewOtp';
 const K_SPLASH = 'app.splash';
 const K_ONBOARDING = 'app.onboarding';
 const K_UPDATE = 'app.update';
@@ -129,6 +137,38 @@ export class AppSettingsService {
   async getFeatureFlags(): Promise<{ defs: readonly FeatureFlagDef[]; values: FeatureFlags }> {
     const config = await this.getConfig();
     return { defs: FEATURE_FLAGS, values: config.flags };
+  }
+
+  // ─── App Store review OTP bypass (admin-only) ──────────────────────────
+  // Deliberately NOT part of getConfig()/ALL_KEYS: the public GET /settings/app
+  // must never expose the reviewer phone or the fixed code.
+
+  /** Current review-bypass config (admin read, and read by OtpService). */
+  async getReviewOtp(): Promise<ReviewOtp> {
+    const row = await this.prisma.setting.findUnique({ where: { key: K_REVIEW_OTP } });
+    const v = parseJson<Partial<ReviewOtp>>(row?.value, {});
+    return {
+      enabled: v.enabled === true,
+      phone: (v.phone ?? '').trim(),
+      code: (v.code ?? '').trim(),
+    };
+  }
+
+  /** Admin edit of the review-bypass config. Enabling requires a phone + code. */
+  async setReviewOtp(dto: ReviewOtpDto): Promise<ReviewOtp> {
+    const next: ReviewOtp = {
+      enabled: dto.enabled === true,
+      phone: (dto.phone ?? '').trim(),
+      code: (dto.code ?? '').trim(),
+    };
+    if (next.enabled && (!next.phone || !next.code)) {
+      throw new BadRequestException({
+        code: 'REVIEW_OTP_INCOMPLETE',
+        message: 'لتفعيل وضع المراجعة يجب إدخال رقم الجوال والرمز الثابت.',
+      });
+    }
+    await this.put(K_REVIEW_OTP, JSON.stringify(next));
+    return next;
   }
 
   /** Upsert one Setting row (category "app"). */

@@ -10,7 +10,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { MaintenanceService } from '../../common/maintenance/maintenance.service';
 import { AppSettingsService } from './app-settings.service';
 import { CurrenciesService } from './currencies.service';
-import { UpdateAppSettingsDto, UpdateVersionsDto } from './dto/app-settings.dto';
+import { ReviewOtpDto, UpdateAppSettingsDto, UpdateVersionsDto } from './dto/app-settings.dto';
 import { UpdateCurrenciesDto } from './dto/currencies.dto';
 
 @ApiTags('settings')
@@ -126,6 +126,28 @@ export class SettingsController {
     // Take effect immediately (don't wait out the guard's cache TTL).
     if (dto.maintenance) this.maintenance.invalidate();
     return result;
+  }
+
+  // ─── App Store review OTP bypass (admin-only) ───────────────────────
+  // A single reviewer phone + fixed code so store reviewers can sign in while
+  // live OTP stays on for everyone else. Kept OFF the public GET /settings/app
+  // so the bypass is never exposed; read & written only by admins here.
+
+  /** Admin-only — read the current review-bypass config. */
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Get('review-otp')
+  getReviewOtp() {
+    return this.appSettings.getReviewOtp();
+  }
+
+  /** Admin-only — enable/disable the review bypass and set the phone + code. */
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Put('review-otp')
+  @Audit({ action: 'admin.reviewOtp.update', resourceType: 'Setting' })
+  updateReviewOtp(@Body() dto: ReviewOtpDto) {
+    return this.appSettings.setReviewOtp(dto);
   }
 
   /**

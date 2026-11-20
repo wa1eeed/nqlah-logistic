@@ -1,9 +1,17 @@
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { randomInt } from 'crypto';
+import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { SMS_CONNECTOR, type SmsConnector } from '../../integrations/sms/sms.connector';
 import { IntegrationsService } from '../../modules/integrations/integrations.service';
 import { AuthenticaOtpConnector } from '../../integrations/otp/authentica-otp.connector';
+
+/** Normalize a phone for comparison: keep a leading +, drop other non-digits. */
+function normalizePhone(p: string): string {
+  const s = (p || '').trim();
+  const plus = s.startsWith('+') ? '+' : '';
+  return plus + s.replace(/\D/g, '');
+}
 
 type OtpMode =
   | { kind: 'authentica-live'; client: AuthenticaOtpConnector }
@@ -35,10 +43,34 @@ export class OtpService {
     private redis: RedisService,
     @Inject(SMS_CONNECTOR) private sms: SmsConnector,
     private integrations: IntegrationsService,
+    private prisma: PrismaService,
   ) {}
 
   private codeKey(phone: string) { return `otp:phone:${phone}`; }
   private sendCounterKey(phone: string) { return `otp:send-count:${phone}`; }
+
+  /**
+   * App Store / Play Store review bypass (admin-configured, stored under
+   * `app.reviewOtp`; see AppSettingsService). When enabled and the caller is the
+   * one designated reviewer phone, a fixed code is accepted — even in live /
+   * production mode — so store reviewers can sign in while real users still get
+   * a real OTP. Returns null unless this exact phone is the review number.
+   */
+  private async reviewMatch(phone: string): Promise<{ code: string } | null> {
+    try {
+      const row = await this.prisma.setting.findUnique({ where: { key: 'app.reviewOtp' } });
+      if (!row?.value) return null;
+      const cfg = JSON.parse(row.value) as { enabled?: boolean; phone?: string; code?: string };
+      if (cfg.enabled !== true) return null;
+      const num = (cfg.phone || '').trim();
+      const code = (cfg.code || '').trim();
+      if (!num || !code) return null;
+      if (normalizePhone(num) !== normalizePhone(phone)) return null;
+      return { code };
+    } catch {
+      return null; // never let a malformed setting break real OTP
+    }
+  }
 
   /** Resolve the active OTP mode from the hub. Production forces Authentica
    *  live; staging defaults to the simulated test mode. */
@@ -67,6 +99,14 @@ export class OtpService {
   }
 
   async send(phone: string): Promise<{ sent: true; expiresIn: number }> {
+    // Store-review bypass: the one reviewer number "receives" the fixed code
+    // with no SMS/API call and no throttle, so review testing never gets
+    // blocked. Checked before everything else.
+    if (await this.reviewMatch(phone)) {
+      this.logger.warn(`🧪 [Store review] OTP send bypass for reviewer phone ${phone}`);
+      return { sent: true, expiresIn: this.TTL_SECONDS };
+    }
+
     // Throttle sends per phone (anti-abuse) — applied to every provider.
     const sends = await this.redis.incrWithTTL(this.sendCounterKey(phone), 3600);
     if (sends > this.SEND_LIMIT_PER_HOUR) {
@@ -108,6 +148,15 @@ export class OtpService {
   }
 
   async verify(phone: string, code: string): Promise<boolean> {
+    // Store-review bypass: the reviewer number accepts its fixed code even while
+    // live OTP is active for everyone else.
+    const review = await this.reviewMatch(phone);
+    if (review) {
+      const ok = code.trim() === review.code;
+      this.logger.warn(`🧪 [Store review] OTP verify for ${phone} → ${ok ? 'accepted' : 'rejected'}`);
+      return ok;
+    }
+
     const mode = await this.resolveMode();
 
     if (mode.kind === 'authentica-live') {
