@@ -105,14 +105,33 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
 
   // ─── 6. Production-only hardening ────────────────────────────────────────
   if (isProd) {
-    if (paymentProvider === 'mock') {
-      errors.push('PAYMENT_PROVIDER cannot be "mock" in production');
+    // Online payment isn't wired for launch (subscriptions settled manually).
+    // `PAYMENTS_ENABLED=false` makes that explicit and permits the mock gateway
+    // in prod; without the opt-out, a mock gateway in prod stays forbidden so it
+    // can't ship by accident once a real provider is expected.
+    const paymentsEnabled = String(config.PAYMENTS_ENABLED ?? '').toLowerCase() !== 'false';
+    if (paymentProvider === 'mock' && paymentsEnabled) {
+      errors.push(
+        'PAYMENT_PROVIDER cannot be "mock" in production. ' +
+          'To launch without online payment, set PAYMENTS_ENABLED=false.',
+      );
     }
-    if (smsProvider === 'console') {
-      errors.push('SMS_PROVIDER cannot be "console" in production');
+    // Verification + messaging run through OTP_PROVIDER. Authentica generates,
+    // sends and verifies its own codes, so the generic SMS channel is unused in
+    // prod and may stay on `console`. It's only the OTP delivery channel when
+    // OTP falls back to `local` — which prod forbids anyway.
+    if (otpProvider !== 'authentica') {
+      errors.push(
+        'OTP_PROVIDER must be "authentica" in production (verification + messaging provider); ' +
+          'an empty value silently falls back to "local", which does not deliver codes.',
+      );
+    } else if (!String(config.AUTHENTICA_API_KEY ?? '').trim()) {
+      // Without the key, Authentica live silently falls back to the fixed test
+      // code — every user's OTP would be the test OTP. Fail loud instead.
+      errors.push('OTP_PROVIDER="authentica" requires AUTHENTICA_API_KEY in production');
     }
-    if (otpProvider === 'local') {
-      errors.push('OTP_PROVIDER cannot be "local" in production (use "authentica")');
+    if (otpProvider !== 'authentica' && smsProvider === 'console') {
+      errors.push('SMS_PROVIDER cannot be "console" in production unless OTP_PROVIDER="authentica"');
     }
     const corsOrigins = String(config.CORS_ORIGINS ?? '');
     if (corsOrigins.includes('http://')) {
