@@ -45,6 +45,8 @@ import '../features/driver/driver_trip_execution_screen.dart';
 import '../features/driver/driver_epod_screen.dart';
 import '../features/comms/chat_screen.dart';
 import '../features/shell/app_shell.dart';
+import '../features/customer/customer_trucks_screen.dart';
+import '../features/market/loads_market_screen.dart';
 
 /// App router. Authentication-aware: a stored/valid session routes into the
 /// shell, otherwise the auth pages (login / OTP / register) are shown. The
@@ -79,7 +81,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc == '/login' || loc == '/login-otp' || loc.startsWith('/register');
       // Read-only routes a guest may browse without an account. Everything else
       // requires auth and redirects to /login.
-      final guestAllowed = loc == '/app' || loc == '/truck-detail';
+      final guestAllowed = loc == '/app' ||
+          loc == '/truck-detail' ||
+          loc == '/market/loads' ||
+          loc == '/market/trucks';
       if (!auth.isAuthenticated) {
         if (onAuthPage || guestAllowed) return null;
         return '/login';
@@ -92,6 +97,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/welcome',
       builder: (context, _) => const WelcomeScreen(),
+    ),
+    GoRoute(
+      path: '/market/loads',
+      builder: (context, _) => const LoadsMarketScreen(showBack: true),
+    ),
+    GoRoute(
+      path: '/market/trucks',
+      builder: (context, _) => const CustomerTrucksScreen(showBack: true),
     ),
     GoRoute(
       path: '/onboarding',

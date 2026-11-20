@@ -11,7 +11,6 @@ import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/tab_bar.dart';
-import '../customer/customer_account_screen.dart';
 import '../customer/customer_home_screen.dart';
 import '../customer/customer_offers_screen.dart';
 import '../customer/customer_shipments_screen.dart';
@@ -27,6 +26,7 @@ import '../driver/driver_active_order_beacon.dart';
 import '../driver/driver_presence.dart';
 import '../comms/notifications_screen.dart';
 import '../comms/conversations_screen.dart';
+import '../market/loads_market_screen.dart';
 import '../account/account_screen.dart';
 
 /// A request to switch the shell to a specific tab index from outside the
@@ -105,6 +105,11 @@ class _AppShellState extends ConsumerState<AppShell> {
             if (isDriver) const DriverActiveOrderBeacon(),
             // Dev-only role previewer — never shown to real users or guests.
             if (!kReleaseMode && !isGuest) _devBar(c),
+            // Thin top bar with the profile avatar (account lives here now, not
+            // in the bottom bar). The Home tab (index 0) carries its own hero
+            // avatar, so the bar shows on the other tabs.
+            if ((isGuest || _identity == NqIdentity.customer) && index != 0)
+              _topBar(c, isGuest),
             Expanded(child: _body(c, tabs[index], index, isGuest)),
           ],
         ),
@@ -113,6 +118,42 @@ class _AppShellState extends ConsumerState<AppShell> {
         tabs: tabs,
         index: index,
         onChanged: (i) => setState(() => _index = i),
+      ),
+    );
+  }
+
+  /// Thin shell top bar: brand on one side, the profile avatar on the other.
+  /// Tapping the avatar opens the account (or sign-in for a guest) — account
+  /// moved here so the bottom bar can carry the full market (trucks + loads).
+  Widget _topBar(NqColors c, bool isGuest) {
+    final user = ref.watch(authControllerProvider).user;
+    final name = (user?.fullName ?? '').trim();
+    final letter = (!isGuest && name.isNotEmpty) ? name.characters.first : null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+      child: Row(
+        children: [
+          Text('نقلة', style: NqType.h3.copyWith(color: c.mintTx)),
+          const Spacer(),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => context.push(isGuest ? '/login' : '/account'),
+            child: Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: c.mintBg,
+                shape: BoxShape.circle,
+                border: Border.all(color: c.mint.withValues(alpha: 0.15)),
+              ),
+              child: letter != null
+                  ? Text(letter,
+                      style: NqType.labelStrong.copyWith(color: c.mintTx))
+                  : NqIcon(NqIcons.userCircle, size: 20, color: c.mintTx),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -126,31 +167,37 @@ class _AppShellState extends ConsumerState<AppShell> {
         case 1:
           return const CustomerTrucksScreen();
         case 2:
+          return const LoadsMarketScreen();
+        case 3:
           return const GuestCta(
             title: 'شحناتي',
             subtitle: 'سجّل الدخول لمتابعة شحناتك وطلباتك.',
             icon: NqIcons.shippingContainer,
           );
-        case 3:
+        case 4:
           return const GuestCta(
             title: 'العروض',
             subtitle: 'سجّل الدخول لاستقبال عروض المزوّدين على طلباتك.',
             icon: NqIcons.handshake,
           );
-        case 4:
-          return const GuestCta(
-            title: 'حسابك',
-            subtitle: 'سجّل الدخول أو أنشئ حسابًا للوصول إلى حسابك وطلباتك.',
-            icon: NqIcons.userCircle,
-          );
         default:
           return GuestCta(
             title: 'مرحبًا بك في نقلة',
             subtitle:
-                'تصفّح الشاحنات والمزوّدين المتاحين الآن. أنشئ حسابًا عندما تريد إرسال طلب.',
+                'تصفّح السوق كاملاً — الشاحنات والحمولات المتاحة. أنشئ حسابًا عندما تريد الحجز أو إضافة حمولة.',
             icon: NqIcons.truck,
-            browseLabel: 'تصفّح الشاحنات المتاحة',
-            onBrowse: () => setState(() => _index = 1),
+            tiles: [
+              GuestBrowseTile(
+                icon: NqIcons.truck,
+                label: 'تصفّح الشاحنات',
+                onTap: () => setState(() => _index = 1),
+              ),
+              GuestBrowseTile(
+                icon: NqIcons.package,
+                label: 'تصفّح الحمولات',
+                onTap: () => setState(() => _index = 2),
+              ),
+            ],
           );
       }
     }
@@ -162,18 +209,19 @@ class _AppShellState extends ConsumerState<AppShell> {
             onNewOrder: () => context.push('/order'),
             onWallet: () => context.push('/finance'),
             onBell: () => context.push('/notifications'),
-            onViewShipments: () => setState(() => _index = 2),
-            onOffers: () => setState(() => _index = 3),
+            onViewShipments: () => setState(() => _index = 3),
+            onOffers: () => setState(() => _index = 4),
             onOpenOrder: (id) => context.push('/order-detail/$id'),
+            onProfile: () => context.push('/account'),
           );
         case 1:
           return const CustomerTrucksScreen();
         case 2:
-          return const CustomerShipmentsScreen();
+          return const LoadsMarketScreen();
         case 3:
-          return const CustomerOffersScreen();
+          return const CustomerShipmentsScreen();
         case 4:
-          return const CustomerAccountScreen();
+          return const CustomerOffersScreen();
       }
     }
     if (_identity == NqIdentity.provider && _ownerDriver) {

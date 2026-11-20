@@ -26,14 +26,14 @@ List<NqTab> tabsFor(
 }) {
   switch (identity) {
     case NqIdentity.customer:
-      // Addendum 01 §0: Finance leaves the bar (moves to a wallet button in the
-      // Home header); the Trucks tab takes slot 2.
+      // Full market in the bar — both Trucks and Loads are browsable. Account
+      // moves to the profile avatar in the shell top bar (so the bar stays at 5).
       return [
         NqTab(s('nav.home'), NqIcons.houseSimple),
         NqTab(s('nav.trucks'), NqIcons.truck),
-        NqTab(s('nav.myShipments'), NqIcons.package),
+        NqTab(s('nav.marketLoads'), NqIcons.package),
+        NqTab(s('nav.myShipments'), NqIcons.shippingContainer),
         NqTab(s('nav.offers'), NqIcons.handCoins),
-        NqTab(s('nav.account'), NqIcons.userCircle),
       ];
     case NqIdentity.provider:
       if (isOwnerDriver) {

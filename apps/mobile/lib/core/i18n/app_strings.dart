@@ -51,6 +51,7 @@ const Map<String, Map<AppLang, String>> _catalog = {
   // ── Bottom navigation ──────────────────────────────────────────────
   'nav.home': {AppLang.ar: 'الرئيسية', AppLang.en: 'Home', AppLang.ur: 'ہوم'},
   'nav.trucks': {AppLang.ar: 'الشاحنات', AppLang.en: 'Trucks', AppLang.ur: 'ٹرک'},
+  'nav.marketLoads': {AppLang.ar: 'الحمولات', AppLang.en: 'Loads', AppLang.ur: 'لوڈز'},
   'nav.myShipments': {AppLang.ar: 'شحناتي', AppLang.en: 'Shipments', AppLang.ur: 'میری شپمنٹس'},
   'nav.offers': {AppLang.ar: 'العروض', AppLang.en: 'Offers', AppLang.ur: 'آفرز'},
   'nav.account': {AppLang.ar: 'حسابي', AppLang.en: 'Account', AppLang.ur: 'اکاؤنٹ'},

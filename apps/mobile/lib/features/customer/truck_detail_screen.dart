@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/auth_controller.dart';
 import '../../core/marketplace/marketplace_repository.dart';
 import '../../core/orders/order_draft_controller.dart';
+import '../../core/session/identity.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -24,6 +26,10 @@ class TruckDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.nq;
     final t = listing;
+    // A carrier browsing the market sees another provider's listing — the
+    // "request this provider" CTA is a client action, so hide it for carriers.
+    final isCarrier =
+        ref.watch(authControllerProvider).user?.identity == NqIdentity.provider;
     return Scaffold(
       backgroundColor: c.bg,
       body: SafeArea(
@@ -62,7 +68,7 @@ class TruckDetailScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            _footer(context, ref, c),
+            if (isCarrier) _carrierNote(c) else _footer(context, ref, c),
           ],
         ),
       ),
@@ -337,6 +343,27 @@ class TruckDetailScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// Neutral footer for a carrier browsing the market — no client CTA.
+  Widget _carrierNote(NqColors c) => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        decoration: BoxDecoration(
+          color: c.sf,
+          border: Border(top: BorderSide(color: c.bd)),
+        ),
+        child: Row(
+          children: [
+            NqIcon(NqIcons.truck, size: 18, color: c.tx3),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'تتصفّح السوق كناقل · هذه شاحنة معروضة من مزوّد آخر',
+                style: NqType.caption.copyWith(color: c.tx2),
+              ),
+            ),
+          ],
+        ),
+      );
 
   Widget _footer(BuildContext context, WidgetRef ref, NqColors c) => Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),

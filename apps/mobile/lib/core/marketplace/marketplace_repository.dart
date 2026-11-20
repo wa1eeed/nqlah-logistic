@@ -178,6 +178,21 @@ class MarketplaceRepository {
     }
   }
 
+  /// `GET /marketplace/loads` — public list of open-market loads any carrier can
+  /// bid on, browsable by guests and clients too.
+  Future<List<LoadListing>> listAvailableLoads({String? city}) async {
+    try {
+      final qp = <String, dynamic>{};
+      if (city != null && city.isNotEmpty) qp['city'] = city;
+      final res = await _dio.get<dynamic>('/marketplace/loads',
+          queryParameters: qp, options: Options(extra: {'noAuth': true}));
+      _ensureOk(res);
+      return _listOf(res.data, LoadListing.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   /// `GET /fleet/availability` — the carrier's own active listings.
   Future<List<MyAvailability>> mine() async {
     try {
@@ -253,4 +268,61 @@ final marketplaceTrucksProvider =
 /// The carrier's own published availability (for the fleet screen).
 final myAvailabilityProvider = FutureProvider<List<MyAvailability>>((ref) {
   return ref.watch(marketplaceRepositoryProvider).mine();
+});
+
+/// A load in the public marketplace (`GET /marketplace/loads`). Browse-only — no
+/// client identity, just the route, cargo, required truck type, budget and the
+/// number of offers already placed.
+class LoadListing {
+  const LoadListing({
+    required this.id,
+    required this.orderNumber,
+    required this.originCity,
+    required this.destinationCity,
+    required this.cargoType,
+    required this.requiredTruckType,
+    this.clientBudget,
+    this.bidsCount = 0,
+    this.priceMode = 'BIDDING',
+    this.createdAt,
+  });
+
+  final String id;
+  final String orderNumber;
+  final String originCity;
+  final String destinationCity;
+  final String cargoType;
+  final String requiredTruckType;
+  final num? clientBudget;
+  final int bidsCount;
+  final String priceMode;
+  final DateTime? createdAt;
+
+  bool get isFixedPrice => priceMode.toUpperCase() == 'FIXED';
+
+  factory LoadListing.fromJson(Map<String, dynamic> j) {
+    final count =
+        j['_count'] is Map ? Map<String, dynamic>.from(j['_count'] as Map) : const {};
+    num? asNum(dynamic v) => v == null ? null : num.tryParse(v.toString());
+    return LoadListing(
+      id: (j['id'] ?? '').toString(),
+      orderNumber: (j['orderNumber'] ?? '').toString(),
+      originCity: (j['originCity'] ?? '').toString(),
+      destinationCity: (j['destinationCity'] ?? '').toString(),
+      cargoType: (j['cargoType'] ?? '').toString(),
+      requiredTruckType: (j['requiredTruckType'] ?? '').toString(),
+      clientBudget: asNum(j['clientBudget']),
+      bidsCount: (count['bids'] as num?)?.toInt() ?? 0,
+      priceMode: (j['priceMode'] ?? 'BIDDING').toString(),
+      createdAt:
+          j['createdAt'] == null ? null : DateTime.tryParse(j['createdAt'].toString()),
+    );
+  }
+}
+
+/// The public marketplace of open loads. Optional [city] filters by origin or
+/// destination; `null`/empty lists everything.
+final marketplaceLoadsProvider =
+    FutureProvider.family<List<LoadListing>, String?>((ref, city) {
+  return ref.watch(marketplaceRepositoryProvider).listAvailableLoads(city: city);
 });
