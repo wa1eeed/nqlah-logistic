@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../../../core/orders/order_draft_controller.dart';
+import '../../../core/orders/catalog_providers.dart';
 import '../../../core/orders/order_models.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/theme/typography.dart';
@@ -115,7 +116,7 @@ class _OrderStep6ReviewState extends ConsumerState<OrderStep6Review> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Text(truckLabel(d.requiredTruckType),
+                Text(labelFor(ref.watch(truckOptionsProvider), d.requiredTruckType, truckLabel),
                     style: NqType.body.copyWith(color: c.tx2)),
                 const Spacer(),
                 Text(cargoLabel(d.cargoType),
