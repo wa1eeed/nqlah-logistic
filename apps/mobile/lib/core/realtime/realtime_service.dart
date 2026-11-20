@@ -31,10 +31,15 @@ class RealtimeService {
   io.Socket? _socket;
   final _chat = StreamController<IncomingChat>.broadcast();
   final _tracking = StreamController<TrackingUpdate>.broadcast();
+  final _dataChanged = StreamController<void>.broadcast();
   final Set<String> _orders = {}; // rooms to (re)subscribe on connect
 
   Stream<IncomingChat> get onChat => _chat.stream;
   Stream<TrackingUpdate> get onTracking => _tracking.stream;
+  /// Fires on any server change signal (data:changed / order status / new bid /
+  /// notification) so screens can refresh their data live — mirrors the web
+  /// dashboards' realtime invalidation.
+  Stream<void> get onDataChanged => _dataChanged.stream;
 
   static double? _d(dynamic v) => v is num ? v.toDouble() : (v is String ? double.tryParse(v) : null);
 
@@ -81,6 +86,12 @@ class RealtimeService {
         ));
       }
     });
+    // Generic change signals → let listeners refresh their data live.
+    for (final ev in const ['data:changed', 'order:status_changed', 'order:new_bid', 'notification:new']) {
+      socket.on(ev, (_) {
+        if (!_dataChanged.isClosed) _dataChanged.add(null);
+      });
+    }
     _socket = socket;
     socket.connect();
   }
@@ -123,6 +134,7 @@ class RealtimeService {
     _socket = null;
     _chat.close();
     _tracking.close();
+    _dataChanged.close();
   }
 }
 

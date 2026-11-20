@@ -9,6 +9,8 @@ import '../../core/i18n/locale_controller.dart';
 import '../../core/config/app_update.dart';
 import '../../core/session/identity.dart';
 import '../../core/session/preview_identity.dart';
+import '../../core/realtime/realtime_service.dart';
+import '../../core/realtime/realtime_invalidator.dart';
 import '../update/update_screen.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -77,6 +79,10 @@ class _AppShellState extends ConsumerState<AppShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ref.read(previewIdentityProvider.notifier).state = _identity;
+        // Open the realtime connection for every signed-in user (not just
+        // drivers), so server change signals flow and the invalidator keeps
+        // lists/details live across the app.
+        ref.read(realtimeServiceProvider).connect();
       }
     });
   }
@@ -103,6 +109,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget build(BuildContext context) {
     final c = context.nq;
     ref.watch(localeControllerProvider); // rebuild tab labels on language change
+    ref.watch(realtimeInvalidatorProvider); // keep live-data invalidation alive
     // A non-forced update offers a one-time, skippable prompt once the policy
     // resolves (forced updates are handled by the app-wide overlay).
     ref.listen(updateRequirementProvider, (_, next) {
