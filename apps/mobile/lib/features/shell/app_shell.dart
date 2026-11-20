@@ -8,6 +8,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/i18n/locale_controller.dart';
 import '../../core/config/app_update.dart';
 import '../../core/session/identity.dart';
+import '../../core/session/preview_identity.dart';
 import '../update/update_screen.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -63,12 +64,30 @@ class _AppShellState extends ConsumerState<AppShell> {
   // Show the non-forced "update available" sheet at most once per app run.
   bool _softUpdatePrompted = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Keep the dev-preview identity (read by identity-gated routes opened on top
+    // of the shell, e.g. the truck detail) in sync with this shell's identity
+    // from the very first mount — so it never lags behind the account/role the
+    // shell is actually showing (dev-only; the preview bar is hidden in release).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(previewIdentityProvider.notifier).state = _identity;
+      }
+    });
+  }
+
   List<NqTab> get _tabs => tabsFor(_identity,
       s: ref.read(stringsProvider),
       isOwnerDriver: _ownerDriver,
       ownerDriverContext: _odContext);
 
   void _switchTo(NqIdentity id, {bool ownerDriver = false}) {
+    // Keep identity-gated screens (opened outside the shell, e.g. the truck
+    // detail) in sync with the previewed role — dev-only; the preview bar that
+    // calls this is hidden in release.
+    ref.read(previewIdentityProvider.notifier).state = id;
     setState(() {
       _identity = id;
       _ownerDriver = ownerDriver;

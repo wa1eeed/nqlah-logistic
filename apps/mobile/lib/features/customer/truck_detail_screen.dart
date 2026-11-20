@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/auth/auth_controller.dart';
 import '../../core/marketplace/marketplace_repository.dart';
 import '../../core/orders/order_draft_controller.dart';
 import '../../core/session/identity.dart';
+import '../../core/session/preview_identity.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/ltr.dart';
@@ -28,8 +28,9 @@ class TruckDetailScreen extends ConsumerWidget {
     final t = listing;
     // A carrier browsing the market sees another provider's listing — the
     // "request this provider" CTA is a client action, so hide it for carriers.
+    // Uses the effective identity so the dev role previewer stays faithful.
     final isCarrier =
-        ref.watch(authControllerProvider).user?.identity == NqIdentity.provider;
+        ref.watch(effectiveIdentityProvider) == NqIdentity.provider;
     return Scaffold(
       backgroundColor: c.bg,
       body: SafeArea(
