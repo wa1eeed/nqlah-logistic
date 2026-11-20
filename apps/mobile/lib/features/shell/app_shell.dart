@@ -147,10 +147,20 @@ class _AppShellState extends ConsumerState<AppShell> {
           return GuestCta(
             title: 'مرحبًا بك في نقلة',
             subtitle:
-                'تصفّح الشاحنات والمزوّدين المتاحين الآن. أنشئ حسابًا عندما تريد إرسال طلب.',
+                'تصفّح السوق كاملاً — الشاحنات والحمولات المتاحة. أنشئ حسابًا عندما تريد الحجز أو إضافة حمولة.',
             icon: NqIcons.truck,
-            browseLabel: 'تصفّح الشاحنات المتاحة',
-            onBrowse: () => setState(() => _index = 1),
+            tiles: [
+              GuestBrowseTile(
+                icon: NqIcons.truck,
+                label: 'تصفّح الشاحنات',
+                onTap: () => setState(() => _index = 1),
+              ),
+              GuestBrowseTile(
+                icon: NqIcons.package,
+                label: 'تصفّح الحمولات',
+                onTap: () => context.push('/market/loads'),
+              ),
+            ],
           );
       }
     }

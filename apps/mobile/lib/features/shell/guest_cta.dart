@@ -8,10 +8,23 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/button.dart';
 
+/// One elegant square "browse" tile on the guest home (e.g. trucks / loads).
+class GuestBrowseTile {
+  const GuestBrowseTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String icon;
+  final String label;
+  final VoidCallback onTap;
+}
+
 /// Shown to a guest (unauthenticated visitor) on any tab or action that needs
 /// an account. Explains what signing in unlocks and offers sign-in / create
-/// account, plus an optional "browse" shortcut and a language switch so a guest
-/// can keep exploring in their own language.
+/// account, plus optional "browse" shortcuts (either square [tiles] or a single
+/// button) and a language switch so a guest can keep exploring.
 class GuestCta extends ConsumerWidget {
   const GuestCta({
     super.key,
@@ -20,6 +33,7 @@ class GuestCta extends ConsumerWidget {
     this.icon = NqIcons.userCircle,
     this.browseLabel,
     this.onBrowse,
+    this.tiles = const [],
   });
 
   final String title;
@@ -29,6 +43,10 @@ class GuestCta extends ConsumerWidget {
   /// When set, a secondary "keep browsing" button is shown above sign-in.
   final String? browseLabel;
   final VoidCallback? onBrowse;
+
+  /// Square browse tiles (shown side by side above sign-in). Takes precedence
+  /// over [onBrowse] when non-empty.
+  final List<GuestBrowseTile> tiles;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,7 +68,17 @@ class GuestCta extends ConsumerWidget {
                 style: NqType.body.copyWith(color: c.tx2, height: 1.5),
                 textAlign: TextAlign.center),
             const SizedBox(height: 24),
-            if (onBrowse != null) ...[
+            if (tiles.isNotEmpty) ...[
+              Row(
+                children: [
+                  for (var i = 0; i < tiles.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 12),
+                    Expanded(child: _BrowseTile(tile: tiles[i])),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 16),
+            ] else if (onBrowse != null) ...[
               NqButton(
                 label: browseLabel ?? 'تصفّح',
                 variant: NqButtonVariant.secondary,
@@ -83,6 +111,60 @@ class GuestCta extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// An elegant square browse tile: a soft mint-gradient card with a brand
+/// medallion icon and a label.
+class _BrowseTile extends StatelessWidget {
+  const _BrowseTile({required this.tile});
+
+  final GuestBrowseTile tile;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.nq;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: tile.onTap,
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                c.mint.withValues(alpha: 0.14),
+                c.mint.withValues(alpha: 0.04),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(NqRadius.cardOverlap),
+            border: Border.all(color: c.mint.withValues(alpha: 0.18)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: c.mint.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: c.mint.withValues(alpha: 0.18)),
+                ),
+                alignment: Alignment.center,
+                child: NqIcon(tile.icon, size: 30, color: c.mintTx),
+              ),
+              const SizedBox(height: 14),
+              Text(tile.label,
+                  textAlign: TextAlign.center,
+                  style: NqType.bodyStrong.copyWith(color: c.tx)),
+            ],
+          ),
         ),
       ),
     );
