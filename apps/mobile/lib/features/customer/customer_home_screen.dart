@@ -54,11 +54,14 @@ class CustomerHomeScreen extends ConsumerWidget {
         ? user!.fullName
         : 'حسابي';
 
-    // The most relevant active order for the hero card.
-    final featured = _featured(active);
-
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(myShipmentsProvider);
+        await ref.read(myShipmentsProvider.future);
+      },
+      child: ListView(
       padding: EdgeInsets.zero,
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
         Stack(
           clipBehavior: Clip.none,
@@ -82,21 +85,24 @@ class CustomerHomeScreen extends ConsumerWidget {
             children: [
               _sectionHeader(c, 'شحنات نشطة', 'عرض الكل', onViewShipments),
               const SizedBox(height: 10),
-              if (featured != null)
-                NqWaybillCard(
-                  code: featured.orderNumber,
-                  subtitle: featured.isConsolidated
-                      ? 'مجمّع · ${featured.truckCount ?? ''} رحلات'
-                      : cargoLabel(featured.cargoType),
-                  status: featured.nqStatus,
-                  origin: RoutePoint(featured.originCity, ''),
-                  destination: RoutePoint(featured.destinationCity, ''),
-                  liveText: _liveText(featured),
-                  truckType: truckLabel(featured.requiredTruckType),
-                  onTap: () => (onOpenOrder ?? (_) {})(featured.id),
-                )
+              if (active.isEmpty)
+                _emptyActive(c)
               else
-                _emptyActive(c),
+                for (final o in _sortedActive(active)) ...[
+                  NqWaybillCard(
+                    code: o.orderNumber,
+                    subtitle: o.isConsolidated
+                        ? 'مجمّع · ${o.truckCount ?? ''} رحلات'
+                        : cargoLabel(o.cargoType),
+                    status: o.nqStatus,
+                    origin: RoutePoint(o.originCity, ''),
+                    destination: RoutePoint(o.destinationCity, ''),
+                    liveText: _liveText(o),
+                    truckType: truckLabel(o.requiredTruckType),
+                    onTap: () => (onOpenOrder ?? (_) {})(o.id),
+                  ),
+                  const SizedBox(height: 10),
+                ],
               if (withOffers.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 _offersAlert(c, withOffers),
@@ -106,16 +112,21 @@ class CustomerHomeScreen extends ConsumerWidget {
           ),
         ),
       ],
+      ),
     );
   }
 
-  OrderSummary? _featured(List<OrderSummary> active) {
-    if (active.isEmpty) return null;
-    for (final s in ['IN_TRANSIT', 'ASSIGNED', 'CONFIRMED', 'DELIVERED']) {
-      final m = active.where((o) => o.status.toUpperCase() == s);
-      if (m.isNotEmpty) return m.first;
+  /// All active shipments, most-actionable first (in-transit before assigned,
+  /// etc.), so the client sees every live order — not just one.
+  List<OrderSummary> _sortedActive(List<OrderSummary> active) {
+    const order = ['IN_TRANSIT', 'ASSIGNED', 'CONFIRMED', 'DELIVERED'];
+    int rank(OrderSummary o) {
+      final i = order.indexOf(o.status.toUpperCase());
+      return i < 0 ? order.length : i;
     }
-    return active.first;
+
+    final sorted = [...active]..sort((a, b) => rank(a).compareTo(rank(b)));
+    return sorted;
   }
 
   String _liveText(OrderSummary o) => switch (o.nqStatus) {
