@@ -8,6 +8,7 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/currency_symbol.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/empty_state.dart';
+import 'load_market_detail.dart';
 
 /// The public available-loads marketplace (`GET /marketplace/loads`) — open
 /// loads any carrier can bid on, browsable by guests, clients and carriers.
@@ -79,7 +80,11 @@ class LoadsMarketScreen extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                       itemCount: loads.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) => _LoadCard(load: loads[i]),
+                      itemBuilder: (_, i) => _LoadCard(
+                        load: loads[i],
+                        onTap: () =>
+                            showLoadMarketDetail(context, ref, loads[i]),
+                      ),
                     ),
                   );
                 },
@@ -93,14 +98,18 @@ class LoadsMarketScreen extends ConsumerWidget {
 }
 
 class _LoadCard extends StatelessWidget {
-  const _LoadCard({required this.load});
+  const _LoadCard({required this.load, this.onTap});
 
   final LoadListing load;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
-    return Container(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: c.sf,
@@ -162,6 +171,7 @@ class _LoadCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }
