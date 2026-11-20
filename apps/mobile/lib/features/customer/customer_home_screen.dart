@@ -130,8 +130,8 @@ class CustomerHomeScreen extends ConsumerWidget {
   }
 
   String _liveText(OrderSummary o) => switch (o.nqStatus) {
-        NqStatus.inTransit => 'الشحنة في الطريق',
-        NqStatus.assigned || NqStatus.confirmed => 'تم إسناد المزوّد',
+        NqStatus.inTransit => 'في الطريق إلى التسليم',
+        NqStatus.assigned || NqStatus.confirmed => 'تم الإسناد · بانتظار الاستلام',
         NqStatus.delivered => 'تم التسليم · بانتظار الإغلاق',
         NqStatus.tender ||
         NqStatus.published =>

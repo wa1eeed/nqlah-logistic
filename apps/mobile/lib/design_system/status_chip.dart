@@ -44,8 +44,10 @@ final Map<NqStatus, _StatusSpec> _specs = {
       _StatusSpec('مُسند', NqIcons.handshake, (c) => c.mintBg, (c) => c.mintTx),
   NqStatus.confirmed:
       _StatusSpec('مؤكّد', NqIcons.checkCircle, (c) => c.mintBg, (c) => c.mintTx),
-  NqStatus.inTransit: _StatusSpec('في الطريق', NqIcons.truck, (c) => c.infoBg,
-      (c) => c.info, fill: true),
+  // IN_TRANSIT is set at pickup (actualPickupAt), so it always means the cargo
+  // is picked up and heading to delivery — label it so there's no ambiguity.
+  NqStatus.inTransit: _StatusSpec('في الطريق للتسليم', NqIcons.truck,
+      (c) => c.infoBg, (c) => c.info, fill: true),
   NqStatus.delivered:
       _StatusSpec('تم التسليم', NqIcons.package, (c) => c.okBg, (c) => c.ok),
   NqStatus.completed: _StatusSpec('مكتمل', NqIcons.sealCheck,
