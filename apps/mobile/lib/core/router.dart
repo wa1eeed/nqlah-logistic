@@ -40,6 +40,8 @@ import '../features/provider/provider_payout_settings_screen.dart';
 import '../features/provider/provider_maintenance_hub_screen.dart';
 import '../features/account/account_deletion_screen.dart';
 import '../features/account/account_screen.dart';
+import '../features/customer/customer_account_screen.dart';
+import 'session/identity.dart';
 import '../features/account/kyc_documents_screen.dart';
 import '../features/provider/trip_monitor_screen.dart';
 import '../features/driver/driver_trip_execution_screen.dart';
@@ -268,7 +270,18 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     GoRoute(
       path: '/account',
-      builder: (context, state) => const AccountScreen(),
+      // Pushed route (not a shell tab): pick the role-correct account screen
+      // and give it its own Material surface + back button. Customers get the
+      // customer variant; providers/drivers get the provider variant.
+      builder: (context, state) => Consumer(
+        builder: (context, ref, _) {
+          final id = ref.watch(authControllerProvider).user?.identity ??
+              NqIdentity.customer;
+          return id == NqIdentity.customer
+              ? const CustomerAccountScreen(showBack: true)
+              : const AccountScreen(showBack: true);
+        },
+      ),
     ),
     GoRoute(
       path: '/account/delete',

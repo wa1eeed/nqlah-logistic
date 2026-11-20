@@ -15,7 +15,10 @@ import '../../core/widgets/nq_icon.dart';
 
 /// Customer account (handoff 5c — customer variant: no plan card).
 class CustomerAccountScreen extends ConsumerWidget {
-  const CustomerAccountScreen({super.key});
+  const CustomerAccountScreen({super.key, this.showBack = false});
+
+  /// When shown as a pushed route (not a shell tab) we render a back button.
+  final bool showBack;
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     final c = context.nq;
@@ -51,12 +54,20 @@ class CustomerAccountScreen extends ConsumerWidget {
     final s = ref.watch(stringsProvider);
     final lang = ref.watch(localeControllerProvider);
     final user = ref.watch(authControllerProvider).user;
-    return SafeArea(
+    return Material(
+      color: c.bg,
+      child: SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           Row(
             children: [
+              if (showBack)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(context).maybePop(),
+                  child: NqIcon(NqIcons.caretRight, size: 22, color: c.tx2),
+                ),
               const Spacer(),
               Text(s('account.title'), style: NqType.h1.copyWith(color: c.tx)),
             ],
@@ -87,6 +98,7 @@ class CustomerAccountScreen extends ConsumerWidget {
                 onTap: () => _signOut(context, ref)),
           ]),
         ],
+      ),
       ),
     );
   }

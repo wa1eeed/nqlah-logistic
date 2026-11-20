@@ -15,7 +15,11 @@ import '../../core/widgets/nq_icon.dart';
 /// Role-aware account screen (حسابي) for the provider / owner-driver / employed
 /// driver shells, wired to the signed-in user. Customers keep their own variant.
 class AccountScreen extends ConsumerWidget {
-  const AccountScreen({super.key});
+  const AccountScreen({super.key, this.showBack = false});
+
+  /// When shown as a pushed route (not a shell tab) we render a back button
+  /// in the header. As a tab this stays false.
+  final bool showBack;
 
   static const _supportPhone =
       String.fromEnvironment('NQ_SUPPORT_PHONE', defaultValue: '+966920000000');
@@ -81,11 +85,19 @@ class AccountScreen extends ConsumerWidget {
     final role = user?.role.toUpperCase() ?? '';
     final isDriver = role == 'DRIVER';
     final isCarrier = role.startsWith('CARRIER');
-    return SafeArea(
+    return Material(
+      color: c.bg,
+      child: SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           Row(children: [
+            if (showBack)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.of(context).maybePop(),
+                child: NqIcon(NqIcons.caretRight, size: 22, color: c.tx2),
+              ),
             const Spacer(),
             Text(s('account.title'), style: NqType.h1.copyWith(color: c.tx)),
           ]),
@@ -134,6 +146,7 @@ class AccountScreen extends ConsumerWidget {
                 onTap: () => _signOut(context, ref)),
           ]),
         ],
+      ),
       ),
     );
   }
