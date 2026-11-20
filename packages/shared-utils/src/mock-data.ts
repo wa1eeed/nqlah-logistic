@@ -1362,9 +1362,9 @@ export const DEFAULT_PROVIDERS_CONFIG: ProvidersConfig = {
   email: {
     provider: 'resend',
     apiKey: '',
-    fromEmail: 'noreply@naqla.sa',
+    fromEmail: 'noreply@nqlah.online',
     fromName: 'نقلة لوجيستك',
-    replyTo: 'support@naqla.sa',
+    replyTo: 'support@nqlah.online',
     enabled: false,
   },
   sms: {
@@ -1797,7 +1797,7 @@ export const DEFAULT_LEGAL_DOCS: Record<LegalDocId, LegalDocument> = {
 
 ## 10. التواصل
 
-لأي استفسار قانوني: legal@naqla.sa`,
+لأي استفسار قانوني: legal@nqlah.online`,
   },
 
   privacy: {
@@ -1884,8 +1884,8 @@ export const DEFAULT_LEGAL_DOCS: Record<LegalDocId, LegalDocument> = {
 ## 9. التواصل بخصوص الخصوصية
 
 للاستفسارات أو ممارسة حقوقك:
-- البريد: privacy@naqla.sa
-- المسؤول عن حماية البيانات (DPO): dpo@naqla.sa`,
+- البريد: privacy@nqlah.online
+- المسؤول عن حماية البيانات (DPO): dpo@nqlah.online`,
   },
 
   transport: {
@@ -2018,17 +2018,17 @@ export const DEFAULT_SEO_CONFIG: SeoConfig = {
   titleTemplate: '%s | نقلة لوجيستك',
   defaultDescription: 'منصة نقلة لوجيستك تربط الشركات بأفضل شركات النقل المعتمدة في المملكة العربية السعودية. أسعار تنافسية، تتبع لحظي، وتأمين شامل لكل شحنة.',
   defaultKeywords: ['نقل بضائع', 'شحن', 'لوجستيات', 'السعودية', 'نقل', 'شاحنات', 'naqla', 'logistics', 'shipping', 'saudi arabia'],
-  canonicalUrl: 'https://naqla.sa',
-  ogImage: 'https://naqla.sa/og-image.png',
+  canonicalUrl: 'https://nqlah.online',
+  ogImage: 'https://nqlah.online/og-image.png',
   twitterHandle: '@naqla_sa',
   themeColor: '#0A3D3A',
   locale: 'ar_SA',
   robotsIndex: true,
   robotsFollow: true,
   organizationName: 'نقلة لوجيستك',
-  organizationLogo: 'https://naqla.sa/logo.png',
+  organizationLogo: 'https://nqlah.online/logo.png',
   organizationPhone: '+966920000000',
-  organizationEmail: 'support@naqla.sa',
+  organizationEmail: 'support@nqlah.online',
   googleSiteVerification: '',
   bingSiteVerification: '',
   googleAnalyticsId: '',

@@ -27,7 +27,7 @@
 - **[Prisma](https://www.prisma.io/)** v5 — ORM + Migrations + Type-safe queries
 - **[PostgreSQL](https://www.postgresql.org/)** 16 — Primary database
 - **[Redis](https://redis.io/)** 7 — Cache + sessions + rate-limit
-- **[Cloudflare R2](https://developers.cloudflare.com/r2/)** — S3-compatible object storage للبيئات المنشورة (KYC docs، صور) · **[MinIO](https://min.io/)** للتطوير المحلي عبر Docker
+- **[MinIO](https://min.io/)** — S3-compatible object storage (KYC docs، صور) للإنتاج الحالي والتطوير المحلي · الترحيل إلى **[Cloudflare R2](https://developers.cloudflare.com/r2/)** مؤجّل لما بعد الإطلاق
 - **[Socket.io](https://socket.io/)** — Realtime tracking + notifications
 - **JWT + OTP** — Authentication
 - **Swagger / OpenAPI** — API documentation
@@ -124,7 +124,7 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 > لتطبيقات Next.js، يجب تمرير `NEXT_PUBLIC_*` كـ `--build-arg` لأنها تُضمَّن وقت البناء:
 > ```bash
 > docker build -f apps/web/client/Dockerfile \
->   --build-arg NEXT_PUBLIC_API_URL=https://api.nqlah.nx.sa \
+>   --build-arg NEXT_PUBLIC_API_URL=https://api.nqlah.online \
 >   -t naqla-client:latest .
 > ```
 >
@@ -140,9 +140,9 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 
 | الدور | البريد | كلمة المرور |
 |---|---|---|
-| **Admin** | `admin@naqla.sa` | `Admin@1234` |
-| **Client** | `client@naqla.sa` | `Client@1234` |
-| **Carrier** | `carrier@naqla.sa` | `Carrier@1234` |
+| **Admin** | `admin@nqlah.online` | `Admin@1234` |
+| **Client** | `client@nqlah.online` | `Client@1234` |
+| **Carrier** | `carrier@nqlah.online` | `Carrier@1234` |
 
 ---
 
@@ -162,27 +162,27 @@ docker build -f apps/web/carrier/Dockerfile -t naqla-carrier:latest .
 
 ---
 
-## ☁️ الروابط (Production — nqlah.nx.sa)
+## ☁️ الروابط (Production — nqlah.online)
 
-> البيئة المنشورة على `nqlah.nx.sa` هي **الإنتاج** (إطلاق سريع؛ كانت تُسمّى staging). بيئة staging الجديدة تُبنى لاحقًا — انظر [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+> البيئة المنشورة على `nqlah.online` هي **الإنتاج** (إطلاق سريع؛ كانت تُسمّى staging). بيئة staging الجديدة تُبنى لاحقًا — انظر [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 
 | الواجهة | الرابط | الحالة |
 |---|---|---|
-| **API** | https://api.nqlah.nx.sa | ✅ يعمل |
-| **API Health** | https://api.nqlah.nx.sa/health | ✅ `{"status":"ok","database":"up"}` |
-| **Landing** | https://nqlah.nx.sa | 🟡 قيد التحقق |
-| **Admin** | https://admin.nqlah.nx.sa | 🟡 قيد التحقق |
-| **Client** | https://app.nqlah.nx.sa | 🟡 قيد التحقق |
-| **Carrier** | https://carrier.nqlah.nx.sa | 🟡 قيد التحقق |
-| **Storage** | https://storage.nqlah.nx.sa | ✅ Cloudflare R2 |
+| **API** | https://api.nqlah.online | ✅ يعمل |
+| **API Health** | https://api.nqlah.online/health | ✅ `{"status":"ok","database":"up"}` |
+| **Landing** | https://nqlah.online | ✅ يعمل |
+| **Admin** | https://admin.nqlah.online | ✅ يعمل |
+| **Client** | https://app.nqlah.online | ✅ يعمل |
+| **Carrier** | https://carrier.nqlah.online | ✅ يعمل |
+| **Storage** | — (داخلي) | ✅ MinIO · R2 مؤجّل |
 
 ---
 
 ## ✨ الميزات الرئيسية (v0.9.70)
 
 ### أحدث البرنامج (v0.9.5x–v0.9.70)
-- ✅ **بوابة سائق موحّدة** — تطبيق `driver` + توحيد الوصول لأي مستخدم له `DriverProfile` (تابع لمزوّد، فري‑لانسر، أو ناقل فرد).
+- ✅ **وصول سائق موحّد** — دور السائق داخل تطبيق نقلة + توحيد الوصول لأي مستخدم له `DriverProfile` (تابع لمزوّد، فري‑لانسر، أو ناقل فرد).
 - ✅ **مجموعات وموديولز قابلة للإعداد** — صفحة «السياسات والمجموعات» المستقلّة: مجموعات العملاء والمزوّدين، إعدادات افتراضية لكل قروب (إسناد/تسعير/تحصيل) **يضبطها الأدمن**، مع **فرض** طريقة التحصيل، ونطاق ظهور المزوّدين — بواجهة كروت أنيقة. راجع [docs/POLICIES.md](docs/POLICIES.md).
 - ✅ **الطلبات المجمّعة غير المتجانسة** — كل ساق بنوع شاحنة ووجهة وسعر خاص، ثم **ناقل مستقل لكل ساق** (إسناد مباشر أو **مزايدة لكل ساق**) مع تسوية مستحقّات لكل ساق. راجع [docs/ORDERS.md](docs/ORDERS.md).
 - ✅ **صفحة تفاصيل 360° للشركة** — نظرة عامة، الطلبات، الأسطول، المالية، كشف الحساب، **سجل النشاط والتدقيق**، الملف/KYC، والفريق في مكان واحد.
@@ -290,7 +290,7 @@ pnpm check:i18n
 | **Rate Limiting** | Global 100/min + per-endpoint (login: 5/15min، OTP: 3/hour، uploads: 10/min) |
 | **Password Policy** | 8+ أحرف، upper/lower/digit/symbol، bcrypt (12 rounds) |
 | **File Uploads** | Magic-byte validation (JPG/PNG/PDF/XLSX) + حد 10 MB |
-| **CORS** | Allowlist صارمة (لا wildcard) — localhost للتطوير + `naqla.sa` & `*.naqla.sa` للإنتاج |
+| **CORS** | Allowlist صارمة (لا wildcard) — localhost للتطوير + `nqlah.online` & `*.nqlah.online` للإنتاج |
 | **Helmet** | Headers كاملة: HSTS، CSP، X-Frame-Options=DENY، nosniff، Referrer-Policy |
 | **Audit Log** | كل إجراء حسّاس (auth، orders، payments، KYC، settings، uploads، PDPL) |
 | **PDPL** | حقوق المستخدم: export البيانات، حذف الحساب (soft + anonymise) — السجلات المالية تُحفظ 7 سنوات |
@@ -317,7 +317,7 @@ pnpm check:i18n
 
 ## 🤝 المساهمة
 
-هذا المشروع حالياً قيد التطوير الداخلي. للاستفسار: `dev@naqla.sa`
+هذا المشروع حالياً قيد التطوير الداخلي. للاستفسار: `dev@nqlah.online`
 
 ---
 

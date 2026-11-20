@@ -175,7 +175,7 @@ app.use(helmet({
 
 **Origins المسموح بها**:
 - **Development**: `http://localhost:{3000,3001,3002,3003}` (hardcoded)
-- **Production**: `naqla.sa` + `*.naqla.sa` (https only)
+- **Production**: `nqlah.online` + `*.nqlah.online` (https only)
 - **إضافية**: من env `CORS_ORIGINS` (comma-separated)
 - **لا wildcard `*` أبداً** — كل origin يُمرّ بـ predicate `isAllowedOrigin` ويُرفض إذا لم يطابق
 
@@ -303,7 +303,7 @@ publish(@Param('id') id: string) { ... }
 
 ### 8.3 ما زال يُكمل
 - [ ] **Column-level encryption** للحقول الحساسة (national ID, IBAN) — حالياً `bcrypt` للكلمات السر فقط
-- [ ] **DPO endpoint** للتواصل (`dpo@naqla.sa`)
+- [ ] **DPO endpoint** للتواصل (`dpo@nqlah.online`)
 - [ ] **Cross-border transfer** controls
 - [ ] **PIA** (Privacy Impact Assessment) document
 - [ ] **Breach notification** automation (72-hour)

@@ -156,9 +156,9 @@ pnpm dev
 
 | الدور | البريد | كلمة المرور | الرابط |
 |---|---|---|---|
-| **Admin** | `admin@naqla.sa` | `Admin@1234` | http://localhost:3001/login |
-| **Client** | `client@naqla.sa` | `Client@1234` | http://localhost:3002/login |
-| **Carrier** | `carrier@naqla.sa` | `Carrier@1234` | http://localhost:3003/login |
+| **Admin** | `admin@nqlah.online` | `Admin@1234` | http://localhost:3001/login |
+| **Client** | `client@nqlah.online` | `Client@1234` | http://localhost:3002/login |
+| **Carrier** | `carrier@nqlah.online` | `Carrier@1234` | http://localhost:3003/login |
 
 ---
 
@@ -196,16 +196,16 @@ docker compose down -v
 
 | # | الواجهة | الإجراء |
 |---|---|---|
-| 1 | http://localhost:3002/login | login عميل: `client@naqla.sa` / `Client@1234` |
+| 1 | http://localhost:3002/login | login عميل: `client@nqlah.online` / `Client@1234` |
 | 2 | `/orders/new` | املأ الـ wizard خطوة بخطوة → اضغط "إرسال الطلب" |
-| 3 | http://localhost:3003/login | login ناقل: `carrier@naqla.sa` / `Carrier@1234` |
+| 3 | http://localhost:3003/login | login ناقل: `carrier@nqlah.online` / `Carrier@1234` |
 | 4 | `/opportunities` | تشوف الطلب الجديد — تابي السوق المفتوح يلمع بـ badge |
 | 5 | `/opportunities/<id>` | أدخل سعر + موعد التسليم المقترح + شاحنة → "إرسال العرض" (toast نجاح) |
 | 6 | (عميل) `/orders/<id>` | تشوف العرض — اضغط "تفاصيل" → نافذة فيها معلومات الناقل + 3 أزرار (قبول/رفض/إغلاق) |
 | 7 | (عميل) | اضغط "قبول" → الطلب ينتقل لـ ASSIGNED + Shipment Progress Card يظهر مع التتبّع |
 | 8 | (ناقل) `/orders/<id>` | الـ ShipmentStatusCard يظهر — اضغط "تأكيد البدء" (toast) |
 | 9 | (ناقل) | اضغط "تأكيد التسليم" (toast) |
-| 10 | http://localhost:3001 (admin) | login admin: `admin@naqla.sa` / `Admin@1234` — افتح الطلب → AdminEscrowSummary + Shipment Status + auto-refresh كل 15ث |
+| 10 | http://localhost:3001 (admin) | login admin: `admin@nqlah.online` / `Admin@1234` — افتح الطلب → AdminEscrowSummary + Shipment Status + auto-refresh كل 15ث |
 | 11 | (عميل) | يظهر EscrowCountdown — اضغط "تأكيد الاستلام" |
 
 **اختبارات v0.9.0 الجديدة:**

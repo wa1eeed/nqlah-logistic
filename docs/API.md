@@ -194,7 +194,7 @@ Authorization: Bearer <accessToken>
   "phone": "+9665...",
   "email": "sara@example.sa",
   "companyRole": "ADMIN",
-  "activationLink": "https://app.naqla.sa/activate?token=...",
+  "activationLink": "https://app.nqlah.online/activate?token=...",
   "smsSent": true
 }
 ```
@@ -431,7 +431,7 @@ POST /api/uploads/presign
 ```jsonc
 {
   "uploadUrl": "https://<ACCOUNT_ID>.r2.cloudflarestorage.com/nqlah-prod/...?X-Amz-Signature=...",
-  "fileUrl": "https://storage.nqlah.nx.sa/...",
+  "fileUrl": "https://storage.nqlah.online/...",
   "expiresIn": 600
 }
 ```
@@ -643,7 +643,7 @@ GET /api/orders?page=1&limit=20&sort=createdAt:desc&status=BIDDING
 # Login
 curl -X POST http://localhost:4000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"identifier":"client@naqla.sa","password":"Client@1234"}'
+  -d '{"identifier":"client@nqlah.online","password":"Client@1234"}'
 
 # Get my orders (replace TOKEN)
 curl http://localhost:4000/api/orders \

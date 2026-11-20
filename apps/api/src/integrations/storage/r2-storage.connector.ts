@@ -85,7 +85,7 @@ export class R2StorageConnector implements StorageConnector, OnModuleInit {
   }
 
   /// Public base URL for public assets (branding) — a custom domain bound to the
-  /// R2 bucket (e.g. https://storage.nqlah.nx.sa). Presigned URLs do NOT use
+  /// R2 bucket (e.g. https://storage.nqlah.online). Presigned URLs do NOT use
   /// this; they use the R2 S3 endpoint above.
   publicBaseUrl(): string | null {
     return process.env.R2_PUBLIC_URL ?? null;

@@ -6,7 +6,7 @@ import { PageShell } from '@/components/page-shell';
 
 const CHANNELS = [
   { icon: Phone, title: 'اتصال هاتفي', value: '+966 920 000 000', desc: 'من السبت إلى الخميس، 8 ص حتى 8 م' },
-  { icon: Mail, title: 'بريد إلكتروني', value: 'support@naqla.sa', desc: 'رد خلال 12 ساعة عمل' },
+  { icon: Mail, title: 'بريد إلكتروني', value: 'support@nqlah.online', desc: 'رد خلال 12 ساعة عمل' },
   { icon: MessageSquare, title: 'محادثة فورية', value: 'متاحة 24/7', desc: 'رد فوري خلال دقائق' },
 ];
 

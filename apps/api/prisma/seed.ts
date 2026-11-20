@@ -12,7 +12,7 @@ const ACCOUNTS = {
     // for local dev. The record is keyed by the (fixed) phone, so changing the
     // email and/or password in the env and re-running the seed — or
     // `db:ensure-admin` — updates the same admin in place.
-    email: process.env.SEED_ADMIN_EMAIL ?? 'admin@naqla.sa',
+    email: process.env.SEED_ADMIN_EMAIL ?? 'admin@nqlah.online',
     phone: '+966500000001',
     password: process.env.SEED_ADMIN_PASSWORD ?? 'Admin@1234',
     firstName: 'وليد',
@@ -20,7 +20,7 @@ const ACCOUNTS = {
     role: 'SUPER_ADMIN' as const,
   },
   client: {
-    email: 'client@naqla.sa',
+    email: 'client@nqlah.online',
     phone: '+966500000002',
     password: 'Client@1234',
     firstName: 'أحمد',
@@ -28,7 +28,7 @@ const ACCOUNTS = {
     role: 'CLIENT_ADMIN' as const,
   },
   carrier: {
-    email: 'carrier@naqla.sa',
+    email: 'carrier@nqlah.online',
     phone: '+966500000003',
     password: 'Carrier@1234',
     firstName: 'سلطان',

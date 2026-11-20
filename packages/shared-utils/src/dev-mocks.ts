@@ -419,7 +419,7 @@ const DISPUTES = [
 // ─── Current user (auth/me) ──────────────────────────────────
 const USER_ME = {
   id: 'dev-user',
-  email: 'admin@naqla.sa',
+  email: 'admin@nqlah.online',
   phone: '+966500000001',
   passwordHash: null,
   role: 'SUPER_ADMIN',
@@ -518,7 +518,7 @@ export function getMockResponse(url: string): unknown | null {
 export const DEV_USERS = {
   admin: {
     id: 'dev-user-admin',
-    email: 'admin@naqla.sa',
+    email: 'admin@nqlah.online',
     phone: '+966500000001',
     firstName: 'وليد',
     lastName: 'الحربي',
@@ -527,7 +527,7 @@ export const DEV_USERS = {
   },
   client: {
     id: 'dev-user-client',
-    email: 'client@naqla.sa',
+    email: 'client@nqlah.online',
     phone: '+966500000002',
     firstName: 'أحمد',
     lastName: 'العتيبي',
@@ -536,7 +536,7 @@ export const DEV_USERS = {
   },
   carrier: {
     id: 'dev-user-carrier',
-    email: 'carrier@naqla.sa',
+    email: 'carrier@nqlah.online',
     phone: '+966500000003',
     firstName: 'سلطان',
     lastName: 'القحطاني',

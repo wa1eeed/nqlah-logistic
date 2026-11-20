@@ -226,8 +226,8 @@ with today's behavior as the first registered strategies (no behavior change):
 7. ✅ Provider-owned clients (sub-tenancy) — `Company.ownerCarrierId`; carrier "My Clients" page (create/list); owned clients forced private to their owner (off-market, owner-only). (PR #55.)
 8. ⏳ Individual-driver portal + unified driver app (consumes stop execution).
 9. 🟡 White-label — branding **foundation** done: `Company.whiteLabelEnabled` + brand fields; admin enable toggle; carrier Settings → Branding tab. (PR #56.) Remaining: apply the brand to the provider-owned-client experience + the (future) driver app.
-8. ✅ Driver portal — **API backbone done** (`/driver/me`, `/driver/jobs` with stops, `/driver/location`; stop execution via the shared stops endpoint) (PR #57), and the **web portal UI done**: new `apps/web/driver` (`@naqla/driver-web`, dev port 3006) with sign-in, jobs list, and job detail (ordered stops + advance arrived→completed + report location). Mobile-first, bilingual ar/en, Mint theme. Remaining: enabling fully **independent (no-carrier) drivers** — a follow-up that needs a model change (`DriverProfile` currently requires a `companyId`; an independent driver has no carrier, so it must become nullable with the dependent query paths and guards adjusted).
-10. ⏳ Unified **driver app** (mobile) — the FINAL step (the Expo app scaffold lives at `apps/driver` / `@naqla/driver`; consumes the same `/driver` API as the web portal).
+8. ✅ Driver backbone — **API done** (`/driver/me`, `/driver/jobs` with stops, `/driver/location`; stop execution via the shared stops endpoint) (PR #57). The driver experience is served by the **unified app** (`apps/mobile`, Flutter — driver role) and the standalone **Expo app** (`apps/driver`). The old **web driver portal** (`apps/web/driver`, `driver.nqlah.online`) was **removed** — redundant with the mobile app. Remaining: enabling fully **independent (no-carrier) drivers** — a follow-up that needs a model change (`DriverProfile` currently requires a `companyId`; an independent driver has no carrier, so it must become nullable with the dependent query paths and guards adjusted).
+10. ⏳ Unified **driver app** (mobile) — the FINAL step (the Expo app scaffold lives at `apps/driver` / `@naqla/driver`; consumes the same `/driver` API).
 
 Tests and an extracted order state-machine are woven into the phases that touch
 transitions (from phase 3), not deferred to a single pass. Payment gateway: a
@@ -453,8 +453,8 @@ real NestJS + Prisma API (live-verified against a local backend, see
 
 - الـ API على `http://localhost:4000` ببادئة `/api`، والغلاف `{ success, data }`؛
   تسجيل الدخول `POST /api/auth/login` بـ `{ phoneOrEmail, password }`، والأدمن
-  `POST /api/admin/auth/login` بـ `{ email, password }` (حسابات: carrier@naqla.sa
-  / Carrier@1234، admin@naqla.sa / Admin@1234، client@naqla.sa / Client@1234).
+  `POST /api/admin/auth/login` بـ `{ email, password }` (حسابات: carrier@nqlah.online
+  / Carrier@1234، admin@nqlah.online / Admin@1234، client@nqlah.online / Client@1234).
 - **نسخ الـ Prisma client إلى dist**: `nest build` يُخرج `dist/src/main.js` ولا
   ينسخ العميل المولَّد، فبعد كل build:
   `cp -R src/generated/prisma dist/src/generated/prisma` ثم `node dist/src/main.js`.

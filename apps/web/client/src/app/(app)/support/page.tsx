@@ -138,7 +138,7 @@ export default function ClientSupportPage() {
           icon={Mail}
           title={t('support.emailTitle')}
           subtitle={t('support.emailSubtitle')}
-          cta="support@naqla.sa"
+          cta="support@nqlah.online"
           tone="bg-success/15 text-success"
         />
       </div>

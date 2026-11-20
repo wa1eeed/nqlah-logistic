@@ -3,7 +3,7 @@
 // mutates, or deletes anything, so it is safe against staging or production.
 //
 //   # against staging (admin differs from the demo seed → pass creds):
-//   E2E_BASE=https://api.nqlah.nx.sa/api \
+//   E2E_BASE=https://api.nqlah.online/api \
 //     E2E_ADMIN_EMAIL=waleed@nx.sa E2E_ADMIN_PASSWORD=... \
 //     node scripts/post-deploy-check.mjs
 //   # against a local API with the demo seed (default creds):
@@ -16,7 +16,7 @@ import { BASE, j, unwrap, listOf, checker } from '../apps/api/test/e2e/_helpers.
 
 // Admin credentials: default to the demo seed, overridable for real
 // environments whose admin differs (e.g. SEED_ADMIN_EMAIL set in Coolify).
-const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'admin@naqla.sa';
+const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'admin@nqlah.online';
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'Admin@1234';
 
 async function run() {

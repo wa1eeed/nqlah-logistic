@@ -122,7 +122,7 @@ export default function CarrierSupportPage() {
           icon={Mail}
           title={t('support.channelEmailTitle')}
           subtitle={t('support.channelEmailSubtitle')}
-          cta="support@naqla.sa"
+          cta="support@nqlah.online"
           tone="bg-success/15 text-success"
         />
       </div>

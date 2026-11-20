@@ -57,9 +57,9 @@ Demo accounts (email or phone both work):
 
 | Role    | Email              | Password      |
 |---------|--------------------|---------------|
-| Admin   | admin@naqla.sa     | `Admin@1234`   |
-| Client  | client@naqla.sa    | `Client@1234`  |
-| Carrier | carrier@naqla.sa   | `Carrier@1234` |
+| Admin   | admin@nqlah.online     | `Admin@1234`   |
+| Client  | client@nqlah.online    | `Client@1234`  |
+| Carrier | carrier@nqlah.online   | `Carrier@1234` |
 
 ## 5. Run the API
 

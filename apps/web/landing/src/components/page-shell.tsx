@@ -71,7 +71,7 @@ export function PageShell({ children }: { children: React.ReactNode }) {
                 <h4 className="mb-4 text-sm font-bold">تواصل</h4>
                 <ul className="space-y-2.5 text-sm text-white/60">
                   <li dir="ltr" className="num">+966 920 000 000</li>
-                  <li dir="ltr" className="num">support@naqla.sa</li>
+                  <li dir="ltr" className="num">support@nqlah.online</li>
                   <li>الرياض، المملكة العربية السعودية</li>
                 </ul>
               </div>
