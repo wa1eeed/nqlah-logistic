@@ -7,6 +7,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Audit } from '../../common/audit/audit.decorator';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { MaintenanceService } from '../../common/maintenance/maintenance.service';
 import { AppSettingsService } from './app-settings.service';
 import { CurrenciesService } from './currencies.service';
 import { UpdateAppSettingsDto, UpdateVersionsDto } from './dto/app-settings.dto';
@@ -19,6 +20,7 @@ export class SettingsController {
     private prisma: PrismaService,
     private appSettings: AppSettingsService,
     private currencies: CurrenciesService,
+    private maintenance: MaintenanceService,
   ) {}
 
   /**
@@ -119,8 +121,11 @@ export class SettingsController {
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Put('app')
   @Audit({ action: 'admin.appSettings.update', resourceType: 'Setting' })
-  updateAppSettings(@Body() dto: UpdateAppSettingsDto) {
-    return this.appSettings.updateConfig(dto);
+  async updateAppSettings(@Body() dto: UpdateAppSettingsDto) {
+    const result = await this.appSettings.updateConfig(dto);
+    // Take effect immediately (don't wait out the guard's cache TTL).
+    if (dto.maintenance) this.maintenance.invalidate();
+    return result;
   }
 
   /**

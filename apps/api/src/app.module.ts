@@ -10,6 +10,8 @@ import { RedisModule } from './common/redis/redis.module';
 import { AuditModule } from './common/audit/audit.module';
 import { HealthController } from './common/health/health.controller';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { MaintenanceGuard } from './common/guards/maintenance.guard';
+import { MaintenanceModule } from './common/maintenance/maintenance.module';
 
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -70,6 +72,7 @@ import { LocationsModule } from './modules/locations/locations.module';
     PrismaModule,
     RedisModule,       // global — provides RedisService
     AuditModule,       // global — provides AuditLogService + AuditInterceptor
+    MaintenanceModule, // global — provides MaintenanceService (maintenance flag)
 
     AuthModule,
     UsersModule,
@@ -105,6 +108,9 @@ import { LocationsModule } from './modules/locations/locations.module';
     // then JwtAuthGuard.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // After auth (so req.user.role is set): closes the platform to non-admins
+    // when maintenance mode is on.
+    { provide: APP_GUARD, useClass: MaintenanceGuard },
     // Broadcasts a `data:changed` signal after each successful mutation so every
     // dashboard updates live (see RealtimeInvalidateInterceptor).
     { provide: APP_INTERCEPTOR, useClass: RealtimeInvalidateInterceptor },
