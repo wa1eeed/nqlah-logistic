@@ -38,6 +38,14 @@ jobs:
           mkdir -p build/ios/SourcePackages
           flutter pub get
 
+      # Xcode 26's `flutter build ios --no-codesign` still validates that a
+      # Development Team is selected (automatic signing) and otherwise aborts
+      # after compiling. Inject the team into Flutter's Release xcconfig so the
+      # build resolves it; --no-codesign still skips the actual signing.
+      - name: Set signing team for the no-codesign build
+        working-directory: apps/mobile
+        run: echo "DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }}" >> ios/Flutter/Release.xcconfig
+
       # Generates the Flutter artifacts; fastlane then re-archives with signing.
       - name: Flutter iOS build (no codesign)
         working-directory: apps/mobile
