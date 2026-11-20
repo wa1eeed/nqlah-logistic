@@ -6,6 +6,25 @@
 
 ## [Unreleased] — قيد التطوير
 
+### v0.9.84 — Platform maintenance mode (2026-11-20)
+
+A single admin switch that closes the platform and both apps during maintenance
+or migrations, so no new data reaches the DB mid-upgrade. Admins keep full
+access. Documented in [`docs/MAINTENANCE.md`](docs/MAINTENANCE.md).
+
+- **Config + guard.** A `maintenance` section ({ enabled, messageAr, messageEn })
+  on the app-settings config, stored under `app.maintenance`; public `GET
+  /settings/app` returns it, admin `PUT /settings/app` toggles it. A global
+  `MaintenanceGuard` (after `JwtAuthGuard`) answers 503 `MAINTENANCE` to every
+  non-admin request while on, except an allow-list (GET /settings/{app,platform,
+  currencies}, /health, /admin/auth/*). `MaintenanceService` caches the flag
+  (10s, fails open) and is invalidated immediately on toggle.
+- **Admin panel.** Settings → App Settings → *Maintenance mode* — a toggle + Ar/En
+  message editor; enabling is confirmed (it closes the platform).
+- **Screens.** The client + carrier web apps and the Flutter app show a localized
+  full-screen maintenance page when on (web polls every 30s + on focus; mobile
+  polls every 30s), recovering on their own once the admin turns it off.
+
 ### v0.9.83 — Server-driven feature flags (2026-11-20)
 
 Features can now be toggled platform-wide from the admin console with no
