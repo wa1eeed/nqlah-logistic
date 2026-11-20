@@ -50,43 +50,91 @@ sheet) via a dev-only web hook that was removed after testing.
 
 ---
 
-## 2. Shorebird (code-push) — setup steps
+## 2. Shorebird (code-push) — **initialized**
 
 [Shorebird](https://shorebird.dev) patches the Dart code of a released build
 over the air. It covers **Dart/Flutter changes only** — not native code, new
 plugins, new permissions, or asset-level engine changes. Those still need a
 store release (gated by the soft-update policy above).
 
-**One-time setup** (needs a Shorebird account; run from `apps/mobile`):
+**Status:** `shorebird init` is **done**.
+- `apps/mobile/shorebird.yaml` → `app_id: cd0ba5d3-22cf-404e-bfbf-e1f1e5d4e8ea`
+  (not secret; committed per Shorebird's own guidance).
+- `auto_update: true` (the default) → a released build pulls patches in the
+  **background on launch, with no user action**. To gate patches behind code
+  instead, add `auto_update: false` and use `package:shorebird_code_push`.
+- `shorebird.yaml` is bundled as a Flutter asset; the Android `INTERNET`
+  permission was added (the updater needs it).
+- **Normal `flutter build` / web builds ignore all of this.** Only builds made
+  with `shorebird release` embed the updater and become patchable.
+
+### The release ↔ patch model (important)
+A **patch must match a release built with `shorebird release`**, byte-for-byte —
+the exact artifact you upload to the store must be the one Shorebird built (it
+records its hash). So you can't `flutter build` for the store and patch it
+later; the store build itself has to come from `shorebird release`.
 
 ```bash
-dart pub global activate shorebird_cli
-shorebird login
-shorebird init          # creates the app, writes shorebird.yaml + app_id, adds it to pubspec assets
-```
-
-**Per release** (replaces `flutter build` for store uploads):
-
-```bash
-shorebird release android   # and: shorebird release ios
-```
-
-**Shipping an OTA patch** to an already-released version:
-
-```bash
-shorebird patch android     # and: shorebird patch ios
+# From apps/mobile. Use the Shorebird CLI (installed at ~/.shorebird/bin):
+shorebird release android   # or ios — build the store artifact (patchable)
+shorebird patch   android   # or ios — push a Dart/UI update to that release
+shorebird preview           # test a release/patch locally before shipping
 ```
 
 ### When to use which
 
 | Change | Mechanism |
 | ------ | --------- |
-| Dart logic / UI fix / copy change | **Shorebird patch** (instant, no store) |
-| New native plugin / permission / Firebase change | **Store release** + bump `minSupportedVersion` if the old build would break |
+| Dart logic / UI fix / copy change | **`shorebird patch`** (instant, no store, no user action) |
+| New native plugin / permission / Firebase change | **Store release** + bump `minSupportedVersion` if old builds break |
 | Breaking API change the old client can't handle | **Store release** + `forceUpdate=true` |
 
-### CI note
-The TestFlight workflow (GitHub Actions + fastlane) builds with `flutter build`.
-After `shorebird init`, switch the release build step to `shorebird release ios`
-so every store build is patchable. Until then, Shorebird is **prepped but not
-active** — `shorebird init` is the remaining manual step.
+### CI integration (ready to apply — validate on a watched run)
+The release workflows still build with `flutter build`, so **their artifacts are
+not yet patchable**. The first `shorebird release` should be run and validated
+(locally or on a watched CI run) before swapping the working pipelines, because
+CI signing is unverifiable from here and there is a known runner-image signing
+bug (below).
+
+**CI auth** — generate a token and add it as a repo secret `SHOREBIRD_TOKEN`:
+```bash
+shorebird login:ci      # prints a token; add it as the SHOREBIRD_TOKEN Actions secret
+```
+Each job then installs the CLI with `shorebirdtech/setup-shorebird@v1` and reads
+`SHOREBIRD_TOKEN` from the env.
+
+**Android** (`android-release.yml`) — simplest; no signing interplay. Replace the
+`flutter build appbundle …` step with:
+```yaml
+      - uses: shorebirdtech/setup-shorebird@v1
+      - name: Build patchable AAB
+        working-directory: apps/mobile
+        env: { SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }} }
+        run: shorebird release android --artifact aab -- --build-name=${{ steps.ver.outputs.name }} --build-number=${{ github.run_number }}
+```
+(The AAB lands under `build/app/outputs/bundle/release/`; the upload + dashboard
+steps are unchanged.)
+
+**iOS** (`ios-testflight.yml` + `ios/fastlane/Fastfile`) — the uploaded IPA must
+be the Shorebird-built one, so `shorebird release ios` replaces fastlane's
+`build_app` (not an extra step before it). Shorebird's own fastlane pattern
+([docs](https://docs.shorebird.dev/code-push/ci/fastlane/),
+[demo Fastfile](https://github.com/shorebirdtech/fastlane_demo/blob/main/ios/fastlane/Fastfile)):
+1. `fastlane add_plugin shorebird` (adds the
+   [fastlane-plugin-shorebird](https://github.com/shorebirdtech/fastlane-plugin-shorebird)).
+2. A new lane keeps the existing `setup_ci` → `app_store_connect_api_key` →
+   `match(type: "appstore")` signing, then calls `shorebird_release(platform: "ios")`
+   **instead of** `build_app`, and uploads the resulting IPA with
+   `upload_to_testflight`.
+3. In the workflow, install the CLI (`setup-shorebird`), drop the
+   `flutter build ios --no-codesign` step, and run the new lane.
+
+**Known caveat:** a macOS runner image regression
+([actions/runner-images#13884](https://github.com/actions/runner-images/issues/13884))
+broke match's `.p12` import / signing-identity lookup for this exact setup. If
+the first run fails signing, pin `runs-on` to a known-good image. Reverting to
+the working pipeline is one commit away (it's in git history).
+
+**App Store id:** replace the `id0000000000` placeholder in
+[`update_screen.dart`](../apps/mobile/lib/features/update/update_screen.dart)
+with the real App Store numeric id once the app is live.
