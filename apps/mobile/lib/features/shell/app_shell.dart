@@ -110,6 +110,28 @@ class _AppShellState extends ConsumerState<AppShell> {
     final c = context.nq;
     ref.watch(localeControllerProvider); // rebuild tab labels on language change
     ref.watch(realtimeInvalidatorProvider); // keep live-data invalidation alive
+    // Keep the shell's role in sync with the signed-in user. The shell can mount
+    // before `/users/me` resolves (identity would freeze on the `customer`
+    // default), so re-sync whenever the user loads/changes — except when a fixed
+    // identity was injected (dev preview). Fixes a provider briefly seeing the
+    // customer shell and the owner-driver switch not appearing.
+    if (widget.identity == null) {
+      ref.listen(authControllerProvider, (_, next) {
+        final u = next.user;
+        if (u == null) return;
+        final id = u.identity;
+        final od = u.isOwnerDriver;
+        if (id != _identity || od != _ownerDriver) {
+          setState(() {
+            _identity = id;
+            _ownerDriver = od;
+            _odContext = OwnerDriverContext.provider;
+            _index = 0;
+            ref.read(previewIdentityProvider.notifier).state = id;
+          });
+        }
+      });
+    }
     // A non-forced update offers a one-time, skippable prompt once the policy
     // resolves (forced updates are handled by the app-wide overlay).
     ref.listen(updateRequirementProvider, (_, next) {
