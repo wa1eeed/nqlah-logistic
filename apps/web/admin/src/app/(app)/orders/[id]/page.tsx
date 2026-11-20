@@ -85,7 +85,7 @@ export default function AdminOrderDetail() {
   const carrier = companyById(order.carrierId);
   type ApiOrderDriver = {
     id: string; assignedAt: string;
-    driver: { id: string; status: string; user: { firstName: string; lastName: string; phone: string } };
+    driver: { id: string; status: string; user: { firstName: string; lastName: string; phone: string }; assignedTrucks?: { plateNumber: string }[] };
   };
   const orderDrivers: ApiOrderDriver[] = (order as unknown as { orderDrivers?: ApiOrderDriver[] }).orderDrivers ?? [];
   // Prefer API bids (live data) — fall back to mock for offline demo.
@@ -231,8 +231,16 @@ export default function AdminOrderDetail() {
                   {orderDrivers.map((od) => {
                     const fullName = `${od.driver.user.firstName} ${od.driver.user.lastName}`;
                     const isOnTrip = od.driver.status === 'ON_TRIP';
+                    const plate = od.driver.assignedTrucks?.[0]?.plateNumber
+                      ? parsePlateString(od.driver.assignedTrucks[0].plateNumber)
+                      : null;
                     return (
                       <div key={od.id} className="space-y-2">
+                        {plate && (
+                          <div className="flex flex-col items-center gap-1.5">
+                            <SaudiLicensePlate letters={plate.letters} numbers={plate.numbers} plateType="transport" plateFormat="standard" size="stage" />
+                          </div>
+                        )}
                         <div className="flex items-center gap-3">
                           <div className="h-9 w-9 rounded-full bg-muted grid place-items-center shrink-0">
                             <User className="h-4 w-4 text-muted-foreground" />

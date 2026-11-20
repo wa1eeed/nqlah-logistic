@@ -23,7 +23,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { PageHeader } from '@/components/page-header';
-import { SaudiLicensePlate, parsePlateString } from '@/components/saudi-plate';
+import { SaudiLicensePlate, SaudiPlate, parsePlateString } from '@/components/saudi-plate';
 import { StatusBadge } from '@/components/status-badge';
 import { Currency } from '@/components/currency';
 import { RouteMap } from '@/components/route-map';
@@ -979,10 +979,9 @@ function CarrierInfoCard({ order }: { order: Order }) {
   const apiBids = (order as Order & { bids?: ApiBid[] }).bids;
   const acceptedBid = apiBids?.find((b) => b.status === 'ACCEPTED') ?? BIDS.find((b) => b.orderId === order.id && b.status === 'ACCEPTED');
 
-  // Real assigned driver from the order payload — never mock. The order detail
-  // doesn't carry the truck record, so the truck panel stays a "pending"
-  // placeholder rather than showing a fabricated plate.
-  type ApiOrderDriver = { id: string; driver: { status?: string; user: { firstName: string; lastName: string; phone: string } } };
+  // Real assigned driver + their truck from the order payload — never mock.
+  type ApiTruck = { plateNumber: string; type?: string; make?: string; model?: string; year?: number; capacity?: number };
+  type ApiOrderDriver = { id: string; driver: { status?: string; user: { firstName: string; lastName: string; phone: string }; assignedTrucks?: ApiTruck[] } };
   const orderDrivers = (order as Order & { orderDrivers?: ApiOrderDriver[] }).orderDrivers ?? [];
   const od = orderDrivers[0];
   const driver = od
@@ -992,6 +991,8 @@ function CarrierInfoCard({ order }: { order: Order }) {
         onTrip: od.driver.status === 'ON_TRIP',
       }
     : null;
+  const assignedTruck = od?.driver.assignedTrucks?.[0] ?? null;
+  const plate = assignedTruck ? parsePlateString(assignedTruck.plateNumber) : null;
   const initials = (carrier.nameAr ?? '').split(' ').slice(0, 2).map((w) => w[0] ?? '').join('');
   const driverInitials = (driver?.fullName ?? '').split(' ').slice(0, 2).map((w) => w[0] ?? '').join('');
 
@@ -1067,7 +1068,33 @@ function CarrierInfoCard({ order }: { order: Order }) {
               <Truck className="h-3.5 w-3.5" />
               {t('detail.carrier.assignedTruck')}
             </div>
-            <div className="text-xs text-muted-foreground py-2">{t('detail.carrier.truckSoon')}</div>
+            {assignedTruck && plate ? (
+              <>
+                <SaudiPlate letters={plate.letters} numbers={plate.numbers} type="public" size="sm" />
+                <dl className="mt-3 space-y-1.5 text-xs">
+                  {assignedTruck.type && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">{t('detail.carrier.type')}</dt>
+                      <dd className="font-medium">{TRUCK_LABELS[assignedTruck.type] ? t(TRUCK_LABELS[assignedTruck.type]) : assignedTruck.type}</dd>
+                    </div>
+                  )}
+                  {assignedTruck.capacity != null && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">{t('detail.carrier.capacity')}</dt>
+                      <dd className="font-medium num">{assignedTruck.capacity.toFixed(0)} {t('detail.tonUnit')}</dd>
+                    </div>
+                  )}
+                  {(assignedTruck.make || assignedTruck.model || assignedTruck.year) && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">{t('detail.carrier.model')}</dt>
+                      <dd className="font-medium">{[assignedTruck.make, assignedTruck.model, assignedTruck.year].filter(Boolean).join(' ')}</dd>
+                    </div>
+                  )}
+                </dl>
+              </>
+            ) : (
+              <div className="text-xs text-muted-foreground py-2">{t('detail.carrier.truckSoon')}</div>
+            )}
           </div>
 
           {/* Driver */}
