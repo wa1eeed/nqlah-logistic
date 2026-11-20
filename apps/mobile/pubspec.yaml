@@ -54,3 +54,4 @@ flutter:
     - assets/icons/regular/
     - assets/icons/fill/
     - assets/logo/
+    - shorebird.yaml
