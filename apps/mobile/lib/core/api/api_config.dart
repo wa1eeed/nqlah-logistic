@@ -8,7 +8,7 @@
 /// flutter run --dart-define=NQ_API_BASE=http://127.0.0.1:4000/api  # iOS sim / web
 /// ```
 ///
-/// Defaults to the hosted staging environment.
+/// Defaults to the hosted production environment (`nqlah.nx.sa`).
 class ApiConfig {
   ApiConfig._();
 
