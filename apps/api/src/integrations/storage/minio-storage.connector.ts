@@ -31,11 +31,23 @@ export class MinioStorageConnector implements StorageConnector, OnModuleInit {
     // set (local dev, where localhost:9000 is reachable anyway).
     this.signClient = this.buildSignClient() ?? this.client;
 
+    // Ensure the bucket in the background, time-boxed — never block (or hang)
+    // the whole API boot on storage. If MinIO is unreachable at startup,
+    // `bucketExists` would otherwise stall the process; uploads surface their
+    // own errors later, and the bucket is re-checked on the next boot.
+    void this.ensureBucket();
+  }
+
+  /** Best-effort, time-boxed bucket ensure (see onModuleInit). */
+  private async ensureBucket() {
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('storage not reachable (timeout)')), 5000),
+    );
     try {
-      const exists = await this.client.bucketExists(this.bucket);
-      if (!exists) await this.client.makeBucket(this.bucket);
-    } catch {
-      /* bucket may already exist, or storage not ready yet */
+      const exists = await Promise.race([this.client.bucketExists(this.bucket), timeout]);
+      if (!exists) await Promise.race([this.client.makeBucket(this.bucket), timeout]);
+    } catch (e) {
+      this.logger.warn(`MinIO bucket ensure skipped at boot: ${(e as Error).message}`);
     }
   }
 
