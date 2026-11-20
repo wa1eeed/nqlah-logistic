@@ -38,11 +38,15 @@ jobs:
           mkdir -p build/ios/SourcePackages
           flutter pub get
 
-      # Generates the Flutter artifacts + runs `pod install`; fastlane then
-      # re-archives this with signing.
-      - name: Flutter iOS build (no codesign)
+      # Generate the Flutter project config (Generated.xcconfig etc.) only.
+      # A full `flutter build ios --no-codesign` fails on Xcode 26 at the final
+      # .app assembly, asking for a Development Team even with --no-codesign.
+      # fastlane's `beta` lane does the authoritative build (fetches SPM deps,
+      # compiles Dart and archives with match signing), so we only need the
+      # project configured here. `--config-only` configures it and never builds.
+      - name: Flutter iOS build (prepare project)
         working-directory: apps/mobile
-        run: flutter build ios --release --no-codesign
+        run: flutter build ios --release --no-codesign --config-only
 
       - uses: ruby/setup-ruby@v1
         with:
