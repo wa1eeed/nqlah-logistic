@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:dio/dio.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/api_client.dart';
+import '../../core/api/api_config.dart';
 import '../../core/auth/registration_controller.dart';
+import '../../core/i18n/app_strings.dart';
+import '../../core/i18n/locale_controller.dart';
 import '../../core/platform/countries.dart';
 import '../../core/platform/geo.dart';
 import '../../core/theme/tokens.dart';
@@ -260,7 +264,34 @@ class _RegisterCredentialsScreenState
           onChanged: (v) => setState(() => _accepted = v),
           label: 'أوافق على شروط الاستخدام وسياسة الخصوصية وشروط النقل',
         ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            _policyLink(c, 'سياسة الخصوصية', 'privacy'),
+            Text('  ·  ', style: NqType.caption.copyWith(color: c.tx3)),
+            _policyLink(c, 'شروط الاستخدام', 'terms'),
+          ],
+        ),
       ],
     );
+  }
+
+  /// A tappable link to a hosted policy page (privacy / terms), opened in the
+  /// browser. Apple requires the privacy policy to be accessible in-app.
+  Widget _policyLink(NqColors c, String label, String path) => GestureDetector(
+        onTap: () => _openPolicy(path),
+        child: Text(label,
+            style: NqType.caption.copyWith(
+                color: c.mintTx, decoration: TextDecoration.underline)),
+      );
+
+  Future<void> _openPolicy(String path) async {
+    // Web origin = the API base without its `/api` suffix (follows the env).
+    final origin = ApiConfig.baseUrl.replaceFirst(RegExp(r'/api/?$'), '');
+    final loc =
+        ref.read(localeControllerProvider) == AppLang.en ? 'en' : 'ar';
+    await launchUrl(Uri.parse('$origin/$loc/$path'),
+        mode: LaunchMode.externalApplication);
   }
 }
