@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/orders/order_draft_controller.dart';
+import '../../../core/orders/catalog_providers.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/nq_icon.dart';
@@ -82,17 +83,22 @@ class _OrderStep1CargoState extends ConsumerState<OrderStep1Cargo> {
           height: 52,
         ),
         const SizedBox(height: 16),
-        if (d.single) ..._singleInputs(c, notifier, d) else ..._consolidatedPreview(c),
+        if (d.single)
+          ..._singleInputs(c, notifier, d, ref.watch(truckOptionsProvider),
+              ref.watch(cargoOptionsProvider))
+        else
+          ..._consolidatedPreview(c),
       ],
     );
   }
 
-  List<Widget> _singleInputs(NqColors c, OrderDraftController n, OrderDraft d) {
+  List<Widget> _singleInputs(NqColors c, OrderDraftController n, OrderDraft d,
+      List<Opt> truckOpts, List<Opt> cargoOpts) {
     return [
       _label(c, 'نوع الشاحنة'),
       const SizedBox(height: 8),
       _chipRow(
-        truckOptions,
+        truckOpts,
         d.requiredTruckType,
         (v) => n.patch((x) => x.copyWith(requiredTruckType: v)),
       ),
@@ -100,7 +106,7 @@ class _OrderStep1CargoState extends ConsumerState<OrderStep1Cargo> {
       _label(c, 'نوع الحمولة'),
       const SizedBox(height: 8),
       _chipRow(
-        cargoOptions,
+        cargoOpts,
         d.cargoType,
         (v) => n.patch((x) => x.copyWith(cargoType: v)),
       ),
