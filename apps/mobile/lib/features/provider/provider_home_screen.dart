@@ -39,7 +39,7 @@ class ProviderHomeScreen extends ConsumerWidget {
     final c = context.nq;
     final user = ref.watch(authControllerProvider).user;
     final work = ref.watch(providerWorkProvider).valueOrNull ?? const [];
-    final loads = ref.watch(marketplaceLoadsProvider).valueOrNull ?? const [];
+    final loads = ref.watch(openLoadsProvider).valueOrNull ?? const [];
 
     final awaiting =
         work.where((o) => o.status.toUpperCase() == 'ASSIGNED').toList();
@@ -54,10 +54,10 @@ class ProviderHomeScreen extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(providerWorkProvider);
-        ref.invalidate(marketplaceLoadsProvider);
+        ref.invalidate(openLoadsProvider);
         await Future.wait([
           ref.read(providerWorkProvider.future),
-          ref.read(marketplaceLoadsProvider.future),
+          ref.read(openLoadsProvider.future),
         ]);
       },
       child: ListView(

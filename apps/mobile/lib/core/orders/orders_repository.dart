@@ -261,7 +261,10 @@ final myShipmentsProvider = FutureProvider<List<OrderSummary>>((ref) {
 
 /// The carrier's marketplace loads (`mine=false`): OPEN PUBLISHED/BIDDING orders
 /// + DIRECT targeted + already-assigned.
-final marketplaceLoadsProvider = FutureProvider<List<OrderSummary>>((ref) {
+/// Open orders available to a provider (as OrderSummary). Named distinctly from
+/// marketplace_repository's `marketplaceLoadsProvider` (which returns richer
+/// LoadListing rows) to avoid the same-name clash across files.
+final openLoadsProvider = FutureProvider<List<OrderSummary>>((ref) {
   return ref.watch(ordersRepositoryProvider).list(mine: false);
 });
 

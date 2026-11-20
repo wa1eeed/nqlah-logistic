@@ -20,7 +20,7 @@ final realtimeInvalidatorProvider = Provider<void>((ref) {
       throttle = null;
       ref.invalidate(orders.myShipmentsProvider);
       ref.invalidate(orders.providerWorkProvider);
-      ref.invalidate(orders.marketplaceLoadsProvider);
+      ref.invalidate(orders.openLoadsProvider);
       ref.invalidate(orders.orderDetailProvider);
       ref.invalidate(market.marketplaceLoadsProvider);
       ref.invalidate(market.marketplaceTrucksProvider);
