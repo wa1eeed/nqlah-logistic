@@ -24,11 +24,13 @@ the R2 object-storage migration (two-bucket model) + the local API build fix
 2. **Production deployment** on the official domain, incl. production builds of the
    apps. Model: staging = the full project for continuous testing, then migrate to
    production (Coolify → GCP/Alibaba portability; see `docs/SECRETS.md`).
-3. **Maintenance / updates mode** — an admin setting to close the platform + apps
-   during maintenance/migrations (maintenance flag + guard + a maintenance screen on
-   web and app) so no new data hits the DB mid-upgrade. Pairs with #2. *(The plan
-   **maintenance module** gating already exists; this is the separate platform-wide
-   maintenance switch.)*
+3. ✅ **Maintenance / updates mode** (v0.9.84) — an admin switch closes the platform +
+   apps during maintenance/migrations: a `maintenance` config section + a global
+   `MaintenanceGuard` (503 `MAINTENANCE` for non-admins, admin bypass + allow-list),
+   an admin toggle panel, and web (client/carrier) + mobile maintenance screens that
+   poll `/settings/app` and recover on their own. Pairs with #2. See
+   [`docs/MAINTENANCE.md`](docs/MAINTENANCE.md). *(Separate from the plan
+   **maintenance module** gating, which is a paid-module feature.)*
 
 **B. App ↔ Web parity & UX fixes (carried from the roadmap).**
 4. **App↔Web parity audit** — surface mobile-only features on web where they belong:

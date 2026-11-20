@@ -38,6 +38,10 @@ polish pass before release.
   registry, the `app.flags` store, the admin toggle panel, the mobile/web client
   hooks, and the `promoBanner` / `inAppChat` examples — toggled platform-wide with
   no app-store update.
+- [`MAINTENANCE.md`](MAINTENANCE.md) — platform maintenance mode: the admin
+  switch, the API guard (503 for non-admins, admin bypass, allow-list), and the
+  web + mobile maintenance screens — closes the platform/apps during
+  maintenance/migrations.
 - [`architecture/storage.md`](architecture/storage.md) — object storage: R2 per
   environment, folder/prefix layout, server-built `purpose` keys, naming,
   privacy, CDN for public assets, and the MinIO→R2 migration plan.
