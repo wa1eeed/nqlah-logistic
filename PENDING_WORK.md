@@ -1,6 +1,7 @@
 # Pending Work — حالة الربط الحالية
 
-> آخر تحديث: **2026-11-20** — بعد جولة التصميم + الموبايل + أعلام الميزات (feature flags).
+> آخر تحديث: **2026-11-20** — جولة تجهيز الإطلاق (OTP review، حذف الحساب، جاهزية أبل،
+> تصحيح staging→production). الكود جاهز؛ المتبقي تشغيلي. انظر «Launch readiness» أدناه.
 > هذا القسم هو نقطة الاستئناف الحالية؛ الأقسام الأقدم تحته محفوظة كمرجع تاريخي.
 
 ## 🟣 Status update — 2026-11-20 (post design + mobile + feature flags)
@@ -20,17 +21,49 @@ the R2 object-storage migration (two-bucket model) + the local API build fix
 market** — guest/client/carrier/owner-driver all browse both loads and trucks,
 tappable load detail, carrier browse-only gating (#265/#266); the **soft-update
 version gate + Shorebird code-push init** (#267, see
-[`docs/OTA_UPDATES.md`](docs/OTA_UPDATES.md)); and the dev role-previewer
-identity-gating fix (#269).
+[`docs/OTA_UPDATES.md`](docs/OTA_UPDATES.md)); the dev role-previewer
+identity-gating fix (#269); the **App Store review OTP bypass** (#271, admin
+«وضع مراجعة المتجر» — fixed OTP for one reviewer phone, works in production);
+**MinIO boot-resilience** (#272); the **staging→production doc reframe** + reserved
+`staging/` placeholder (#273); the missing **iOS permission usage strings**
+(camera/photos/mic, #274); **account deletion** — real 30-day grace deletion with
+blockers + purge (#275, see [`docs/ACCOUNT_DELETION.md`](docs/ACCOUNT_DELETION.md));
+and in-app **privacy-policy / terms links** at registration (#276).
 
 > **Launch strategy (owner, 2026-11-20):** fast launch by promoting the **current
 > staging to production** as-is; a fresh staging is stood up afterwards and the
-> current one becomes permanent production. Before go-live, swap any dev-only
-> secrets on that environment for real production values (seed admin
-> `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`, object-storage keys, JWT secrets).
->
-> **Open review branches:** #268 (iOS Shorebird CI — validate on a watched
-> TestFlight run before cutting the v1.0 build so it's patchable).
+> current one becomes permanent production.
+
+### 🚀 Launch readiness (2026-11-20)
+
+**Code: ready.** All Apple-rejection code blockers are resolved and merged; `main`
+is coherent (API + admin + client + carrier typecheck 0, Flutter analyze clean,
+migrations up to date, no conflict markers). Apple-readiness review done:
+permission strings ✅ (#274), in-app account deletion ✅ (#275), privacy-policy
+link ✅ (#276), reviewer login via OTP review mode ✅ (#271), no social login so
+Sign in with Apple not required, guest/explore-first avoids forced login.
+
+**Remaining = operational (owner), not code:**
+1. **Coolify (production):** rename env → production, `NODE_ENV=production`, swap
+   secrets (`JWT_SECRET`/`JWT_REFRESH_SECRET` ≥64 & different, storage keys,
+   `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`); clean the seed test accounts (keep
+   `+966500000002` as the Apple demo account).
+2. **Daily purge cron:** schedule `POST /account/deletion/purge` (x-deploy-token;
+   see [`docs/ACCOUNT_DELETION.md`](docs/ACCOUNT_DELETION.md)). Required or
+   deletions never actually run.
+3. **Live verification on the deployed env** (local API won't boot — Docker/MinIO
+   wedged locally): `login-otp` review mode, the account-deletion flow, a smoke pass.
+4. **App Store Connect:** privacy-policy URL, App Privacy labels, reviewer sign-in
+   (phone + fixed code), screenshots/description, support URL, age rating, review
+   notes (driver background-location + reviewer login steps + B2B nature).
+5. **iOS build:** add `SHOREBIRD_TOKEN` secret → run **#268** on a watched
+   TestFlight run → confirm signing/export + `IPA_OUTPUT_PATH` + a patch → merge
+   #268 → cut v1.0 from the Shorebird lane (so v1.0 is patchable).
+6. **Enable «وضع مراجعة المتجر»** in admin (reviewer phone + `000000`); keep ON
+   through review, disable after approval.
+
+> **Open PR:** #268 (iOS Shorebird CI) — review only; validate on a watched
+> TestFlight run before merging / cutting v1.0.
 
 ### Remaining work
 
