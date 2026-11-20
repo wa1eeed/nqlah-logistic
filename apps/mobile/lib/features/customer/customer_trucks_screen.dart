@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/marketplace/marketplace_repository.dart';
 import '../../core/orders/catalog_providers.dart' show truckOptionsProvider;
+import '../../core/orders/order_draft_controller.dart' show saudiCities;
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
@@ -32,8 +33,63 @@ class CustomerTrucksScreen extends ConsumerStatefulWidget {
 class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
   // A null city shows every listing; a value filters by origin city.
   String? _city;
+  // Destination city filter (client-side on the listing's destCity).
+  String? _destCity;
   final Set<String> _truckTypeFilter = {};
   bool _backhaulOnly = false;
+
+  /// City picker for the "from" (origin) / "to" (destination) route cells.
+  Future<void> _pickCity({required bool origin}) async {
+    final c = context.nq;
+    final current = origin ? _city : _destCity;
+    final picked = await showModalBottomSheet<String?>(
+      context: context,
+      backgroundColor: c.bg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          children: [
+            Center(
+              child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: c.bd, borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              title: Text(origin ? 'كل المدن' : 'أي وجهة',
+                  textAlign: TextAlign.right,
+                  style: NqType.body.copyWith(color: c.tx)),
+              onTap: () => Navigator.of(ctx).pop('__ANY__'),
+            ),
+            for (final city in saudiCities)
+              ListTile(
+                title: Text(city,
+                    textAlign: TextAlign.right,
+                    style: NqType.body.copyWith(
+                        color: city == current ? c.mintTx : c.tx)),
+                onTap: () => Navigator.of(ctx).pop(city),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null) return;
+    setState(() {
+      final value = picked == '__ANY__' ? null : picked;
+      if (origin) {
+        _city = value;
+      } else {
+        _destCity = value;
+      }
+    });
+  }
 
   int get _activeFilterCount =>
       (_truckTypeFilter.isNotEmpty ? 1 : 0) + (_backhaulOnly ? 1 : 0);
@@ -44,6 +100,7 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
     final wanted = _truckTypeFilter.map((e) => e.toUpperCase()).toSet();
     return list.where((t) {
       if (_backhaulOnly && !t.isDirected) return false;
+      if (_destCity != null && t.destCity != _destCity) return false;
       if (wanted.isNotEmpty &&
           (t.truckType == null ||
               !wanted.contains(t.truckType!.toUpperCase()))) {
@@ -340,24 +397,29 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
       );
 
   Widget _routeSelector(NqColors c) {
-    Widget cell(String label, String value, String icon, Color iconColor) =>
+    Widget cell(String label, String value, String icon, Color iconColor,
+            VoidCallback onTap) =>
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(label, style: NqType.caption.copyWith(color: c.tx2)),
-                const SizedBox(height: 2),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(value, style: NqType.bodyStrong.copyWith(color: c.tx)),
-                    const SizedBox(width: 6),
-                    NqIcon(icon, fill: true, size: 16, color: iconColor),
-                  ],
-                ),
-              ],
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(label, style: NqType.caption.copyWith(color: c.tx2)),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(value, style: NqType.bodyStrong.copyWith(color: c.tx)),
+                      const SizedBox(width: 6),
+                      NqIcon(icon, fill: true, size: 16, color: iconColor),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -369,9 +431,11 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
       ),
       child: Row(
         children: [
-          cell('من', _city ?? 'كل المدن', NqIcons.mapPin, c.mintS),
+          cell('من', _city ?? 'كل المدن', NqIcons.mapPin, c.mintS,
+              () => _pickCity(origin: true)),
           Container(width: 1, height: 40, color: c.bd),
-          cell('إلى', 'أي وجهة', NqIcons.flagCheckered, c.err),
+          cell('إلى', _destCity ?? 'أي وجهة', NqIcons.flagCheckered, c.err,
+              () => _pickCity(origin: false)),
         ],
       ),
     );
@@ -413,15 +477,9 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
 
   Widget _sortRow(NqColors c) => Row(
         children: [
-          Row(
-            children: [
-              NqIcon(NqIcons.mapTrifold, size: 16, color: c.mintTx),
-              const SizedBox(width: 6),
-              Text('عرض على الخريطة',
-                  style: NqType.labelStrong.copyWith(color: c.mintTx)),
-            ],
-          ),
           const Spacer(),
+          NqIcon(NqIcons.clock, size: 15, color: c.tx3),
+          const SizedBox(width: 6),
           Text('الأقرب موعدًا أولًا', style: NqType.label.copyWith(color: c.tx2)),
         ],
       );

@@ -257,6 +257,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     GoRoute(
       path: '/truck-detail',
+      // Guard against a null/foreign `extra` (deep link, state restoration) so
+      // the cast below can never crash — fall back to the app shell.
+      redirect: (context, state) =>
+          state.extra is TruckListing ? null : '/app',
       builder: (context, state) =>
           TruckDetailScreen(listing: state.extra as TruckListing),
     ),
