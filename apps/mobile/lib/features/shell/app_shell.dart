@@ -58,7 +58,10 @@ class _AppShellState extends ConsumerState<AppShell> {
   late NqIdentity _identity = widget.identity ??
       ref.read(authControllerProvider).user?.identity ??
       NqIdentity.customer;
-  late bool _ownerDriver = widget.ownerDriver;
+  // Owner-driver mode comes from the dev preview (widget.ownerDriver) OR the
+  // real signed-in user (carrier who also drives) — so it works in release.
+  late bool _ownerDriver = widget.ownerDriver ||
+      (ref.read(authControllerProvider).user?.isOwnerDriver ?? false);
   OwnerDriverContext _odContext = OwnerDriverContext.provider;
   int _index = 0;
   // Show the non-forced "update available" sheet at most once per app run.

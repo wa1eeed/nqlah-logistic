@@ -14,11 +14,17 @@ export class UsersService {
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { company: true },
+      include: { company: true, driverProfile: { select: { id: true } } },
     });
     if (!user) throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'المستخدم غير موجود' });
-    const { passwordHash, ...safe } = user;
-    return safe;
+    const { passwordHash, driverProfile, ...safe } = user;
+    // Owner-driver: a carrier whose own user also has a driver profile (an
+    // individual provider who drives their own truck). Lets the app offer the
+    // provider ⇄ driving switcher to the right accounts.
+    const isOwnerDriver =
+      (user.role === 'CARRIER_ADMIN' || user.role === 'CARRIER_USER') &&
+      driverProfile != null;
+    return { ...safe, isOwnerDriver };
   }
 
   async updateProfile(userId: string, data: { firstName?: string; lastName?: string; avatar?: string }) {
