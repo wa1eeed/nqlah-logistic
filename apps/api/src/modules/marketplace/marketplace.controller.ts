@@ -21,6 +21,15 @@ export class MarketplaceController {
     return this.marketplace.listAvailable(q.city, actor);
   }
 
+  /// Available-loads marketplace: OPEN orders any carrier can bid on. Public so
+  /// unregistered visitors and clients can browse the full market too — exposes
+  /// only route/cargo/truck-type/budget/offer-count, never client identity.
+  @Public()
+  @Get('marketplace/loads')
+  loads(@Query() q: MarketplaceQueryDto) {
+    return this.marketplace.listAvailableLoads(q.city);
+  }
+
   /// Carrier publishes one of its trucks to the marketplace (handoff 7a/7b).
   @Post('fleet/trucks/:id/availability')
   @Audit({ action: 'truck.availability.publish', resourceType: 'Truck', idFrom: 'param', idKey: 'id' })
