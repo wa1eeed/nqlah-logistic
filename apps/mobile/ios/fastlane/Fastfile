@@ -93,6 +93,80 @@ platform :ios do
     # "إعدادات التطبيق" shows the current TestFlight version automatically.
     report_version_to_dashboard(channel: "iosTestFlight", build: next_build, pubspec_path: pubspec_path)
   end
+
+  # ─── Shorebird variant (code-push / OTA) ──────────────────────────────────
+  # Identical signing + upload to `beta`, but the IPA is built by Shorebird so
+  # the release is PATCHABLE (Dart/UI fixes ship over the air, no store resubmit;
+  # see docs/OTA_UPDATES.md). Switch the public iOS builds to this lane once it's
+  # validated on a watched TestFlight run — the launch build must come from here
+  # for v1.0 to be patchable.
+  #
+  # Needs: the Shorebird CLI on PATH + SHOREBIRD_TOKEN in the env (service-account
+  # token — `shorebird login:ci` was retired 2026-10-01), and the
+  # fastlane-plugin-shorebird gem (see Pluginfile). The Shorebird-built IPA MUST
+  # be the one uploaded (Shorebird records its hash), so shorebird_release
+  # REPLACES build_app — we never re-archive afterwards.
+  desc "Build with Shorebird (patchable) and upload to TestFlight"
+  lane :beta_shorebird do
+    setup_ci
+
+    pubspec_path = File.expand_path("../../pubspec.yaml", __dir__)
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8"),
+      is_key_content_base64: false,
+      in_house: false,
+    )
+
+    # setup_ci (above) runs before match so the certs have a keychain to install
+    # into — Shorebird's own fastlane guidance.
+    match(
+      type: "appstore",
+      api_key: api_key,
+      app_identifier: APP_ID,
+      storage_mode: "git",
+      git_url: MATCH_GIT_URL,
+      git_branch: MATCH_GIT_BRANCH,
+      readonly: false,
+      keychain_name: ENV["MATCH_KEYCHAIN_NAME"] || "fastlane_tmp_keychain",
+      keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"] || "",
+    )
+    profile_name = "match AppStore #{APP_ID}"
+
+    update_code_signing_settings(
+      path: "Runner.xcodeproj",
+      use_automatic_signing: false,
+      team_id: ENV.fetch("APPLE_TEAM_ID"),
+      bundle_identifier: APP_ID,
+      code_sign_identity: "Apple Distribution",
+      profile_name: profile_name,
+    )
+
+    next_build = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: APP_ID,
+      initial_build_number: 0,
+    ) + 1
+    increment_build_number(build_number: next_build, xcodeproj: "Runner.xcodeproj")
+
+    # Builds the signed IPA with Shorebird's engine (uses the manual signing the
+    # steps above configured). Sets lane_context[SharedValues::IPA_OUTPUT_PATH].
+    # Extra `flutter build ipa` args, if ever needed, go in `args:`.
+    shorebird_release(
+      platform: "ios",
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: APP_ID,
+      ipa: lane_context[SharedValues::IPA_OUTPUT_PATH],
+      skip_waiting_for_build_processing: true,
+    )
+
+    report_version_to_dashboard(channel: "iosTestFlight", build: next_build, pubspec_path: pubspec_path)
+  end
 end
 
 # Posts the shipped version/build to the NQLAH admin dashboard via the deploy

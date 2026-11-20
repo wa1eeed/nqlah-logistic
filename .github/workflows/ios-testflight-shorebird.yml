@@ -1,0 +1,84 @@
+name: iOS TestFlight (Shorebird)
+
+# Shorebird variant of ios-testflight.yml — builds the IPA with Shorebird so the
+# release is PATCHABLE (OTA Dart/UI updates; see docs/OTA_UPDATES.md), then
+# uploads to TestFlight with the same fastlane match signing.
+#
+# REVIEW / VALIDATION: this is additive — the original ios-testflight.yml is
+# unchanged and still works. Run THIS workflow once and watch it before relying
+# on it or retiring the original: CI signing + Shorebird's iOS build can't be
+# verified locally, and there is a known macOS-runner signing regression
+# (actions/runner-images#13884) — pin `runs-on` to a known-good image if match
+# fails to find a signing identity.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: true
+
+jobs:
+  testflight:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # Install the Shorebird CLI and put it on PATH for later steps.
+      - name: Install Shorebird
+        run: |
+          curl -fsSL https://shorebird.dev/install.sh | bash
+          echo "$HOME/.shorebird/bin" >> "$GITHUB_PATH"
+
+      - name: Flutter deps
+        working-directory: apps/mobile
+        # Pre-create the SPM package dir (SwiftPM project, no Podfile) — see the
+        # original workflow for why.
+        run: |
+          mkdir -p build/ios/SourcePackages
+          flutter pub get
+
+      # NOTE: no `flutter build ios --no-codesign` step here — `shorebird_release`
+      # in the beta_shorebird lane does the (patchable) build itself.
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install fastlane + shorebird plugin
+        working-directory: apps/mobile/ios
+        run: gem install fastlane fastlane-plugin-shorebird --no-document
+
+      - name: Build (Shorebird) & upload to TestFlight
+        working-directory: apps/mobile/ios
+        env:
+          # Service-account token (login:ci was retired 2026-10-01). Add it as a
+          # repo secret; the CLI reads it from the env.
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APP_VERSION_API_BASE: ${{ secrets.APP_VERSION_API_BASE }}
+          APP_VERSION_DEPLOY_TOKEN: ${{ secrets.APP_VERSION_DEPLOY_TOKEN }}
+        run: fastlane beta_shorebird
+
+      - name: Upload IPA artifact (debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-shorebird
+          path: apps/mobile/build/**/*.ipa
+          if-no-files-found: ignore

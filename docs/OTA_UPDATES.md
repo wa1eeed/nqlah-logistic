@@ -96,12 +96,13 @@ not yet patchable**. The first `shorebird release` should be run and validated
 CI signing is unverifiable from here and there is a known runner-image signing
 bug (below).
 
-**CI auth** — generate a token and add it as a repo secret `SHOREBIRD_TOKEN`:
-```bash
-shorebird login:ci      # prints a token; add it as the SHOREBIRD_TOKEN Actions secret
-```
-Each job then installs the CLI with `shorebirdtech/setup-shorebird@v1` and reads
-`SHOREBIRD_TOKEN` from the env.
+**CI auth** — add a Shorebird token as the repo secret `SHOREBIRD_TOKEN`.
+⚠️ `shorebird login:ci` was **retired on 2026-10-01**; CI now authenticates with a
+**service-account token**. Create one from the Shorebird console / the current
+`shorebird` CLI (see [Shorebird CI docs](https://docs.shorebird.dev/code-push/ci/github/))
+and store it as the `SHOREBIRD_TOKEN` Actions secret. Each job installs the CLI
+with `curl -fsSL https://shorebird.dev/install.sh | bash` (then puts
+`$HOME/.shorebird/bin` on `$GITHUB_PATH`) and reads `SHOREBIRD_TOKEN` from the env.
 
 **Android** (`android-release.yml`) — simplest; no signing interplay. Replace the
 `flutter build appbundle …` step with:
@@ -115,19 +116,22 @@ Each job then installs the CLI with `shorebirdtech/setup-shorebird@v1` and reads
 (The AAB lands under `build/app/outputs/bundle/release/`; the upload + dashboard
 steps are unchanged.)
 
-**iOS** (`ios-testflight.yml` + `ios/fastlane/Fastfile`) — the uploaded IPA must
-be the Shorebird-built one, so `shorebird release ios` replaces fastlane's
-`build_app` (not an extra step before it). Shorebird's own fastlane pattern
-([docs](https://docs.shorebird.dev/code-push/ci/fastlane/),
-[demo Fastfile](https://github.com/shorebirdtech/fastlane_demo/blob/main/ios/fastlane/Fastfile)):
-1. `fastlane add_plugin shorebird` (adds the
-   [fastlane-plugin-shorebird](https://github.com/shorebirdtech/fastlane-plugin-shorebird)).
-2. A new lane keeps the existing `setup_ci` → `app_store_connect_api_key` →
-   `match(type: "appstore")` signing, then calls `shorebird_release(platform: "ios")`
-   **instead of** `build_app`, and uploads the resulting IPA with
-   `upload_to_testflight`.
-3. In the workflow, install the CLI (`setup-shorebird`), drop the
-   `flutter build ios --no-codesign` step, and run the new lane.
+**iOS** — **prepared on branch `feat/ios-shorebird-ci` (PR for review, not merged).**
+Additive, so the working pipeline is untouched:
+- `apps/mobile/ios/fastlane/Fastfile` — new `beta_shorebird` lane (the existing
+  `beta` lane is unchanged). Same `setup_ci` → `match(appstore)` signing, then
+  `shorebird_release(platform: "ios")` **instead of** `build_app` (the uploaded
+  IPA must be the Shorebird-built one — Shorebird records its hash), then
+  `upload_to_testflight(ipa: lane_context[SharedValues::IPA_OUTPUT_PATH])`.
+- `apps/mobile/ios/fastlane/Pluginfile` — adds `fastlane-plugin-shorebird`.
+- `.github/workflows/ios-testflight-shorebird.yml` — copy of the working workflow
+  that installs the Shorebird CLI, drops `flutter build ios --no-codesign`, and
+  runs `fastlane beta_shorebird` with `SHOREBIRD_TOKEN`.
+
+**Validate before relying on it:** run `ios-testflight-shorebird.yml` once and
+watch it (signing + Shorebird's iOS build are unverifiable locally). Once a
+TestFlight build from it is confirmed good, switch public iOS builds to this lane
+— the launch build must come from here for v1.0 to be patchable.
 
 **Known caveat:** a macOS runner image regression
 ([actions/runner-images#13884](https://github.com/actions/runner-images/issues/13884))
