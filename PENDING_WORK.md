@@ -46,8 +46,9 @@ Sign in with Apple not required, guest/explore-first avoids forced login.
 **Remaining = operational (owner), not code:**
 1. **Coolify (production):** rename env → production, `NODE_ENV=production`, swap
    secrets (`JWT_SECRET`/`JWT_REFRESH_SECRET` ≥64 & different, storage keys,
-   `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`); clean the seed test accounts (keep
-   `+966500000002` as the Apple demo account).
+   `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`). **Keep the seed accounts** — the
+   client `+966500000002` is the Apple demo account; only rotate the SUPER_ADMIN
+   credentials (default-password admin is the one real risk).
 2. **Daily purge cron:** schedule `POST /account/deletion/purge` (x-deploy-token;
    see [`docs/ACCOUNT_DELETION.md`](docs/ACCOUNT_DELETION.md)). Required or
    deletions never actually run.
