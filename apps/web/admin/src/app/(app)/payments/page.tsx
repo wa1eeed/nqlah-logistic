@@ -18,16 +18,17 @@ import { Loader2 } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
 import { useConfirm } from '@/components/confirm';
 import { notify } from '@/lib/notify';
-import { PAYMENTS, companyById, formatDate, type Payment } from '@naqla/shared-utils';
+import { companyById, formatDate, type Payment } from '@naqla/shared-utils';
 
 export default function AdminPaymentsPage() {
   const t = useTranslations('payments');
+  const tc = useTranslations('common');
   const confirm = useConfirm();
   const [tab, setTab] = useState('ALL');
   const [releasingId, setReleasingId] = useState<string | null>(null);
 
   // GET /payments — list of escrow + released payments. Falls back to mock.
-  const { data, mutate } = useSWR<unknown>('/payments', fetcher);
+  const { data, mutate, isLoading } = useSWR<unknown>('/payments', fetcher);
 
   // Admin can force-release a HELD payment to the carrier (overrides the
   // 72h auto-release). Backend: POST /payments/:id/release — atomically
@@ -58,7 +59,8 @@ export default function AdminPaymentsPage() {
       Array.isArray(data) ? data :
       Array.isArray((data as { items?: unknown[] })?.items) ? (data as { items: unknown[] }).items :
       [];
-    return (arr.length > 0 ? arr : PAYMENTS) as Payment[];
+    // Real payments only — no mock fallback in the admin console.
+    return arr as Payment[];
   }, [data]);
 
   const rows = useMemo(
@@ -78,7 +80,7 @@ export default function AdminPaymentsPage() {
         <StatsCard
           label={t('adminPayments.heldInEscrow')}
           value={<Currency amount={totalHeld} />}
-          hint={t('adminPayments.transactionsCount', { count: PAYMENTS.filter((p) => p.state === 'HELD').length })}
+          hint={t('adminPayments.transactionsCount', { count: all.filter((p) => p.state === 'HELD').length })}
           icon={ShieldCheck}
           tone="warning"
           index={0}
@@ -86,7 +88,7 @@ export default function AdminPaymentsPage() {
         <StatsCard
           label={t('adminPayments.releasedCard')}
           value={<Currency amount={totalReleased} />}
-          hint={t('adminPayments.transactionsCount', { count: PAYMENTS.filter((p) => p.state === 'RELEASED').length })}
+          hint={t('adminPayments.transactionsCount', { count: all.filter((p) => p.state === 'RELEASED').length })}
           icon={ArrowDownRight}
           tone="success"
           index={1}
@@ -101,7 +103,7 @@ export default function AdminPaymentsPage() {
         />
         <StatsCard
           label={t('adminPayments.refunded')}
-          value={PAYMENTS.filter((p) => p.state === 'REFUNDED').length}
+          value={all.filter((p) => p.state === 'REFUNDED').length}
           hint={t('adminPayments.refund')}
           icon={RotateCcw}
           tone="danger"
@@ -111,10 +113,10 @@ export default function AdminPaymentsPage() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="ALL">{t('adminPayments.tabAll', { count: PAYMENTS.length })}</TabsTrigger>
-          <TabsTrigger value="HELD">{t('adminPayments.tabHeld', { count: PAYMENTS.filter((p) => p.state === 'HELD').length })}</TabsTrigger>
-          <TabsTrigger value="RELEASED">{t('adminPayments.tabReleased', { count: PAYMENTS.filter((p) => p.state === 'RELEASED').length })}</TabsTrigger>
-          <TabsTrigger value="REFUNDED">{t('adminPayments.tabRefunded', { count: PAYMENTS.filter((p) => p.state === 'REFUNDED').length })}</TabsTrigger>
+          <TabsTrigger value="ALL">{t('adminPayments.tabAll', { count: all.length })}</TabsTrigger>
+          <TabsTrigger value="HELD">{t('adminPayments.tabHeld', { count: all.filter((p) => p.state === 'HELD').length })}</TabsTrigger>
+          <TabsTrigger value="RELEASED">{t('adminPayments.tabReleased', { count: all.filter((p) => p.state === 'RELEASED').length })}</TabsTrigger>
+          <TabsTrigger value="REFUNDED">{t('adminPayments.tabRefunded', { count: all.filter((p) => p.state === 'REFUNDED').length })}</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -123,7 +125,13 @@ export default function AdminPaymentsPage() {
         <CardContent className="p-0">
           {/* Mobile: app-like card list */}
           <div className="md:hidden divide-y">
-            {rows.map((p) => (
+            {isLoading ? (
+              <div className="p-4 space-y-3">
+                {[0, 1, 2].map((i) => <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />)}
+              </div>
+            ) : rows.length === 0 ? (
+              <div className="text-center text-muted-foreground py-10">{tc('noData')}</div>
+            ) : rows.map((p) => (
               <div key={p.id} className="p-4">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-xs font-medium">{p.id}</span>
@@ -175,7 +183,13 @@ export default function AdminPaymentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((p) => (
+              {isLoading ? (
+                [0, 1, 2, 3].map((i) => (
+                  <TableRow key={`sk-${i}`}><TableCell colSpan={9} className="py-3"><div className="h-7 rounded bg-muted animate-pulse" /></TableCell></TableRow>
+                ))
+              ) : rows.length === 0 ? (
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-10">{tc('noData')}</TableCell></TableRow>
+              ) : rows.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-mono text-xs font-medium">{p.id}</TableCell>
                   <TableCell className="font-mono text-xs text-primary">{p.order?.orderNumber ?? p.orderId}</TableCell>
