@@ -1,5 +1,77 @@
 # Pending Work — حالة الربط الحالية
 
+> آخر تحديث: **2026-11-20** — بعد جولة التصميم + الموبايل + أعلام الميزات (feature flags).
+> هذا القسم هو نقطة الاستئناف الحالية؛ الأقسام الأقدم تحته محفوظة كمرجع تاريخي.
+
+## 🟣 Status update — 2026-11-20 (post design + mobile + feature flags)
+
+### Shipped since 2026-10-26 (all merged)
+
+FCM push + OTP (Authentica) + Maps (MapLibre/OSM) + configurable logo (#189);
+currency settings & the official Riyal sign (#207); the web dashboard design
+consistency pass (stat cards, empty states, type scale, buttons, badges);
+the R2 object-storage migration (two-bucket model) + the local API build fix
+(stale dist + R2-connector boot guard, #247); the mobile first-run flow
+(language → onboarding → explore-first guest app, #249); the mobile design pass
+(empty-state medallions #248, Riyal rendering #250/#251); and the full
+**server-driven feature-flags** system (#252–#258, see
+[`docs/FEATURE_FLAGS.md`](docs/FEATURE_FLAGS.md)).
+
+### Remaining work
+
+**A. Release & operations (roadmap tail — do last).**
+1. **Public Developer API** (inbound) — external integration API. Bottom of the list.
+2. **Production deployment** on the official domain, incl. production builds of the
+   apps. Model: staging = the full project for continuous testing, then migrate to
+   production (Coolify → GCP/Alibaba portability; see `docs/SECRETS.md`).
+3. **Maintenance / updates mode** — an admin setting to close the platform + apps
+   during maintenance/migrations (maintenance flag + guard + a maintenance screen on
+   web and app) so no new data hits the DB mid-upgrade. Pairs with #2. *(The plan
+   **maintenance module** gating already exists; this is the separate platform-wide
+   maintenance switch.)*
+
+**B. App ↔ Web parity & UX fixes (carried from the roadmap).**
+4. **App↔Web parity audit** — surface mobile-only features on web where they belong:
+   **maintenance management** and **subscription/membership** on the carrier web,
+   admin oversight on admin web, tracking on client web. Audit each web app vs the
+   mobile app. *(Partially addressed by the plan-gating work; still needs a full audit.)*
+5. **Fleet "سحب" (withdraw) confirmation** — the retract action on a truck (mobile
+   Fleet) must show a confirmation explaining what happens and how to restore it.
+   Also fix a small right-overflow on the provider assignments (التكليفات) delivered card.
+
+**C. Finance (see the Workflow & Policy Engine queue at the bottom of this file).**
+6. Subscription **payment + auto-renewal** (the remaining piece of Phase 4).
+7. **Self-service billing** page (carrier/client): view/upgrade/downgrade/cancel + invoices.
+8. **Invoice PDF rendering + Fatoora Phase-2** (QR/TLV) for full ZATCA e-invoicing.
+9. **Buyer-facing invoice lists** in the client & carrier apps.
+10. **Policy profile versioning.**
+11. **Safe-delete rollout (Phase 2)** — extend the reusable `ConfirmDialog` +
+    dependency-aware deletion to the remaining admin catalog deletes and the
+    carrier/provider destructive actions (replacing native `confirm()`).
+
+**D. Feature-flags follow-ups (new).**
+12. **Editable flag content** — a config section (e.g. promo banner text/link) so
+    content is editable, not just on/off. Boolean flags stay for enable/disable.
+13. Gate further features behind flags as needed (the `useFeatureFlag` hook is now in
+    client/carrier/admin; mobile `featureFlagProvider` is available).
+
+**E. Mobile & iOS (new / carried).**
+14. **iOS native features blocked on a full Xcode install** (only CLI tools are set up
+    on the build Mac): Live Activities, Apple widgets/Siri/Maps, Universal Links/deep
+    links, Push-to-Talk, NFC. iOS-simulator visual verification also needs Xcode — until
+    then, verify the Flutter app via `flutter run -d web-server` (see the mobile notes).
+15. **Mobile i18n** — translate the remaining screens (incl. Urdu); the `core/i18n`
+    catalog + `S` + `localeController` are in place, add keys + swap literals.
+16. **Admin broadcast push** (future) — an admin page to broadcast push to all
+    users/segments via FCM topics.
+17. Minor: apply the Riyal-sign SVG to `currency.tsx` on the **landing** and **driver**
+    web apps (carrier/client/admin already done).
+
+**F. Known bug.**
+18. Admin **login page i18n** is broken (`auth.login.*` keys missing).
+
+---
+
 ## 🔴 Owner-requested backlog (2026-10-26) — admin policy UX + heterogeneous orders + modules
 
 Tracked verbatim so nothing is dropped. Work top-to-bottom; one PR per coherent item.
