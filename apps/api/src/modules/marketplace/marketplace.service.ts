@@ -89,4 +89,35 @@ export class MarketplaceService {
     });
     return rows;
   }
+
+  /// Public available-loads marketplace: OPEN orders published to the open
+  /// market that any carrier can bid on, so clients and unregistered visitors
+  /// can browse the full market too. Browse-only — exposes the route, cargo,
+  /// required truck type, budget and offer count, never the client's identity
+  /// or contact. A carrier bids through the authenticated order endpoints.
+  async listAvailableLoads(city?: string) {
+    const rows = await this.prisma.order.findMany({
+      where: {
+        mode: 'OPEN',
+        status: { in: ['PUBLISHED', 'BIDDING'] },
+        ...(city ? { OR: [{ originCity: city }, { destinationCity: city }] } : {}),
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        priceMode: true,
+        cargoType: true,
+        originCity: true,
+        destinationCity: true,
+        requiredTruckType: true,
+        clientBudget: true,
+        createdAt: true,
+        _count: { select: { bids: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return rows;
+  }
 }
