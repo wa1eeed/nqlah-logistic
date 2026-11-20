@@ -34,6 +34,7 @@ import { DisputesModule } from './modules/disputes/disputes.module';
 import { SupportModule } from './modules/support/support.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { AccountModule } from './modules/account/account.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
@@ -95,6 +96,7 @@ import { LocationsModule } from './modules/locations/locations.module';
     SupportModule,
     AddressesModule,
     SettingsModule,
+    AccountModule,
     TrackingModule,
     UploadsModule,
     RealtimeModule,

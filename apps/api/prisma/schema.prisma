@@ -225,6 +225,13 @@ model User {
   /// Only meaningful for users that belong to a company (CLIENT/CARRIER).
   companyRole       CompanyRole @default(STAFF)
   lastLoginAt       DateTime?
+  /// Account-deletion request (Apple 5.1.1(v)). When set, the account is frozen
+  /// (isActive=false) and scheduled for real deletion/anonymization at
+  /// `deletionScheduledAt` (≈30 days later). The user may cancel before then;
+  /// cancelling clears both. The purge job anonymizes PII and keeps only
+  /// legally-required (anonymized) financial records.
+  deletionRequestedAt  DateTime?
+  deletionScheduledAt  DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
