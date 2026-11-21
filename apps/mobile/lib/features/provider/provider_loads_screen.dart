@@ -81,7 +81,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
     setState(() => _busyOrderId = o.id);
     try {
       await ref.read(ordersRepositoryProvider).declineDirect(o.id);
-      ref.invalidate(marketplaceLoadsProvider);
+      ref.invalidate(openLoadsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم رفض الطلب وإعادته للسوق.')));
@@ -119,7 +119,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
       await ref
           .read(ordersRepositoryProvider)
           .createBid(o.id, amount: amount, notes: notes);
-      ref.invalidate(marketplaceLoadsProvider);
+      ref.invalidate(openLoadsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم تقديم عرضك بنجاح.')));
@@ -378,7 +378,7 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.nq;
-    final async = ref.watch(marketplaceLoadsProvider);
+    final async = ref.watch(openLoadsProvider);
     final companyId = ref.watch(authControllerProvider).user?.companyId;
     return SafeArea(
       child: Column(
@@ -419,14 +419,14 @@ class _ProviderLoadsScreenState extends ConsumerState<ProviderLoadsScreen> {
           const SizedBox(height: 12),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => ref.refresh(marketplaceLoadsProvider.future),
+              onRefresh: () => ref.refresh(openLoadsProvider.future),
               color: c.mintTx,
               child: async.when(
                 loading: () => _centered(_loader(c)),
                 error: (e, _) => _centered(_errorState(
                   c,
                   e is ApiException ? e.message : 'تعذّر تحميل الأحمال.',
-                  () => ref.invalidate(marketplaceLoadsProvider),
+                  () => ref.invalidate(openLoadsProvider),
                 )),
                 data: (orders) => _list(c, _loads(orders, companyId), companyId),
               ),
