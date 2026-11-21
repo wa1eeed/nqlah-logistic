@@ -43,13 +43,27 @@ class AuthController extends Notifier<AuthState> {
   /// the cached session; only a real auth rejection (401/403) ends it.
   Future<void> _bootstrap() async {
     final tokens = ref.read(tokenStoreProvider);
-    final access = await tokens.readAccess();
+    // Guard the keychain read: the FIRST secure-storage access right after a
+    // fresh install can throw before the keychain is ready. Unguarded, that
+    // left the state at `unknown` forever (the launch splash never cleared —
+    // the app "stuck on loading" until a manual restart). On any failure we
+    // resolve to unauthenticated so the app always opens on the first try.
+    String? access;
+    try {
+      access = await tokens.readAccess();
+    } catch (_) {
+      state = AuthState.unauthenticated;
+      return;
+    }
     if (access == null) {
       state = AuthState.unauthenticated;
       return;
     }
     // 1. Instant restore from the cached snapshot.
-    final cachedJson = await tokens.readUser();
+    String? cachedJson;
+    try {
+      cachedJson = await tokens.readUser();
+    } catch (_) {/* keychain hiccup — fall through to server revalidation */}
     if (cachedJson != null) {
       try {
         final cached = AuthUser.fromJson(
