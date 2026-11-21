@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/api_client.dart';
+import '../api/api_exception.dart';
 import '../api/token_store.dart';
 import 'auth_models.dart';
 import 'auth_repository.dart';
@@ -33,8 +36,11 @@ class AuthController extends Notifier<AuthState> {
     return AuthState.unknown;
   }
 
-  /// Restores a session from a stored token on launch (or falls back to the
-  /// login screen).
+  /// Restores a session on launch. Hydrates the shell with the cached user
+  /// snapshot *immediately* (so it mounts with the correct identity — no flash
+  /// of the default shell, no cold-start wait), then revalidates with the
+  /// server in the background. A transient failure (network/5xx/timeout) keeps
+  /// the cached session; only a real auth rejection (401/403) ends it.
   Future<void> _bootstrap() async {
     final tokens = ref.read(tokenStoreProvider);
     final access = await tokens.readAccess();
@@ -42,12 +48,35 @@ class AuthController extends Notifier<AuthState> {
       state = AuthState.unauthenticated;
       return;
     }
+    // 1. Instant restore from the cached snapshot.
+    final cachedJson = await tokens.readUser();
+    if (cachedJson != null) {
+      try {
+        final cached = AuthUser.fromJson(
+            Map<String, dynamic>.from(jsonDecode(cachedJson) as Map));
+        state = AuthState(AuthStatus.authenticated, user: cached);
+      } catch (_) {/* ignore a corrupt snapshot — revalidation covers it */}
+    }
+    // 2. Revalidate + refresh the snapshot in the background.
     try {
       final user = await ref.read(authRepositoryProvider).me();
+      await tokens.saveUser(jsonEncode(user.toJson()));
       state = AuthState(AuthStatus.authenticated, user: user);
+    } on ApiException catch (e) {
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        // Token genuinely rejected (even after refresh) — end the session.
+        await tokens.clear();
+        state = AuthState.unauthenticated;
+      } else if (state.status == AuthStatus.unknown) {
+        // Couldn't reach the server and we have no cache to fall back on:
+        // send the user to login rather than hang. (A cached session stays.)
+        state = AuthState.unauthenticated;
+      }
+      // Otherwise keep the cached authenticated session.
     } catch (_) {
-      await tokens.clear();
-      state = AuthState.unauthenticated;
+      if (state.status == AuthStatus.unknown) {
+        state = AuthState.unauthenticated;
+      }
     }
   }
 
@@ -57,8 +86,17 @@ class AuthController extends Notifier<AuthState> {
     final session = await ref
         .read(authRepositoryProvider)
         .login(identifier: identifier.trim(), password: password);
-    state = AuthState(AuthStatus.authenticated, user: session.user);
+    await _setAuthenticated(session.user);
     return session.user;
+  }
+
+  /// Sets the authenticated state and caches the user snapshot for instant
+  /// restore on the next launch.
+  Future<void> _setAuthenticated(AuthUser user) async {
+    state = AuthState(AuthStatus.authenticated, user: user);
+    try {
+      await ref.read(tokenStoreProvider).saveUser(jsonEncode(user.toJson()));
+    } catch (_) {/* caching is best-effort */}
   }
 
   /// Request a one-time login code for [phone] (reuses send-otp).
@@ -69,7 +107,7 @@ class AuthController extends Notifier<AuthState> {
   Future<AuthUser> loginWithOtp(String phone, String code) async {
     final session =
         await ref.read(authRepositoryProvider).loginWithOtp(phone, code);
-    state = AuthState(AuthStatus.authenticated, user: session.user);
+    await _setAuthenticated(session.user);
     return session.user;
   }
 

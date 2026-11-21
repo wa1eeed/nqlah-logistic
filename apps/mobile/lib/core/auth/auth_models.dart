@@ -44,6 +44,22 @@ class AuthUser {
     return NqIdentity.customer;
   }
 
+  /// Serializes the fields we cache for instant session restore on launch.
+  /// Round-trips cleanly through [AuthUser.fromJson] (note the nested `company`
+  /// shape it expects).
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'role': role,
+        'phone': phone,
+        'email': email,
+        'firstName': firstName,
+        'lastName': lastName,
+        'companyId': companyId,
+        if (companyNameAr != null || crNumber != null)
+          'company': {'nameAr': companyNameAr, 'crNumber': crNumber},
+        'isOwnerDriver': isOwnerDriver,
+      };
+
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     final company = json['company'];
     return AuthUser(

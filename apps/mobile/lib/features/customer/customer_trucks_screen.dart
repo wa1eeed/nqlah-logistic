@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/marketplace/marketplace_repository.dart';
 import '../../core/orders/catalog_providers.dart' show truckOptionsProvider;
-import '../../core/orders/order_draft_controller.dart' show saudiCities;
+import '../../core/orders/order_draft_controller.dart'
+    show saudiCities, regionForCity;
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/widgets/nq_icon.dart';
 import '../../design_system/availability_card.dart';
+import '../../design_system/option_picker.dart';
 import '../../design_system/empty_state.dart';
 import '../../design_system/button.dart';
 import '../../design_system/chip.dart';
@@ -39,50 +41,25 @@ class _CustomerTrucksScreenState extends ConsumerState<CustomerTrucksScreen> {
   bool _backhaulOnly = false;
 
   /// City picker for the "from" (origin) / "to" (destination) route cells.
+  // A sentinel first option meaning "clear this filter" (all cities / any
+  // destination). Prefixed so it can never collide with a real city name.
+  static const _anyCity = '__ANY__';
+
   Future<void> _pickCity({required bool origin}) async {
-    final c = context.nq;
-    final current = origin ? _city : _destCity;
-    final picked = await showModalBottomSheet<String?>(
-      context: context,
-      backgroundColor: c.bg,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          children: [
-            Center(
-              child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                      color: c.bd, borderRadius: BorderRadius.circular(2))),
-            ),
-            const SizedBox(height: 12),
-            ListTile(
-              title: Text(origin ? 'كل المدن' : 'أي وجهة',
-                  textAlign: TextAlign.right,
-                  style: NqType.body.copyWith(color: c.tx)),
-              onTap: () => Navigator.of(ctx).pop('__ANY__'),
-            ),
-            for (final city in saudiCities)
-              ListTile(
-                title: Text(city,
-                    textAlign: TextAlign.right,
-                    style: NqType.body.copyWith(
-                        color: city == current ? c.mintTx : c.tx)),
-                onTap: () => Navigator.of(ctx).pop(city),
-              ),
-          ],
-        ),
-      ),
+    // Reuses the shared option picker (search + capped height + drag handle +
+    // a tappable scrim) so the list is never a full-screen trap.
+    final picked = await nqPickOption<String>(
+      context,
+      title: origin ? 'مدينة الانطلاق' : 'مدينة الوجهة',
+      options: [_anyCity, ...saudiCities],
+      label: (city) =>
+          city == _anyCity ? (origin ? 'كل المدن' : 'أي وجهة') : city,
+      subtitle: (city) => city == _anyCity ? null : regionForCity(city),
+      searchHint: 'ابحث عن مدينة',
     );
-    if (picked == null) return;
+    if (picked == null) return; // dismissed — keep the current filter
     setState(() {
-      final value = picked == '__ANY__' ? null : picked;
+      final value = picked == _anyCity ? null : picked;
       if (origin) {
         _city = value;
       } else {

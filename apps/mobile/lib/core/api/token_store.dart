@@ -11,6 +11,9 @@ class TokenStore {
 
   static const _kAccess = 'nq_access_token';
   static const _kRefresh = 'nq_refresh_token';
+  // A minimal JSON snapshot of the signed-in user, kept so the app can restore
+  // the correct identity instantly on launch (before `/users/me` resolves).
+  static const _kUser = 'nq_user';
 
   Future<String?> readAccess() => _storage.read(key: _kAccess);
   Future<String?> readRefresh() => _storage.read(key: _kRefresh);
@@ -23,9 +26,15 @@ class TokenStore {
   Future<void> saveAccess(String access) =>
       _storage.write(key: _kAccess, value: access);
 
+  /// The cached user snapshot (JSON string), or null if none is stored.
+  Future<String?> readUser() => _storage.read(key: _kUser);
+  Future<void> saveUser(String json) =>
+      _storage.write(key: _kUser, value: json);
+
   Future<void> clear() async {
     await _storage.delete(key: _kAccess);
     await _storage.delete(key: _kRefresh);
+    await _storage.delete(key: _kUser);
   }
 }
 

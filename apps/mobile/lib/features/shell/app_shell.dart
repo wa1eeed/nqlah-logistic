@@ -57,13 +57,12 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  late NqIdentity _identity = widget.identity ??
-      ref.read(authControllerProvider).user?.identity ??
-      NqIdentity.customer;
-  // Owner-driver mode comes from the dev preview (widget.ownerDriver) OR the
-  // real signed-in user (carrier who also drives) — so it works in release.
-  late bool _ownerDriver = widget.ownerDriver ||
-      (ref.read(authControllerProvider).user?.isOwnerDriver ?? false);
+  // Dev-only role preview (set by the previewer bar, hidden in release). When
+  // null the identity is derived live from the signed-in account — so a session
+  // restored from cache or refreshed by `/users/me` always mounts the right
+  // shell, with no change-listener race.
+  NqIdentity? _previewIdentity;
+  bool _previewOwnerDriver = false;
   OwnerDriverContext _odContext = OwnerDriverContext.provider;
   int _index = 0;
   // Show the non-forced "update available" sheet at most once per app run.
@@ -72,19 +71,31 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   void initState() {
     super.initState();
-    // Keep the dev-preview identity (read by identity-gated routes opened on top
-    // of the shell, e.g. the truck detail) in sync with this shell's identity
-    // from the very first mount — so it never lags behind the account/role the
-    // shell is actually showing (dev-only; the preview bar is hidden in release).
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        ref.read(previewIdentityProvider.notifier).state = _identity;
-        // Open the realtime connection for every signed-in user (not just
-        // drivers), so server change signals flow and the invalidator keeps
-        // lists/details live across the app.
-        ref.read(realtimeServiceProvider).connect();
-      }
+      // Open the realtime connection for every signed-in user (not just
+      // drivers), so server change signals flow and the invalidator keeps
+      // lists/details live across the app.
+      if (mounted) ref.read(realtimeServiceProvider).connect();
     });
+  }
+
+  /// The shell's identity: a dev preview override, else a fixed injected
+  /// identity, else the signed-in account's real identity (live). Reads (not
+  /// watches) — `build()` already watches the auth provider for its splash
+  /// gate, so the shell rebuilds on every auth change and this stays current;
+  /// `ref.read` also keeps the getter safe to call from post-frame callbacks.
+  NqIdentity get _identity =>
+      _previewIdentity ??
+      widget.identity ??
+      ref.read(authControllerProvider).user?.identity ??
+      NqIdentity.customer;
+
+  /// Owner-driver (carrier who also drives) — from the dev preview or the live
+  /// signed-in user.
+  bool get _ownerDriver {
+    if (_previewIdentity != null) return _previewOwnerDriver;
+    if (widget.identity != null) return widget.ownerDriver;
+    return ref.read(authControllerProvider).user?.isOwnerDriver ?? false;
   }
 
   List<NqTab> get _tabs => tabsFor(_identity,
@@ -98,8 +109,8 @@ class _AppShellState extends ConsumerState<AppShell> {
     // calls this is hidden in release.
     ref.read(previewIdentityProvider.notifier).state = id;
     setState(() {
-      _identity = id;
-      _ownerDriver = ownerDriver;
+      _previewIdentity = id;
+      _previewOwnerDriver = ownerDriver;
       _odContext = OwnerDriverContext.provider;
       _index = 0;
     });
@@ -110,28 +121,12 @@ class _AppShellState extends ConsumerState<AppShell> {
     final c = context.nq;
     ref.watch(localeControllerProvider); // rebuild tab labels on language change
     ref.watch(realtimeInvalidatorProvider); // keep live-data invalidation alive
-    // Keep the shell's role in sync with the signed-in user. The shell can mount
-    // before `/users/me` resolves (identity would freeze on the `customer`
-    // default), so re-sync whenever the user loads/changes — except when a fixed
-    // identity was injected (dev preview). Fixes a provider briefly seeing the
-    // customer shell and the owner-driver switch not appearing.
-    if (widget.identity == null) {
-      ref.listen(authControllerProvider, (_, next) {
-        final u = next.user;
-        if (u == null) return;
-        final id = u.identity;
-        final od = u.isOwnerDriver;
-        if (id != _identity || od != _ownerDriver) {
-          setState(() {
-            _identity = id;
-            _ownerDriver = od;
-            _odContext = OwnerDriverContext.provider;
-            _index = 0;
-            ref.read(previewIdentityProvider.notifier).state = id;
-          });
-        }
-      });
-    }
+    // Hold a lightweight splash while the session is still being restored on
+    // launch, so the shell never flashes the default (customer) identity before
+    // auth resolves. With the cached-snapshot restore this window is momentary
+    // for returning users; only a genuine first launch waits on it.
+    final auth = ref.watch(authControllerProvider);
+    if (!auth.isResolved) return _splash(c);
     // A non-forced update offers a one-time, skippable prompt once the policy
     // resolves (forced updates are handled by the app-wide overlay).
     ref.listen(updateRequirementProvider, (_, next) {
@@ -373,6 +368,27 @@ class _AppShellState extends ConsumerState<AppShell> {
       }
     }
     return _placeholderBody(c, tab);
+  }
+
+  /// Momentary launch splash shown only while the auth session is resolving.
+  Widget _splash(NqColors c) {
+    return Scaffold(
+      backgroundColor: c.bg,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('نقلة', style: NqType.h1.copyWith(color: c.mintTx)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.4, color: c.mint),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _placeholderBody(NqColors c, NqTab tab) {

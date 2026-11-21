@@ -15,7 +15,7 @@ Future<T?> nqPickOption<T>(
   required String title,
   required List<T> options,
   required String Function(T) label,
-  String Function(T)? subtitle,
+  String? Function(T)? subtitle,
   String searchHint = 'ابحث…',
   int searchThreshold = 7,
 }) {
@@ -52,7 +52,7 @@ class _OptionSheet<T> extends StatefulWidget {
   final String title;
   final List<T> options;
   final String Function(T) label;
-  final String Function(T)? subtitle;
+  final String? Function(T)? subtitle;
   final String searchHint;
   final int searchThreshold;
 
