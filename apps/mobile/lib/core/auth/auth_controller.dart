@@ -100,8 +100,25 @@ class AuthController extends Notifier<AuthState> {
     final session = await ref
         .read(authRepositoryProvider)
         .login(identifier: identifier.trim(), password: password);
-    await _setAuthenticated(session.user);
-    return session.user;
+    final user = await _hydrateFullUser(session.user);
+    await _setAuthenticated(user);
+    return user;
+  }
+
+  /// The login / OTP response is a *lean* user — it carries no `isOwnerDriver`
+  /// flag and no embedded company. Only `/users/me` computes those. Fetch it
+  /// right after authenticating so the very first post-login session already
+  /// has the correct identity: the owner-driver (مزوّد⇄سائق) switch appears,
+  /// and the account screen shows the real company instead of a placeholder.
+  /// Without this the shell was only correct after an app restart (which runs
+  /// `_bootstrap` → `me()`). Falls back to the lean user if `me()` is briefly
+  /// unreachable.
+  Future<AuthUser> _hydrateFullUser(AuthUser fallback) async {
+    try {
+      return await ref.read(authRepositoryProvider).me();
+    } catch (_) {
+      return fallback;
+    }
   }
 
   /// Sets the authenticated state and caches the user snapshot for instant
@@ -121,8 +138,9 @@ class AuthController extends Notifier<AuthState> {
   Future<AuthUser> loginWithOtp(String phone, String code) async {
     final session =
         await ref.read(authRepositoryProvider).loginWithOtp(phone, code);
-    await _setAuthenticated(session.user);
-    return session.user;
+    final user = await _hydrateFullUser(session.user);
+    await _setAuthenticated(user);
+    return user;
   }
 
   Future<void> logout() async {
